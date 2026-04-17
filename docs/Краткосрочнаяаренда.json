@@ -1,0 +1,1240 @@
+{
+  "components": {
+    "headers": {
+      "X-RateLimit-Limit": {
+        "description": "Количество запросов в минуту",
+        "schema": {
+          "format": "int32",
+          "type": "integer"
+        }
+      },
+      "X-RateLimit-Remaining": {
+        "description": "Доступное количество запросов в текущем временном окне",
+        "schema": {
+          "format": "int32",
+          "type": "integer"
+        }
+      }
+    },
+    "parameters": {
+      "authHeader": {
+        "description": "Токен для авторизации",
+        "example": "Bearer ACCESS_TOKEN",
+        "in": "header",
+        "name": "Authorization",
+        "required": true,
+        "schema": {
+          "type": "string"
+        }
+      },
+      "pathItemId": {
+        "description": "Идентификатор объявления на сайте",
+        "in": "path",
+        "name": "item_id",
+        "required": true,
+        "schema": {
+          "format": "int64",
+          "minimum": 1,
+          "type": "integer"
+        }
+      },
+      "pathUserId": {
+        "description": "Номер пользователя в Личном кабинете Авито",
+        "in": "path",
+        "name": "user_id",
+        "required": true,
+        "schema": {
+          "format": "int64",
+          "minimum": 1,
+          "type": "integer"
+        }
+      },
+      "skipError": {
+        "description": "Флаг, с которым вместо ошибок(если ошибка произошла с айтемом) возвращается 200 статус, без ошибки",
+        "in": "query",
+        "name": "skip_error",
+        "schema": {
+          "type": "boolean"
+        }
+      }
+    },
+    "schemas": {
+      "BaseParams": {
+        "description": "Базовые параметры",
+        "properties": {
+          "discount": {
+            "description": "Скидки при бронировании от threshold ночей",
+            "items": {
+              "properties": {
+                "percent": {
+                  "description": "Процент скидки от суммы бронирования",
+                  "format": "int64",
+                  "type": "integer"
+                },
+                "threshold": {
+                  "description": "Порог ночей, после которых применяется скидка",
+                  "enum": [
+                    3,
+                    7,
+                    30
+                  ],
+                  "format": "int64",
+                  "type": "integer"
+                }
+              },
+              "type": "object"
+            },
+            "type": "array"
+          },
+          "extra_guest_fee": {
+            "description": "Доплата за гостя (рубли)",
+            "format": "int64",
+            "nullable": true,
+            "type": "integer"
+          },
+          "extra_guest_threshold": {
+            "description": "Порог гостей, при котором цена - night_price",
+            "enum": [
+              1,
+              2,
+              3,
+              4,
+              5,
+              6,
+              7,
+              8
+            ],
+            "format": "int64",
+            "nullable": true,
+            "type": "integer"
+          },
+          "fees": {
+            "description": "Настройки доплат",
+            "nullable": true,
+            "properties": {
+              "cleaning": {
+                "description": "Доплата за уборку после выезда",
+                "nullable": true,
+                "properties": {
+                  "amount": {
+                    "description": "Сумма доплаты в рублях. Можно указать 0, если уборка включена в стоимость",
+                    "format": "int64",
+                    "type": "integer"
+                  }
+                },
+                "type": "object"
+              },
+              "pets": {
+                "description": "Доплата за проживание с питомцем",
+                "nullable": true,
+                "properties": {
+                  "allowed": {
+                    "description": "Разрешено ли размещение с питомцем",
+                    "type": "boolean"
+                  },
+                  "amount": {
+                    "description": "Стоимость проживания с питомцем в рублях",
+                    "format": "int64",
+                    "type": "integer"
+                  },
+                  "application": {
+                    "description": "Тип применения доплаты за питомца (за ночь, за бронь)",
+                    "enum": [
+                      "by_booking",
+                      "by_night"
+                    ],
+                    "type": "string"
+                  }
+                },
+                "type": "object"
+              }
+            },
+            "type": "object"
+          },
+          "instant": {
+            "description": "Параметры мгновенного бронирования",
+            "nullable": true,
+            "properties": {
+              "active": {
+                "description": "Включено ли мгновенное бронирование",
+                "type": "boolean"
+              },
+              "max_days": {
+                "description": "Максимальное количество дней до заселения для работы МБ (если нет, то без ограничений)",
+                "enum": [
+                  30,
+                  60,
+                  90,
+                  120,
+                  150
+                ],
+                "format": "int64",
+                "nullable": true,
+                "type": "integer"
+              },
+              "min_days": {
+                "description": "Минимальное количество дней до заселения для работы МБ (если нет, то без ограничений)",
+                "enum": [
+                  1,
+                  2,
+                  3,
+                  4,
+                  5
+                ],
+                "format": "int64",
+                "nullable": true,
+                "type": "integer"
+              }
+            },
+            "type": "object"
+          },
+          "minimal_duration": {
+            "description": "Минимальная продолжительность (ночи)",
+            "enum": [
+              1,
+              2,
+              3,
+              4,
+              5,
+              6,
+              7
+            ],
+            "format": "int32",
+            "nullable": true,
+            "type": "integer"
+          },
+          "night_price": {
+            "description": "Цена проживания за ночь (рубли)",
+            "format": "int64",
+            "nullable": true,
+            "type": "integer"
+          },
+          "refund": {
+            "description": "Параметры возврата",
+            "nullable": true,
+            "properties": {
+              "days": {
+                "description": "Количество дней до заезда, когда за отмену налагается штраф",
+                "enum": [
+                  0,
+                  1,
+                  3,
+                  5,
+                  7,
+                  14
+                ],
+                "format": "int64",
+                "type": "integer"
+              }
+            },
+            "type": "object"
+          }
+        },
+        "type": "object"
+      },
+      "Error": {
+        "properties": {
+          "error": {
+            "properties": {
+              "code": {
+                "description": "Код ошибки",
+                "format": "int32",
+                "type": "integer"
+              },
+              "message": {
+                "description": "Сообщение об ошибке",
+                "example": "error",
+                "type": "string"
+              }
+            },
+            "required": [
+              "code",
+              "message"
+            ],
+            "type": "object"
+          }
+        },
+        "type": "object"
+      },
+      "ParamPriceItemRealty": {
+        "description": "Параметры аренды для определённого периода",
+        "properties": {
+          "date_from": {
+            "description": "Дата начала периода, не в прошлом",
+            "example": "2018-05-01",
+            "format": "date",
+            "type": "string"
+          },
+          "date_to": {
+            "description": "Дата конца периода (включительно), не в прошлом",
+            "example": "2018-05-09",
+            "format": "date",
+            "type": "string"
+          },
+          "extra_guest_fee": {
+            "description": "Доплата за гостя (рубли)",
+            "example": 700,
+            "format": "int64",
+            "type": "integer"
+          },
+          "minimal_duration": {
+            "description": "Минимальная продолжительность (ночи), до 30 дней",
+            "example": 2,
+            "format": "int32",
+            "maximum": 30,
+            "minimum": 1,
+            "type": "integer"
+          },
+          "night_price": {
+            "description": "Цена проживания за ночь (рубли)",
+            "example": 1990,
+            "format": "int64",
+            "type": "integer"
+          }
+        },
+        "type": "object"
+      },
+      "ParamPricesRealty": {
+        "description": "Диапазоны дат и соответствующие им ценовые параметры",
+        "properties": {
+          "prices": {
+            "items": {
+              "$ref": "#/components/schemas/ParamPriceItemRealty"
+            },
+            "type": "array"
+          }
+        },
+        "type": "object"
+      },
+      "PostCalendarData": {
+        "description": "Информация о занятости объекта на определённые периоды",
+        "properties": {
+          "bookings": {
+            "description": "Список броней для выбранного объекта недвижимости (объявления)",
+            "items": {
+              "properties": {
+                "comment": {
+                  "description": "Дополнительная информация",
+                  "example": "Дополнительная информация",
+                  "nullable": true,
+                  "type": "string"
+                },
+                "date_end": {
+                  "description": "Дата окончания периода аренды, не в прошлом",
+                  "example": "2018-04-01",
+                  "format": "date",
+                  "type": "string"
+                },
+                "date_start": {
+                  "description": "Дата начала периода аренды, не в прошлом",
+                  "example": "2018-03-23",
+                  "format": "date",
+                  "type": "string"
+                },
+                "type": {
+                  "description": "Даты закрыты вручную или по данными другого OTA (manual, booking)",
+                  "enum": [
+                    "manual",
+                    "booking"
+                  ],
+                  "nullable": true,
+                  "type": "string"
+                }
+              },
+              "type": "object"
+            },
+            "type": "array"
+          },
+          "source": {
+            "description": "Название PMS системы",
+            "example": "pms",
+            "nullable": true,
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "PostCalendarDataV2": {
+        "description": "Информация о доступности объекта на заданные интервалы",
+        "properties": {
+          "intervals": {
+            "description": "Список интервалов для выбранного объявления",
+            "items": {
+              "properties": {
+                "date_end": {
+                  "description": "Дата окончания периода",
+                  "example": "2024-04-01",
+                  "format": "date",
+                  "type": "string"
+                },
+                "date_start": {
+                  "description": "Дата начала периода",
+                  "example": "2024-03-23",
+                  "format": "date",
+                  "type": "string"
+                },
+                "open": {
+                  "description": "Квота на заданные даты (> 0)",
+                  "example": 5,
+                  "type": "integer"
+                }
+              },
+              "type": "object"
+            },
+            "type": "array"
+          },
+          "item_id": {
+            "description": "ID объявления",
+            "example": 270000555,
+            "type": "integer"
+          },
+          "source": {
+            "description": "Название PMS системы",
+            "example": "pms",
+            "nullable": true,
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "RealtyBooking": {
+        "description": "Информация о бронировании",
+        "properties": {
+          "avito_booking_id": {
+            "description": "Идентификатор бронирования на Авито",
+            "example": 11111,
+            "type": "integer"
+          },
+          "base_price": {
+            "description": "Стоимость проживания на весь срок бронирования",
+            "example": 8000,
+            "type": "integer"
+          },
+          "check_in": {
+            "description": "Дата заезда гостей",
+            "example": "2018-08-01",
+            "format": "date",
+            "type": "string"
+          },
+          "check_out": {
+            "description": "Дата выезда гостей",
+            "example": "2018-08-04",
+            "format": "date",
+            "type": "string"
+          },
+          "contact": {
+            "description": "Контактная информация гостя",
+            "properties": {
+              "email": {
+                "description": "Контактный email",
+                "example": "guest_email@domain.com",
+                "type": "string"
+              },
+              "name": {
+                "description": "Имя гостя",
+                "example": "Иван",
+                "type": "string"
+              },
+              "phone": {
+                "description": "Номер телефона в 10-ти значном формате (только цифры)",
+                "example": "9997770000",
+                "type": "string"
+              }
+            },
+            "required": [
+              "name",
+              "email"
+            ],
+            "type": "object"
+          },
+          "guest_count": {
+            "description": "Количество гостей",
+            "example": 1,
+            "type": "integer"
+          },
+          "nights": {
+            "description": "Количество ночей",
+            "example": 3,
+            "type": "integer"
+          },
+          "safe_deposit": {
+            "description": "Сумма внесённой предоплаты",
+            "properties": {
+              "owner_amount": {
+                "description": "Сумма, которую получит владелец объекта",
+                "example": 4500,
+                "type": "integer"
+              },
+              "tax": {
+                "description": "Комиссия Авито",
+                "example": 500,
+                "type": "integer"
+              },
+              "total_amount": {
+                "description": "Фактическая сумма предоплаты",
+                "example": 5000,
+                "type": "integer"
+              }
+            },
+            "type": "object"
+          },
+          "status": {
+            "description": "Статус брони",
+            "enum": [
+              "active",
+              "canceled",
+              "pending"
+            ],
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "validatingError": {
+        "properties": {
+          "error": {
+            "properties": {
+              "code": {
+                "description": "Код ошибки",
+                "example": 400,
+                "format": "int32",
+                "type": "integer"
+              },
+              "fields": {
+                "additionalProperties": {},
+                "description": "Информация об ошибке валидации параметров в формате ключ-значение",
+                "nullable": true,
+                "type": "object"
+              },
+              "message": {
+                "description": "Сообщение об ошибке",
+                "example": "Validation error",
+                "type": "string"
+              }
+            },
+            "required": [
+              "code",
+              "message"
+            ],
+            "type": "object"
+          }
+        },
+        "type": "object"
+      }
+    },
+    "securitySchemes": {
+      "AuthorizationCode": {
+        "description": "Это API использует OAuth 2 с механизмом authorization_code. Используйте его для доступа к данным других пользователей при разработке стороннего приложения. [Подробнее](/api-catalog/auth/documentation#tag/ApplicationAccess)",
+        "flows": {
+          "authorizationCode": {
+            "authorizationUrl": "https://avito.ru/oauth",
+            "scopes": {
+              "autoload:reports": "Получение отчетов Автозагрузки",
+              "items:apply_vas": "Применение дополнительных услуг",
+              "items:info": "Получение информации об объявлениях",
+              "job:applications": "Получение информации об откликах на вакансии",
+              "job:cv": "Получение информации резюме",
+              "job:write": "Изменение объявлений вертикали Работа",
+              "messenger:read": "Чтение сообщений в мессенджере Авито",
+              "messenger:write": "Модифицирование сообщений в мессенджере Авито",
+              "short_term_rent:read": "Получение информации об объявлениях краткосрочной аренды",
+              "short_term_rent:write": "Изменение объявлений краткосрочной аренды",
+              "stats:read": "Получение статистики объявлений",
+              "user:read": "Получение информации о пользователе",
+              "user_balance:read": "Получение баланса пользователя",
+              "user_operations:read": "Получение истории операций пользователя"
+            },
+            "tokenUrl": "https://api.avito.ru/token"
+          }
+        },
+        "type": "oauth2"
+      },
+      "ClientCredentials": {
+        "description": "Это API использует OAuth 2 с механизмом client_credentials. Используйте его для доступа к возможностям своей личной учетной записи. [Подробнее](#tag/Access)",
+        "flows": {
+          "clientCredentials": {
+            "scopes": {},
+            "tokenUrl": "https://api.avito.ru/token"
+          }
+        },
+        "type": "oauth2"
+      }
+    }
+  },
+  "info": {
+    "contact": {
+      "email": "supportautoload@avito.ru"
+    },
+    "description": "Методы API для партнёров для работы с API краткосрочной аренды (STR)\n",
+    "title": "Краткосрочная аренда",
+    "version": "1"
+  },
+  "openapi": "3.0.0",
+  "paths": {
+    "/core/v1/accounts/{user_id}/items/{item_id}/bookings": {
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/authHeader"
+        },
+        {
+          "$ref": "#/components/parameters/pathUserId"
+        },
+        {
+          "$ref": "#/components/parameters/pathItemId"
+        }
+      ],
+      "post": {
+        "description": "Заполнение календаря занятости объекта недвижимости (для краткосрочной аренды)\n",
+        "operationId": "putBookingsInfo",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "example": {
+                "bookings": [
+                  {
+                    "comment": "Комментарий",
+                    "date_end": "2018-03-24",
+                    "date_start": "2018-03-23"
+                  },
+                  {
+                    "date_end": "2018-03-25",
+                    "date_start": "2018-03-24",
+                    "type": "manual"
+                  },
+                  {
+                    "date_end": "2018-03-26",
+                    "date_start": "2018-03-25",
+                    "type": "booking"
+                  }
+                ],
+                "source": "pms"
+              },
+              "schema": {
+                "$ref": "#/components/schemas/PostCalendarData"
+              }
+            }
+          },
+          "description": "Последний день брони доступен для пользователя (открытый конец),\nтак, бронь в один день занимается промежутком в два дня.\nПромежутки не должны пересекаться (допустимо совпадение конца одной брони и начала второй в силу открытости).\nПри пересечении любого интервала с оплаченной бронью на Авито, будет возвращена ошибка.  Ни один из интервалов в запросе не будет закрыт.\n"
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "result": {
+                      "description": "Результат обработки запроса",
+                      "enum": [
+                        "success"
+                      ],
+                      "type": "string"
+                    }
+                  },
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Успешный ответ"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Bad request"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Пользователь не владеет айтемом"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Айтем не найден"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "На заданные даты есть оплаченные брони"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/validatingError"
+                }
+              }
+            },
+            "description": "Неверные данные"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Внутренняя ошибка"
+          }
+        },
+        "security": [
+          {
+            "AuthorizationCode": [
+              "short_term_rent:write"
+            ]
+          },
+          {
+            "ClientCredentials": []
+          }
+        ],
+        "summary": "Заполнение календаря занятости объекта недвижимости",
+        "tags": [
+          "Realty"
+        ]
+      }
+    },
+    "/realty/v1/accounts/{user_id}/items/{item_id}/bookings": {
+      "get": {
+        "description": "Возвращает информацию о бронированиях объекта за весь период.\n",
+        "operationId": "getRealtyBookings",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "bookings": {
+                      "description": "Список броней",
+                      "items": {
+                        "$ref": "#/components/schemas/RealtyBooking"
+                      },
+                      "type": "array"
+                    }
+                  },
+                  "required": [
+                    "bookings"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Успешный ответ"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Bad request"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Пользователь не владеет айтемом"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Айтем не найден"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/validatingError"
+                }
+              }
+            },
+            "description": "Неверные данные"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Внутренняя ошибка"
+          }
+        },
+        "security": [
+          {
+            "AuthorizationCode": [
+              "short_term_rent:read"
+            ]
+          },
+          {
+            "ClientCredentials": []
+          }
+        ],
+        "summary": "Получение списка броней по объявлению\n",
+        "tags": [
+          "Realty"
+        ]
+      },
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/authHeader"
+        },
+        {
+          "$ref": "#/components/parameters/pathUserId"
+        },
+        {
+          "$ref": "#/components/parameters/pathItemId"
+        },
+        {
+          "$ref": "#/components/parameters/skipError"
+        },
+        {
+          "description": "Фильтр, ограничивающий выборку по нижней границе дат, не в прошлом",
+          "in": "query",
+          "name": "date_start",
+          "required": true,
+          "schema": {
+            "example": "2018-01-01",
+            "format": "date",
+            "type": "string"
+          }
+        },
+        {
+          "description": "Фильтр, ограничивающий выборку по верхней границе дат, не в прошлом",
+          "in": "query",
+          "name": "date_end",
+          "required": true,
+          "schema": {
+            "example": "2018-05-01",
+            "format": "date",
+            "type": "string"
+          }
+        },
+        {
+          "description": "Флаг, позволяющий получить неоплаченные брони (возвращаются в статусе pending)",
+          "in": "query",
+          "name": "with_unpaid",
+          "schema": {
+            "example": true,
+            "type": "boolean"
+          }
+        }
+      ]
+    },
+    "/realty/v1/accounts/{user_id}/items/{item_id}/prices": {
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/authHeader"
+        },
+        {
+          "$ref": "#/components/parameters/pathUserId"
+        },
+        {
+          "$ref": "#/components/parameters/pathItemId"
+        },
+        {
+          "$ref": "#/components/parameters/skipError"
+        }
+      ],
+      "post": {
+        "description": "Обновляет параметры (цена за ночь, доплата за гостя, минимальная продолжительность брони) для каждого из переданных диапазонов дат, изменения применяются к каждой дате диапазона. В случае, если на занимаемые даты есть брони в неподтвержденных статусах, то брони переводятся в статус overbook.\n",
+        "operationId": "postRealtyPrices",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "example": {
+                "prices": [
+                  {
+                    "date_from": "2018-06-02",
+                    "date_to": "2018-06-14",
+                    "extra_guest_fee": 500,
+                    "minimal_duration": 1,
+                    "night_price": 1500
+                  },
+                  {
+                    "date_from": "2018-06-15",
+                    "date_to": "2018-06-15",
+                    "extra_guest_fee": 1000,
+                    "minimal_duration": 7,
+                    "night_price": 5000
+                  }
+                ]
+              },
+              "schema": {
+                "$ref": "#/components/schemas/ParamPricesRealty"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "result": {
+                      "description": "Результат обработки запроса",
+                      "enum": [
+                        "success"
+                      ],
+                      "type": "string"
+                    }
+                  },
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Успешный ответ"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Bad request"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Пользователь не владеет айтемом"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Айтем не найден"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/validatingError"
+                }
+              }
+            },
+            "description": "Неверные данные"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Внутренняя ошибка"
+          }
+        },
+        "security": [
+          {
+            "AuthorizationCode": [
+              "short_term_rent:write"
+            ]
+          },
+          {
+            "ClientCredentials": []
+          }
+        ],
+        "summary": "Актуализация параметров для выбранных периодов\n",
+        "tags": [
+          "Realty"
+        ]
+      }
+    },
+    "/realty/v1/items/intervals": {
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/authHeader"
+        },
+        {
+          "$ref": "#/components/parameters/skipError"
+        }
+      ],
+      "post": {
+        "description": "Заполнение календаря доступности объекта недвижимости с квотами и без (для краткосрочной аренды)\n",
+        "operationId": "putIntervals",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "example": {
+                "intervals": [
+                  {
+                    "date_end": "2024-03-24",
+                    "date_start": "2024-03-23",
+                    "open": 10
+                  },
+                  {
+                    "date_end": "2024-03-25",
+                    "date_start": "2024-03-24",
+                    "open": 2
+                  }
+                ],
+                "item_id": 270000555,
+                "source": "pms"
+              },
+              "schema": {
+                "$ref": "#/components/schemas/PostCalendarDataV2"
+              }
+            }
+          },
+          "description": "Последний день интервала недоступен для пользователя (открытый конец), так, открытость одного дня  указывается промежутком в два дня. Интервалы на год вперед, которые не приходят в запросе, считаются закрытыми. Возможен пустой список во входном запросе: в этом случае считается, что продажи закрыты на год вперед. Промежутки не должны пересекаться (допустимо совпадение конца одного и начала другого). Работает как для объявлений с квотами, так и для обычных объявлений.\n"
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "result": {
+                      "description": "Результат обработки запроса",
+                      "enum": [
+                        "success"
+                      ],
+                      "type": "string"
+                    }
+                  },
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Успешный ответ"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Bad request"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Пользователь не владеет айтемом"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Айтем не найден"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/validatingError"
+                }
+              }
+            },
+            "description": "Неверные данные"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Внутренняя ошибка"
+          }
+        },
+        "security": [
+          {
+            "AuthorizationCode": [
+              "short_term_rent:write"
+            ]
+          },
+          {
+            "ClientCredentials": []
+          }
+        ],
+        "summary": "Заполнение доступности объекта недвижимости с квотами и без",
+        "tags": [
+          "Realty"
+        ]
+      }
+    },
+    "/realty/v1/items/{item_id}/base": {
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/authHeader"
+        },
+        {
+          "$ref": "#/components/parameters/pathItemId"
+        }
+      ],
+      "post": {
+        "description": "Обновляет базовые параметры: цена за ночь, минимальное количество ночей, доплата за гостя,  количество гостей больше которых активируется опция доплаты за гостя, период бесплатной отмены, параметры мгновенного бронирования (активность, максимальное/минимальное количество дней до заселения), скидки на бронирование.\n",
+        "operationId": "postBaseParams",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "example": {
+                "discount": [
+                  {
+                    "percent": 10,
+                    "threshold": 3
+                  },
+                  {
+                    "percent": 15,
+                    "threshold": 7
+                  }
+                ],
+                "extra_guest_fee": 500,
+                "extra_guest_threshold": 4,
+                "instant": {
+                  "active": true,
+                  "max_days": 30,
+                  "min_days": 3
+                },
+                "minimal_duration": 1,
+                "night_price": 3000,
+                "refund": {
+                  "days": 7
+                }
+              },
+              "schema": {
+                "$ref": "#/components/schemas/BaseParams"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Успешный ответ"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Bad request"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Пользователь не владеет айтемом"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Айтем не найден"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/validatingError"
+                }
+              }
+            },
+            "description": "Неверные данные"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Внутренняя ошибка"
+          }
+        },
+        "security": [
+          {
+            "AuthorizationCode": [
+              "short_term_rent:write"
+            ]
+          },
+          {
+            "ClientCredentials": []
+          }
+        ],
+        "summary": "Установка базовых параметров\n"
+      }
+    }
+  },
+  "servers": [
+    {
+      "url": "https://api.avito.ru/"
+    }
+  ],
+  "tags": [
+    {
+      "description": "# Методы API для партнёров для работы с API краткосрочной аренды (STR)\nОписание API произведено в формате [**Swagger 3.0**](https://github.com/OAI/OpenAPI-Specification/blob/master/versions/3.0.0.md).\nВы можете использовать данный файл для ознакомления с методами API, а также для генерации базового\nкода для работы с API на удобном для вас языке программирования с помощью утилиты\n[**Swagger Codegen**](https://swagger.io/swagger-codegen/) или online сервиса [**Swagger Editor**](https://editor.swagger.io/).\n\n**Авито API для бизнеса предоставляется согласно [Условиям использования](https://www.avito.ru/legal/pro_tools/public-api).**\n\nПо всем вопросам работы с API необходимо обращаться в Службу Поддержки профессиональных инструментов:\n\n<li>телефон: <b>+7 495 777-10-66</b></li>\n<li>email: <a href=\"mailto:supportautoload@avito.ru\">supportautoload@avito.ru</a></li>\n\n# Типы авторизации\nДля использования данного API запрос должен быть авторизован. В данный момент API Авито использует следующие механизмы авторизации.\n\n<!-- ReDoc-Inject: <security-definitions> -->\n\nПодробнее о каждом механизме и его назначении можно прочитать в соответствующем разделе.\n",
+      "name": "Realty",
+      "x-displayName": "Краткосрочная аренда"
+    }
+  ]
+}

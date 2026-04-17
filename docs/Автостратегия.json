@@ -1,0 +1,1954 @@
+{
+  "components": {
+    "headers": {
+      "X-RateLimit-Limit": {
+        "description": "Количество запросов в минуту",
+        "schema": {
+          "format": "int32",
+          "type": "integer"
+        }
+      },
+      "X-RateLimit-Remaining": {
+        "description": "Доступное количество запросов в текущем временном окне",
+        "schema": {
+          "format": "int32",
+          "type": "integer"
+        }
+      }
+    },
+    "parameters": {
+      "authHeader": {
+        "description": "Токен для авторизации",
+        "in": "header",
+        "name": "Authorization",
+        "required": true,
+        "schema": {
+          "example": "Bearer ACCESS_TOKEN",
+          "type": "string"
+        }
+      }
+    },
+    "schemas": {
+      "Budget": {
+        "description": "Бюджет кампании",
+        "nullable": true,
+        "properties": {
+          "maximal": {
+            "description": "Максимальный бюджет кампании в рублях.<br/>**Возвращается только для типа кампании `AP`**",
+            "example": {
+              "bonus": 1000,
+              "callsFrom": 6,
+              "callsTo": 10,
+              "real": 100000,
+              "total": 101000,
+              "viewsFrom": 50,
+              "viewsTo": 80
+            },
+            "nullable": true,
+            "properties": {
+              "bonus": {
+                "description": "Значение бюджета в рублях, которое можно списать за счет бонусов",
+                "nullable": true,
+                "type": "integer"
+              },
+              "callsFrom": {
+                "description": "Нижняя граница предсказания звонков (только для типа кампании Автопилот)",
+                "nullable": true,
+                "type": "integer"
+              },
+              "callsTo": {
+                "description": "Верхняя граница предсказания звонков (только для типа кампании Автопилот)",
+                "nullable": true,
+                "type": "integer"
+              },
+              "real": {
+                "description": "Бюджет в рублях",
+                "nullable": true,
+                "type": "integer"
+              },
+              "total": {
+                "description": "Суммарный бюджет в рублях",
+                "type": "integer"
+              },
+              "viewsFrom": {
+                "description": "Нижняя граница предсказания просмотров (только для типа кампании Автопилот)",
+                "nullable": true,
+                "type": "integer"
+              },
+              "viewsTo": {
+                "description": "Верхняя граница предсказания просмотров (только для типа кампании Автопилот)",
+                "nullable": true,
+                "type": "integer"
+              }
+            },
+            "type": "object"
+          },
+          "minimal": {
+            "description": "Минимальный возможный бюджет кампании в рублях",
+            "example": {
+              "bonus": 10,
+              "callsFrom": 1,
+              "callsTo": 3,
+              "real": 1000,
+              "total": 1010,
+              "viewsFrom": 10,
+              "viewsTo": 20
+            },
+            "properties": {
+              "bonus": {
+                "description": "Значение бюджета в рублях, которое можно списать за счет бонусов",
+                "nullable": true,
+                "type": "integer"
+              },
+              "callsFrom": {
+                "description": "Нижняя граница предсказания звонков (только для типа кампании Автопилот)",
+                "nullable": true,
+                "type": "integer"
+              },
+              "callsTo": {
+                "description": "Верхняя граница предсказания звонков (только для типа кампании Автопилот)",
+                "nullable": true,
+                "type": "integer"
+              },
+              "real": {
+                "description": "Бюджет в рублях",
+                "nullable": true,
+                "type": "integer"
+              },
+              "total": {
+                "description": "Суммарный бюджет в рублях",
+                "type": "integer"
+              },
+              "viewsFrom": {
+                "description": "Нижняя граница предсказания просмотров (только для типа кампании Автопилот)",
+                "nullable": true,
+                "type": "integer"
+              },
+              "viewsTo": {
+                "description": "Верхняя граница предсказания просмотров (только для типа кампании Автопилот)",
+                "nullable": true,
+                "type": "integer"
+              }
+            },
+            "type": "object"
+          },
+          "priceRanges": {
+            "description": "Ценовые диапазоны покрытия склада (**только для типа кампании `AP`**) и предсказания.",
+            "items": {
+              "properties": {
+                "callsFrom": {
+                  "description": "Нижняя граница предсказания звонков",
+                  "example": 4,
+                  "type": "integer"
+                },
+                "callsTo": {
+                  "description": "Верхняя граница предсказания звонков",
+                  "example": 7,
+                  "type": "integer"
+                },
+                "percent": {
+                  "description": "Процент покрытия склада<br/>**Возвращается только для типа кампании `AP`**",
+                  "example": 95,
+                  "type": "integer"
+                },
+                "priceFrom": {
+                  "description": "Начало ценового диапазона",
+                  "example": 10000,
+                  "type": "integer"
+                },
+                "priceTo": {
+                  "description": "Конец ценового диапазона",
+                  "example": 20000,
+                  "type": "integer"
+                },
+                "viewsFrom": {
+                  "description": "Нижняя граница предсказания просмотров",
+                  "example": 50,
+                  "type": "integer"
+                },
+                "viewsTo": {
+                  "description": "Верхняя граница предсказания просмотров",
+                  "example": 80,
+                  "type": "integer"
+                }
+              },
+              "required": [
+                "priceFrom",
+                "priceTo",
+                "callsFrom",
+                "callsTo",
+                "viewsFrom",
+                "viewsTo"
+              ],
+              "type": "object"
+            },
+            "type": "array"
+          },
+          "recommended": {
+            "description": "Рекомендуемый бюджет кампании в рублях",
+            "example": {
+              "bonus": 100,
+              "callsFrom": 4,
+              "callsTo": 7,
+              "real": 10000,
+              "total": 10100,
+              "viewsFrom": 30,
+              "viewsTo": 50
+            },
+            "properties": {
+              "bonus": {
+                "description": "Значение бюджета в рублях, которое можно списать за счет бонусов",
+                "nullable": true,
+                "type": "integer"
+              },
+              "callsFrom": {
+                "description": "Нижняя граница предсказания звонков (только для типа кампании Автопилот)",
+                "nullable": true,
+                "type": "integer"
+              },
+              "callsTo": {
+                "description": "Верхняя граница предсказания звонков (только для типа кампании Автопилот)",
+                "nullable": true,
+                "type": "integer"
+              },
+              "real": {
+                "description": "Бюджет в рублях",
+                "nullable": true,
+                "type": "integer"
+              },
+              "total": {
+                "description": "Суммарный бюджет в рублях",
+                "type": "integer"
+              },
+              "viewsFrom": {
+                "description": "Нижняя граница предсказания просмотров (только для типа кампании Автопилот)",
+                "nullable": true,
+                "type": "integer"
+              },
+              "viewsTo": {
+                "description": "Верхняя граница предсказания просмотров (только для типа кампании Автопилот)",
+                "nullable": true,
+                "type": "integer"
+              }
+            },
+            "type": "object"
+          }
+        },
+        "type": "object"
+      },
+      "Campaign": {
+        "description": "Кампания",
+        "nullable": true,
+        "properties": {
+          "balance": {
+            "description": "Оставшиеся средства от всего бюджета на продвижение кампании",
+            "example": 1000,
+            "type": "integer"
+          },
+          "budget": {
+            "description": "Бюджет кампании в рублях",
+            "example": 10000,
+            "type": "integer"
+          },
+          "campaignId": {
+            "description": "Идентификатор кампании",
+            "example": 3456432,
+            "type": "integer"
+          },
+          "campaignType": {
+            "description": "Тип кампании. Возможные типы:<br/> `AS` - Автостратегия. Cтратегия расчитана на определенное количество автомобилей, которые находятся в продаже<br/> `AP` - Автопилот. Cтратегия расчитана на все автомобили, которые находятся в продаже<br/>",
+            "example": "AS",
+            "type": "string"
+          },
+          "createTime": {
+            "description": "Время создания кампании",
+            "example": "2018-08-24T14:15:22Z",
+            "format": "date-time",
+            "type": "string"
+          },
+          "description": {
+            "description": "Новое описание кампании",
+            "example": "Toyota, Lexus, BMW, Audi 2019 и 2020 года выпуска",
+            "type": "string"
+          },
+          "finishTime": {
+            "description": "Время окончания кампании",
+            "example": "2020-08-24T14:15:22Z",
+            "format": "date-time",
+            "type": "string"
+          },
+          "itemsCount": {
+            "description": "Количество объявлений, которые продвигаются с помощью данной кампании",
+            "example": 10,
+            "type": "integer"
+          },
+          "startTime": {
+            "description": "Время начала кампании",
+            "example": "2019-08-24T14:15:22Z",
+            "format": "date-time",
+            "type": "string"
+          },
+          "statusId": {
+            "description": "Статусы кампании для выборки. Возможные статусы:<br/> `0` - Черновик, дата старта сегодня или раньше, денег на балансе нет<br/> `1` - Активная кампания, участвует в аукционе<br/> `2` - Кампания приостановлена<br/> `3` - Кампания удалена<br/> `4` - Кампания остановлена<br/> `5` - Кампания запланирована, дата старта завтра или позже, на балансе есть деньги<br/>",
+            "example": 1,
+            "type": "integer"
+          },
+          "title": {
+            "description": "Новое название кампании",
+            "example": "Внедорожники Москвы и Санкт-Петербурга",
+            "type": "string"
+          },
+          "updateTime": {
+            "description": "Время последнего обновления кампании",
+            "example": "2020-01-01T14:15:22Z",
+            "format": "date-time",
+            "type": "string"
+          },
+          "userId": {
+            "description": "Идентификатор пользователя-владельца кампании",
+            "example": 345632234325,
+            "type": "integer"
+          },
+          "version": {
+            "description": "Текущая версия кампании",
+            "example": 3,
+            "type": "integer"
+          }
+        },
+        "type": "object"
+      },
+      "Campaigns": {
+        "description": "Список кампаний",
+        "properties": {
+          "campaigns": {
+            "description": "Список кампаний, удовлетворяющих фильтрам, с учетом смещения и ограничения",
+            "items": {
+              "$ref": "#/components/schemas/Campaign"
+            },
+            "type": "array"
+          },
+          "totalCount": {
+            "description": "Общее количество кампаний, удовлетворяющих фильтрам",
+            "example": 10,
+            "type": "integer"
+          }
+        },
+        "type": "object"
+      },
+      "ConflictError": {
+        "properties": {
+          "error": {
+            "properties": {
+              "code": {
+                "description": "Код ошибки. Возможные ошибки:<br/> `2` - кампания не найдена<br/>",
+                "example": 2,
+                "format": "int32",
+                "type": "integer"
+              },
+              "message": {
+                "description": "Сообщение об ошибке",
+                "example": "campaign not found",
+                "type": "string"
+              }
+            },
+            "type": "object"
+          }
+        },
+        "type": "object"
+      },
+      "CreateCampaignBadRequestError": {
+        "properties": {
+          "error": {
+            "properties": {
+              "fieldErrors": {
+                "description": "Описание ошибок валидации полей",
+                "properties": {
+                  "budget": {
+                    "description": "Ошибка валидации поля **budget**",
+                    "type": "string"
+                  },
+                  "budgetBonus": {
+                    "description": "Ошибка валидации поля **budgetBonus**",
+                    "type": "string"
+                  },
+                  "budgetReal": {
+                    "description": "Ошибка валидации поля **budgetReal**",
+                    "type": "string"
+                  },
+                  "campaignType": {
+                    "description": "Ошибка валидации поля **campaignType**",
+                    "type": "string"
+                  },
+                  "description": {
+                    "description": "Ошибка валидации поля **description**",
+                    "type": "string"
+                  },
+                  "finishTime": {
+                    "description": "Ошибка валидации поля **finishTime**",
+                    "type": "string"
+                  },
+                  "items": {
+                    "description": "Ошибка валидации поля **items**",
+                    "type": "string"
+                  },
+                  "startTime": {
+                    "description": "Ошибка валидации поля **startTime**",
+                    "type": "string"
+                  },
+                  "title": {
+                    "description": "Ошибка валидации поля **title**",
+                    "type": "string"
+                  }
+                },
+                "type": "object"
+              },
+              "message": {
+                "description": "Сообщение об ошибке",
+                "example": "bad request",
+                "type": "string"
+              }
+            },
+            "required": [
+              "message"
+            ],
+            "type": "object"
+          }
+        },
+        "type": "object"
+      },
+      "CreateCampaignConflictError": {
+        "properties": {
+          "error": {
+            "properties": {
+              "code": {
+                "description": "Код ошибки. Возможные ошибки:<br/> `1` - общий бюджет меньше минимального<br/> `2` - реальный бюджет меньше минимального<br/> `3` - недостаточно бонусов на счете<br/> `5` - часть или все объявления уже продвигаются<br/> `6` - тариф не активен<br/> `7` - бюджет выше максимального<br/>",
+                "example": 6,
+                "format": "int32",
+                "type": "integer"
+              },
+              "message": {
+                "description": "Сообщение об ошибке",
+                "example": "create campaign failed",
+                "type": "string"
+              }
+            },
+            "type": "object"
+          }
+        },
+        "type": "object"
+      },
+      "CreateCampaignRequestBody": {
+        "properties": {
+          "budget": {
+            "description": "Выделенный бюджет на кампанию в рублях.<br/>**Обязательно только для типа кампании `AS`**",
+            "example": 10000,
+            "type": "integer"
+          },
+          "budgetBonus": {
+            "description": "Бонусная часть бюджета, в рублях, которая спишется засчет бонусов.<br/>**Может быть только для типа кампании `AP`**",
+            "example": 100,
+            "type": "integer"
+          },
+          "budgetReal": {
+            "description": "Часть бюджета на кампанию в рублях.<br/>**Обязательно только для типа кампании `AP`**",
+            "example": 10000,
+            "type": "integer"
+          },
+          "calcId": {
+            "description": "Идентфикатор расчета бюджета из ответа ручки `/autostrategy/v1/budget`",
+            "example": 123,
+            "nullable": true,
+            "type": "integer"
+          },
+          "campaignType": {
+            "description": "Тип кампании. Возможные типы:<br/> `AS` - Автостратегия. Cтратегия расчитана на определенное количество автомобилей, которые находятся в продаже<br/> `AP` - Автопилот. Cтратегия расчитана на все автомобили, которые находятся в продаже<br/>",
+            "example": "AS",
+            "type": "string"
+          },
+          "description": {
+            "description": "Описание кампании",
+            "example": "Toyota, Lexus, BMW 2020 года выпуска",
+            "type": "string"
+          },
+          "finishTime": {
+            "description": "Время окончания кампании.<br/>**Обязательно только для типа кампании `AS`**",
+            "example": "2019-10-24T14:15:22Z",
+            "format": "date-time",
+            "type": "string"
+          },
+          "items": {
+            "description": "Список индентификаторов объявлений, которые будут продвигаться с помощью данной кампании.<br/>**Обязательно только для типа кампании `AS`**",
+            "example": [
+              123123214,
+              455454235,
+              87746346
+            ],
+            "items": {
+              "type": "integer"
+            },
+            "type": "array"
+          },
+          "startTime": {
+            "description": "Время начала кампании.<br/>**Обязательно только для типа кампании `AS`**",
+            "example": "2019-08-24T14:15:22Z",
+            "format": "date-time",
+            "type": "string"
+          },
+          "title": {
+            "description": "Название кампании",
+            "example": "Внедорожники Москвы",
+            "type": "string"
+          }
+        },
+        "required": [
+          "campaignType",
+          "title"
+        ],
+        "type": "object"
+      },
+      "EditCampaignBadRequestError": {
+        "properties": {
+          "error": {
+            "properties": {
+              "fieldErrors": {
+                "description": "Описание ошибок валидации полей",
+                "properties": {
+                  "budget": {
+                    "description": "Ошибка валидации поля **budget**",
+                    "type": "string"
+                  },
+                  "campaignId": {
+                    "description": "Ошибка валидации поля **campaignId**",
+                    "type": "string"
+                  },
+                  "description": {
+                    "description": "Ошибка валидации поля **description**",
+                    "type": "string"
+                  },
+                  "finishTime": {
+                    "description": "Ошибка валидации поля **finishTime**",
+                    "type": "string"
+                  },
+                  "items": {
+                    "description": "Ошибка валидации поля **items**",
+                    "type": "string"
+                  },
+                  "startTime": {
+                    "description": "Ошибка валидации поля **startTime**",
+                    "type": "string"
+                  },
+                  "title": {
+                    "description": "Ошибка валидации поля **title**",
+                    "type": "string"
+                  },
+                  "version": {
+                    "description": "Ошибка валидации поля **version**",
+                    "type": "string"
+                  }
+                },
+                "type": "object"
+              },
+              "message": {
+                "description": "Сообщение об ошибке",
+                "example": "bad request",
+                "type": "string"
+              }
+            },
+            "required": [
+              "message"
+            ],
+            "type": "object"
+          }
+        },
+        "type": "object"
+      },
+      "EditCampaignConflictError": {
+        "properties": {
+          "error": {
+            "properties": {
+              "code": {
+                "description": "Код ошибки. Возможные ошибки:<br/> `2` - кампания не найдена<br/>",
+                "example": 2,
+                "format": "int32",
+                "type": "integer"
+              },
+              "message": {
+                "description": "Сообщение об ошибке",
+                "example": "edit campaign failed",
+                "type": "string"
+              }
+            },
+            "type": "object"
+          }
+        },
+        "type": "object"
+      },
+      "EditCampaignRequestBody": {
+        "properties": {
+          "budget": {
+            "description": "Новый бюджет кампании в рублях",
+            "example": 1000,
+            "type": "integer"
+          },
+          "calcId": {
+            "description": "Идентификатор расчета бюджета из ответа ручки `/autostrategy/v1/budget`",
+            "example": 123,
+            "nullable": true,
+            "type": "integer"
+          },
+          "campaignId": {
+            "description": "Идентификатор активной кампании",
+            "example": 3456432,
+            "type": "integer"
+          },
+          "description": {
+            "description": "Новое описание кампании",
+            "example": "Toyota, Lexus, BMW, Audi 2019 и 2020 года выпуска",
+            "type": "string"
+          },
+          "finishTime": {
+            "description": "Новое время окончания кампании",
+            "example": "2020-08-24T14:15:22Z",
+            "format": "date-time",
+            "type": "string"
+          },
+          "items": {
+            "description": "Новый список индентификаторов объявлений, которые будут продвигаться с помощью данной кампании",
+            "example": [
+              123123214,
+              455454235,
+              87746346
+            ],
+            "items": {
+              "type": "integer"
+            },
+            "type": "array"
+          },
+          "startTime": {
+            "description": "Новое время начала кампании",
+            "example": "2019-08-24T14:15:22Z",
+            "format": "date-time",
+            "type": "string"
+          },
+          "title": {
+            "description": "Новое название кампании",
+            "example": "Внедорожники Москвы и Санкт-Петербурга",
+            "type": "string"
+          },
+          "version": {
+            "description": "Текущая версия кампании",
+            "example": 3,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "campaignId",
+          "version"
+        ],
+        "type": "object"
+      },
+      "GetBudgetBadRequestError": {
+        "properties": {
+          "error": {
+            "properties": {
+              "fieldErrors": {
+                "description": "Описание ошибок валидации полей",
+                "properties": {
+                  "campaignType": {
+                    "description": "Ошибка валидации поля **campaignType**",
+                    "type": "string"
+                  },
+                  "finishTime": {
+                    "description": "Ошибка валидации поля **finishTime**",
+                    "type": "string"
+                  },
+                  "items": {
+                    "description": "Ошибка валидации поля **items**",
+                    "type": "string"
+                  },
+                  "startTime": {
+                    "description": "Ошибка валидации поля **startTime**",
+                    "type": "string"
+                  }
+                },
+                "type": "object"
+              },
+              "message": {
+                "description": "Сообщение об ошибке",
+                "example": "bad request",
+                "type": "string"
+              }
+            },
+            "required": [
+              "message"
+            ],
+            "type": "object"
+          }
+        },
+        "type": "object"
+      },
+      "GetBudgetConflictError": {
+        "properties": {
+          "error": {
+            "properties": {
+              "code": {
+                "description": "Код ошибки. Возможные ошибки:<br/> `1` - Слишком много объявлений для расчета бюджета<br/> `6` - Тариф не активен<br/>",
+                "example": 6,
+                "format": "int32",
+                "type": "integer"
+              },
+              "message": {
+                "description": "Сообщение об ошибке",
+                "example": "get budget failed",
+                "type": "string"
+              }
+            },
+            "type": "object"
+          }
+        },
+        "type": "object"
+      },
+      "GetBudgetRequestBody": {
+        "properties": {
+          "campaignType": {
+            "description": "Тип кампании. Возможные типы:<br/> `AS` - Автостратегия. Cтратегия расчитана на определенное количество автомобилей, которые находятся в продаже<br/> `AP` - Автопилот. Cтратегия расчитана на все автомобили, которые находятся в продаже<br/>",
+            "example": "AS",
+            "type": "string"
+          },
+          "finishTime": {
+            "description": "Время окончания кампании.<br/>**Обязательно только для типа кампании `AS`**",
+            "example": "2020-08-24T14:15:22Z",
+            "format": "date-time",
+            "type": "string"
+          },
+          "items": {
+            "description": "Список индентификаторов объявлений, которые будут продвигаться с помощью данной кампании. <br/>**Обязательно только для типа кампании `AS`**",
+            "example": [
+              123123214,
+              455454235,
+              87746346
+            ],
+            "items": {
+              "type": "integer"
+            },
+            "type": "array"
+          },
+          "startTime": {
+            "description": "Время начала кампании.<br/>**Обязательно только для типа кампании `AS`**",
+            "example": "2019-08-24T14:15:22Z",
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "campaignType"
+        ],
+        "type": "object"
+      },
+      "GetCampaignInfoBadRequestError": {
+        "properties": {
+          "error": {
+            "properties": {
+              "fieldErrors": {
+                "description": "Описание ошибок валидации полей",
+                "properties": {
+                  "campaignId": {
+                    "description": "Ошибка валидации поля **campaignId**",
+                    "type": "string"
+                  }
+                },
+                "type": "object"
+              },
+              "message": {
+                "description": "Сообщение об ошибке",
+                "example": "bad request",
+                "type": "string"
+              }
+            },
+            "required": [
+              "message"
+            ],
+            "type": "object"
+          }
+        },
+        "type": "object"
+      },
+      "GetCampaignInfoForecastResult": {
+        "description": "Предсказание звонков и просмотров на завтра",
+        "properties": {
+          "calls": {
+            "description": "Предсказание звонков",
+            "properties": {
+              "from": {
+                "description": "Нижняя граница предсказания",
+                "example": 10,
+                "type": "integer"
+              },
+              "lackReason": {
+                "description": "Причина отсутствия прогноза, приходит при to = 0",
+                "enum": [
+                  "not_enough_data",
+                  "no_calltracking"
+                ],
+                "example": "no_calltracking",
+                "nullable": true,
+                "type": "string"
+              },
+              "to": {
+                "description": "Верхняя граница предсказания",
+                "example": 20,
+                "type": "integer"
+              }
+            },
+            "required": [
+              "from",
+              "to"
+            ],
+            "type": "object"
+          },
+          "views": {
+            "description": "Предсказание просмотров",
+            "properties": {
+              "from": {
+                "description": "Нижняя граница предсказания",
+                "example": 100,
+                "type": "integer"
+              },
+              "lackReason": {
+                "description": "Причина отсутствия прогноза, приходит при to = 0.",
+                "enum": [
+                  "not_enough_data"
+                ],
+                "example": "not_enough_data",
+                "nullable": true,
+                "type": "string"
+              },
+              "to": {
+                "description": "Верхняя граница предсказания",
+                "example": 200,
+                "type": "integer"
+              }
+            },
+            "required": [
+              "from",
+              "to"
+            ],
+            "type": "object"
+          }
+        },
+        "type": "object"
+      },
+      "GetCampaignInfoRequestBody": {
+        "properties": {
+          "campaignId": {
+            "description": "Идентификатор активной кампании",
+            "example": 3456432,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "campaignId"
+        ],
+        "type": "object"
+      },
+      "GetCampaignsBadRequestError": {
+        "properties": {
+          "error": {
+            "properties": {
+              "fieldErrors": {
+                "description": "Описание ошибок валидации полей",
+                "properties": {
+                  "limit": {
+                    "description": "Ошибка валидации поля **limit**",
+                    "type": "string"
+                  },
+                  "offset": {
+                    "description": "Ошибка валидации поля **offset**",
+                    "type": "string"
+                  },
+                  "orderBy": {
+                    "description": "Ошибка валидации поля **orderBy**",
+                    "properties": {
+                      "column": {
+                        "description": "Ошибка валидации поля **column**",
+                        "type": "string"
+                      },
+                      "direction": {
+                        "description": "Ошибка валидации поля **direction**",
+                        "type": "string"
+                      }
+                    },
+                    "type": "object"
+                  },
+                  "statusId": {
+                    "description": "Ошибка валидации поля **statusId**",
+                    "type": "string"
+                  }
+                },
+                "type": "object"
+              },
+              "message": {
+                "description": "Сообщение об ошибке",
+                "example": "bad request",
+                "type": "string"
+              }
+            },
+            "required": [
+              "message"
+            ],
+            "type": "object"
+          }
+        },
+        "type": "object"
+      },
+      "GetCampaignsRequestBody": {
+        "properties": {
+          "filter": {
+            "description": "Фильтр",
+            "nullable": true,
+            "properties": {
+              "byUpdateTime": {
+                "description": "Фильтрация кампаний по дате обновления",
+                "nullable": true,
+                "properties": {
+                  "from": {
+                    "description": "Начало периода включительно",
+                    "example": "2021-04-14T00:00:00Z",
+                    "format": "date-time",
+                    "type": "string"
+                  },
+                  "to": {
+                    "description": "Конец периода, не включая",
+                    "example": "2021-05-14T00:00:00Z",
+                    "format": "date-time",
+                    "type": "string"
+                  }
+                },
+                "type": "object"
+              }
+            },
+            "type": "object"
+          },
+          "limit": {
+            "description": "Ограничение на выборку",
+            "example": 100,
+            "type": "integer"
+          },
+          "offset": {
+            "description": "Смещение выборки, по умолчанию равно 0",
+            "example": 10,
+            "type": "integer"
+          },
+          "orderBy": {
+            "description": "Поля, по которым будет произведена сортировка, и тип сортировки",
+            "items": {
+              "properties": {
+                "column": {
+                  "description": "Поле, по которому будет произведена сортировка. Возможные поля:<br/> `campaignId` - идентификатор кампании<br/> `userId` - идентификатор владельца кампании<br/> `budget` - бюджет кампании<br/> `balance` - баланс кампании(остаток от общего бюджета)<br/> `title` - название<br/> `statusId` - статус кампании<br/> `startTime` - время старта<br/> `finishTime` - время финиша<br/> `createTime` - время создания<br/> `updateTime` - время обновления<br/> `itemsCount` - количество объявлений в кампании<br/> `isPaid` - оплачена ли кампания<br/>",
+                  "example": "startTime",
+                  "type": "string"
+                },
+                "direction": {
+                  "description": "Тип сортировки",
+                  "enum": [
+                    "asc",
+                    "desc"
+                  ],
+                  "example": "asc",
+                  "type": "string"
+                }
+              },
+              "type": "object"
+            },
+            "type": "array"
+          },
+          "statusId": {
+            "description": "Статусы кампании для выборки. Возможные статусы:<br/> `0` - Черновик, дата старта сегодня или раньше, денег на балансе нет<br/> `1` - Активная кампания<br/> `2` - Кампания приостановлена<br/> `3` - Кампания удалена<br/> `4` - Кампания остановлена<br/> `5` - Кампания запланирована, дата старта завтра или позже, на балансе есть деньги<br/> По умолчанию в выборку попадают кампании со статусами 0, 1, 2, 4, 5.<br/>",
+            "example": [
+              1,
+              2,
+              3
+            ],
+            "items": {
+              "type": "integer"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "limit"
+        ],
+        "type": "object"
+      },
+      "GetStatRequestBody": {
+        "properties": {
+          "campaignId": {
+            "description": "Идентификатор запущенной или уже прошедшей кампании",
+            "example": 3456432,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "campaignId"
+        ],
+        "type": "object"
+      },
+      "GetStatRequestError": {
+        "properties": {
+          "error": {
+            "properties": {
+              "code": {
+                "description": "Код ошибки",
+                "example": 400,
+                "type": "integer"
+              },
+              "fieldErrors": {
+                "description": "Описание ошибок валидации полей",
+                "properties": {
+                  "campaignId": {
+                    "description": "Ошибка валидации поля **campaignId**",
+                    "example": "campaignId should be greater than 0",
+                    "type": "string"
+                  }
+                },
+                "type": "object"
+              },
+              "message": {
+                "description": "Сообщение об ошибке",
+                "example": "bad request",
+                "type": "string"
+              }
+            },
+            "required": [
+              "message"
+            ],
+            "type": "object"
+          }
+        },
+        "type": "object"
+      },
+      "Stat": {
+        "description": "Статистика по дням с агрегацией по всем объявлениям в кампании",
+        "items": {
+          "properties": {
+            "calls": {
+              "description": "Факт по звонкам",
+              "example": 10,
+              "type": "integer"
+            },
+            "callsForecast": {
+              "description": "Предсказание звонков",
+              "nullable": true,
+              "properties": {
+                "from": {
+                  "description": "Нижняя граница предсказания",
+                  "example": 8,
+                  "type": "integer"
+                },
+                "to": {
+                  "description": "Верхняя граница предсказания",
+                  "example": 12,
+                  "type": "integer"
+                }
+              },
+              "required": [
+                "from",
+                "to"
+              ],
+              "type": "object"
+            },
+            "date": {
+              "description": "Дата в формате `YYYY-MM-DD`",
+              "example": "2021-01-25",
+              "format": "date",
+              "type": "string"
+            },
+            "views": {
+              "description": "Факт по просмотрам",
+              "example": 100,
+              "type": "integer"
+            },
+            "viewsForecast": {
+              "nullable": true,
+              "properties": {
+                "from": {
+                  "description": "Нижняя граница предсказания",
+                  "example": 80,
+                  "type": "integer"
+                },
+                "to": {
+                  "description": "Верхняя граница предсказания",
+                  "example": 120,
+                  "type": "integer"
+                }
+              },
+              "required": [
+                "from",
+                "to"
+              ],
+              "type": "object"
+            }
+          },
+          "required": [
+            "date",
+            "calls",
+            "views"
+          ],
+          "type": "object"
+        },
+        "type": "array"
+      },
+      "StopCampaignBadRequestError": {
+        "properties": {
+          "error": {
+            "properties": {
+              "fieldErrors": {
+                "description": "Описание ошибок валидации полей",
+                "properties": {
+                  "campaignId": {
+                    "description": "Ошибка валидации поля **campaignId**",
+                    "type": "string"
+                  },
+                  "version": {
+                    "description": "Ошибка валидации поля **version**",
+                    "type": "string"
+                  }
+                },
+                "type": "object"
+              },
+              "message": {
+                "description": "Сообщение об ошибке",
+                "example": "bad request",
+                "type": "string"
+              }
+            },
+            "required": [
+              "message"
+            ],
+            "type": "object"
+          }
+        },
+        "type": "object"
+      },
+      "StopCampaignRequestBody": {
+        "properties": {
+          "campaignId": {
+            "description": "Идентификатор активной кампании",
+            "example": 3456432,
+            "type": "integer"
+          },
+          "version": {
+            "description": "Текущая версия кампании",
+            "example": 3,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "campaignId",
+          "version"
+        ],
+        "type": "object"
+      },
+      "authError": {
+        "properties": {
+          "error": {
+            "properties": {
+              "code": {
+                "description": "Код ошибки",
+                "example": 401,
+                "format": "int32",
+                "type": "integer"
+              },
+              "message": {
+                "description": "Сообщение об ошибке",
+                "example": "Unauthorized",
+                "type": "string"
+              }
+            },
+            "required": [
+              "code",
+              "message"
+            ],
+            "type": "object"
+          }
+        },
+        "type": "object"
+      },
+      "autostrategyAuthError": {
+        "properties": {
+          "error": {
+            "properties": {
+              "message": {
+                "description": "Сообщение об ошибке",
+                "example": "unauthorized",
+                "type": "string"
+              }
+            },
+            "required": [
+              "message"
+            ],
+            "type": "object"
+          }
+        },
+        "type": "object"
+      },
+      "autostrategyServiceError": {
+        "properties": {
+          "error": {
+            "properties": {
+              "message": {
+                "description": "Описание ошибки",
+                "example": "internal server error",
+                "type": "string"
+              }
+            },
+            "required": [
+              "code",
+              "message"
+            ],
+            "type": "object"
+          }
+        },
+        "type": "object"
+      },
+      "notFoundError": {
+        "properties": {
+          "error": {
+            "properties": {
+              "code": {
+                "description": "Код ошибки",
+                "example": 404,
+                "format": "int32",
+                "type": "integer"
+              },
+              "message": {
+                "description": "Сообщение об ошибке",
+                "example": "Not found",
+                "type": "string"
+              }
+            },
+            "required": [
+              "code",
+              "message"
+            ],
+            "type": "object"
+          }
+        },
+        "type": "object"
+      },
+      "serviceError": {
+        "properties": {
+          "error": {
+            "properties": {
+              "code": {
+                "description": "Код ошибки",
+                "example": 500,
+                "format": "int32",
+                "type": "integer"
+              },
+              "message": {
+                "description": "Описание ошибки",
+                "example": "Error while processing request. Please, contact support",
+                "type": "string"
+              }
+            },
+            "required": [
+              "code",
+              "message"
+            ],
+            "type": "object"
+          }
+        },
+        "type": "object"
+      }
+    },
+    "securitySchemes": {
+      "AuthorizationCode": {
+        "description": "Это API использует OAuth 2 с механизмом authorization_code. Используйте его для доступа к данным других пользователей при разработке стороннего приложения. [Подробнее](/api-catalog/auth/documentation#tag/ApplicationAccess)",
+        "flows": {
+          "authorizationCode": {
+            "authorizationUrl": "https://avito.ru/oauth",
+            "scopes": {
+              "autoload:reports": "Получение отчетов Автозагрузки",
+              "items:apply_vas": "Применение дополнительных услуг",
+              "items:info": "Получение информации об объявлениях",
+              "job:applications": "Получение информации об откликах на вакансии",
+              "job:cv": "Получение информации резюме",
+              "job:write": "Изменение объявлений вертикали Работа",
+              "messenger:read": "Чтение сообщений в мессенджере Авито",
+              "messenger:write": "Модифицирование сообщений в мессенджере Авито",
+              "short_term_rent:read": "Получение информации об объявлениях краткосрочной аренды",
+              "short_term_rent:write": "Изменение объявлений краткосрочной аренды",
+              "stats:read": "Получение статистики объявлений",
+              "user:read": "Получение информации о пользователе",
+              "user_balance:read": "Получение баланса пользователя",
+              "user_operations:read": "Получение истории операций пользователя"
+            },
+            "tokenUrl": "https://api.avito.ru/token"
+          }
+        },
+        "type": "oauth2"
+      },
+      "ClientCredentials": {
+        "description": "Это API использует OAuth 2 с механизмом client_credentials. Используйте его для доступа к возможностям своей личной учетной записи. [Подробнее](#tag/Access)",
+        "flows": {
+          "clientCredentials": {
+            "scopes": {},
+            "tokenUrl": "https://api.avito.ru/token"
+          }
+        },
+        "type": "oauth2"
+      }
+    }
+  },
+  "info": {
+    "contact": {
+      "email": "supportautoload@avito.ru"
+    },
+    "description": "API для работы с автостратегией\n**Авито API для бизнеса предоставляется согласно [Условиям использования](https://www.avito.ru/legal/pro_tools/public-api).**\n<!-- ReDoc-Inject: <security-definitions> -->\n",
+    "title": "Автостратегия",
+    "version": "1"
+  },
+  "openapi": "3.0.0",
+  "paths": {
+    "/autostrategy/v1/budget": {
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/authHeader"
+        }
+      ],
+      "post": {
+        "operationId": "getAutostrategyBudget",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GetBudgetRequestBody"
+              }
+            }
+          },
+          "description": "Набор параметров в теле запроса."
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "budget": {
+                      "$ref": "#/components/schemas/Budget"
+                    },
+                    "calcId": {
+                      "description": "Id расчета бюджета",
+                      "example": 123,
+                      "nullable": true,
+                      "type": "integer"
+                    }
+                  },
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Успешный ответ"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GetBudgetBadRequestError"
+                }
+              }
+            },
+            "description": "Неверный запрос"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/autostrategyAuthError"
+                }
+              }
+            },
+            "description": "Требуется аутентификация"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GetBudgetConflictError"
+                }
+              }
+            },
+            "description": "Ошибка бизнес-логики"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/autostrategyServiceError"
+                }
+              }
+            },
+            "description": "Внутренняя ошибка метода API"
+          }
+        },
+        "security": [
+          {
+            "Client Credentials": []
+          }
+        ],
+        "summary": "Расчет бюджета кампании",
+        "tags": [
+          "Autostrategy"
+        ]
+      }
+    },
+    "/autostrategy/v1/campaign/create": {
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/authHeader"
+        }
+      ],
+      "post": {
+        "operationId": "createAutostrategyCampaign",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateCampaignRequestBody"
+              }
+            }
+          },
+          "description": "Набор параметров в теле запроса."
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "campaign": {
+                      "$ref": "#/components/schemas/Campaign"
+                    }
+                  },
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Успешный ответ"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CreateCampaignBadRequestError"
+                }
+              }
+            },
+            "description": "Неверный запрос"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/autostrategyAuthError"
+                }
+              }
+            },
+            "description": "Требуется аутентификация"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CreateCampaignConflictError"
+                }
+              }
+            },
+            "description": "Ошибка бизнес-логики"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/autostrategyServiceError"
+                }
+              }
+            },
+            "description": "Внутренняя ошибка метода API"
+          }
+        },
+        "security": [
+          {
+            "Client Credentials": []
+          }
+        ],
+        "summary": "Создание новой кампании",
+        "tags": [
+          "Autostrategy"
+        ]
+      }
+    },
+    "/autostrategy/v1/campaign/edit": {
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/authHeader"
+        }
+      ],
+      "post": {
+        "description": "**Возможно редактирование лишь только кампаний, имеющих тип `AS`**\n",
+        "operationId": "editAutostrategyCampaign",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EditCampaignRequestBody"
+              }
+            }
+          },
+          "description": "Набор параметров в теле запроса."
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "campaign": {
+                      "$ref": "#/components/schemas/Campaign"
+                    }
+                  },
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Успешный ответ"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EditCampaignBadRequestError"
+                }
+              }
+            },
+            "description": "Неверный запрос"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/autostrategyAuthError"
+                }
+              }
+            },
+            "description": "Требуется аутентификация"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EditCampaignConflictError"
+                }
+              }
+            },
+            "description": "Ошибка бизнес-логики"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/autostrategyServiceError"
+                }
+              }
+            },
+            "description": "Внутренняя ошибка метода API"
+          }
+        },
+        "security": [
+          {
+            "Client Credentials": []
+          }
+        ],
+        "summary": "Редактирование кампании",
+        "tags": [
+          "Autostrategy"
+        ]
+      }
+    },
+    "/autostrategy/v1/campaign/info": {
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/authHeader"
+        }
+      ],
+      "post": {
+        "operationId": "getAutostrategyCampaignInfo",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GetCampaignInfoRequestBody"
+              }
+            }
+          },
+          "description": "Набор параметров в теле запроса."
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "campaign": {
+                      "$ref": "#/components/schemas/Campaign"
+                    },
+                    "forecast": {
+                      "$ref": "#/components/schemas/GetCampaignInfoForecastResult"
+                    },
+                    "items": {
+                      "description": "Список индентификаторов объявлений, которые продвигаются/продвигались в данной кампании",
+                      "items": {
+                        "properties": {
+                          "isActive": {
+                            "description": "Продвигается ли объявление в кампании на данный момент",
+                            "example": true,
+                            "type": "boolean"
+                          },
+                          "itemId": {
+                            "description": "ID объявления",
+                            "example": 12345678,
+                            "type": "integer"
+                          }
+                        },
+                        "type": "object"
+                      },
+                      "type": "array"
+                    }
+                  },
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Успешный ответ"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GetCampaignInfoBadRequestError"
+                }
+              }
+            },
+            "description": "Неверный запрос"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/autostrategyAuthError"
+                }
+              }
+            },
+            "description": "Требуется аутентификация"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConflictError"
+                }
+              }
+            },
+            "description": "Ошибка бизнес-логики"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/autostrategyServiceError"
+                }
+              }
+            },
+            "description": "Внутренняя ошибка метода API"
+          }
+        },
+        "security": [
+          {
+            "Client Credentials": []
+          }
+        ],
+        "summary": "Получение полной информации о кампании",
+        "tags": [
+          "Autostrategy"
+        ]
+      }
+    },
+    "/autostrategy/v1/campaign/stop": {
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/authHeader"
+        }
+      ],
+      "post": {
+        "operationId": "stopAutostrategyCampaign",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StopCampaignRequestBody"
+              }
+            }
+          },
+          "description": "Набор параметров в теле запроса."
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "campaign": {
+                      "$ref": "#/components/schemas/Campaign"
+                    }
+                  },
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Успешный ответ"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StopCampaignBadRequestError"
+                }
+              }
+            },
+            "description": "Неверный запрос"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/autostrategyAuthError"
+                }
+              }
+            },
+            "description": "Требуется аутентификация"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/autostrategyServiceError"
+                }
+              }
+            },
+            "description": "Внутренняя ошибка метода API"
+          }
+        },
+        "security": [
+          {
+            "Client Credentials": []
+          }
+        ],
+        "summary": "Остановка кампании",
+        "tags": [
+          "Autostrategy"
+        ]
+      }
+    },
+    "/autostrategy/v1/campaigns": {
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/authHeader"
+        }
+      ],
+      "post": {
+        "description": "**Получение кампаний текущего пользователя с учетом фильтров**\n",
+        "operationId": "getAutostrategyCampaigns",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GetCampaignsRequestBody"
+              }
+            }
+          },
+          "description": "Набор параметров в теле запроса."
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Campaigns"
+                }
+              }
+            },
+            "description": "Успешный ответ"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GetCampaignsBadRequestError"
+                }
+              }
+            },
+            "description": "Неверный запрос"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/autostrategyAuthError"
+                }
+              }
+            },
+            "description": "Требуется аутентификация"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/autostrategyServiceError"
+                }
+              }
+            },
+            "description": "Внутренняя ошибка метода API"
+          }
+        },
+        "security": [
+          {
+            "Client Credentials": []
+          }
+        ],
+        "summary": "Получение списка кампаний",
+        "tags": [
+          "Autostrategy"
+        ]
+      }
+    },
+    "/autostrategy/v1/stat": {
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/authHeader"
+        }
+      ],
+      "post": {
+        "operationId": "getAutostrategyStat",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GetStatRequestBody"
+              }
+            }
+          },
+          "description": "Набор параметров в теле запроса."
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "stat": {
+                      "$ref": "#/components/schemas/Stat"
+                    },
+                    "totals": {
+                      "description": "Статистика, просумированная за все дни",
+                      "properties": {
+                        "calls": {
+                          "description": "Факт по звонкам",
+                          "example": 50,
+                          "type": "integer"
+                        },
+                        "views": {
+                          "description": "Факт по просмотрам",
+                          "example": 500,
+                          "type": "integer"
+                        }
+                      },
+                      "required": [
+                        "calls",
+                        "views"
+                      ],
+                      "type": "object"
+                    }
+                  },
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Успешный ответ"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GetStatRequestError"
+                }
+              }
+            },
+            "description": "Неверный запрос"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/autostrategyAuthError"
+                }
+              }
+            },
+            "description": "Требуется аутентификация"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConflictError"
+                }
+              }
+            },
+            "description": "Ошибка бизнес-логики"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/autostrategyServiceError"
+                }
+              }
+            },
+            "description": "Внутренняя ошибка метода API"
+          }
+        },
+        "security": [
+          {
+            "Client Credentials": []
+          }
+        ],
+        "summary": "Получение статистики по кампании",
+        "tags": [
+          "Autostrategy"
+        ]
+      }
+    }
+  },
+  "servers": [
+    {
+      "url": "https://api.avito.ru/"
+    }
+  ],
+  "tags": [
+    {
+      "description": "API для работы с автостратегией в категории\n",
+      "name": "Autostrategy",
+      "x-displayName": "Autostrategy"
+    }
+  ]
+}

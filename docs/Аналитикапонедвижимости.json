@@ -1,0 +1,381 @@
+{
+  "components": {
+    "headers": {
+      "X-RateLimit-Limit": {
+        "description": "Количество запросов в минуту",
+        "schema": {
+          "format": "int32",
+          "type": "integer"
+        }
+      },
+      "X-RateLimit-Remaining": {
+        "description": "Доступное количество запросов в текущем временном окне",
+        "schema": {
+          "format": "int32",
+          "type": "integer"
+        }
+      }
+    },
+    "schemas": {
+      "Error": {
+        "description": "Ошибка",
+        "properties": {
+          "code": {
+            "description": "Код ошибки",
+            "type": "integer"
+          },
+          "isTemporary": {
+            "description": "Признак того, что ошибка временная (можно попробовать повторить запрос через некоторое время)",
+            "nullable": true,
+            "type": "boolean"
+          },
+          "message": {
+            "description": "Сообщение",
+            "type": "string"
+          }
+        },
+        "required": [
+          "code",
+          "message"
+        ],
+        "type": "object"
+      },
+      "ErrorMessage": {
+        "properties": {
+          "message": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "message"
+        ],
+        "type": "object"
+      }
+    },
+    "securitySchemes": {
+      "ClientCredentials": {
+        "description": "Это API использует OAuth 2 с механизмом client_credentials. Используйте его для доступа к возможностям своей личной учетной записи. [Подробнее](#tag/Access)",
+        "flows": {
+          "clientCredentials": {
+            "scopes": {},
+            "tokenUrl": "https://api.avito.ru/token"
+          }
+        },
+        "type": "oauth2"
+      }
+    }
+  },
+  "info": {
+    "contact": {
+      "email": "supportautoload@avito.ru"
+    },
+    "description": "Методы для работы с аналитикой по недвижимости\n**Авито API для бизнеса предоставляется согласно [Условиям использования](https://www.avito.ru/legal/pro_tools/public-api).**\n<!-- ReDoc-Inject: <security-definitions> -->\n",
+    "title": "Аналитика по недвижимости",
+    "version": "1"
+  },
+  "openapi": "3.0.0",
+  "paths": {
+    "/realty/v1/marketPriceCorrespondence/{itemId}/{price}": {
+      "get": {
+        "description": "Получение соответствия переданной цены рыночной цене\n\n**Данный метод доступен только пользователям с активной подпиской «Лидер» в категории «Недвижимость»**\n",
+        "operationId": "market_price_correspondence_v1",
+        "parameters": [
+          {
+            "description": "Идентифиактор объявления",
+            "in": "path",
+            "name": "itemId",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "description": "Цена",
+            "in": "path",
+            "name": "price",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "correspondence": {
+                      "description": "Признак соответствия рыночной цене\n- below - цена ниже рыночной\n- normal - цена соответствует рыночной\n- above - цена выше рыночной",
+                      "enum": [
+                        "below",
+                        "normal",
+                        "above"
+                      ],
+                      "type": "string"
+                    },
+                    "error": {
+                      "$ref": "#/components/schemas/Error"
+                    }
+                  },
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Успешный ответ"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "error": {
+                      "$ref": "#/components/schemas/Error"
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Некорректный запрос"
+          },
+          "401": {
+            "description": "Неавторизован"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "error": {
+                      "$ref": "#/components/schemas/Error"
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Ошибка доступа"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "error": {
+                      "$ref": "#/components/schemas/Error"
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Не найдено"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "error": {
+                      "$ref": "#/components/schemas/Error"
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Внутренняя ошибка"
+          }
+        },
+        "security": [
+          {
+            "ClientCredentials": []
+          }
+        ],
+        "summary": "Получение соответствия переданной цены рыночной цене",
+        "x-rate-limiter": {
+          "default": 60
+        }
+      }
+    },
+    "/realty/v1/report/create/{itemId}": {
+      "post": {
+        "description": "Получение аналитического отчета по недвижимости\n\n**Данный метод доступен только пользователям с активной подпиской «Лидер» в категории «Недвижимость»**\n",
+        "operationId": "CreateReportForClassified",
+        "parameters": [
+          {
+            "description": "Идентификатор объявления",
+            "in": "path",
+            "name": "itemId",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "success": {
+                      "format": "enum",
+                      "properties": {
+                        "errors": {
+                          "properties": {
+                            "accessDenied": {
+                              "description": "Объект не принадлежит агенту",
+                              "type": "boolean"
+                            },
+                            "featureDisabled": {
+                              "description": "Фича получения отчета по API недоступна",
+                              "type": "boolean"
+                            },
+                            "invalidItem": {
+                              "description": "Неверный идентификатор объявления",
+                              "type": "boolean"
+                            },
+                            "message": {
+                              "description": "Сообщение об ошибке",
+                              "type": "string"
+                            }
+                          },
+                          "type": "object"
+                        },
+                        "success": {
+                          "properties": {
+                            "reportLink": {
+                              "description": "Ссылка на аналитический отчет",
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "reportLink"
+                          ],
+                          "type": "object"
+                        }
+                      },
+                      "type": "object"
+                    }
+                  },
+                  "required": [
+                    "success"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Успешный ответ"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "bad-request": {
+                      "$ref": "#/components/schemas/ErrorMessage"
+                    }
+                  },
+                  "required": [
+                    "bad-request"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Некорректный запрос"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "unauthenticated": {
+                      "$ref": "#/components/schemas/ErrorMessage"
+                    }
+                  },
+                  "required": [
+                    "unauthenticated"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Неавторизован"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "forbidden": {
+                      "$ref": "#/components/schemas/ErrorMessage"
+                    }
+                  },
+                  "required": [
+                    "forbidden"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Ошибка доступа"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "internal-error": {
+                      "$ref": "#/components/schemas/ErrorMessage"
+                    }
+                  },
+                  "required": [
+                    "internal-error"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Внутренняя ошибка"
+          }
+        },
+        "security": [
+          {
+            "ClientCredentials": []
+          }
+        ],
+        "summary": "Получение аналитического отчета по недвижимости",
+        "x-rate-limiter": {
+          "default": 60
+        }
+      }
+    }
+  },
+  "servers": [
+    {
+      "url": "https://api.avito.ru/"
+    }
+  ],
+  "tags": [
+    {
+      "description": "# Методы для работы с аналитикой по недвижимости\nОписание API произведено в формате [**Swagger 3.0**](https://github.com/OAI/OpenAPI-Specification/blob/master/versions/3.0.0.md).\nВы можете использовать данный файл для ознакомления с методами API, а также для генерации базового кода для работы с API на удобном для вас языке программирования с помощью утилиты\n[**Swagger Codegen**](https://swagger.io/swagger-codegen/) или online сервиса [**Swagger Editor**](https://editor.swagger.io/).\n\n**Авито API для бизнеса предоставляется согласно [Условиям использования](https://www.avito.ru/legal/pro_tools/public-api).**\nПо всем вопросам работы с API необходимо обращаться в Службу Поддержки профессиональных инструментов:\n\n<li>телефон: <b>+7 495 777-10-66</b></li>\n<li>email: <a href=\"mailto:supportautoload@avito.ru\">supportautoload@avito.ru</a></li>\n\n# Типы авторизации\nДля использования данного API запрос должен быть авторизован. В данный момент API Авито использует следующие механизмы авторизации. <!-- ReDoc-Inject: <security-definitions> -->\n",
+      "name": "Аналитика по недвижимости",
+      "x-displayName": "API аналитики по недвижимости"
+    }
+  ]
+}
