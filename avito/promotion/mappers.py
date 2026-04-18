@@ -112,11 +112,9 @@ def map_promotion_service_dictionary(payload: object) -> PromotionServiceDiction
             PromotionServiceType(
                 code=_str(item, "code", "serviceCode", "id"),
                 title=_str(item, "title", "name", "description"),
-                _payload=item,
             )
             for item in _items_payload(data)
         ],
-        _payload=data,
     )
 
 
@@ -132,11 +130,9 @@ def map_promotion_services(payload: object) -> PromotionServicesResult:
                 service_name=_str(item, "serviceName", "name", "title"),
                 price=_int(item, "price", "pricePenny"),
                 status=_str(item, "status"),
-                _payload=item,
             )
             for item in _items_payload(data)
         ],
-        _payload=data,
     )
 
 
@@ -236,7 +232,7 @@ def map_promotion_action(
             success=bool(item.get("success", True)),
             status=_str(item, "status"),
             message=_str(_mapping(item, "error"), "message") or _str(item, "message"),
-            _payload=item,
+            upstream_reference=_str(item, "orderId", "requestId", "promotionId", "id"),
         )
         for item in items_payload
     ]
@@ -246,7 +242,15 @@ def map_promotion_action(
     resolved_status = _resolve_action_status(payload=data, statuses=statuses, applied=applied)
     details: dict[str, object] = {}
     if items:
-        details["items"] = [item.to_dict() for item in items]
+        details["items"] = [
+            {
+                "item_id": item.item_id,
+                "success": item.success,
+                "status": item.status,
+                "message": item.message,
+            }
+            for item in items
+        ]
     elif message := _str(data, "message", "status"):
         details["message"] = message
     return PromotionActionResult(
@@ -258,7 +262,6 @@ def map_promotion_action(
         warnings=messages if not applied else [],
         upstream_reference=_extract_upstream_reference(data, items),
         details=details,
-        _payload=data,
     )
 
 
@@ -282,10 +285,8 @@ def _extract_upstream_reference(
     if reference is not None:
         return reference
     for item in items:
-        item_payload = _expect_mapping(item._payload)
-        reference = _str(item_payload, "orderId", "requestId", "promotionId", "id")
-        if reference is not None:
-            return reference
+        if item.upstream_reference is not None:
+            return item.upstream_reference
     return None
 
 
@@ -299,11 +300,9 @@ def map_bbip_suggests(payload: object) -> BbipSuggestsResult:
                 item_id=_int(item, "itemId", "itemID"),
                 duration=_map_bbip_duration(_mapping(item, "duration")),
                 budgets=[_map_bbip_budget(option) for option in _list(item, "budgets")],
-                _payload=item,
             )
             for item in _items_payload(data)
         ],
-        _payload=data,
     )
 
 
@@ -312,7 +311,6 @@ def _map_bbip_budget(payload: Payload) -> BbipBudgetOption:
         price=_int(payload, "price"),
         old_price=_int(payload, "oldPrice"),
         is_recommended=_bool(payload, "isRecommended"),
-        _payload=payload,
     )
 
 
@@ -323,7 +321,6 @@ def _map_bbip_duration(payload: Payload) -> BbipDurationRange | None:
         start=_int(payload, "from"),
         stop=_int(payload, "to"),
         recommended=_int(payload, "recommended"),
-        _payload=payload,
     )
 
 
@@ -342,11 +339,9 @@ def map_trx_commissions(payload: object) -> TrxCommissionsResult:
                 commission=_int(item, "commission"),
                 is_active=_bool(item, "isActive", "active"),
                 valid_commission_range=_map_trx_range(_mapping(item, "validCommissionRange")),
-                _payload=item,
             )
             for item in items_payload
         ],
-        _payload=data,
     )
 
 
@@ -357,7 +352,6 @@ def _map_trx_range(payload: Payload) -> TrxCommissionRange | None:
         value_min=_int(payload, "valueMin"),
         value_max=_int(payload, "valueMax"),
         step=_int(payload, "step"),
-        _payload=payload,
     )
 
 
@@ -375,15 +369,12 @@ def map_cpa_auction_bids(payload: object) -> CpaAuctionBidsResult:
                     CpaAuctionBidOption(
                         price_penny=_int(option, "pricePenny"),
                         goodness=_int(option, "goodness"),
-                        _payload=option,
                     )
                     for option in _list(item, "availablePrices")
                 ],
-                _payload=item,
             )
             for item in _items_payload(data)
         ],
-        _payload=data,
     )
 
 
@@ -418,9 +409,7 @@ def _map_target_action_manual(payload: Payload) -> TargetActionManualBids:
         min_limit_penny=_int(payload, "minLimitPenny"),
         max_limit_penny=_int(payload, "maxLimitPenny"),
         bids=[
-            _map_target_action_bid(item)
-            for item in bids_payload or []
-            if isinstance(item, Mapping)
+            _map_target_action_bid(item) for item in bids_payload or [] if isinstance(item, Mapping)
         ],
     )
 
@@ -484,7 +473,9 @@ def map_target_action_get_promotions_by_item_ids_out(
     data = _expect_mapping(payload)
     items_payload = data.get("items")
     if not isinstance(items_payload, list):
-        raise ResponseMappingError("Ответ getPromotionsByItemIds должен содержать массив `items`.", payload=payload)
+        raise ResponseMappingError(
+            "Ответ getPromotionsByItemIds должен содержать массив `items`.", payload=payload
+        )
     items: list[TargetActionPromotion] = []
     for item in items_payload:
         if not isinstance(item, Mapping):
@@ -535,7 +526,6 @@ def map_autostrategy_budget(payload: object) -> AutostrategyBudget:
         minimal=_map_budget_point(_mapping(source, "minimal")),
         maximal=_map_budget_point(_mapping(source, "maximal")),
         price_ranges=[_map_price_range(item) for item in _list(source, "priceRanges")],
-        _payload=data,
     )
 
 
@@ -550,7 +540,6 @@ def _map_budget_point(payload: Payload) -> AutostrategyBudgetPoint | None:
         calls_to=_int(payload, "callsTo"),
         views_from=_int(payload, "viewsFrom"),
         views_to=_int(payload, "viewsTo"),
-        _payload=payload,
     )
 
 
@@ -563,7 +552,6 @@ def _map_price_range(payload: Payload) -> AutostrategyPriceRange:
         calls_to=_int(payload, "callsTo"),
         views_from=_int(payload, "viewsFrom"),
         views_to=_int(payload, "viewsTo"),
-        _payload=payload,
     )
 
 
@@ -574,7 +562,6 @@ def map_campaign_action(payload: object) -> CampaignActionResult:
     return CampaignActionResult(
         campaign_id=_int(data, "campaignId", "campaignID", "id"),
         status=_str(data, "status"),
-        _payload=data,
     )
 
 
@@ -590,7 +577,6 @@ def map_campaign_info(payload: object) -> CampaignInfo:
         budget=_int(source, "budget"),
         balance=_int(source, "balance"),
         title=_str(source, "title", "name"),
-        _payload=data,
     )
 
 
@@ -600,7 +586,6 @@ def map_campaigns(payload: object) -> CampaignsResult:
     data = _expect_mapping(payload)
     return CampaignsResult(
         items=[map_campaign_info(item) for item in _items_payload(data)],
-        _payload=data,
     )
 
 
@@ -614,5 +599,4 @@ def map_autostrategy_stat(payload: object) -> AutostrategyStat:
         views=_int(source, "views"),
         contacts=_int(source, "contacts", "leads"),
         spend=_int(source, "spend", "spendTotal"),
-        _payload=data,
     )

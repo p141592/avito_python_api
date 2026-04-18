@@ -35,7 +35,7 @@ def iter_public_dataclasses() -> list[tuple[str, str, type[object]]]:
 def test_no_public_model_declares_raw_payload_field() -> None:
     offenders = []
     for module_name, name, cls in iter_public_dataclasses():
-        if any(field.name == "raw_payload" for field in fields(cls)):
+        if any(field.name in {"raw_payload", "_payload"} for field in fields(cls)):
             offenders.append(f"{module_name}:{name}")
 
     assert offenders == []

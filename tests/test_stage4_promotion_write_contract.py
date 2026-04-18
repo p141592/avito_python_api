@@ -110,18 +110,32 @@ def test_write_methods_dry_run_and_apply_build_identical_payloads() -> None:
         if path == "/promotion/v1/items/services/bbip/orders/create":
             return httpx.Response(
                 200,
-                json={"items": [{"itemId": 101, "success": True, "status": "created", "orderId": "ord-1"}]},
+                json={
+                    "items": [
+                        {"itemId": 101, "success": True, "status": "created", "orderId": "ord-1"}
+                    ]
+                },
             )
         if path == "/trx-promo/1/apply":
-            return httpx.Response(200, json={"success": {"items": [{"itemID": 101, "success": True}]}})
+            return httpx.Response(
+                200, json={"success": {"items": [{"itemID": 101, "success": True}]}}
+            )
         if path == "/trx-promo/1/cancel":
-            return httpx.Response(200, json={"success": {"items": [{"itemID": 101, "success": True}]}})
+            return httpx.Response(
+                200, json={"success": {"items": [{"itemID": 101, "success": True}]}}
+            )
         if path == "/cpxpromo/1/setAuto":
-            return httpx.Response(200, json={"items": [{"itemID": 101, "success": True, "status": "auto"}]})
+            return httpx.Response(
+                200, json={"items": [{"itemID": 101, "success": True, "status": "auto"}]}
+            )
         if path == "/cpxpromo/1/setManual":
-            return httpx.Response(200, json={"items": [{"itemID": 101, "success": True, "status": "manual"}]})
+            return httpx.Response(
+                200, json={"items": [{"itemID": 101, "success": True, "status": "manual"}]}
+            )
         assert path == "/cpxpromo/1/remove"
-        return httpx.Response(200, json={"items": [{"itemID": 101, "success": True, "status": "removed"}]})
+        return httpx.Response(
+            200, json={"items": [{"itemID": 101, "success": True, "status": "removed"}]}
+        )
 
     transport = make_transport(httpx.MockTransport(handler))
     ad_promotion = AdPromotion(transport, resource_id=101, user_id=7)
@@ -203,9 +217,7 @@ def test_write_methods_dry_run_and_apply_build_identical_payloads() -> None:
         "warnings": [],
         "upstream_reference": "ord-1",
         "details": {
-            "items": [
-                {"item_id": 101, "success": True, "status": "created", "message": None}
-            ]
+            "items": [{"item_id": 101, "success": True, "status": "created", "message": None}]
         },
     }
 
@@ -213,7 +225,10 @@ def test_write_methods_dry_run_and_apply_build_identical_payloads() -> None:
 @pytest.mark.parametrize(
     ("call", "expected"),
     [
-        (lambda resource: resource.apply_vas(codes=[], dry_run=True), "`codes` must contain at least one item."),
+        (
+            lambda resource: resource.apply_vas(codes=[], dry_run=True),
+            "`codes` must contain at least one item.",
+        ),
         (
             lambda resource: resource.apply_vas_package(package_code="   ", dry_run=True),
             "`package_code` must be a non-empty string.",

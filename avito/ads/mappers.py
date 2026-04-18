@@ -103,7 +103,6 @@ def map_ad_item(payload: object) -> AdItem:
         status=_str(data, "status"),
         price=_float(data, "price"),
         url=_str(data, "url", "link"),
-        _payload=data,
     )
 
 
@@ -112,7 +111,7 @@ def map_ads_list(payload: object) -> AdsListResult:
 
     data = _expect_mapping(payload)
     items = [map_ad_item(item) for item in _list(data, "items", "result", "resources")]
-    return AdsListResult(items=items, total=_int(data, "total", "count"), _payload=data)
+    return AdsListResult(items=items, total=_int(data, "total", "count"))
 
 
 def map_update_price_result(payload: object) -> UpdatePriceResult:
@@ -123,7 +122,6 @@ def map_update_price_result(payload: object) -> UpdatePriceResult:
         item_id=_int(data, "item_id", "itemId", "id"),
         price=_float(data, "price"),
         status=_str(data, "status", "result"),
-        _payload=data,
     )
 
 
@@ -137,11 +135,10 @@ def map_calls_stats(payload: object) -> CallsStatsResult:
             calls=_int(item, "calls", "total"),
             answered_calls=_int(item, "answered_calls", "answeredCalls"),
             missed_calls=_int(item, "missed_calls", "missedCalls"),
-            _payload=item,
         )
         for item in _list(data, "items", "result", "stats")
     ]
-    return CallsStatsResult(items=items, _payload=data)
+    return CallsStatsResult(items=items)
 
 
 def _map_item_stat(item: Payload) -> ItemStatsRecord:
@@ -150,7 +147,6 @@ def _map_item_stat(item: Payload) -> ItemStatsRecord:
         views=_int(item, "views", "impressions"),
         contacts=_int(item, "contacts", "contacts_total", "contactsTotal"),
         favorites=_int(item, "favorites", "favorites_total", "favoritesTotal"),
-        _payload=item,
     )
 
 
@@ -160,7 +156,6 @@ def map_item_stats(payload: object) -> ItemStatsResult:
     data = _expect_mapping(payload)
     return ItemStatsResult(
         items=[_map_item_stat(item) for item in _list(data, "items", "result", "stats")],
-        _payload=data,
     )
 
 
@@ -171,7 +166,6 @@ def map_item_analytics(payload: object) -> ItemAnalyticsResult:
     return ItemAnalyticsResult(
         items=[_map_item_stat(item) for item in _list(data, "items", "result", "stats")],
         period=_str(data, "period"),
-        _payload=data,
     )
 
 
@@ -184,14 +178,13 @@ def map_spendings(payload: object) -> SpendingsResult:
             item_id=_int(item, "item_id", "itemId", "id"),
             amount=_float(item, "amount", "price", "cost"),
             service=_str(item, "service", "serviceType", "type"),
-            _payload=item,
         )
         for item in _list(data, "items", "result", "spendings")
     ]
     total = _float(data, "total")
     if total is None:
         total = sum(item.amount for item in items if item.amount is not None) or None
-    return SpendingsResult(items=items, total=total, _payload=data)
+    return SpendingsResult(items=items, total=total)
 
 
 def map_vas_prices(payload: object) -> VasPricesResult:
@@ -204,11 +197,10 @@ def map_vas_prices(payload: object) -> VasPricesResult:
             title=_str(item, "title", "name"),
             price=_float(item, "price", "amount"),
             is_available=_bool(item, "is_available", "isAvailable", "available"),
-            _payload=item,
         )
         for item in _list(data, "items", "services", "result")
     ]
-    return VasPricesResult(items=items, _payload=data)
+    return VasPricesResult(items=items)
 
 
 def map_vas_apply_result(payload: object) -> VasApplyResult:
@@ -218,7 +210,6 @@ def map_vas_apply_result(payload: object) -> VasApplyResult:
     return VasApplyResult(
         success=bool(data.get("success", True)),
         status=_str(data, "status", "result", "message"),
-        _payload=data,
     )
 
 
@@ -230,7 +221,6 @@ def map_autoload_profile(payload: object) -> AutoloadProfileSettings:
         user_id=_int(data, "user_id", "userId", "id"),
         is_enabled=_bool(data, "is_enabled", "isEnabled", "enabled"),
         upload_url=_str(data, "upload_url", "uploadUrl", "url"),
-        _payload=data,
     )
 
 
@@ -241,7 +231,6 @@ def map_upload_result(payload: object) -> UploadResult:
     return UploadResult(
         success=bool(data.get("success", True)),
         report_id=_int(data, "report_id", "reportId", "id"),
-        _payload=data,
     )
 
 
@@ -255,11 +244,10 @@ def map_autoload_fields(payload: object) -> AutoloadFieldsResult:
             title=_str(item, "title", "name"),
             type=_str(item, "type"),
             required=_bool(item, "required", "is_required", "isRequired"),
-            _payload=item,
         )
         for item in _list(data, "fields", "items", "result")
     ]
-    return AutoloadFieldsResult(items=items, _payload=data)
+    return AutoloadFieldsResult(items=items)
 
 
 def _map_tree_node(payload: Payload) -> AutoloadTreeNode:
@@ -267,7 +255,6 @@ def _map_tree_node(payload: Payload) -> AutoloadTreeNode:
         slug=_str(payload, "slug", "code", "id"),
         title=_str(payload, "title", "name"),
         children=[_map_tree_node(item) for item in _list(payload, "children", "items")],
-        _payload=payload,
     )
 
 
@@ -276,7 +263,7 @@ def map_autoload_tree(payload: object) -> AutoloadTreeResult:
 
     data = _expect_mapping(payload)
     items = [_map_tree_node(item) for item in _list(data, "tree", "items", "result")]
-    return AutoloadTreeResult(items=items, _payload=data)
+    return AutoloadTreeResult(items=items)
 
 
 def map_id_mapping(payload: object) -> IdMappingResult:
@@ -286,7 +273,7 @@ def map_id_mapping(payload: object) -> IdMappingResult:
     mappings: list[tuple[int | None, int | None]] = []
     for item in _list(data, "items", "result", "mappings"):
         mappings.append((_int(item, "ad_id", "adId"), _int(item, "avito_id", "avitoId")))
-    return IdMappingResult(mappings=mappings, _payload=data)
+    return IdMappingResult(mappings=mappings)
 
 
 def _map_report_summary(item: Payload) -> AutoloadReportSummary:
@@ -296,7 +283,6 @@ def _map_report_summary(item: Payload) -> AutoloadReportSummary:
         created_at=_str(item, "created_at", "createdAt"),
         finished_at=_str(item, "finished_at", "finishedAt"),
         processed_items=_int(item, "processed_items", "processedItems", "items"),
-        _payload=item,
     )
 
 
@@ -307,7 +293,6 @@ def map_autoload_reports(payload: object) -> AutoloadReportsResult:
     return AutoloadReportsResult(
         items=[_map_report_summary(item) for item in _list(data, "reports", "items", "result")],
         total=_int(data, "total", "count"),
-        _payload=data,
     )
 
 
@@ -322,7 +307,6 @@ def map_autoload_report_details(payload: object) -> AutoloadReportDetails:
         finished_at=_str(data, "finished_at", "finishedAt"),
         errors_count=_int(data, "errors_count", "errorsCount"),
         warnings_count=_int(data, "warnings_count", "warningsCount"),
-        _payload=data,
     )
 
 
@@ -333,7 +317,6 @@ def map_legacy_autoload_report(payload: object) -> LegacyAutoloadReport:
     return LegacyAutoloadReport(
         report_id=_int(data, "report_id", "reportId", "id"),
         status=_str(data, "status"),
-        _payload=data,
     )
 
 
@@ -347,13 +330,10 @@ def map_autoload_report_items(payload: object) -> AutoloadReportItemsResult:
             avito_id=_int(item, "avito_id", "avitoId"),
             status=_str(item, "status"),
             title=_str(item, "title"),
-            _payload=item,
         )
         for item in _list(data, "items", "result")
     ]
-    return AutoloadReportItemsResult(
-        items=items, total=_int(data, "total", "count"), _payload=data
-    )
+    return AutoloadReportItemsResult(items=items, total=_int(data, "total", "count"))
 
 
 def map_autoload_fees(payload: object) -> AutoloadFeesResult:
@@ -365,14 +345,13 @@ def map_autoload_fees(payload: object) -> AutoloadFeesResult:
             item_id=_int(item, "item_id", "itemId", "id"),
             amount=_float(item, "amount", "price", "cost"),
             service=_str(item, "service", "serviceType", "type"),
-            _payload=item,
         )
         for item in _list(data, "items", "result", "fees")
     ]
     total = _float(data, "total")
     if total is None:
         total = sum(item.amount for item in items if item.amount is not None) or None
-    return AutoloadFeesResult(items=items, total=total, _payload=data)
+    return AutoloadFeesResult(items=items, total=total)
 
 
 def map_action_result(payload: object) -> ActionResult:
@@ -383,9 +362,8 @@ def map_action_result(payload: object) -> ActionResult:
         return ActionResult(
             success=bool(data.get("success", True)),
             message=_str(data, "message", "status"),
-            _payload=data,
         )
-    return ActionResult(success=True, _payload={})
+    return ActionResult(success=True)
 
 
 __all__ = (

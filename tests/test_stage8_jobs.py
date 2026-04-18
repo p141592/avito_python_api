@@ -113,9 +113,7 @@ def test_applications_and_webhooks_flows() -> None:
     )
     applied = application.apply(request=ApplicationActionRequest(ids=["app-1"], action="invited"))
     current_hook = webhook.get()
-    updated_hook = webhook.update(
-        request=JobWebhookUpdateRequest(url="https://example.com/job")
-    )
+    updated_hook = webhook.update(request=JobWebhookUpdateRequest(url="https://example.com/job"))
     deleted_hook = webhook.delete(url="https://example.com/job")
     hooks = webhook.list()
 

@@ -387,16 +387,24 @@ def test_autostrategy_flows() -> None:
 
     campaign = AutostrategyCampaign(make_transport(httpx.MockTransport(handler)), resource_id=77)
 
-    budget = campaign.create_budget(request=CreateAutostrategyBudgetRequest(payload={"listingFee": 1000}))
+    budget = campaign.create_budget(
+        request=CreateAutostrategyBudgetRequest(payload={"listingFee": 1000})
+    )
     created = campaign.create(
-        request=CreateAutostrategyCampaignRequest(payload={"title": "Весенняя кампания", "budgetId": "budget-1"})
+        request=CreateAutostrategyCampaignRequest(
+            payload={"title": "Весенняя кампания", "budgetId": "budget-1"}
+        )
     )
     updated = campaign.update(
-        request=UpdateAutostrategyCampaignRequest(payload={"campaignId": 77, "title": "Обновленная кампания"})
+        request=UpdateAutostrategyCampaignRequest(
+            payload={"campaignId": 77, "title": "Обновленная кампания"}
+        )
     )
     info = campaign.get()
     stopped = campaign.delete()
-    campaigns = campaign.list(request=ListAutostrategyCampaignsRequest(payload={"status": "active"}))
+    campaigns = campaign.list(
+        request=ListAutostrategyCampaignsRequest(payload={"status": "active"})
+    )
     stat = campaign.get_stat()
 
     assert budget.budget_id == "budget-1"

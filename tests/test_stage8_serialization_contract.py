@@ -61,10 +61,8 @@ def test_recursive_serialization_is_json_compatible_and_hides_transport_fields()
             price=1990,
             original_price=2490,
             packages_count=2,
-            _payload={"transport": True},
         ),
         scheduled=None,
-        _payload={"transport": True},
     )
     catalog = CatalogResolveResult(
         items=[
@@ -76,13 +74,10 @@ def test_recursive_serialization_is_json_compatible_and_hides_transport_fields()
                     CatalogFieldValue(
                         value_id="1",
                         label="Audi",
-                        _payload={"transport": True},
                     )
                 ],
-                _payload={"transport": True},
             )
         ],
-        _payload={"transport": True},
     )
     request = SendMessageRequest(message="hello")
 

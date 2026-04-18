@@ -25,14 +25,14 @@ from avito.autoteka.models import (
     AutotekaSpecificationInfo,
     AutotekaTeaserInfo,
     AutotekaValuationInfo,
-    CatalogResolveResult,
     CatalogResolveRequest,
+    CatalogResolveResult,
     ExternalItemPreviewRequest,
     ItemIdRequest,
     LeadsRequest,
     MonitoringBucketRequest,
-    MonitoringEventsQuery,
     MonitoringBucketResult,
+    MonitoringEventsQuery,
     MonitoringEventsResult,
     PlateNumberRequest,
     PreviewReportRequest,
@@ -141,14 +141,10 @@ class AutotekaReport(DomainObject):
             report_id=report_id or self._require_resource_id()
         )
 
-    def create_sync_report_by_reg_number(
-        self, *, request: RegNumberRequest
-    ) -> AutotekaReportInfo:
+    def create_sync_report_by_reg_number(self, *, request: RegNumberRequest) -> AutotekaReportInfo:
         return ReportClient(self.transport).create_sync_report_by_reg_number(request)
 
-    def create_sync_report_by_vin(
-        self, *, request: VinRequest
-    ) -> AutotekaReportInfo:
+    def create_sync_report_by_vin(self, *, request: VinRequest) -> AutotekaReportInfo:
         return ReportClient(self.transport).create_sync_report_by_vin(request)
 
     def _require_resource_id(self) -> str:

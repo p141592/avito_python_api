@@ -14,7 +14,6 @@ class PromotionServiceType(SerializableModel):
 
     code: str | None
     title: str | None
-    _payload: Mapping[str, object] = field(default_factory=dict)
 
 
 @dataclass(slots=True, frozen=True)
@@ -22,7 +21,6 @@ class PromotionServiceDictionary(SerializableModel):
     """Словарь услуг продвижения."""
 
     items: list[PromotionServiceType]
-    _payload: Mapping[str, object] = field(default_factory=dict)
 
 
 @dataclass(slots=True, frozen=True)
@@ -46,7 +44,6 @@ class PromotionService(SerializableModel):
     service_name: str | None
     price: int | None
     status: str | None
-    _payload: Mapping[str, object] = field(default_factory=dict)
 
 
 @dataclass(slots=True, frozen=True)
@@ -54,7 +51,6 @@ class PromotionServicesResult(SerializableModel):
     """Список услуг продвижения."""
 
     items: list[PromotionService]
-    _payload: Mapping[str, object] = field(default_factory=dict)
 
 
 @dataclass(slots=True, frozen=True)
@@ -226,7 +222,7 @@ class PromotionActionItem(SerializableModel):
     success: bool
     status: str | None = None
     message: str | None = None
-    _payload: Mapping[str, object] = field(default_factory=dict)
+    upstream_reference: str | None = None
 
 
 @dataclass(slots=True, frozen=True)
@@ -237,11 +233,10 @@ class PromotionActionResult(SerializableModel):
     target: Mapping[str, object] | None
     status: str
     applied: bool
-    request_payload: Mapping[str, object]
+    request_payload: Mapping[str, object] | None = None
     warnings: list[str] = field(default_factory=list)
     upstream_reference: str | None = None
     details: Mapping[str, object] = field(default_factory=dict)
-    _payload: Mapping[str, object] = field(default_factory=dict)
 
 
 @dataclass(slots=True, frozen=True)
@@ -263,7 +258,6 @@ class BbipBudgetOption(SerializableModel):
     price: int | None
     old_price: int | None
     is_recommended: bool | None
-    _payload: Mapping[str, object] = field(default_factory=dict)
 
 
 @dataclass(slots=True, frozen=True)
@@ -273,7 +267,6 @@ class BbipDurationRange(SerializableModel):
     start: int | None
     stop: int | None
     recommended: int | None
-    _payload: Mapping[str, object] = field(default_factory=dict)
 
 
 @dataclass(slots=True, frozen=True)
@@ -283,7 +276,6 @@ class BbipSuggest(SerializableModel):
     item_id: int | None
     duration: BbipDurationRange | None
     budgets: list[BbipBudgetOption]
-    _payload: Mapping[str, object] = field(default_factory=dict)
 
 
 @dataclass(slots=True, frozen=True)
@@ -291,7 +283,6 @@ class BbipSuggestsResult(SerializableModel):
     """Результат вариантов бюджета BBIP."""
 
     items: list[BbipSuggest]
-    _payload: Mapping[str, object] = field(default_factory=dict)
 
 
 @dataclass(slots=True, frozen=True)
@@ -347,7 +338,6 @@ class TrxCommissionRange(SerializableModel):
     value_min: int | None
     value_max: int | None
     step: int | None
-    _payload: Mapping[str, object] = field(default_factory=dict)
 
 
 @dataclass(slots=True, frozen=True)
@@ -358,7 +348,6 @@ class TrxCommissionInfo(SerializableModel):
     commission: int | None
     is_active: bool | None
     valid_commission_range: TrxCommissionRange | None
-    _payload: Mapping[str, object] = field(default_factory=dict)
 
 
 @dataclass(slots=True, frozen=True)
@@ -366,7 +355,6 @@ class TrxCommissionsResult(SerializableModel):
     """Список комиссий TrxPromo."""
 
     items: list[TrxCommissionInfo]
-    _payload: Mapping[str, object] = field(default_factory=dict)
 
 
 @dataclass(slots=True, frozen=True)
@@ -375,7 +363,6 @@ class CpaAuctionBidOption(SerializableModel):
 
     price_penny: int | None
     goodness: int | None
-    _payload: Mapping[str, object] = field(default_factory=dict)
 
 
 @dataclass(slots=True, frozen=True)
@@ -386,7 +373,6 @@ class CpaAuctionItemBid(SerializableModel):
     price_penny: int | None
     expiration_time: str | None
     available_prices: list[CpaAuctionBidOption]
-    _payload: Mapping[str, object] = field(default_factory=dict)
 
 
 @dataclass(slots=True, frozen=True)
@@ -394,7 +380,6 @@ class CpaAuctionBidsResult(SerializableModel):
     """Список ставок CPA-аукциона."""
 
     items: list[CpaAuctionItemBid]
-    _payload: Mapping[str, object] = field(default_factory=dict)
 
 
 @dataclass(slots=True, frozen=True)
@@ -589,7 +574,6 @@ class AutostrategyBudgetPoint:
     calls_to: int | None
     views_from: int | None
     views_to: int | None
-    _payload: Mapping[str, object] = field(default_factory=dict)
 
 
 @dataclass(slots=True, frozen=True)
@@ -603,7 +587,6 @@ class AutostrategyPriceRange:
     calls_to: int | None
     views_from: int | None
     views_to: int | None
-    _payload: Mapping[str, object] = field(default_factory=dict)
 
 
 @dataclass(slots=True, frozen=True)
@@ -615,7 +598,6 @@ class AutostrategyBudget:
     minimal: AutostrategyBudgetPoint | None
     maximal: AutostrategyBudgetPoint | None
     price_ranges: list[AutostrategyPriceRange]
-    _payload: Mapping[str, object] = field(default_factory=dict)
 
 
 @dataclass(slots=True, frozen=True)
@@ -636,7 +618,6 @@ class CampaignActionResult:
 
     campaign_id: int | None
     status: str | None
-    _payload: Mapping[str, object] = field(default_factory=dict)
 
 
 @dataclass(slots=True, frozen=True)
@@ -649,7 +630,6 @@ class CampaignInfo:
     budget: int | None
     balance: int | None
     title: str | None
-    _payload: Mapping[str, object] = field(default_factory=dict)
 
 
 @dataclass(slots=True, frozen=True)
@@ -657,7 +637,6 @@ class CampaignsResult:
     """Список автокампаний."""
 
     items: list[CampaignInfo]
-    _payload: Mapping[str, object] = field(default_factory=dict)
 
 
 @dataclass(slots=True, frozen=True)
@@ -668,7 +647,6 @@ class AutostrategyStat:
     views: int | None
     contacts: int | None
     spend: int | None
-    _payload: Mapping[str, object] = field(default_factory=dict)
 
 
 @dataclass(slots=True, frozen=True)

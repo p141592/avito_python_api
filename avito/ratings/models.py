@@ -2,8 +2,7 @@
 
 from __future__ import annotations
 
-from collections.abc import Mapping
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 
 from avito.core.serialization import enable_module_serialization
 
@@ -47,7 +46,6 @@ class ReviewInfo:
     created_at: int | None
     can_answer: bool | None
     used_in_score: bool | None
-    _payload: Mapping[str, object] = field(default_factory=dict)
 
 
 @dataclass(slots=True, frozen=True)
@@ -56,7 +54,6 @@ class ReviewsResult:
 
     items: list[ReviewInfo]
     total: int | None = None
-    _payload: Mapping[str, object] = field(default_factory=dict)
 
 
 @dataclass(slots=True, frozen=True)
@@ -66,7 +63,6 @@ class ReviewAnswerInfo:
     answer_id: str | None = None
     created_at: int | None = None
     success: bool | None = None
-    _payload: Mapping[str, object] = field(default_factory=dict)
 
 
 @dataclass(slots=True, frozen=True)
@@ -77,7 +73,6 @@ class RatingProfileInfo:
     score: float | None = None
     reviews_count: int | None = None
     reviews_with_score_count: int | None = None
-    _payload: Mapping[str, object] = field(default_factory=dict)
 
 
 enable_module_serialization(globals())

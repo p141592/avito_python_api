@@ -118,7 +118,11 @@ def test_mock_transport_happy_path_read_methods_and_contract_snapshots(
     fake_transport.add_json(
         "POST",
         "/promotion/v1/items/services/bbip/forecasts/get",
-        {"items": [{"itemId": 101, "min": 10, "max": 25, "totalPrice": 7000, "totalOldPrice": 8400}]},
+        {
+            "items": [
+                {"itemId": 101, "min": 10, "max": 25, "totalPrice": 7000, "totalOldPrice": 8400}
+            ]
+        },
     )
     fake_transport.add_json(
         "POST",
@@ -154,7 +158,15 @@ def test_mock_transport_happy_path_read_methods_and_contract_snapshots(
     fake_transport.add_json(
         "POST",
         "/cpxpromo/1/getPromotionsByItemIds",
-        {"items": [{"itemID": 102, "actionTypeID": 7, "autoPromotion": {"budgetPenny": 9000, "budgetType": "7d"}}]},
+        {
+            "items": [
+                {
+                    "itemID": 102,
+                    "actionTypeID": 7,
+                    "autoPromotion": {"budgetPenny": 9000, "budgetType": "7d"},
+                }
+            ]
+        },
     )
 
     transport = fake_transport.build()
@@ -394,12 +406,12 @@ def test_mock_transport_happy_path_write_methods_and_dry_run(
         result.request_payload for result in previews
     ]
     assert all(result.applied is True for result in applied)
-    assert fake_transport.last(method="PUT", path="/core/v1/accounts/7/items/101/vas").json_body == {
-        "codes": ["xl"]
-    }
-    assert fake_transport.last(method="PUT", path="/promotion/v1/items/services/bbip/orders/create").json_body == {
-        "items": [{"itemId": 101, "duration": 7, "price": 1000, "oldPrice": 1200}]
-    }
+    assert fake_transport.last(
+        method="PUT", path="/core/v1/accounts/7/items/101/vas"
+    ).json_body == {"codes": ["xl"]}
+    assert fake_transport.last(
+        method="PUT", path="/promotion/v1/items/services/bbip/orders/create"
+    ).json_body == {"items": [{"itemId": 101, "duration": 7, "price": 1000, "oldPrice": 1200}]}
     assert applied[3].to_dict() == {
         "action": "create_order",
         "target": {"item_ids": [101]},
@@ -411,9 +423,7 @@ def test_mock_transport_happy_path_write_methods_and_dry_run(
         "warnings": [],
         "upstream_reference": "ord-1",
         "details": {
-            "items": [
-                {"item_id": 101, "success": True, "status": "created", "message": None}
-            ]
+            "items": [{"item_id": 101, "success": True, "status": "created", "message": None}]
         },
     }
 
@@ -464,7 +474,10 @@ def test_mock_transport_pagination_is_lazy_and_propagates_later_page_errors() ->
         "GET",
         "/core/v1/items",
         json_response(
-            {"items": [{"id": 101, "title": "Смартфон"}, {"id": 102, "title": "Ноутбук"}], "total": 4}
+            {
+                "items": [{"id": 101, "title": "Смартфон"}, {"id": 102, "title": "Ноутбук"}],
+                "total": 4,
+            }
         ),
         httpx.Response(429, json={"message": "page 2 failed"}, headers={"retry-after": "1"}),
     )

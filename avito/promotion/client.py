@@ -149,7 +149,9 @@ class BbipClient:
     ) -> PromotionActionResult:
         """Подключает BBIP-услугу."""
 
-        payload_to_send = dict(request_payload) if request_payload is not None else request.to_payload()
+        payload_to_send = (
+            dict(request_payload) if request_payload is not None else request.to_payload()
+        )
         payload = self.transport.request_json(
             "PUT",
             "/promotion/v1/items/services/bbip/orders/create",
@@ -192,7 +194,9 @@ class TrxPromoClient:
     ) -> PromotionActionResult:
         """Запускает TrxPromo."""
 
-        payload_to_send = dict(request_payload) if request_payload is not None else request.to_payload()
+        payload_to_send = (
+            dict(request_payload) if request_payload is not None else request.to_payload()
+        )
         payload = self.transport.request_json(
             "POST",
             "/trx-promo/1/apply",
@@ -216,7 +220,9 @@ class TrxPromoClient:
     ) -> PromotionActionResult:
         """Останавливает TrxPromo."""
 
-        payload_to_send = dict(request_payload) if request_payload is not None else request.to_payload()
+        payload_to_send = (
+            dict(request_payload) if request_payload is not None else request.to_payload()
+        )
         payload = self.transport.request_json(
             "POST",
             "/trx-promo/1/cancel",
@@ -277,7 +283,9 @@ class CpaAuctionClient:
     ) -> PromotionActionResult:
         """Сохраняет новые ставки."""
 
-        payload_to_send = dict(request_payload) if request_payload is not None else request.to_payload()
+        payload_to_send = (
+            dict(request_payload) if request_payload is not None else request.to_payload()
+        )
         payload = self.transport.request_json(
             "POST",
             "/auction/1/bids",
@@ -336,7 +344,9 @@ class TargetActionPriceClient:
     ) -> PromotionActionResult:
         """Останавливает продвижение с ценой целевого действия."""
 
-        payload_to_send = dict(request_payload) if request_payload is not None else request.to_payload()
+        payload_to_send = (
+            dict(request_payload) if request_payload is not None else request.to_payload()
+        )
         payload = self.transport.request_json(
             "POST",
             "/cpxpromo/1/remove",
@@ -360,7 +370,9 @@ class TargetActionPriceClient:
     ) -> PromotionActionResult:
         """Применяет автоматическую настройку."""
 
-        payload_to_send = dict(request_payload) if request_payload is not None else request.to_payload()
+        payload_to_send = (
+            dict(request_payload) if request_payload is not None else request.to_payload()
+        )
         payload = self.transport.request_json(
             "POST",
             "/cpxpromo/1/setAuto",
@@ -384,7 +396,9 @@ class TargetActionPriceClient:
     ) -> PromotionActionResult:
         """Применяет ручную настройку."""
 
-        payload_to_send = dict(request_payload) if request_payload is not None else request.to_payload()
+        payload_to_send = (
+            dict(request_payload) if request_payload is not None else request.to_payload()
+        )
         payload = self.transport.request_json(
             "POST",
             "/cpxpromo/1/setManual",

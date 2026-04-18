@@ -66,7 +66,11 @@ def test_realty_flows() -> None:
                                 "email": "ivan@example.com",
                                 "phone": "9997770000",
                             },
-                            "safe_deposit": {"owner_amount": 4500, "tax": 500, "total_amount": 5000},
+                            "safe_deposit": {
+                                "owner_amount": 4500,
+                                "tax": 500,
+                                "total_amount": 5000,
+                            },
                         }
                     ]
                 },

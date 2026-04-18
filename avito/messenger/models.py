@@ -2,8 +2,7 @@
 
 from __future__ import annotations
 
-from collections.abc import Mapping
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import BinaryIO
 
 from avito.core.serialization import enable_module_serialization
@@ -18,7 +17,6 @@ class ChatInfo:
     title: str | None
     unread_count: int | None
     last_message_text: str | None
-    _payload: Mapping[str, object] = field(default_factory=dict)
 
 
 @dataclass(slots=True, frozen=True)
@@ -27,7 +25,6 @@ class ChatsResult:
 
     items: list[ChatInfo]
     total: int | None = None
-    _payload: Mapping[str, object] = field(default_factory=dict)
 
 
 @dataclass(slots=True, frozen=True)
@@ -75,7 +72,6 @@ class MessageInfo:
     created_at: str | None
     direction: str | None
     type: str | None
-    _payload: Mapping[str, object] = field(default_factory=dict)
 
 
 @dataclass(slots=True, frozen=True)
@@ -84,7 +80,6 @@ class MessagesResult:
 
     items: list[MessageInfo]
     total: int | None = None
-    _payload: Mapping[str, object] = field(default_factory=dict)
 
 
 @dataclass(slots=True, frozen=True)
@@ -94,7 +89,6 @@ class MessageActionResult:
     success: bool
     message_id: str | None = None
     status: str | None = None
-    _payload: Mapping[str, object] = field(default_factory=dict)
 
 
 @dataclass(slots=True, frozen=True)
@@ -105,7 +99,6 @@ class VoiceFile:
     url: str | None
     duration: int | None
     transcript: str | None
-    _payload: Mapping[str, object] = field(default_factory=dict)
 
 
 @dataclass(slots=True, frozen=True)
@@ -113,7 +106,6 @@ class VoiceFilesResult:
     """Список голосовых сообщений."""
 
     items: list[VoiceFile]
-    _payload: Mapping[str, object] = field(default_factory=dict)
 
 
 @dataclass(slots=True, frozen=True)
@@ -122,7 +114,6 @@ class UploadImageResult:
 
     image_id: str | None
     url: str | None
-    _payload: Mapping[str, object] = field(default_factory=dict)
 
 
 @dataclass(slots=True, frozen=True)
@@ -130,7 +121,6 @@ class UploadImagesResult:
     """Список загруженных изображений."""
 
     items: list[UploadImageResult]
-    _payload: Mapping[str, object] = field(default_factory=dict)
 
 
 @dataclass(slots=True, frozen=True)
@@ -153,8 +143,7 @@ class UploadImagesRequest:
         """Сериализует multipart-структуру для transport."""
 
         return {
-            file.field_name: (file.filename, file.content, file.content_type)
-            for file in self.files
+            file.field_name: (file.filename, file.content, file.content_type) for file in self.files
         }
 
 
@@ -165,7 +154,6 @@ class SubscriptionInfo:
     url: str | None
     version: str | None
     status: str | None
-    _payload: Mapping[str, object] = field(default_factory=dict)
 
 
 @dataclass(slots=True, frozen=True)
@@ -173,7 +161,6 @@ class SubscriptionsResult:
     """Список webhook-подписок."""
 
     items: list[SubscriptionInfo]
-    _payload: Mapping[str, object] = field(default_factory=dict)
 
 
 @dataclass(slots=True, frozen=True)
@@ -211,7 +198,6 @@ class WebhookActionResult:
 
     success: bool
     status: str | None = None
-    _payload: Mapping[str, object] = field(default_factory=dict)
 
 
 @dataclass(slots=True, frozen=True)
@@ -245,7 +231,6 @@ class SpecialOfferAvailableItem:
     item_id: int | None
     title: str | None
     is_available: bool | None
-    _payload: Mapping[str, object] = field(default_factory=dict)
 
 
 @dataclass(slots=True, frozen=True)
@@ -253,7 +238,6 @@ class SpecialOfferAvailableResult:
     """Результат получения доступных объявлений."""
 
     items: list[SpecialOfferAvailableItem]
-    _payload: Mapping[str, object] = field(default_factory=dict)
 
 
 @dataclass(slots=True, frozen=True)
@@ -284,7 +268,6 @@ class MultiCreateSpecialOfferResult:
 
     campaign_id: str | None
     status: str | None
-    _payload: Mapping[str, object] = field(default_factory=dict)
 
 
 @dataclass(slots=True, frozen=True)
@@ -319,7 +302,6 @@ class SpecialOfferStatsResult:
     sent_count: int | None
     delivered_count: int | None
     read_count: int | None
-    _payload: Mapping[str, object] = field(default_factory=dict)
 
 
 @dataclass(slots=True, frozen=True)
@@ -329,7 +311,6 @@ class TariffInfo:
     price: float | None
     currency: str | None
     daily_limit: int | None
-    _payload: Mapping[str, object] = field(default_factory=dict)
 
 
 __all__ = (

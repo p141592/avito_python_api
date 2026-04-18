@@ -79,7 +79,6 @@ def map_review_answer(payload: object) -> ReviewAnswerInfo:
         answer_id=_str(data, "id"),
         created_at=_int(data, "createdAt"),
         success=_bool(data, "success"),
-        _payload=data,
     )
 
 
@@ -93,7 +92,6 @@ def map_rating_profile(payload: object) -> RatingProfileInfo:
         score=_float(rating, "score"),
         reviews_count=_int(rating, "reviewsCount"),
         reviews_with_score_count=_int(rating, "reviewsWithScoreCount"),
-        _payload=data,
     )
 
 
@@ -111,10 +109,8 @@ def map_reviews(payload: object) -> ReviewsResult:
                 created_at=_int(item, "createdAt"),
                 can_answer=_bool(item, "canAnswer"),
                 used_in_score=_bool(item, "usedInScore"),
-                _payload=item,
             )
             for item in _list(data, "reviews", "items")
         ],
         total=_int(data, "total"),
-        _payload=data,
     )

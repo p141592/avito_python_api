@@ -142,7 +142,9 @@ class CallTrackingCall(DomainObject):
     user_id: int | str | None = None
 
     def get(self, *, call_id: int | None = None) -> CallTrackingCallResponse:
-        resolved_call_id = call_id or (int(self.resource_id) if self.resource_id is not None else None)
+        resolved_call_id = call_id or (
+            int(self.resource_id) if self.resource_id is not None else None
+        )
         if resolved_call_id is None:
             raise ValidationError("Для операции требуется `call_id`.")
         return CallTrackingClient(self.transport).get_call_by_id(

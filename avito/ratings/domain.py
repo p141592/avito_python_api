@@ -40,9 +40,7 @@ class ReviewAnswer(DomainObject):
     resource_id: int | str | None = None
     user_id: int | str | None = None
 
-    def create_review_answer_v1(
-        self, *, review_id: int, text: str
-    ) -> ReviewAnswerInfo:
+    def create_review_answer_v1(self, *, review_id: int, text: str) -> ReviewAnswerInfo:
         return RatingsClient(self.transport).create_review_answer_v1(
             CreateReviewAnswerRequest(review_id=review_id, text=text)
         )

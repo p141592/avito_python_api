@@ -39,7 +39,9 @@ def test_read_methods_return_stable_sdk_models() -> None:
             return httpx.Response(200, json={"id": 101, "user_id": 7, "title": "Смартфон"})
         if path == "/core/v1/items":
             assert request.url.params["user_id"] == "7"
-            return httpx.Response(200, json={"items": [{"id": 101, "title": "Смартфон"}], "total": 1})
+            return httpx.Response(
+                200, json={"items": [{"id": 101, "title": "Смартфон"}], "total": 1}
+            )
         if path == "/stats/v1/accounts/7/items":
             body = json.loads(request.content.decode())
             assert body["itemIds"] == [101]

@@ -149,15 +149,9 @@ class AuthSettings(BaseModel):
 
         missing_fields: list[str] = []
         if not self.client_id:
-            missing_fields.append(
-                "client_id: "
-                + ", ".join(self.ENV_ALIASES["client_id"])
-            )
+            missing_fields.append("client_id: " + ", ".join(self.ENV_ALIASES["client_id"]))
         if not self.client_secret:
-            missing_fields.append(
-                "client_secret: "
-                + ", ".join(self.ENV_ALIASES["client_secret"])
-            )
+            missing_fields.append("client_secret: " + ", ".join(self.ENV_ALIASES["client_secret"]))
         if missing_fields:
             raise ConfigurationError(
                 "Не заданы обязательные настройки OAuth. Ожидаются "

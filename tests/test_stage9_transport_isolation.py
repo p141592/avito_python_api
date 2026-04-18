@@ -142,7 +142,9 @@ def test_public_methods_return_sdk_models_not_transport_shapes() -> None:
 
 
 def test_mappers_keep_stable_contract_for_happy_and_partial_payloads() -> None:
-    happy_profile = map_account_profile({"id": 7, "name": "Main shop", "email": "shop@example.test"})
+    happy_profile = map_account_profile(
+        {"id": 7, "name": "Main shop", "email": "shop@example.test"}
+    )
     partial_profile = map_account_profile({"user_id": 7, "title": "Main shop"})
 
     happy_listing = map_ad_item(

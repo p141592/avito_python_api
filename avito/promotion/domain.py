@@ -133,9 +133,7 @@ class PromotionOrder(DomainObject):
             ListPromotionOrdersRequest(item_ids=item_ids, order_ids=order_ids)
         )
 
-    def get_order_status(
-        self, *, order_ids: list[str] | None = None
-    ) -> PromotionOrderStatusResult:
+    def get_order_status(self, *, order_ids: list[str] | None = None) -> PromotionOrderStatusResult:
         """Получает статусы заявок на продвижение."""
 
         resolved_order_ids = order_ids or (

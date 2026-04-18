@@ -28,14 +28,14 @@ from avito.autoteka.models import (
     AutotekaSpecificationInfo,
     AutotekaTeaserInfo,
     AutotekaValuationInfo,
-    CatalogResolveResult,
     CatalogResolveRequest,
+    CatalogResolveResult,
     ExternalItemPreviewRequest,
     ItemIdRequest,
     LeadsRequest,
     MonitoringBucketRequest,
-    MonitoringEventsQuery,
     MonitoringBucketResult,
+    MonitoringEventsQuery,
     MonitoringEventsResult,
     PlateNumberRequest,
     PreviewReportRequest,
@@ -356,7 +356,9 @@ class TeaserClient(AutotekaBaseClient):
 class ValuationClient(AutotekaBaseClient):
     """Выполняет HTTP-операции оценки стоимости."""
 
-    def get_by_specification(self, request: ValuationBySpecificationRequest) -> AutotekaValuationInfo:
+    def get_by_specification(
+        self, request: ValuationBySpecificationRequest
+    ) -> AutotekaValuationInfo:
         payload = self.transport.request_json(
             "POST",
             "/autoteka/v1/valuation/by-specification",

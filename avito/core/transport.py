@@ -355,7 +355,9 @@ class Transport:
             )
         return RetryDecision(False)
 
-    def _map_http_error(self, response: httpx.Response, *, operation: str | None = None) -> Exception:
+    def _map_http_error(
+        self, response: httpx.Response, *, operation: str | None = None
+    ) -> Exception:
         payload = self._safe_payload(response)
         message = self._extract_message(payload) or f"HTTP {response.status_code}"
         error_code = self._extract_error_code(payload)

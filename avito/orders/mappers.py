@@ -86,12 +86,10 @@ def map_orders(payload: object) -> OrdersResult:
                 created_at=_str(item, "created", "created_at", "createdAt"),
                 buyer_name=_str(_mapping(item, "buyerInfo"), "fullName"),
                 total_price=_int(item, "totalPrice", "price"),
-                _payload=item,
             )
             for item in _list(data, "orders", "items", "result")
         ],
         total=_int(data, "total", "count"),
-        _payload=data,
     )
 
 
@@ -106,7 +104,6 @@ def map_order_action(payload: object) -> OrderActionResult:
         order_id=_str(source, "orderId", "order_id", "id"),
         status=_str(source, "status"),
         message=_str(source, "message"),
-        _payload=data,
     )
 
 
@@ -123,12 +120,10 @@ def map_courier_ranges(payload: object) -> CourierRangesResult:
                 date=_str(item, "date"),
                 start_at=_str(item, "startAt", "startDate"),
                 end_at=_str(item, "endAt", "endDate"),
-                _payload=item,
             )
             for item in _list(source, "timeIntervals", "intervals", "items", "result")
         ],
         address=_str(source, "address"),
-        _payload=data,
     )
 
 
@@ -143,7 +138,6 @@ def map_label_task(payload: object) -> LabelTaskResult:
     return LabelTaskResult(
         task_id=task_id or (str(task_int) if task_int is not None else None),
         status=_str(source, "status"),
-        _payload=data,
     )
 
 
@@ -162,7 +156,6 @@ def map_delivery_entity(payload: object) -> DeliveryEntityResult:
         parcel_id=_str(source, "parcelId", "parcelID"),
         status=_str(source, "status"),
         message=_str(_mapping(data, "error"), "message") or _str(source, "message"),
-        _payload=data,
     )
 
 
@@ -178,11 +171,9 @@ def map_sorting_centers(payload: object) -> DeliverySortingCentersResult:
                 sorting_center_id=_str(item, "id", "sortingCenterId", "sorting_center_id"),
                 name=_str(item, "name"),
                 city=_str(item, "city"),
-                _payload=item,
             )
             for item in _list(source, "sortingCenters", "items", "result")
         ],
-        _payload=data,
     )
 
 
@@ -198,7 +189,6 @@ def map_delivery_task(payload: object) -> DeliveryTaskInfo:
         task_id=task_id or (str(task_int) if task_int is not None else None),
         status=_str(source, "status"),
         error=_str(_mapping(data, "error"), "message") or _str(source, "error"),
-        _payload=data,
     )
 
 
@@ -214,11 +204,9 @@ def map_stock_info(payload: object) -> StockInfoResult:
                 is_multiple=_bool(item, "is_multiple", "isMultiple"),
                 is_unlimited=_bool(item, "is_unlimited", "isUnlimited"),
                 is_out_of_stock=_bool(item, "is_out_of_stock", "isOutOfStock"),
-                _payload=item,
             )
             for item in _list(data, "stocks", "items", "result")
         ],
-        _payload=data,
     )
 
 
@@ -233,11 +221,9 @@ def map_stock_update(payload: object) -> StockUpdateResult:
                 external_id=_str(item, "external_id", "externalId"),
                 success=bool(item.get("success", True)),
                 errors=_extract_errors(item),
-                _payload=item,
             )
             for item in _list(data, "stocks", "items", "result")
         ],
-        _payload=data,
     )
 
 

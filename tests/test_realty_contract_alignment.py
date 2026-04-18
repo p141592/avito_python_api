@@ -94,7 +94,9 @@ def test_realty_bookings_maps_documented_fields() -> None:
     )
 
     assert result.items[0].booking_id == 777
-    assert result.items[0].contact is not None and result.items[0].contact.email == "ivan@example.com"
+    assert (
+        result.items[0].contact is not None and result.items[0].contact.email == "ivan@example.com"
+    )
     assert result.items[0].safe_deposit is not None
     assert result.to_dict() == {
         "items": [

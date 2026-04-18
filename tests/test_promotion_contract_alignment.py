@@ -77,7 +77,9 @@ def test_target_action_get_bids_maps_single_response() -> None:
             },
         )
 
-    result = TargetActionPricing(make_transport(httpx.MockTransport(handler)), resource_id=101).get_bids()
+    result = TargetActionPricing(
+        make_transport(httpx.MockTransport(handler)), resource_id=101
+    ).get_bids()
 
     assert isinstance(result, TargetActionGetBidsResult)
     assert result.action_type_id == 5

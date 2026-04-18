@@ -178,7 +178,9 @@ def test_transport_handles_rate_limit_and_classifies_errors() -> None:
     )
 
     with pytest.raises(AuthorizationError):
-        authorization_transport.request_json("GET", "/forbidden", context=RequestContext("forbidden"))
+        authorization_transport.request_json(
+            "GET", "/forbidden", context=RequestContext("forbidden")
+        )
 
     conflict_transport = Transport(
         make_settings(retry_policy=RetryPolicy(max_attempts=1)),

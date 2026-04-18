@@ -55,7 +55,9 @@ class AvitoError(Exception):
 
     def __post_init__(self) -> None:
         sanitized_payload = sanitize_metadata(self.payload)
-        sanitized_headers = sanitize_metadata(dict(self.headers)) if self.headers is not None else None
+        sanitized_headers = (
+            sanitize_metadata(dict(self.headers)) if self.headers is not None else None
+        )
         sanitized_metadata = sanitize_metadata(dict(self.metadata))
         object.__setattr__(self, "payload", sanitized_payload)
         object.__setattr__(self, "headers", sanitized_headers)

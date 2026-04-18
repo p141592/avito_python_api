@@ -83,7 +83,9 @@ class FakeTransport:
         return Transport(
             settings,
             auth_provider=None,
-            client=httpx.Client(transport=httpx.MockTransport(self._handle), base_url=self.base_url),
+            client=httpx.Client(
+                transport=httpx.MockTransport(self._handle), base_url=self.base_url
+            ),
             sleep=lambda _: None,
         )
 
@@ -122,7 +124,9 @@ class FakeTransport:
         key = (recorded.method, recorded.path)
         if key not in self._routes:
             available = ", ".join(f"{method} {path}" for method, path in sorted(self._routes))
-            raise AssertionError(f"Unexpected request {recorded.method} {recorded.path}. Known: {available}")
+            raise AssertionError(
+                f"Unexpected request {recorded.method} {recorded.path}. Known: {available}"
+            )
 
         responders = self._routes[key]
         responder = responders[0] if len(responders) == 1 else responders.popleft()

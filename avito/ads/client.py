@@ -105,7 +105,11 @@ class AdsClient:
         page_size = limit if limit and limit > 0 else len(result.items)
         resolved_offset = start_offset or 0
 
-        if result.total is None or page_size <= 0 or resolved_offset + len(result.items) >= result.total:
+        if (
+            result.total is None
+            or page_size <= 0
+            or resolved_offset + len(result.items) >= result.total
+        ):
             return result
 
         start_page = resolved_offset // page_size + 1
@@ -258,7 +262,9 @@ class VasClient:
     ) -> PromotionActionResult:
         """Применяет дополнительные услуги к объявлению."""
 
-        payload_to_send = dict(request_payload) if request_payload is not None else request.to_payload()
+        payload_to_send = (
+            dict(request_payload) if request_payload is not None else request.to_payload()
+        )
         payload = self.transport.request_json(
             "PUT",
             f"/core/v1/accounts/{user_id}/items/{item_id}/vas",
@@ -284,7 +290,9 @@ class VasClient:
     ) -> PromotionActionResult:
         """Применяет пакет дополнительных услуг."""
 
-        payload_to_send = dict(request_payload) if request_payload is not None else request.to_payload()
+        payload_to_send = (
+            dict(request_payload) if request_payload is not None else request.to_payload()
+        )
         payload = self.transport.request_json(
             "PUT",
             f"/core/v2/accounts/{user_id}/items/{item_id}/vas_packages",
@@ -309,7 +317,9 @@ class VasClient:
     ) -> PromotionActionResult:
         """Применяет услуги продвижения через v2 endpoint."""
 
-        payload_to_send = dict(request_payload) if request_payload is not None else request.to_payload()
+        payload_to_send = (
+            dict(request_payload) if request_payload is not None else request.to_payload()
+        )
         payload = self.transport.request_json(
             "PUT",
             f"/core/v2/items/{item_id}/vas/",

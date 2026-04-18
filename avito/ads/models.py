@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-from collections.abc import Mapping
 from dataclasses import dataclass, field
 
 from avito.core.serialization import SerializableModel, enable_module_serialization
@@ -19,7 +18,6 @@ class AdItem(SerializableModel):
     status: str | None
     price: float | None
     url: str | None
-    _payload: Mapping[str, object] = field(default_factory=dict)
 
 
 @dataclass(slots=True, frozen=True)
@@ -28,7 +26,6 @@ class AdsListResult(SerializableModel):
 
     items: list[AdItem]
     total: int | None = None
-    _payload: Mapping[str, object] = field(default_factory=dict)
 
 
 @dataclass(slots=True, frozen=True)
@@ -50,7 +47,6 @@ class UpdatePriceResult:
     item_id: int | None
     price: float | None
     status: str | None
-    _payload: Mapping[str, object] = field(default_factory=dict)
 
 
 @dataclass(slots=True, frozen=True)
@@ -83,7 +79,6 @@ class CallStat(SerializableModel):
     calls: int | None
     answered_calls: int | None
     missed_calls: int | None
-    _payload: Mapping[str, object] = field(default_factory=dict)
 
 
 @dataclass(slots=True, frozen=True)
@@ -91,7 +86,6 @@ class CallsStatsResult(SerializableModel):
     """Статистика звонков по набору объявлений."""
 
     items: list[CallStat]
-    _payload: Mapping[str, object] = field(default_factory=dict)
 
 
 @dataclass(slots=True, frozen=True)
@@ -126,7 +120,6 @@ class ItemStatsRecord(SerializableModel):
     views: int | None
     contacts: int | None
     favorites: int | None
-    _payload: Mapping[str, object] = field(default_factory=dict)
 
 
 @dataclass(slots=True, frozen=True)
@@ -134,7 +127,6 @@ class ItemStatsResult(SerializableModel):
     """Статистика по списку объявлений."""
 
     items: list[ItemStatsRecord]
-    _payload: Mapping[str, object] = field(default_factory=dict)
 
 
 @dataclass(slots=True, frozen=True)
@@ -143,7 +135,6 @@ class ItemAnalyticsResult:
 
     items: list[ItemStatsRecord]
     period: str | None = None
-    _payload: Mapping[str, object] = field(default_factory=dict)
 
 
 @dataclass(slots=True, frozen=True)
@@ -153,7 +144,6 @@ class SpendingRecord(SerializableModel):
     item_id: int | None
     amount: float | None
     service: str | None
-    _payload: Mapping[str, object] = field(default_factory=dict)
 
 
 @dataclass(slots=True, frozen=True)
@@ -162,7 +152,6 @@ class SpendingsResult(SerializableModel):
 
     items: list[SpendingRecord]
     total: float | None = None
-    _payload: Mapping[str, object] = field(default_factory=dict)
 
 
 @dataclass(slots=True, frozen=True)
@@ -173,7 +162,6 @@ class VasPrice:
     title: str | None
     price: float | None
     is_available: bool | None
-    _payload: Mapping[str, object] = field(default_factory=dict)
 
 
 @dataclass(slots=True, frozen=True)
@@ -201,7 +189,6 @@ class VasPricesResult:
     """Список цен и доступных услуг продвижения."""
 
     items: list[VasPrice]
-    _payload: Mapping[str, object] = field(default_factory=dict)
 
 
 @dataclass(slots=True, frozen=True)
@@ -210,7 +197,6 @@ class VasApplyResult:
 
     success: bool
     status: str | None = None
-    _payload: Mapping[str, object] = field(default_factory=dict)
 
 
 @dataclass(slots=True, frozen=True)
@@ -244,7 +230,6 @@ class AutoloadProfileSettings:
     user_id: int | None
     is_enabled: bool | None
     upload_url: str | None
-    _payload: Mapping[str, object] = field(default_factory=dict)
 
 
 @dataclass(slots=True, frozen=True)
@@ -287,7 +272,6 @@ class UploadResult:
 
     success: bool
     report_id: int | None = None
-    _payload: Mapping[str, object] = field(default_factory=dict)
 
 
 @dataclass(slots=True, frozen=True)
@@ -298,7 +282,6 @@ class AutoloadField:
     title: str | None
     type: str | None
     required: bool | None
-    _payload: Mapping[str, object] = field(default_factory=dict)
 
 
 @dataclass(slots=True, frozen=True)
@@ -306,7 +289,6 @@ class AutoloadFieldsResult:
     """Список полей категории автозагрузки."""
 
     items: list[AutoloadField]
-    _payload: Mapping[str, object] = field(default_factory=dict)
 
 
 @dataclass(slots=True, frozen=True)
@@ -316,7 +298,6 @@ class AutoloadTreeNode:
     slug: str | None
     title: str | None
     children: list[AutoloadTreeNode] = field(default_factory=list)
-    _payload: Mapping[str, object] = field(default_factory=dict)
 
 
 @dataclass(slots=True, frozen=True)
@@ -324,7 +305,6 @@ class AutoloadTreeResult:
     """Дерево категорий автозагрузки."""
 
     items: list[AutoloadTreeNode]
-    _payload: Mapping[str, object] = field(default_factory=dict)
 
 
 @dataclass(slots=True, frozen=True)
@@ -332,7 +312,6 @@ class IdMappingResult:
     """Сопоставление идентификаторов объявлений."""
 
     mappings: list[tuple[int | None, int | None]]
-    _payload: Mapping[str, object] = field(default_factory=dict)
 
 
 @dataclass(slots=True, frozen=True)
@@ -344,7 +323,6 @@ class AutoloadReportSummary:
     created_at: str | None
     finished_at: str | None
     processed_items: int | None
-    _payload: Mapping[str, object] = field(default_factory=dict)
 
 
 @dataclass(slots=True, frozen=True)
@@ -353,7 +331,6 @@ class AutoloadReportsResult:
 
     items: list[AutoloadReportSummary]
     total: int | None = None
-    _payload: Mapping[str, object] = field(default_factory=dict)
 
 
 @dataclass(slots=True, frozen=True)
@@ -364,7 +341,6 @@ class AutoloadReportItem:
     avito_id: int | None
     status: str | None
     title: str | None
-    _payload: Mapping[str, object] = field(default_factory=dict)
 
 
 @dataclass(slots=True, frozen=True)
@@ -373,7 +349,6 @@ class AutoloadReportItemsResult:
 
     items: list[AutoloadReportItem]
     total: int | None = None
-    _payload: Mapping[str, object] = field(default_factory=dict)
 
 
 @dataclass(slots=True, frozen=True)
@@ -383,7 +358,6 @@ class AutoloadFee:
     item_id: int | None
     amount: float | None
     service: str | None
-    _payload: Mapping[str, object] = field(default_factory=dict)
 
 
 @dataclass(slots=True, frozen=True)
@@ -392,7 +366,6 @@ class AutoloadFeesResult:
 
     items: list[AutoloadFee]
     total: float | None = None
-    _payload: Mapping[str, object] = field(default_factory=dict)
 
 
 @dataclass(slots=True, frozen=True)
@@ -405,7 +378,6 @@ class AutoloadReportDetails:
     finished_at: str | None
     errors_count: int | None
     warnings_count: int | None
-    _payload: Mapping[str, object] = field(default_factory=dict)
 
 
 @dataclass(slots=True, frozen=True)
@@ -414,7 +386,6 @@ class LegacyAutoloadReport:
 
     report_id: int | None
     status: str | None
-    _payload: Mapping[str, object] = field(default_factory=dict)
 
 
 @dataclass(slots=True, frozen=True)
@@ -423,7 +394,6 @@ class ActionResult:
 
     success: bool
     message: str | None = None
-    _payload: Mapping[str, object] = field(default_factory=dict)
 
 
 Listing = AdItem

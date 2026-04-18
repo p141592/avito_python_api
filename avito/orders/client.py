@@ -17,7 +17,14 @@ from avito.orders.mappers import (
     map_stock_update,
 )
 from avito.orders.models import (
+    AddSortingCentersRequest,
+    AddTariffV2Request,
+    AddTerminalsRequest,
+    CancelParcelRequest,
+    CancelSandboxParcelRequest,
+    ChangeParcelRequest,
     CourierRangesResult,
+    CustomAreaScheduleRequest,
     DeliveryAnnouncementRequest,
     DeliveryEntityResult,
     DeliveryParcelIdsRequest,
@@ -25,6 +32,10 @@ from avito.orders.models import (
     DeliveryParcelResultRequest,
     DeliverySortingCentersResult,
     DeliveryTaskInfo,
+    DeliveryTrackingRequest,
+    GetChangeParcelInfoRequest,
+    GetRegisteredParcelIdRequest,
+    GetSandboxParcelInfoRequest,
     LabelPdfResult,
     LabelTaskResult,
     OrderAcceptReturnRequest,
@@ -35,14 +46,22 @@ from avito.orders.models import (
     OrderCourierRangeRequest,
     OrderLabelsRequest,
     OrderMarkingsRequest,
-    OrderTrackingNumberRequest,
-    OrdersRequest,
     OrdersResult,
+    OrderTrackingNumberRequest,
+    ProhibitOrderAcceptanceRequest,
     SandboxAreasRequest,
+    SandboxCancelAnnouncementRequest,
+    SandboxConfirmationCodeRequest,
+    SandboxCreateAnnouncementRequest,
+    SandboxGetAnnouncementEventRequest,
+    SetOrderPropertiesRequest,
+    SetOrderRealAddressRequest,
     StockInfoRequest,
     StockInfoResult,
     StockUpdateRequest,
     StockUpdateResult,
+    TaggedSortingCentersRequest,
+    UpdateTermsRequest,
 )
 
 
@@ -228,41 +247,47 @@ class SandboxDeliveryClient:
             "/delivery-sandbox/announcements/track", "orders.sandbox.track_announcement", request
         )
 
-    def update_custom_area_schedule(self, request: OrdersRequest) -> DeliveryEntityResult:
+    def update_custom_area_schedule(
+        self, request: CustomAreaScheduleRequest
+    ) -> DeliveryEntityResult:
         return self._post(
             "/delivery-sandbox/areas/custom-schedule",
             "orders.sandbox.update_custom_area_schedule",
             request,
         )
 
-    def cancel_parcel(self, request: OrdersRequest) -> DeliveryEntityResult:
+    def cancel_parcel(self, request: CancelParcelRequest) -> DeliveryEntityResult:
         return self._post("/delivery-sandbox/cancelParcel", "orders.sandbox.cancel_parcel", request)
 
-    def check_confirmation_code(self, request: OrdersRequest) -> DeliveryEntityResult:
+    def check_confirmation_code(
+        self, request: SandboxConfirmationCodeRequest
+    ) -> DeliveryEntityResult:
         return self._post(
             "/delivery-sandbox/order/checkConfirmationCode",
             "orders.sandbox.check_confirmation_code",
             request,
         )
 
-    def set_order_properties(self, request: OrdersRequest) -> DeliveryEntityResult:
+    def set_order_properties(self, request: SetOrderPropertiesRequest) -> DeliveryEntityResult:
         return self._post(
             "/delivery-sandbox/order/properties",
             "orders.sandbox.set_order_properties",
             request,
         )
 
-    def set_order_real_address(self, request: OrdersRequest) -> DeliveryEntityResult:
+    def set_order_real_address(self, request: SetOrderRealAddressRequest) -> DeliveryEntityResult:
         return self._post(
             "/delivery-sandbox/order/realAddress",
             "orders.sandbox.set_order_real_address",
             request,
         )
 
-    def tracking(self, request: OrdersRequest) -> DeliveryEntityResult:
+    def tracking(self, request: DeliveryTrackingRequest) -> DeliveryEntityResult:
         return self._post("/delivery-sandbox/order/tracking", "orders.sandbox.tracking", request)
 
-    def prohibit_order_acceptance(self, request: OrdersRequest) -> DeliveryEntityResult:
+    def prohibit_order_acceptance(
+        self, request: ProhibitOrderAcceptanceRequest
+    ) -> DeliveryEntityResult:
         return self._post(
             "/delivery-sandbox/prohibitOrderAcceptance",
             "orders.sandbox.prohibit_order_acceptance",
@@ -277,7 +302,7 @@ class SandboxDeliveryClient:
         )
         return map_sorting_centers(payload)
 
-    def add_sorting_center(self, request: OrdersRequest) -> DeliveryEntityResult:
+    def add_sorting_center(self, request: AddSortingCentersRequest) -> DeliveryEntityResult:
         return self._post(
             "/delivery-sandbox/tariffs/sorting-center",
             "orders.sandbox.add_sorting_center",
@@ -292,7 +317,7 @@ class SandboxDeliveryClient:
         )
 
     def add_tags_to_sorting_center(
-        self, *, tariff_id: str, request: OrdersRequest
+        self, *, tariff_id: str, request: TaggedSortingCentersRequest
     ) -> DeliveryEntityResult:
         return self._post(
             f"/delivery-sandbox/tariffs/{tariff_id}/tagged-sorting-centers",
@@ -300,69 +325,81 @@ class SandboxDeliveryClient:
             request,
         )
 
-    def add_terminals(self, *, tariff_id: str, request: OrdersRequest) -> DeliveryEntityResult:
+    def add_terminals(
+        self, *, tariff_id: str, request: AddTerminalsRequest
+    ) -> DeliveryEntityResult:
         return self._post(
             f"/delivery-sandbox/tariffs/{tariff_id}/terminals",
             "orders.sandbox.add_terminals",
             request,
         )
 
-    def update_terms(self, *, tariff_id: str, request: OrdersRequest) -> DeliveryEntityResult:
+    def update_terms(self, *, tariff_id: str, request: UpdateTermsRequest) -> DeliveryEntityResult:
         return self._post(
             f"/delivery-sandbox/tariffs/{tariff_id}/terms",
             "orders.sandbox.update_terms",
             request,
         )
 
-    def add_tariff_v2(self, request: OrdersRequest) -> DeliveryEntityResult:
+    def add_tariff_v2(self, request: AddTariffV2Request) -> DeliveryEntityResult:
         return self._post("/delivery-sandbox/tariffsV2", "orders.sandbox.add_tariff_v2", request)
 
-    def v1_cancel_announcement(self, request: OrdersRequest) -> DeliveryEntityResult:
+    def v1_cancel_announcement(
+        self, request: SandboxCancelAnnouncementRequest
+    ) -> DeliveryEntityResult:
         return self._post(
             "/delivery-sandbox/v1/cancelAnnouncement",
             "orders.sandbox.v1_cancel_announcement",
             request,
         )
 
-    def v1_cancel_parcel(self, request: OrdersRequest) -> DeliveryEntityResult:
+    def v1_cancel_parcel(self, request: CancelSandboxParcelRequest) -> DeliveryEntityResult:
         return self._post(
             "/delivery-sandbox/v1/cancelParcel", "orders.sandbox.v1_cancel_parcel", request
         )
 
-    def v1_change_parcel(self, request: OrdersRequest) -> DeliveryEntityResult:
+    def v1_change_parcel(self, request: ChangeParcelRequest) -> DeliveryEntityResult:
         return self._post(
             "/delivery-sandbox/v1/changeParcel", "orders.sandbox.v1_change_parcel", request
         )
 
-    def v1_create_announcement(self, request: OrdersRequest) -> DeliveryEntityResult:
+    def v1_create_announcement(
+        self, request: SandboxCreateAnnouncementRequest
+    ) -> DeliveryEntityResult:
         return self._post(
             "/delivery-sandbox/v1/createAnnouncement",
             "orders.sandbox.v1_create_announcement",
             request,
         )
 
-    def v1_get_announcement_event(self, request: OrdersRequest) -> DeliveryEntityResult:
+    def v1_get_announcement_event(
+        self, request: SandboxGetAnnouncementEventRequest
+    ) -> DeliveryEntityResult:
         return self._post(
             "/delivery-sandbox/v1/getAnnouncementEvent",
             "orders.sandbox.v1_get_announcement_event",
             request,
         )
 
-    def v1_get_change_parcel_info(self, request: OrdersRequest) -> DeliveryEntityResult:
+    def v1_get_change_parcel_info(
+        self, request: GetChangeParcelInfoRequest
+    ) -> DeliveryEntityResult:
         return self._post(
             "/delivery-sandbox/v1/getChangeParcelInfo",
             "orders.sandbox.v1_get_change_parcel_info",
             request,
         )
 
-    def v1_get_parcel_info(self, request: OrdersRequest) -> DeliveryEntityResult:
+    def v1_get_parcel_info(self, request: GetSandboxParcelInfoRequest) -> DeliveryEntityResult:
         return self._post(
             "/delivery-sandbox/v1/getParcelInfo",
             "orders.sandbox.v1_get_parcel_info",
             request,
         )
 
-    def v1_get_registered_parcel_id(self, request: OrdersRequest) -> DeliveryEntityResult:
+    def v1_get_registered_parcel_id(
+        self, request: GetRegisteredParcelIdRequest
+    ) -> DeliveryEntityResult:
         return self._post(
             "/delivery-sandbox/v1/getRegisteredParcelID",
             "orders.sandbox.v1_get_registered_parcel_id",
@@ -378,9 +415,28 @@ class SandboxDeliveryClient:
         self,
         path: str,
         operation: str,
-        request: OrdersRequest
+        request: CustomAreaScheduleRequest
+        | CancelParcelRequest
+        | SandboxConfirmationCodeRequest
+        | SetOrderPropertiesRequest
+        | SetOrderRealAddressRequest
+        | DeliveryTrackingRequest
+        | ProhibitOrderAcceptanceRequest
+        | AddSortingCentersRequest
         | DeliveryAnnouncementRequest
         | SandboxAreasRequest
+        | TaggedSortingCentersRequest
+        | AddTerminalsRequest
+        | UpdateTermsRequest
+        | AddTariffV2Request
+        | SandboxCancelAnnouncementRequest
+        | CancelSandboxParcelRequest
+        | ChangeParcelRequest
+        | SandboxCreateAnnouncementRequest
+        | SandboxGetAnnouncementEventRequest
+        | GetChangeParcelInfoRequest
+        | GetSandboxParcelInfoRequest
+        | GetRegisteredParcelIdRequest
         | DeliveryParcelRequest,
     ) -> DeliveryEntityResult:
         payload = self.transport.request_json(

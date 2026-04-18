@@ -242,7 +242,7 @@ class CallTrackingCallsResult(SerializableModel):
 
     items: list[CallTrackingCallInfo]
     error: CpaErrorInfo | None = None
-    
+
 
 @dataclass(slots=True, frozen=True)
 class CallTrackingGetCallByIdRequest:

@@ -2,8 +2,7 @@
 
 from __future__ import annotations
 
-from collections.abc import Mapping
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 
 from avito.core.serialization import enable_module_serialization
 
@@ -20,7 +19,6 @@ class TariffContractInfo:
     price: float | None
     original_price: float | None
     packages_count: int | None
-    _payload: Mapping[str, object] = field(default_factory=dict)
 
 
 @dataclass(slots=True, frozen=True)
@@ -29,7 +27,6 @@ class TariffInfo:
 
     current: TariffContractInfo | None = None
     scheduled: TariffContractInfo | None = None
-    _payload: Mapping[str, object] = field(default_factory=dict)
 
 
 enable_module_serialization(globals())

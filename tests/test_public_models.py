@@ -44,7 +44,6 @@ def test_primary_sdk_models_serialize_without_transport_fields() -> None:
         name="Иван",
         email=None,
         phone="+7999",
-        _payload={"internal": "value"},
     )
     listing = Listing(
         id=101,
@@ -54,21 +53,18 @@ def test_primary_sdk_models_serialize_without_transport_fields() -> None:
         status="active",
         price=1000.0,
         url=None,
-        _payload={"transport": True},
     )
     stats = ListingStats(
         item_id=101,
         views=42,
         contacts=None,
         favorites=3,
-        _payload={"transport": True},
     )
     calls = CallStats(
         item_id=101,
         calls=4,
         answered_calls=3,
         missed_calls=1,
-        _payload={"transport": True},
     )
     spendings = AccountSpendings(
         items=[
@@ -76,11 +72,9 @@ def test_primary_sdk_models_serialize_without_transport_fields() -> None:
                 item_id=101,
                 amount=77.5,
                 service="xl",
-                _payload={"transport": True},
             )
         ],
         total=77.5,
-        _payload={"transport": True},
     )
     service = PromotionService(
         item_id=101,
