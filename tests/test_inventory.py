@@ -56,6 +56,19 @@ def _normalize(value: str) -> str:
     )
 
 
+def _resolve_doc_path(document: str) -> Path:
+    direct_path = DOCS_DIR / document
+    if direct_path.exists():
+        return direct_path
+
+    normalized_target = _normalize(document)
+    for candidate in DOCS_DIR.iterdir():
+        if _normalize(candidate.name) == normalized_target:
+            return candidate
+
+    raise FileNotFoundError(f"Swagger document not found: {document}")
+
+
 def _read_inventory_rows() -> list[dict[str, str]]:
     in_table = False
     rows: list[dict[str, str]] = []
@@ -81,7 +94,7 @@ def _read_inventory_rows() -> list[dict[str, str]]:
 def _swagger_rows() -> list[dict[str, str]]:
     rows: list[dict[str, str]] = []
     for document in sorted(DOC_TO_PACKAGE):
-        data = json.loads((DOCS_DIR / document).read_text(encoding="utf-8"))
+        data = json.loads(_resolve_doc_path(document).read_text(encoding="utf-8"))
         for path, path_item in data.get("paths", {}).items():
             for method, operation in path_item.items():
                 if method.lower() not in HTTP_METHODS:
