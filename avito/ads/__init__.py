@@ -10,6 +10,7 @@ from avito.ads.domain import (
     DomainObject,
 )
 from avito.ads.models import (
+    AccountSpendings,
     ActionResult,
     AdItem,
     AdsListResult,
@@ -27,9 +28,12 @@ from avito.ads.models import (
     AutoloadTreeResult,
     CallsStatsResult,
     CallStat,
+    CallStats,
     ItemAnalyticsResult,
     ItemStatsResult,
     LegacyAutoloadReport,
+    Listing,
+    ListingStats,
     SpendingsResult,
     UpdatePriceResult,
     UploadResult,
@@ -38,6 +42,7 @@ from avito.ads.models import (
 )
 
 __all__ = (
+    "AccountSpendings",
     "ActionResult",
     "Ad",
     "AdItem",
@@ -59,12 +64,15 @@ __all__ = (
     "AutoloadReportsResult",
     "AutoloadTreeNode",
     "AutoloadTreeResult",
+    "CallStats",
     "CallStat",
     "CallsStatsResult",
     "DomainObject",
     "ItemAnalyticsResult",
     "ItemStatsResult",
     "LegacyAutoloadReport",
+    "Listing",
+    "ListingStats",
     "SpendingsResult",
     "UpdatePriceResult",
     "UploadResult",

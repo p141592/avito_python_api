@@ -19,7 +19,7 @@ from avito.accounts.models import (
     OperationsHistoryRequest,
     OperationsHistoryResult,
 )
-from avito.core import Transport
+from avito.core import Transport, ValidationError
 
 
 @dataclass(slots=True, frozen=True)
@@ -46,7 +46,7 @@ class Account(DomainObject):
 
         resolved_user_id = user_id or (int(self.user_id) if self.user_id is not None else None)
         if resolved_user_id is None:
-            raise ValueError("Для получения баланса требуется `user_id`.")
+            raise ValidationError("Для операции требуется `user_id`.")
         return AccountsClient(self.transport).get_balance(user_id=resolved_user_id)
 
     def get_operations_history(

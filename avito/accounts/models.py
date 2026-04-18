@@ -5,16 +5,18 @@ from __future__ import annotations
 from collections.abc import Mapping
 from dataclasses import dataclass, field
 
+from avito.core.serialization import SerializableModel, enable_module_serialization
+
 
 @dataclass(slots=True, frozen=True)
-class AccountProfile:
+class AccountProfile(SerializableModel):
     """Профиль авторизованного пользователя."""
 
     id: int | None
     name: str | None
     email: str | None
     phone: str | None
-    raw_payload: Mapping[str, object] = field(default_factory=dict)
+    _payload: Mapping[str, object] = field(default_factory=dict)
 
 
 @dataclass(slots=True, frozen=True)
@@ -26,7 +28,7 @@ class AccountBalance:
     bonus: float | None
     total: float | None
     currency: str | None
-    raw_payload: Mapping[str, object] = field(default_factory=dict)
+    _payload: Mapping[str, object] = field(default_factory=dict)
 
 
 @dataclass(slots=True, frozen=True)
@@ -39,7 +41,7 @@ class OperationRecord:
     operation_type: str | None
     status: str | None
     description: str | None
-    raw_payload: Mapping[str, object] = field(default_factory=dict)
+    _payload: Mapping[str, object] = field(default_factory=dict)
 
 
 @dataclass(slots=True, frozen=True)
@@ -67,12 +69,12 @@ class OperationsHistoryRequest:
 
 
 @dataclass(slots=True, frozen=True)
-class OperationsHistoryResult:
+class OperationsHistoryResult(SerializableModel):
     """История операций пользователя."""
 
     operations: list[OperationRecord]
     total: int | None = None
-    raw_payload: Mapping[str, object] = field(default_factory=dict)
+    _payload: Mapping[str, object] = field(default_factory=dict)
 
 
 @dataclass(slots=True, frozen=True)
@@ -82,7 +84,7 @@ class AhUserStatus:
     user_id: int | None
     is_active: bool | None
     role: str | None
-    raw_payload: Mapping[str, object] = field(default_factory=dict)
+    _payload: Mapping[str, object] = field(default_factory=dict)
 
 
 @dataclass(slots=True, frozen=True)
@@ -94,7 +96,7 @@ class Employee:
     name: str | None
     phone: str | None
     email: str | None
-    raw_payload: Mapping[str, object] = field(default_factory=dict)
+    _payload: Mapping[str, object] = field(default_factory=dict)
 
 
 @dataclass(slots=True, frozen=True)
@@ -103,7 +105,7 @@ class EmployeesResult:
 
     items: list[Employee]
     total: int | None = None
-    raw_payload: Mapping[str, object] = field(default_factory=dict)
+    _payload: Mapping[str, object] = field(default_factory=dict)
 
 
 @dataclass(slots=True, frozen=True)
@@ -113,7 +115,7 @@ class CompanyPhone:
     id: int | None
     phone: str | None
     comment: str | None
-    raw_payload: Mapping[str, object] = field(default_factory=dict)
+    _payload: Mapping[str, object] = field(default_factory=dict)
 
 
 @dataclass(slots=True, frozen=True)
@@ -121,7 +123,7 @@ class CompanyPhonesResult:
     """Список телефонов компании."""
 
     items: list[CompanyPhone]
-    raw_payload: Mapping[str, object] = field(default_factory=dict)
+    _payload: Mapping[str, object] = field(default_factory=dict)
 
 
 @dataclass(slots=True, frozen=True)
@@ -176,7 +178,7 @@ class EmployeeItem:
     title: str | None
     status: str | None
     price: float | None
-    raw_payload: Mapping[str, object] = field(default_factory=dict)
+    _payload: Mapping[str, object] = field(default_factory=dict)
 
 
 @dataclass(slots=True, frozen=True)
@@ -185,7 +187,7 @@ class EmployeeItemsResult:
 
     items: list[EmployeeItem]
     total: int | None = None
-    raw_payload: Mapping[str, object] = field(default_factory=dict)
+    _payload: Mapping[str, object] = field(default_factory=dict)
 
 
 @dataclass(slots=True, frozen=True)
@@ -194,7 +196,7 @@ class ActionResult:
 
     success: bool
     message: str | None = None
-    raw_payload: Mapping[str, object] = field(default_factory=dict)
+    _payload: Mapping[str, object] = field(default_factory=dict)
 
 
 __all__ = (
@@ -214,3 +216,5 @@ __all__ = (
     "OperationsHistoryRequest",
     "OperationsHistoryResult",
 )
+
+enable_module_serialization(globals())

@@ -5,10 +5,12 @@ from __future__ import annotations
 from collections.abc import Mapping
 from dataclasses import dataclass, field
 
+from avito.core.serialization import enable_module_serialization
+
 
 @dataclass(slots=True, frozen=True)
-class JsonRequest:
-    """Типизированная обертка над JSON payload запроса."""
+class JobsRequest:
+    """Унифицированный typed request для Jobs API."""
 
     payload: Mapping[str, object]
 
@@ -19,6 +21,18 @@ class JsonRequest:
 
 
 @dataclass(slots=True, frozen=True)
+class JobsQuery:
+    """Унифицированный typed query для Jobs API."""
+
+    params: Mapping[str, object]
+
+    def to_params(self) -> dict[str, object]:
+        """Сериализует query-параметры запроса."""
+
+        return dict(self.params)
+
+
+@dataclass(slots=True, frozen=True)
 class JobActionResult:
     """Результат mutation-операции Jobs API."""
 
@@ -26,7 +40,7 @@ class JobActionResult:
     id: str | None = None
     status: str | None = None
     message: str | None = None
-    raw_payload: Mapping[str, object] = field(default_factory=dict)
+    _payload: Mapping[str, object] = field(default_factory=dict)
 
 
 @dataclass(slots=True, frozen=True)
@@ -39,7 +53,7 @@ class ApplicationInfo:
     state: str | None
     is_viewed: bool | None
     applicant_name: str | None
-    raw_payload: Mapping[str, object] = field(default_factory=dict)
+    _payload: Mapping[str, object] = field(default_factory=dict)
 
 
 @dataclass(slots=True, frozen=True)
@@ -47,7 +61,7 @@ class ApplicationsResult:
     """Список откликов."""
 
     items: list[ApplicationInfo]
-    raw_payload: Mapping[str, object] = field(default_factory=dict)
+    _payload: Mapping[str, object] = field(default_factory=dict)
 
 
 @dataclass(slots=True, frozen=True)
@@ -56,7 +70,7 @@ class ApplicationIdItem:
 
     id: str | None
     updated_at: str | None
-    raw_payload: Mapping[str, object] = field(default_factory=dict)
+    _payload: Mapping[str, object] = field(default_factory=dict)
 
 
 @dataclass(slots=True, frozen=True)
@@ -65,7 +79,7 @@ class ApplicationIdsResult:
 
     items: list[ApplicationIdItem]
     cursor: str | None = None
-    raw_payload: Mapping[str, object] = field(default_factory=dict)
+    _payload: Mapping[str, object] = field(default_factory=dict)
 
 
 @dataclass(slots=True, frozen=True)
@@ -74,7 +88,7 @@ class ApplicationState:
 
     slug: str | None
     description: str | None
-    raw_payload: Mapping[str, object] = field(default_factory=dict)
+    _payload: Mapping[str, object] = field(default_factory=dict)
 
 
 @dataclass(slots=True, frozen=True)
@@ -82,7 +96,7 @@ class ApplicationStatesResult:
     """Список возможных статусов откликов."""
 
     items: list[ApplicationState]
-    raw_payload: Mapping[str, object] = field(default_factory=dict)
+    _payload: Mapping[str, object] = field(default_factory=dict)
 
 
 @dataclass(slots=True, frozen=True)
@@ -94,7 +108,7 @@ class ResumeInfo:
     candidate_name: str | None
     location: str | None
     salary: int | None
-    raw_payload: Mapping[str, object] = field(default_factory=dict)
+    _payload: Mapping[str, object] = field(default_factory=dict)
 
 
 @dataclass(slots=True, frozen=True)
@@ -104,7 +118,7 @@ class ResumesResult:
     items: list[ResumeInfo]
     cursor: str | None = None
     total: int | None = None
-    raw_payload: Mapping[str, object] = field(default_factory=dict)
+    _payload: Mapping[str, object] = field(default_factory=dict)
 
 
 @dataclass(slots=True, frozen=True)
@@ -114,7 +128,7 @@ class ResumeContactInfo:
     name: str | None
     phone: str | None
     email: str | None
-    raw_payload: Mapping[str, object] = field(default_factory=dict)
+    _payload: Mapping[str, object] = field(default_factory=dict)
 
 
 @dataclass(slots=True, frozen=True)
@@ -126,7 +140,7 @@ class VacancyInfo:
     title: str | None
     status: str | None
     url: str | None
-    raw_payload: Mapping[str, object] = field(default_factory=dict)
+    _payload: Mapping[str, object] = field(default_factory=dict)
 
 
 @dataclass(slots=True, frozen=True)
@@ -135,7 +149,7 @@ class VacanciesResult:
 
     items: list[VacancyInfo]
     total: int | None = None
-    raw_payload: Mapping[str, object] = field(default_factory=dict)
+    _payload: Mapping[str, object] = field(default_factory=dict)
 
 
 @dataclass(slots=True, frozen=True)
@@ -145,7 +159,7 @@ class VacancyStatusInfo:
     id: str | None
     uuid: str | None
     status: str | None
-    raw_payload: Mapping[str, object] = field(default_factory=dict)
+    _payload: Mapping[str, object] = field(default_factory=dict)
 
 
 @dataclass(slots=True, frozen=True)
@@ -153,7 +167,7 @@ class VacancyStatusesResult:
     """Список статусов вакансий."""
 
     items: list[VacancyStatusInfo]
-    raw_payload: Mapping[str, object] = field(default_factory=dict)
+    _payload: Mapping[str, object] = field(default_factory=dict)
 
 
 @dataclass(slots=True, frozen=True)
@@ -163,7 +177,7 @@ class JobWebhookInfo:
     url: str | None
     is_active: bool | None
     version: str | None
-    raw_payload: Mapping[str, object] = field(default_factory=dict)
+    _payload: Mapping[str, object] = field(default_factory=dict)
 
 
 @dataclass(slots=True, frozen=True)
@@ -171,7 +185,7 @@ class JobWebhooksResult:
     """Список webhook-подписок."""
 
     items: list[JobWebhookInfo]
-    raw_payload: Mapping[str, object] = field(default_factory=dict)
+    _payload: Mapping[str, object] = field(default_factory=dict)
 
 
 @dataclass(slots=True, frozen=True)
@@ -180,7 +194,7 @@ class JobDictionaryInfo:
 
     id: str | None
     description: str | None
-    raw_payload: Mapping[str, object] = field(default_factory=dict)
+    _payload: Mapping[str, object] = field(default_factory=dict)
 
 
 @dataclass(slots=True, frozen=True)
@@ -188,7 +202,7 @@ class JobDictionariesResult:
     """Список доступных словарей."""
 
     items: list[JobDictionaryInfo]
-    raw_payload: Mapping[str, object] = field(default_factory=dict)
+    _payload: Mapping[str, object] = field(default_factory=dict)
 
 
 @dataclass(slots=True, frozen=True)
@@ -198,7 +212,7 @@ class JobDictionaryValue:
     id: int | str | None
     name: str | None
     deprecated: bool | None
-    raw_payload: Mapping[str, object] = field(default_factory=dict)
+    _payload: Mapping[str, object] = field(default_factory=dict)
 
 
 @dataclass(slots=True, frozen=True)
@@ -206,4 +220,7 @@ class JobDictionaryValuesResult:
     """Список значений словаря."""
 
     items: list[JobDictionaryValue]
-    raw_payload: Mapping[str, object] = field(default_factory=dict)
+    _payload: Mapping[str, object] = field(default_factory=dict)
+
+
+enable_module_serialization(globals())

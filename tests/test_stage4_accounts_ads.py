@@ -137,8 +137,25 @@ def test_ads_list_uses_lazy_pagination_with_list_like_items() -> None:
     items = ad.list(status="active", limit=2)
 
     assert seen_offsets == ["0"]
+    assert items.items.loaded_count == 2
+    assert items.items.is_materialized is False
     assert items.items[0].id == 101
+    assert seen_offsets == ["0"]
     assert items.items[3].id == 104
+    assert seen_offsets == ["0", "2"]
+    assert items.items[1].id == 102
+    assert seen_offsets == ["0", "2"]
+    assert [item.title for item in items.items[:3]] == ["Смартфон", "Ноутбук", "Планшет"]
+    assert seen_offsets == ["0", "2"]
+    assert items.items.loaded_count == 4
+    assert items.items.is_materialized is False
+    assert [item.title for item in items.items.materialize()] == [
+        "Смартфон",
+        "Ноутбук",
+        "Планшет",
+        "Наушники",
+        "Камера",
+    ]
     assert len(items.items) == 5
     assert [item.title for item in items.items] == [
         "Смартфон",
@@ -147,6 +164,7 @@ def test_ads_list_uses_lazy_pagination_with_list_like_items() -> None:
         "Наушники",
         "Камера",
     ]
+    assert items.items.is_materialized is True
     assert seen_offsets == ["0", "2", "4"]
 
 
@@ -234,8 +252,8 @@ def test_ads_domain_covers_item_stats_spendings_and_promotion() -> None:
     assert analytics.period == "month"
     assert spendings.total == 77.5
     assert vas_prices.items[0].code == "xl"
-    assert vas_apply.success is True
-    assert package_apply.message == "package_applied"
+    assert vas_apply.applied is True
+    assert package_apply.status == "package_applied"
     assert vas_v2_apply.status == "v2_applied"
 
 

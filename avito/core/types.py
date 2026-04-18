@@ -53,6 +53,7 @@ class TransportDebugInfo:
     """Безопасный снимок transport-конфигурации для диагностики интеграции."""
 
     base_url: str
+    user_id: int | None
     requires_auth: bool
     timeout_connect: float
     timeout_read: float

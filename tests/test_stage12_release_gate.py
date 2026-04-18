@@ -18,6 +18,7 @@ def test_debug_info_does_not_expose_secrets() -> None:
     info = client.debug_info()
 
     assert info.base_url == "https://api.avito.ru"
+    assert info.user_id is None
     assert info.requires_auth is True
     assert info.retry_max_attempts == settings.retry_policy.max_attempts
     assert "secret" not in repr(info).lower()

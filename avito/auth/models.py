@@ -28,7 +28,7 @@ class TokenResponse:
     access_token: AccessToken
     refresh_token: str | None = None
     scope: str | None = None
-    raw_payload: Mapping[str, object] | None = None
+    _payload: Mapping[str, object] | None = None
 
 
 @dataclass(slots=True, frozen=True)

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from avito.core import Transport
+from avito.core import Transport, ValidationError
 from avito.messenger.client import MediaClient, MessengerClient, SpecialOffersClient, WebhookClient
 from avito.messenger.models import (
     BlacklistRequest,
@@ -76,12 +76,12 @@ class Chat(DomainObject):
 
     def _require_user_id(self) -> int:
         if self.user_id is None:
-            raise ValueError("Для операции требуется `user_id`.")
+            raise ValidationError("Для операции требуется `user_id`.")
         return int(self.user_id)
 
     def _require_chat_id(self) -> str:
         if self.resource_id is None:
-            raise ValueError("Для операции требуется `chat_id`.")
+            raise ValidationError("Для операции требуется `chat_id`.")
         return str(self.resource_id)
 
 
@@ -134,17 +134,17 @@ class ChatMessage(DomainObject):
 
     def _require_user_id(self) -> int:
         if self.user_id is None:
-            raise ValueError("Для операции требуется `user_id`.")
+            raise ValidationError("Для операции требуется `user_id`.")
         return int(self.user_id)
 
     def _require_chat_id(self) -> str:
         if self.resource_id is None:
-            raise ValueError("Для операции требуется `chat_id`.")
+            raise ValidationError("Для операции требуется `chat_id`.")
         return str(self.resource_id)
 
     def _require_message_id(self) -> str:
         if self.resource_id is None:
-            raise ValueError("Для операции требуется `message_id`.")
+            raise ValidationError("Для операции требуется `message_id`.")
         return str(self.resource_id)
 
 
@@ -192,7 +192,7 @@ class ChatMedia(DomainObject):
 
     def _require_user_id(self) -> int:
         if self.user_id is None:
-            raise ValueError("Для операции требуется `user_id`.")
+            raise ValidationError("Для операции требуется `user_id`.")
         return int(self.user_id)
 
 
@@ -244,7 +244,7 @@ class SpecialOfferCampaign(DomainObject):
 
     def _require_campaign_id(self) -> str:
         if self.resource_id is None:
-            raise ValueError("Для операции требуется `campaign_id`.")
+            raise ValidationError("Для операции требуется `campaign_id`.")
         return str(self.resource_id)
 
 

@@ -1,4 +1,4 @@
-from avito import AvitoClient
+from avito import AuthSettings, AvitoClient, AvitoSettings
 from avito.accounts import Account, AccountHierarchy
 from avito.ads import Ad, AdPromotion, AdStats, AutoloadLegacy, AutoloadProfile, AutoloadReport
 from avito.auth import AuthProvider
@@ -27,7 +27,9 @@ from avito.tariffs import Tariff
 
 
 def test_single_client_exposes_domain_factories() -> None:
-    client = AvitoClient()
+    client = AvitoClient(
+        AvitoSettings(auth=AuthSettings(client_id="client-id", client_secret="client-secret"))
+    )
 
     assert isinstance(client.auth(), AuthProvider)
     assert isinstance(client.account(1), Account)
@@ -78,3 +80,7 @@ def test_single_client_exposes_domain_factories() -> None:
     assert isinstance(client.review_answer(1), ReviewAnswer)
     assert isinstance(client.rating_profile(1), RatingProfile)
     assert isinstance(client.tariff(1), Tariff)
+
+
+def test_package_exports_auth_settings_as_public_config_contract() -> None:
+    assert AuthSettings.__name__ == "AuthSettings"

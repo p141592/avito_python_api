@@ -83,7 +83,7 @@ def map_account_profile(payload: object) -> AccountProfile:
         name=_as_str(data, "name", "title"),
         email=_as_str(data, "email"),
         phone=_as_str(data, "phone"),
-        raw_payload=data,
+        _payload=data,
     )
 
 
@@ -105,7 +105,7 @@ def map_account_balance(payload: object) -> AccountBalance:
         bonus=bonus,
         total=total,
         currency=_as_str(wallet_data, "currency"),
-        raw_payload=data,
+        _payload=data,
     )
 
 
@@ -121,14 +121,14 @@ def map_operations_history(payload: object) -> OperationsHistoryResult:
             operation_type=_as_str(item, "type", "operation_type", "operationType"),
             status=_as_str(item, "status"),
             description=_as_str(item, "description", "title"),
-            raw_payload=item,
+            _payload=item,
         )
         for item in _as_list(data, "operations", "items", "result")
     ]
     return OperationsHistoryResult(
         operations=operations,
         total=_as_int(data, "total", "count"),
-        raw_payload=data,
+        _payload=data,
     )
 
 
@@ -140,7 +140,7 @@ def map_ah_user_status(payload: object) -> AhUserStatus:
         user_id=_as_int(data, "user_id", "userId", "id"),
         is_active=_as_bool(data, "is_active", "isActive", "active"),
         role=_as_str(data, "role", "status"),
-        raw_payload=data,
+        _payload=data,
     )
 
 
@@ -155,11 +155,11 @@ def map_employees(payload: object) -> EmployeesResult:
             name=_as_str(item, "name", "title"),
             phone=_as_str(item, "phone"),
             email=_as_str(item, "email"),
-            raw_payload=item,
+            _payload=item,
         )
         for item in _as_list(data, "employees", "items", "result")
     ]
-    return EmployeesResult(items=items, total=_as_int(data, "total", "count"), raw_payload=data)
+    return EmployeesResult(items=items, total=_as_int(data, "total", "count"), _payload=data)
 
 
 def map_company_phones(payload: object) -> CompanyPhonesResult:
@@ -171,11 +171,11 @@ def map_company_phones(payload: object) -> CompanyPhonesResult:
             id=_as_int(item, "id", "phone_id", "phoneId"),
             phone=_as_str(item, "phone", "value"),
             comment=_as_str(item, "comment", "description"),
-            raw_payload=item,
+            _payload=item,
         )
         for item in _as_list(data, "phones", "items", "result")
     ]
-    return CompanyPhonesResult(items=items, raw_payload=data)
+    return CompanyPhonesResult(items=items, _payload=data)
 
 
 def map_employee_items(payload: object) -> EmployeeItemsResult:
@@ -188,11 +188,11 @@ def map_employee_items(payload: object) -> EmployeeItemsResult:
             title=_as_str(item, "title"),
             status=_as_str(item, "status"),
             price=_as_float(item, "price"),
-            raw_payload=item,
+            _payload=item,
         )
         for item in _as_list(data, "items", "result")
     ]
-    return EmployeeItemsResult(items=items, total=_as_int(data, "total", "count"), raw_payload=data)
+    return EmployeeItemsResult(items=items, total=_as_int(data, "total", "count"), _payload=data)
 
 
 def map_action_result(payload: object) -> ActionResult:
@@ -202,8 +202,8 @@ def map_action_result(payload: object) -> ActionResult:
         data = cast(Payload, payload)
         success = bool(data.get("success", True))
         message = _as_str(data, "message", "status")
-        return ActionResult(success=success, message=message, raw_payload=data)
-    return ActionResult(success=True, raw_payload={})
+        return ActionResult(success=success, message=message, _payload=data)
+    return ActionResult(success=True, _payload={})
 
 
 __all__ = (

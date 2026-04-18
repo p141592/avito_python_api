@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 
 from avito.ads.client import AdsClient, AutoloadClient, AutoloadLegacyClient, StatsClient, VasClient
@@ -32,11 +32,43 @@ from avito.ads.models import (
     UpdatePriceResult,
     UploadByUrlRequest,
     UploadResult,
-    VasApplyResult,
     VasPricesRequest,
     VasPricesResult,
 )
-from avito.core import Transport
+from avito.core import Transport, ValidationError
+from avito.promotion.models import PromotionActionResult
+
+
+def _validate_non_empty_items(name: str, items: Sequence[object]) -> None:
+    if not items:
+        raise ValidationError(f"`{name}` must contain at least one item.")
+
+
+def _validate_non_empty_string(name: str, value: str) -> None:
+    if not value.strip():
+        raise ValidationError(f"`{name}` must be a non-empty string.")
+
+
+def _validate_string_items(name: str, values: Sequence[str]) -> None:
+    _validate_non_empty_items(name, values)
+    for index, value in enumerate(values):
+        _validate_non_empty_string(f"{name}[{index}]", value)
+
+
+def _preview_result(
+    *,
+    action: str,
+    target: Mapping[str, object],
+    request_payload: Mapping[str, object],
+) -> PromotionActionResult:
+    return PromotionActionResult(
+        action=action,
+        target=dict(target),
+        status="preview",
+        applied=False,
+        request_payload=dict(request_payload),
+        details={"validated": True},
+    )
 
 
 @dataclass(slots=True, frozen=True)
@@ -99,12 +131,12 @@ class Ad(DomainObject):
 
     def _require_item_id(self) -> int:
         if self.resource_id is None:
-            raise ValueError("Для операции требуется `item_id`.")
+            raise ValidationError("Для операции требуется `item_id`.")
         return int(self.resource_id)
 
     def _require_ids(self) -> tuple[int, int]:
         if self.resource_id is None or self.user_id is None:
-            raise ValueError("Для операции требуются `item_id` и `user_id`.")
+            raise ValidationError("Для операции требуются `item_id` и `user_id`.")
         return int(self.resource_id), int(self.user_id)
 
 
@@ -209,7 +241,7 @@ class AdStats(DomainObject):
 
     def _require_user_id(self) -> int:
         if self.user_id is None:
-            raise ValueError("Для статистики требуется `user_id`.")
+            raise ValidationError("Для операции требуется `user_id`.")
         return int(self.user_id)
 
 
@@ -231,42 +263,97 @@ class AdPromotion(DomainObject):
             request=VasPricesRequest(item_ids=item_ids, location_id=location_id),
         )
 
-    def apply_vas(self, *, codes: list[str]) -> ActionResult:
+    def apply_vas(
+        self,
+        *,
+        codes: list[str],
+        dry_run: bool = False,
+    ) -> PromotionActionResult:
         """Применяет дополнительные услуги к объявлению."""
 
         item_id, user_id = self._require_ids()
+        _validate_string_items("codes", codes)
+        request = ApplyVasRequest(codes=codes)
+        request_payload = request.to_payload()
+        target = {"item_id": item_id, "user_id": user_id}
+        if dry_run:
+            return _preview_result(
+                action="apply_vas",
+                target=target,
+                request_payload=request_payload,
+            )
         return VasClient(self.transport).apply_item_vas(
             user_id=user_id,
             item_id=item_id,
-            request=ApplyVasRequest(codes=codes),
+            request=request,
+            action="apply_vas",
+            target=target,
+            request_payload=request_payload,
         )
 
-    def apply_vas_package(self, *, package_code: str) -> ActionResult:
+    def apply_vas_package(
+        self,
+        *,
+        package_code: str,
+        dry_run: bool = False,
+    ) -> PromotionActionResult:
         """Применяет пакет дополнительных услуг."""
 
         item_id, user_id = self._require_ids()
+        _validate_non_empty_string("package_code", package_code)
+        request = ApplyVasPackageRequest(package_code=package_code)
+        request_payload = request.to_payload()
+        target = {"item_id": item_id, "user_id": user_id}
+        if dry_run:
+            return _preview_result(
+                action="apply_vas_package",
+                target=target,
+                request_payload=request_payload,
+            )
         return VasClient(self.transport).apply_item_vas_package(
             user_id=user_id,
             item_id=item_id,
-            request=ApplyVasPackageRequest(package_code=package_code),
+            request=request,
+            action="apply_vas_package",
+            target=target,
+            request_payload=request_payload,
         )
 
-    def apply_vas_v2(self, *, codes: list[str]) -> VasApplyResult:
+    def apply_vas_v2(
+        self,
+        *,
+        codes: list[str],
+        dry_run: bool = False,
+    ) -> PromotionActionResult:
         """Применяет услуги продвижения через v2 endpoint."""
 
         item_id = self._require_item_id()
+        _validate_string_items("codes", codes)
+        request = ApplyVasRequest(codes=codes)
+        request_payload = request.to_payload()
+        target = {"item_id": item_id}
+        if dry_run:
+            return _preview_result(
+                action="apply_vas_v2",
+                target=target,
+                request_payload=request_payload,
+            )
         return VasClient(self.transport).apply_vas_v2(
-            item_id=item_id, request=ApplyVasRequest(codes=codes)
+            item_id=item_id,
+            request=request,
+            action="apply_vas_v2",
+            target=target,
+            request_payload=request_payload,
         )
 
     def _require_item_id(self) -> int:
         if self.resource_id is None:
-            raise ValueError("Для операции требуется `item_id`.")
+            raise ValidationError("Для операции требуется `item_id`.")
         return int(self.resource_id)
 
     def _require_user_id(self) -> int:
         if self.user_id is None:
-            raise ValueError("Для операции требуется `user_id`.")
+            raise ValidationError("Для операции требуется `user_id`.")
         return int(self.user_id)
 
     def _require_ids(self) -> tuple[int, int]:
@@ -368,7 +455,7 @@ class AutoloadReport(DomainObject):
 
     def _require_report_id(self) -> int:
         if self.resource_id is None:
-            raise ValueError("Для операции требуется `report_id`.")
+            raise ValidationError("Для операции требуется `report_id`.")
         return int(self.resource_id)
 
 
@@ -412,7 +499,7 @@ class AutoloadLegacy(DomainObject):
 
     def _require_report_id(self) -> int:
         if self.resource_id is None:
-            raise ValueError("Для операции требуется `report_id`.")
+            raise ValidationError("Для операции требуется `report_id`.")
         return int(self.resource_id)
 
 

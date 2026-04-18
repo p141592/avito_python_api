@@ -2,10 +2,9 @@
 
 from __future__ import annotations
 
-from collections.abc import Mapping
 from dataclasses import dataclass
 
-from avito.core import Transport
+from avito.core import Transport, ValidationError
 from avito.jobs.client import (
     ApplicationsClient,
     DictionariesClient,
@@ -14,13 +13,16 @@ from avito.jobs.client import (
     WebhookClient,
 )
 from avito.jobs.models import (
+    ApplicationIdsResult,
+    ApplicationsResult,
     ApplicationStatesResult,
     JobActionResult,
     JobDictionariesResult,
     JobDictionaryValuesResult,
+    JobsQuery,
+    JobsRequest,
     JobWebhookInfo,
     JobWebhooksResult,
-    JsonRequest,
     ResumeContactInfo,
     ResumeInfo,
     ResumesResult,
@@ -44,9 +46,8 @@ class Vacancy(DomainObject):
     resource_id: int | str | None = None
     user_id: int | str | None = None
 
-    def create(self, *, payload: Mapping[str, object], version: int = 2) -> JobActionResult:
+    def create(self, *, request: JobsRequest, version: int = 2) -> JobActionResult:
         client = VacanciesClient(self.transport)
-        request = JsonRequest(payload)
         if version == 1:
             return client.create_v1(request)
         return client.create_v2(request)
@@ -54,13 +55,12 @@ class Vacancy(DomainObject):
     def update(
         self,
         *,
-        payload: Mapping[str, object],
+        request: JobsRequest,
         vacancy_id: int | str | None = None,
         vacancy_uuid: str | None = None,
         version: int = 2,
     ) -> JobActionResult:
         client = VacanciesClient(self.transport)
-        request = JsonRequest(payload)
         if version == 1:
             return client.update_v1(
                 vacancy_id=vacancy_id or self._require_resource_id(), request=request
@@ -70,49 +70,49 @@ class Vacancy(DomainObject):
         )
 
     def delete(
-        self, *, payload: Mapping[str, object], vacancy_id: int | str | None = None
+        self, *, request: JobsRequest, vacancy_id: int | str | None = None
     ) -> JobActionResult:
         return VacanciesClient(self.transport).archive_v1(
             vacancy_id=vacancy_id or self._require_resource_id(),
-            request=JsonRequest(payload),
+            request=request,
         )
 
     def prolongate(
-        self, *, payload: Mapping[str, object], vacancy_id: int | str | None = None
+        self, *, request: JobsRequest, vacancy_id: int | str | None = None
     ) -> JobActionResult:
         return VacanciesClient(self.transport).prolongate_v1(
             vacancy_id=vacancy_id or self._require_resource_id(),
-            request=JsonRequest(payload),
+            request=request,
         )
 
-    def list(self, *, params: Mapping[str, object] | None = None) -> VacanciesResult:
-        return VacanciesClient(self.transport).list_v2(params=params)
+    def list(self, *, query: JobsQuery | None = None) -> VacanciesResult:
+        return VacanciesClient(self.transport).list_v2(query=query)
 
     def get(
-        self, *, vacancy_id: int | str | None = None, params: Mapping[str, object] | None = None
+        self, *, vacancy_id: int | str | None = None, query: JobsQuery | None = None
     ) -> VacancyInfo:
         return VacanciesClient(self.transport).get_item_v2(
             vacancy_id=vacancy_id or self._require_resource_id(),
-            params=params,
+            query=query,
         )
 
-    def get_by_ids(self, *, payload: Mapping[str, object]) -> VacanciesResult:
-        return VacanciesClient(self.transport).get_by_ids_v2(JsonRequest(payload))
+    def get_by_ids(self, *, request: JobsRequest) -> VacanciesResult:
+        return VacanciesClient(self.transport).get_by_ids_v2(request)
 
-    def get_statuses(self, *, payload: Mapping[str, object]) -> VacancyStatusesResult:
-        return VacanciesClient(self.transport).get_statuses_v2(JsonRequest(payload))
+    def get_statuses(self, *, request: JobsRequest) -> VacancyStatusesResult:
+        return VacanciesClient(self.transport).get_statuses_v2(request)
 
     def update_auto_renewal(
-        self, *, payload: Mapping[str, object], vacancy_uuid: str | None = None
+        self, *, request: JobsRequest, vacancy_uuid: str | None = None
     ) -> JobActionResult:
         return VacanciesClient(self.transport).auto_renewal_v2(
             vacancy_uuid=vacancy_uuid or self._require_resource_id(),
-            request=JsonRequest(payload),
+            request=request,
         )
 
     def _require_resource_id(self) -> str:
         if self.resource_id is None:
-            raise ValueError("Для операции требуется идентификатор вакансии.")
+            raise ValidationError("Для операции требуется идентификатор вакансии.")
         return str(self.resource_id)
 
 
@@ -123,25 +123,25 @@ class Application(DomainObject):
     resource_id: int | str | None = None
     user_id: int | str | None = None
 
-    def apply(self, *, payload: Mapping[str, object]) -> JobActionResult:
-        return ApplicationsClient(self.transport).apply_actions(JsonRequest(payload))
+    def apply(self, *, request: JobsRequest) -> JobActionResult:
+        return ApplicationsClient(self.transport).apply_actions(request)
 
     def list(
         self,
         *,
-        payload: Mapping[str, object] | None = None,
-        params: Mapping[str, object] | None = None,
-    ) -> object:
+        request: JobsRequest | None = None,
+        query: JobsQuery | None = None,
+    ) -> ApplicationsResult | ApplicationIdsResult:
         client = ApplicationsClient(self.transport)
-        if payload is not None:
-            return client.get_by_ids(JsonRequest(payload))
-        return client.get_ids(params=params or {})
+        if request is not None:
+            return client.get_by_ids(request)
+        return client.get_ids(query=query or JobsQuery(params={}))
 
     def get_states(self) -> ApplicationStatesResult:
         return ApplicationsClient(self.transport).get_states()
 
-    def update(self, *, payload: Mapping[str, object]) -> JobActionResult:
-        return ApplicationsClient(self.transport).set_is_viewed(JsonRequest(payload))
+    def update(self, *, request: JobsRequest) -> JobActionResult:
+        return ApplicationsClient(self.transport).set_is_viewed(request)
 
 
 @dataclass(slots=True, frozen=True)
@@ -151,8 +151,8 @@ class Resume(DomainObject):
     resource_id: int | str | None = None
     user_id: int | str | None = None
 
-    def list(self, *, params: Mapping[str, object] | None = None) -> ResumesResult:
-        return ResumeClient(self.transport).search(params=params)
+    def list(self, *, query: JobsQuery | None = None) -> ResumesResult:
+        return ResumeClient(self.transport).search(query=query)
 
     def get(self, *, resume_id: int | str | None = None) -> ResumeInfo:
         return ResumeClient(self.transport).get_item(
@@ -166,7 +166,7 @@ class Resume(DomainObject):
 
     def _require_resource_id(self) -> str:
         if self.resource_id is None:
-            raise ValueError("Для операции требуется `resume_id`.")
+            raise ValidationError("Для операции требуется `resume_id`.")
         return str(self.resource_id)
 
 
@@ -183,8 +183,8 @@ class JobWebhook(DomainObject):
     def list(self) -> JobWebhooksResult:
         return WebhookClient(self.transport).list_webhooks()
 
-    def update(self, *, payload: Mapping[str, object]) -> JobWebhookInfo:
-        return WebhookClient(self.transport).put_webhook(JsonRequest(payload))
+    def update(self, *, request: JobsRequest) -> JobWebhookInfo:
+        return WebhookClient(self.transport).put_webhook(request)
 
     def delete(self, *, url: str | None = None) -> JobActionResult:
         return WebhookClient(self.transport).delete_webhook(url=url)
@@ -207,7 +207,7 @@ class JobDictionary(DomainObject):
 
     def _require_resource_id(self) -> str:
         if self.resource_id is None:
-            raise ValueError("Для операции требуется `dictionary_id`.")
+            raise ValidationError("Для операции требуется `dictionary_id`.")
         return str(self.resource_id)
 
 

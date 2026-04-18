@@ -12,6 +12,7 @@ from avito.autoteka import (
     AutotekaValuation,
     AutotekaVehicle,
 )
+from avito.autoteka.models import AutotekaQuery, AutotekaRequest
 from avito.config import AvitoSettings
 from avito.core import Transport
 from avito.core.retries import RetryPolicy
@@ -140,23 +141,25 @@ def test_autoteka_vehicle_flows() -> None:
 
     vehicle = AutotekaVehicle(make_transport(httpx.MockTransport(handler)), resource_id="77")
 
-    catalog = vehicle.get_catalogs_resolve(payload={"brandId": 1})
-    leads = vehicle.get_leads(payload={"limit": 1})
-    preview_vin = vehicle.create_preview_by_vin(payload={"vin": "VIN-1"})
-    preview_item = vehicle.create_preview_by_item_id(payload={"itemId": 901})
-    preview_reg = vehicle.create_preview_by_reg_number(payload={"regNumber": "A123AA77"})
+    catalog = vehicle.get_catalogs_resolve(request=AutotekaRequest(payload={"brandId": 1}))
+    leads = vehicle.get_leads(request=AutotekaRequest(payload={"limit": 1}))
+    preview_vin = vehicle.create_preview_by_vin(request=AutotekaRequest(payload={"vin": "VIN-1"}))
+    preview_item = vehicle.create_preview_by_item_id(request=AutotekaRequest(payload={"itemId": 901}))
+    preview_reg = vehicle.create_preview_by_reg_number(
+        request=AutotekaRequest(payload={"regNumber": "A123AA77"})
+    )
     preview_external = vehicle.create_preview_by_external_item(
-        payload={"itemId": "ext-1", "site": "cars.example"}
+        request=AutotekaRequest(payload={"itemId": "ext-1", "site": "cars.example"})
     )
     preview = vehicle.get_preview()
     specification_plate = vehicle.create_specification_by_plate_number(
-        payload={"plateNumber": "A123AA77"}
+        request=AutotekaRequest(payload={"plateNumber": "A123AA77"})
     )
     specification_vehicle = vehicle.create_specification_by_vehicle_id(
-        payload={"vehicleId": "VIN-1"}
+        request=AutotekaRequest(payload={"vehicleId": "VIN-1"})
     )
-    specification = vehicle.get_specification_get_by_id(specification_id="501")
-    teaser_create = vehicle.create_teaser(payload={"vehicleId": "VIN-1"})
+    specification = vehicle.get_specification_by_id(specification_id="501")
+    teaser_create = vehicle.create_teaser(request=AutotekaRequest(payload={"vehicleId": "VIN-1"}))
     teaser = vehicle.get_teaser(teaser_id="601")
 
     assert catalog.items[0].values[0].label == "Audi"
@@ -325,20 +328,32 @@ def test_autoteka_report_monitoring_scoring_and_valuation_flows() -> None:
     valuation = AutotekaValuation(transport)
 
     package = report.get_active_package()
-    created = report.create_report(payload={"previewId": 77})
-    created_by_vehicle = report.create_report_by_vehicle_id(payload={"vehicleId": "VIN-1"})
+    created = report.create_report(request=AutotekaRequest(payload={"previewId": 77}))
+    created_by_vehicle = report.create_report_by_vehicle_id(
+        request=AutotekaRequest(payload={"vehicleId": "VIN-1"})
+    )
     reports = report.list_report_list()
     fetched = report.get_report()
-    sync_reg = report.create_sync_create_report_by_reg_number(payload={"regNumber": "A123AA77"})
-    sync_vin = report.create_sync_create_report_by_vin(payload={"vin": "VIN-1"})
-    added = monitoring.create_monitoring_bucket_add(payload={"vehicles": ["VIN-1", "bad-vin"]})
+    sync_reg = report.create_sync_report_by_reg_number(
+        request=AutotekaRequest(payload={"regNumber": "A123AA77"})
+    )
+    sync_vin = report.create_sync_report_by_vin(
+        request=AutotekaRequest(payload={"vin": "VIN-1"})
+    )
+    added = monitoring.create_monitoring_bucket_add(
+        request=AutotekaRequest(payload={"vehicles": ["VIN-1", "bad-vin"]})
+    )
     deleted = monitoring.list_monitoring_bucket_delete()
-    removed = monitoring.delete_monitoring_bucket_remove(payload={"vehicles": ["VIN-1"]})
-    events = monitoring.get_monitoring_get_reg_actions(params={"limit": 10})
-    scoring_created = scoring.create_scoring_by_vehicle_id(payload={"vehicleId": "VIN-1"})
-    scoring_item = scoring.get_scoring_get_by_id()
+    removed = monitoring.delete_monitoring_bucket_remove(
+        request=AutotekaRequest(payload={"vehicles": ["VIN-1"]})
+    )
+    events = monitoring.get_monitoring_reg_actions(query=AutotekaQuery(params={"limit": 10}))
+    scoring_created = scoring.create_scoring_by_vehicle_id(
+        request=AutotekaRequest(payload={"vehicleId": "VIN-1"})
+    )
+    scoring_item = scoring.get_scoring_by_id()
     valuation_item = valuation.get_valuation_by_specification(
-        payload={"specificationId": 501, "mileage": 30000}
+        request=AutotekaRequest(payload={"specificationId": 501, "mileage": 30000})
     )
 
     assert package.reports_remaining == 77

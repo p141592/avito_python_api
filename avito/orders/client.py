@@ -21,10 +21,10 @@ from avito.orders.models import (
     DeliveryEntityResult,
     DeliverySortingCentersResult,
     DeliveryTaskInfo,
-    JsonRequest,
     LabelPdfResult,
     LabelTaskResult,
     OrderActionResult,
+    OrdersRequest,
     OrdersResult,
     StockInfoResult,
     StockUpdateResult,
@@ -45,31 +45,31 @@ class OrdersClient:
         )
         return map_orders(payload)
 
-    def update_markings(self, request: JsonRequest) -> OrderActionResult:
+    def update_markings(self, request: OrdersRequest) -> OrderActionResult:
         return self._post_action("/order-management/1/markings", "orders.update_markings", request)
 
-    def accept_return_order(self, request: JsonRequest) -> OrderActionResult:
+    def accept_return_order(self, request: OrdersRequest) -> OrderActionResult:
         return self._post_action(
             "/order-management/1/order/acceptReturnOrder",
             "orders.accept_return_order",
             request,
         )
 
-    def apply_transition(self, request: JsonRequest) -> OrderActionResult:
+    def apply_transition(self, request: OrdersRequest) -> OrderActionResult:
         return self._post_action(
             "/order-management/1/order/applyTransition",
             "orders.apply_transition",
             request,
         )
 
-    def check_confirmation_code(self, request: JsonRequest) -> OrderActionResult:
+    def check_confirmation_code(self, request: OrdersRequest) -> OrderActionResult:
         return self._post_action(
             "/order-management/1/order/checkConfirmationCode",
             "orders.check_confirmation_code",
             request,
         )
 
-    def set_cnc_details(self, request: JsonRequest) -> OrderActionResult:
+    def set_cnc_details(self, request: OrdersRequest) -> OrderActionResult:
         return self._post_action(
             "/order-management/1/order/cncSetDetails",
             "orders.set_cnc_details",
@@ -84,21 +84,21 @@ class OrdersClient:
         )
         return map_courier_ranges(payload)
 
-    def set_courier_delivery_range(self, request: JsonRequest) -> OrderActionResult:
+    def set_courier_delivery_range(self, request: OrdersRequest) -> OrderActionResult:
         return self._post_action(
             "/order-management/1/order/setCourierDeliveryRange",
             "orders.set_courier_delivery_range",
             request,
         )
 
-    def set_tracking_number(self, request: JsonRequest) -> OrderActionResult:
+    def set_tracking_number(self, request: OrdersRequest) -> OrderActionResult:
         return self._post_action(
             "/order-management/1/order/setTrackingNumber",
             "orders.set_tracking_number",
             request,
         )
 
-    def _post_action(self, path: str, operation: str, request: JsonRequest) -> OrderActionResult:
+    def _post_action(self, path: str, operation: str, request: OrdersRequest) -> OrderActionResult:
         payload = self.transport.request_json(
             "POST",
             path,
@@ -114,10 +114,10 @@ class LabelsClient:
 
     transport: Transport
 
-    def create_generate_labels(self, request: JsonRequest) -> LabelTaskResult:
+    def create_generate_labels(self, request: OrdersRequest) -> LabelTaskResult:
         return self._create("/order-management/1/orders/labels", "orders.labels.create", request)
 
-    def create_generate_labels_extended(self, request: JsonRequest) -> LabelTaskResult:
+    def create_generate_labels_extended(self, request: OrdersRequest) -> LabelTaskResult:
         return self._create(
             "/order-management/1/orders/labels/extended",
             "orders.labels.create_extended",
@@ -131,7 +131,7 @@ class LabelsClient:
         )
         return LabelPdfResult(binary=binary)
 
-    def _create(self, path: str, operation: str, request: JsonRequest) -> LabelTaskResult:
+    def _create(self, path: str, operation: str, request: OrdersRequest) -> LabelTaskResult:
         payload = self.transport.request_json(
             "POST",
             path,
@@ -147,28 +147,28 @@ class DeliveryClient:
 
     transport: Transport
 
-    def create_announcement(self, request: JsonRequest) -> DeliveryEntityResult:
+    def create_announcement(self, request: OrdersRequest) -> DeliveryEntityResult:
         return self._post("/createAnnouncement", "orders.delivery.create_announcement", request)
 
-    def cancel_announcement(self, request: JsonRequest) -> DeliveryEntityResult:
+    def cancel_announcement(self, request: OrdersRequest) -> DeliveryEntityResult:
         return self._post("/cancelAnnouncement", "orders.delivery.cancel_announcement", request)
 
-    def create_parcel(self, request: JsonRequest) -> DeliveryEntityResult:
+    def create_parcel(self, request: OrdersRequest) -> DeliveryEntityResult:
         return self._post("/createParcel", "orders.delivery.create_parcel", request)
 
-    def change_parcel_result(self, request: JsonRequest) -> DeliveryEntityResult:
+    def change_parcel_result(self, request: OrdersRequest) -> DeliveryEntityResult:
         return self._post(
             "/delivery/order/changeParcelResult",
             "orders.delivery.change_parcel_result",
             request,
         )
 
-    def update_change_parcels(self, request: JsonRequest) -> DeliveryEntityResult:
+    def update_change_parcels(self, request: OrdersRequest) -> DeliveryEntityResult:
         return self._post(
             "/sandbox/changeParcels", "orders.delivery.update_change_parcels", request
         )
 
-    def _post(self, path: str, operation: str, request: JsonRequest) -> DeliveryEntityResult:
+    def _post(self, path: str, operation: str, request: OrdersRequest) -> DeliveryEntityResult:
         payload = self.transport.request_json(
             "POST",
             path,
@@ -184,51 +184,51 @@ class SandboxDeliveryClient:
 
     transport: Transport
 
-    def create_announcement(self, request: JsonRequest) -> DeliveryEntityResult:
+    def create_announcement(self, request: OrdersRequest) -> DeliveryEntityResult:
         return self._post(
             "/delivery-sandbox/announcements/create", "orders.sandbox.create_announcement", request
         )
 
-    def track_announcement(self, request: JsonRequest) -> DeliveryEntityResult:
+    def track_announcement(self, request: OrdersRequest) -> DeliveryEntityResult:
         return self._post(
             "/delivery-sandbox/announcements/track", "orders.sandbox.track_announcement", request
         )
 
-    def update_custom_area_schedule(self, request: JsonRequest) -> DeliveryEntityResult:
+    def update_custom_area_schedule(self, request: OrdersRequest) -> DeliveryEntityResult:
         return self._post(
             "/delivery-sandbox/areas/custom-schedule",
             "orders.sandbox.update_custom_area_schedule",
             request,
         )
 
-    def cancel_parcel(self, request: JsonRequest) -> DeliveryEntityResult:
+    def cancel_parcel(self, request: OrdersRequest) -> DeliveryEntityResult:
         return self._post("/delivery-sandbox/cancelParcel", "orders.sandbox.cancel_parcel", request)
 
-    def check_confirmation_code(self, request: JsonRequest) -> DeliveryEntityResult:
+    def check_confirmation_code(self, request: OrdersRequest) -> DeliveryEntityResult:
         return self._post(
             "/delivery-sandbox/order/checkConfirmationCode",
             "orders.sandbox.check_confirmation_code",
             request,
         )
 
-    def set_order_properties(self, request: JsonRequest) -> DeliveryEntityResult:
+    def set_order_properties(self, request: OrdersRequest) -> DeliveryEntityResult:
         return self._post(
             "/delivery-sandbox/order/properties",
             "orders.sandbox.set_order_properties",
             request,
         )
 
-    def set_order_real_address(self, request: JsonRequest) -> DeliveryEntityResult:
+    def set_order_real_address(self, request: OrdersRequest) -> DeliveryEntityResult:
         return self._post(
             "/delivery-sandbox/order/realAddress",
             "orders.sandbox.set_order_real_address",
             request,
         )
 
-    def tracking(self, request: JsonRequest) -> DeliveryEntityResult:
+    def tracking(self, request: OrdersRequest) -> DeliveryEntityResult:
         return self._post("/delivery-sandbox/order/tracking", "orders.sandbox.tracking", request)
 
-    def prohibit_order_acceptance(self, request: JsonRequest) -> DeliveryEntityResult:
+    def prohibit_order_acceptance(self, request: OrdersRequest) -> DeliveryEntityResult:
         return self._post(
             "/delivery-sandbox/prohibitOrderAcceptance",
             "orders.sandbox.prohibit_order_acceptance",
@@ -243,14 +243,14 @@ class SandboxDeliveryClient:
         )
         return map_sorting_centers(payload)
 
-    def add_sorting_center(self, request: JsonRequest) -> DeliveryEntityResult:
+    def add_sorting_center(self, request: OrdersRequest) -> DeliveryEntityResult:
         return self._post(
             "/delivery-sandbox/tariffs/sorting-center",
             "orders.sandbox.add_sorting_center",
             request,
         )
 
-    def add_areas(self, *, tariff_id: str, request: JsonRequest) -> DeliveryEntityResult:
+    def add_areas(self, *, tariff_id: str, request: OrdersRequest) -> DeliveryEntityResult:
         return self._post(
             f"/delivery-sandbox/tariffs/{tariff_id}/areas",
             "orders.sandbox.add_areas",
@@ -258,7 +258,7 @@ class SandboxDeliveryClient:
         )
 
     def add_tags_to_sorting_center(
-        self, *, tariff_id: str, request: JsonRequest
+        self, *, tariff_id: str, request: OrdersRequest
     ) -> DeliveryEntityResult:
         return self._post(
             f"/delivery-sandbox/tariffs/{tariff_id}/tagged-sorting-centers",
@@ -266,81 +266,81 @@ class SandboxDeliveryClient:
             request,
         )
 
-    def add_terminals(self, *, tariff_id: str, request: JsonRequest) -> DeliveryEntityResult:
+    def add_terminals(self, *, tariff_id: str, request: OrdersRequest) -> DeliveryEntityResult:
         return self._post(
             f"/delivery-sandbox/tariffs/{tariff_id}/terminals",
             "orders.sandbox.add_terminals",
             request,
         )
 
-    def update_terms(self, *, tariff_id: str, request: JsonRequest) -> DeliveryEntityResult:
+    def update_terms(self, *, tariff_id: str, request: OrdersRequest) -> DeliveryEntityResult:
         return self._post(
             f"/delivery-sandbox/tariffs/{tariff_id}/terms",
             "orders.sandbox.update_terms",
             request,
         )
 
-    def add_tariff_v2(self, request: JsonRequest) -> DeliveryEntityResult:
+    def add_tariff_v2(self, request: OrdersRequest) -> DeliveryEntityResult:
         return self._post("/delivery-sandbox/tariffsV2", "orders.sandbox.add_tariff_v2", request)
 
-    def v1_cancel_announcement(self, request: JsonRequest) -> DeliveryEntityResult:
+    def v1_cancel_announcement(self, request: OrdersRequest) -> DeliveryEntityResult:
         return self._post(
             "/delivery-sandbox/v1/cancelAnnouncement",
             "orders.sandbox.v1_cancel_announcement",
             request,
         )
 
-    def v1_cancel_parcel(self, request: JsonRequest) -> DeliveryEntityResult:
+    def v1_cancel_parcel(self, request: OrdersRequest) -> DeliveryEntityResult:
         return self._post(
             "/delivery-sandbox/v1/cancelParcel", "orders.sandbox.v1_cancel_parcel", request
         )
 
-    def v1_change_parcel(self, request: JsonRequest) -> DeliveryEntityResult:
+    def v1_change_parcel(self, request: OrdersRequest) -> DeliveryEntityResult:
         return self._post(
             "/delivery-sandbox/v1/changeParcel", "orders.sandbox.v1_change_parcel", request
         )
 
-    def v1_create_announcement(self, request: JsonRequest) -> DeliveryEntityResult:
+    def v1_create_announcement(self, request: OrdersRequest) -> DeliveryEntityResult:
         return self._post(
             "/delivery-sandbox/v1/createAnnouncement",
             "orders.sandbox.v1_create_announcement",
             request,
         )
 
-    def v1_get_announcement_event(self, request: JsonRequest) -> DeliveryEntityResult:
+    def v1_get_announcement_event(self, request: OrdersRequest) -> DeliveryEntityResult:
         return self._post(
             "/delivery-sandbox/v1/getAnnouncementEvent",
             "orders.sandbox.v1_get_announcement_event",
             request,
         )
 
-    def v1_get_change_parcel_info(self, request: JsonRequest) -> DeliveryEntityResult:
+    def v1_get_change_parcel_info(self, request: OrdersRequest) -> DeliveryEntityResult:
         return self._post(
             "/delivery-sandbox/v1/getChangeParcelInfo",
             "orders.sandbox.v1_get_change_parcel_info",
             request,
         )
 
-    def v1_get_parcel_info(self, request: JsonRequest) -> DeliveryEntityResult:
+    def v1_get_parcel_info(self, request: OrdersRequest) -> DeliveryEntityResult:
         return self._post(
             "/delivery-sandbox/v1/getParcelInfo",
             "orders.sandbox.v1_get_parcel_info",
             request,
         )
 
-    def v1_get_registered_parcel_id(self, request: JsonRequest) -> DeliveryEntityResult:
+    def v1_get_registered_parcel_id(self, request: OrdersRequest) -> DeliveryEntityResult:
         return self._post(
             "/delivery-sandbox/v1/getRegisteredParcelID",
             "orders.sandbox.v1_get_registered_parcel_id",
             request,
         )
 
-    def create_parcel_v2(self, request: JsonRequest) -> DeliveryEntityResult:
+    def create_parcel_v2(self, request: OrdersRequest) -> DeliveryEntityResult:
         return self._post(
             "/delivery-sandbox/v2/createParcel", "orders.sandbox.create_parcel_v2", request
         )
 
-    def _post(self, path: str, operation: str, request: JsonRequest) -> DeliveryEntityResult:
+    def _post(self, path: str, operation: str, request: OrdersRequest) -> DeliveryEntityResult:
         payload = self.transport.request_json(
             "POST",
             path,
@@ -371,7 +371,7 @@ class StockManagementClient:
 
     transport: Transport
 
-    def get_info(self, request: JsonRequest) -> StockInfoResult:
+    def get_info(self, request: OrdersRequest) -> StockInfoResult:
         payload = self.transport.request_json(
             "POST",
             "/stock-management/1/info",
@@ -380,7 +380,7 @@ class StockManagementClient:
         )
         return map_stock_info(payload)
 
-    def update_stocks(self, request: JsonRequest) -> StockUpdateResult:
+    def update_stocks(self, request: OrdersRequest) -> StockUpdateResult:
         payload = self.transport.request_json(
             "PUT",
             "/stock-management/1/stocks",

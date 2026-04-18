@@ -2,15 +2,18 @@
 
 from __future__ import annotations
 
+from base64 import b64encode
 from collections.abc import Mapping
 from dataclasses import dataclass, field
+from typing import Any
 
 from avito.core import BinaryResponse
+from avito.core.serialization import enable_module_serialization
 
 
 @dataclass(slots=True, frozen=True)
-class JsonRequest:
-    """Типизированная обертка над JSON payload запроса."""
+class OrdersRequest:
+    """Унифицированный typed request для Orders API."""
 
     payload: Mapping[str, object]
 
@@ -29,7 +32,7 @@ class OrderSummary:
     created_at: str | None
     buyer_name: str | None
     total_price: int | None
-    raw_payload: Mapping[str, object] = field(default_factory=dict)
+    _payload: Mapping[str, object] = field(default_factory=dict)
 
 
 @dataclass(slots=True, frozen=True)
@@ -38,7 +41,7 @@ class OrdersResult:
 
     items: list[OrderSummary]
     total: int | None = None
-    raw_payload: Mapping[str, object] = field(default_factory=dict)
+    _payload: Mapping[str, object] = field(default_factory=dict)
 
 
 @dataclass(slots=True, frozen=True)
@@ -49,7 +52,7 @@ class OrderActionResult:
     order_id: str | None = None
     status: str | None = None
     message: str | None = None
-    raw_payload: Mapping[str, object] = field(default_factory=dict)
+    _payload: Mapping[str, object] = field(default_factory=dict)
 
 
 @dataclass(slots=True, frozen=True)
@@ -60,7 +63,7 @@ class CourierRange:
     date: str | None
     start_at: str | None
     end_at: str | None
-    raw_payload: Mapping[str, object] = field(default_factory=dict)
+    _payload: Mapping[str, object] = field(default_factory=dict)
 
 
 @dataclass(slots=True, frozen=True)
@@ -69,7 +72,7 @@ class CourierRangesResult:
 
     items: list[CourierRange]
     address: str | None = None
-    raw_payload: Mapping[str, object] = field(default_factory=dict)
+    _payload: Mapping[str, object] = field(default_factory=dict)
 
 
 @dataclass(slots=True, frozen=True)
@@ -78,7 +81,7 @@ class LabelTaskResult:
 
     task_id: str | None
     status: str | None = None
-    raw_payload: Mapping[str, object] = field(default_factory=dict)
+    _payload: Mapping[str, object] = field(default_factory=dict)
 
 
 @dataclass(slots=True, frozen=True)
@@ -93,6 +96,18 @@ class LabelPdfResult:
 
         return self.binary.filename
 
+    def to_dict(self) -> dict[str, Any]:
+        """Сериализует бинарный результат без transport-объекта."""
+
+        return {
+            "filename": self.binary.filename,
+            "content_type": self.binary.content_type,
+            "content_base64": b64encode(self.binary.content).decode("ascii"),
+        }
+
+    def model_dump(self) -> dict[str, Any]:
+        return self.to_dict()
+
 
 @dataclass(slots=True, frozen=True)
 class DeliveryEntityResult:
@@ -104,7 +119,7 @@ class DeliveryEntityResult:
     parcel_id: str | None = None
     status: str | None = None
     message: str | None = None
-    raw_payload: Mapping[str, object] = field(default_factory=dict)
+    _payload: Mapping[str, object] = field(default_factory=dict)
 
 
 @dataclass(slots=True, frozen=True)
@@ -114,7 +129,7 @@ class DeliverySortingCenter:
     sorting_center_id: str | None
     name: str | None
     city: str | None
-    raw_payload: Mapping[str, object] = field(default_factory=dict)
+    _payload: Mapping[str, object] = field(default_factory=dict)
 
 
 @dataclass(slots=True, frozen=True)
@@ -122,7 +137,7 @@ class DeliverySortingCentersResult:
     """Список сортировочных центров доставки."""
 
     items: list[DeliverySortingCenter]
-    raw_payload: Mapping[str, object] = field(default_factory=dict)
+    _payload: Mapping[str, object] = field(default_factory=dict)
 
 
 @dataclass(slots=True, frozen=True)
@@ -132,7 +147,7 @@ class DeliveryTaskInfo:
     task_id: str | None
     status: str | None
     error: str | None
-    raw_payload: Mapping[str, object] = field(default_factory=dict)
+    _payload: Mapping[str, object] = field(default_factory=dict)
 
 
 @dataclass(slots=True, frozen=True)
@@ -144,7 +159,7 @@ class StockInfo:
     is_multiple: bool | None
     is_unlimited: bool | None
     is_out_of_stock: bool | None
-    raw_payload: Mapping[str, object] = field(default_factory=dict)
+    _payload: Mapping[str, object] = field(default_factory=dict)
 
 
 @dataclass(slots=True, frozen=True)
@@ -152,7 +167,7 @@ class StockInfoResult:
     """Список текущих остатков."""
 
     items: list[StockInfo]
-    raw_payload: Mapping[str, object] = field(default_factory=dict)
+    _payload: Mapping[str, object] = field(default_factory=dict)
 
 
 @dataclass(slots=True, frozen=True)
@@ -163,7 +178,7 @@ class StockUpdateItem:
     external_id: str | None
     success: bool
     errors: list[str]
-    raw_payload: Mapping[str, object] = field(default_factory=dict)
+    _payload: Mapping[str, object] = field(default_factory=dict)
 
 
 @dataclass(slots=True, frozen=True)
@@ -171,4 +186,7 @@ class StockUpdateResult:
     """Результат изменения остатков."""
 
     items: list[StockUpdateItem]
-    raw_payload: Mapping[str, object] = field(default_factory=dict)
+    _payload: Mapping[str, object] = field(default_factory=dict)
+
+
+enable_module_serialization(globals())

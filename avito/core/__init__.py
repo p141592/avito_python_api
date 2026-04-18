@@ -2,18 +2,24 @@
 
 from avito.core.exceptions import (
     AuthenticationError,
+    AuthorizationError,
     AvitoError,
     ClientError,
+    ConfigurationError,
+    ConflictError,
     NotFoundError,
     PermissionDeniedError,
     RateLimitError,
     ResponseMappingError,
     ServerError,
     TransportError,
+    UnsupportedOperationError,
+    UpstreamApiError,
     ValidationError,
 )
 from avito.core.pagination import PaginatedList, Paginator
 from avito.core.retries import RetryDecision, RetryPolicy
+from avito.core.serialization import SerializableModel
 from avito.core.transport import Transport
 from avito.core.types import (
     ApiTimeouts,
@@ -26,9 +32,12 @@ from avito.core.types import (
 __all__ = (
     "ApiTimeouts",
     "AuthenticationError",
+    "AuthorizationError",
     "AvitoError",
     "BinaryResponse",
     "ClientError",
+    "ConfigurationError",
+    "ConflictError",
     "JsonPage",
     "NotFoundError",
     "PaginatedList",
@@ -39,9 +48,12 @@ __all__ = (
     "ResponseMappingError",
     "RetryDecision",
     "RetryPolicy",
+    "SerializableModel",
     "ServerError",
     "Transport",
     "TransportDebugInfo",
     "TransportError",
+    "UnsupportedOperationError",
+    "UpstreamApiError",
     "ValidationError",
 )

@@ -10,6 +10,8 @@ from avito.auth import AccessToken, AuthProvider, AuthSettings
 from avito.config import AvitoSettings
 from avito.core import (
     AuthenticationError,
+    AuthorizationError,
+    ConflictError,
     JsonPage,
     PaginatedList,
     Paginator,
@@ -164,6 +166,34 @@ def test_transport_handles_rate_limit_and_classifies_errors() -> None:
             "POST", "/validation", context=RequestContext("validation")
         )
 
+    authorization_transport = Transport(
+        make_settings(retry_policy=RetryPolicy(max_attempts=1)),
+        client=httpx.Client(
+            transport=httpx.MockTransport(
+                lambda request: httpx.Response(403, json={"message": "forbidden"})
+            ),
+            base_url="https://api.avito.ru",
+        ),
+        sleep=lambda _: None,
+    )
+
+    with pytest.raises(AuthorizationError):
+        authorization_transport.request_json("GET", "/forbidden", context=RequestContext("forbidden"))
+
+    conflict_transport = Transport(
+        make_settings(retry_policy=RetryPolicy(max_attempts=1)),
+        client=httpx.Client(
+            transport=httpx.MockTransport(
+                lambda request: httpx.Response(409, json={"message": "conflict"})
+            ),
+            base_url="https://api.avito.ru",
+        ),
+        sleep=lambda _: None,
+    )
+
+    with pytest.raises(ConflictError):
+        conflict_transport.request_json("POST", "/conflict", context=RequestContext("conflict"))
+
 
 def test_transport_raises_mapping_error_for_invalid_json() -> None:
     transport = Transport(
@@ -249,17 +279,100 @@ def test_paginated_list_behaves_like_list_and_loads_pages_lazily() -> None:
 
     items = PaginatedList(fetch, first_page=pages[1])
 
+    assert items.loaded_count == 2
+    assert items.is_materialized is False
+
     assert items[0] == 1
     assert calls == []
 
     assert items[3] == 4
     assert calls == [2]
+    assert items.loaded_count == 4
+    assert items.is_materialized is False
 
     assert items[:] == [1, 2, 3, 4, 5]
     assert calls == [2, 3]
+    assert items.loaded_count == 5
+    assert items.is_materialized is True
 
     assert len(items) == 5
     assert items == [1, 2, 3, 4, 5]
+
+
+def test_paginated_list_partial_iteration_fetches_only_required_pages() -> None:
+    calls: list[int] = []
+    pages = {
+        1: JsonPage(items=[1, 2], page=1, per_page=2, total=5),
+        2: JsonPage(items=[3, 4], page=2, per_page=2, total=5),
+        3: JsonPage(items=[5], page=3, per_page=2, total=5),
+    }
+
+    def fetch(page: int | None, cursor: str | None) -> JsonPage[int]:
+        resolved_page = page or 1
+        calls.append(resolved_page)
+        return pages[resolved_page]
+
+    items = PaginatedList(fetch, first_page=pages[1])
+
+    assert list(item for _, item in zip(range(3), items, strict=False)) == [1, 2, 3]
+    assert calls == [2]
+    assert items.loaded_count == 4
+    assert items.is_materialized is False
+
+
+def test_paginated_list_materialize_loads_all_remaining_pages_once() -> None:
+    calls: list[int] = []
+    pages = {
+        1: JsonPage(items=[1, 2], page=1, per_page=2, total=5),
+        2: JsonPage(items=[3, 4], page=2, per_page=2, total=5),
+        3: JsonPage(items=[5], page=3, per_page=2, total=5),
+    }
+
+    def fetch(page: int | None, cursor: str | None) -> JsonPage[int]:
+        resolved_page = page or 1
+        calls.append(resolved_page)
+        return pages[resolved_page]
+
+    items = PaginatedList(fetch, first_page=pages[1])
+
+    assert items.materialize() == [1, 2, 3, 4, 5]
+    assert items.materialize() == [1, 2, 3, 4, 5]
+    assert calls == [2, 3]
+    assert items.is_materialized is True
+
+
+def test_paginated_list_propagates_error_when_read_reaches_failing_page() -> None:
+    calls: list[int] = []
+
+    def fetch(page: int | None, cursor: str | None) -> JsonPage[int]:
+        resolved_page = page or 1
+        calls.append(resolved_page)
+        if resolved_page == 2:
+            raise RateLimitError("page 2 failed")
+        return JsonPage(items=[1, 2], page=1, per_page=2, total=4)
+
+    items = PaginatedList(fetch, first_page=JsonPage(items=[1, 2], page=1, per_page=2, total=4))
+
+    assert items[0] == 1
+    with pytest.raises(RateLimitError, match="page 2 failed"):
+        _ = items[2]
+    assert calls == [2]
+
+
+def test_paginated_list_handles_empty_first_page_without_extra_calls() -> None:
+    calls: list[int] = []
+
+    def fetch(page: int | None, cursor: str | None) -> JsonPage[int]:
+        resolved_page = page or 1
+        calls.append(resolved_page)
+        return JsonPage(items=[], page=resolved_page, per_page=10, total=0)
+
+    items = PaginatedList(fetch, first_page=JsonPage(items=[], page=1, per_page=10, total=0))
+
+    assert items.materialize() == []
+    assert calls == []
+    assert items.loaded_count == 0
+    assert items.is_materialized is True
 
 
 def test_transport_raises_authentication_error_after_failed_refresh() -> None:

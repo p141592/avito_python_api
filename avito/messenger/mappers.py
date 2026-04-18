@@ -91,7 +91,7 @@ def map_chat(payload: object) -> ChatInfo:
         title=_str(data, "title", "name"),
         unread_count=_int(data, "unread_count", "unreadCount"),
         last_message_text=_str(last_message_data, "text", "message"),
-        raw_payload=data,
+        _payload=data,
     )
 
 
@@ -102,7 +102,7 @@ def map_chats(payload: object) -> ChatsResult:
     return ChatsResult(
         items=[map_chat(item) for item in _list(data, "chats", "items", "result")],
         total=_int(data, "total", "count"),
-        raw_payload=data,
+        _payload=data,
     )
 
 
@@ -118,7 +118,7 @@ def map_message(payload: object) -> MessageInfo:
         created_at=_str(data, "created_at", "createdAt"),
         direction=_str(data, "direction"),
         type=_str(data, "type"),
-        raw_payload=data,
+        _payload=data,
     )
 
 
@@ -129,7 +129,7 @@ def map_messages(payload: object) -> MessagesResult:
     return MessagesResult(
         items=[map_message(item) for item in _list(data, "messages", "items", "result")],
         total=_int(data, "total", "count"),
-        raw_payload=data,
+        _payload=data,
     )
 
 
@@ -141,7 +141,7 @@ def map_message_action(payload: object) -> MessageActionResult:
         success=bool(data.get("success", True)),
         message_id=_str(data, "message_id", "messageId", "id"),
         status=_str(data, "status", "message"),
-        raw_payload=data,
+        _payload=data,
     )
 
 
@@ -156,11 +156,11 @@ def map_voice_files(payload: object) -> VoiceFilesResult:
                 url=_str(item, "url"),
                 duration=_int(item, "duration"),
                 transcript=_str(item, "transcript", "text"),
-                raw_payload=item,
+                _payload=item,
             )
             for item in _list(data, "voice_files", "items", "result")
         ],
-        raw_payload=data,
+        _payload=data,
     )
 
 
@@ -173,11 +173,11 @@ def map_upload_images(payload: object) -> UploadImagesResult:
             UploadImageResult(
                 image_id=_str(item, "image_id", "imageId", "id"),
                 url=_str(item, "url"),
-                raw_payload=item,
+                _payload=item,
             )
             for item in _list(data, "images", "items", "result")
         ],
-        raw_payload=data,
+        _payload=data,
     )
 
 
@@ -191,11 +191,11 @@ def map_subscriptions(payload: object) -> SubscriptionsResult:
                 url=_str(item, "url"),
                 version=_str(item, "version"),
                 status=_str(item, "status"),
-                raw_payload=item,
+                _payload=item,
             )
             for item in _list(data, "subscriptions", "items", "result")
         ],
-        raw_payload=data,
+        _payload=data,
     )
 
 
@@ -206,7 +206,7 @@ def map_webhook_action(payload: object) -> WebhookActionResult:
     return WebhookActionResult(
         success=bool(data.get("success", True)),
         status=_str(data, "status", "message"),
-        raw_payload=data,
+        _payload=data,
     )
 
 
@@ -220,11 +220,11 @@ def map_available_special_offers(payload: object) -> SpecialOfferAvailableResult
                 item_id=_int(item, "item_id", "itemId", "id"),
                 title=_str(item, "title"),
                 is_available=_bool(item, "is_available", "isAvailable", "available"),
-                raw_payload=item,
+                _payload=item,
             )
             for item in _list(data, "items", "result")
         ],
-        raw_payload=data,
+        _payload=data,
     )
 
 
@@ -235,7 +235,7 @@ def map_multi_create_result(payload: object) -> MultiCreateSpecialOfferResult:
     return MultiCreateSpecialOfferResult(
         campaign_id=_str(data, "campaign_id", "campaignId", "id"),
         status=_str(data, "status"),
-        raw_payload=data,
+        _payload=data,
     )
 
 
@@ -248,7 +248,7 @@ def map_special_offer_stats(payload: object) -> SpecialOfferStatsResult:
         sent_count=_int(data, "sent_count", "sentCount"),
         delivered_count=_int(data, "delivered_count", "deliveredCount"),
         read_count=_int(data, "read_count", "readCount"),
-        raw_payload=data,
+        _payload=data,
     )
 
 
@@ -260,7 +260,7 @@ def map_tariff_info(payload: object) -> TariffInfo:
         price=_float(data, "price", "amount"),
         currency=_str(data, "currency"),
         daily_limit=_int(data, "daily_limit", "dailyLimit", "limit"),
-        raw_payload=data,
+        _payload=data,
     )
 
 

@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-from collections.abc import Mapping
 from dataclasses import dataclass
 
 from avito.autoteka.mappers import (
@@ -23,14 +22,15 @@ from avito.autoteka.models import (
     AutotekaLeadsResult,
     AutotekaPackageInfo,
     AutotekaPreviewInfo,
+    AutotekaQuery,
     AutotekaReportInfo,
     AutotekaReportsResult,
+    AutotekaRequest,
     AutotekaScoringInfo,
     AutotekaSpecificationInfo,
     AutotekaTeaserInfo,
     AutotekaValuationInfo,
     CatalogResolveResult,
-    JsonRequest,
     MonitoringBucketResult,
     MonitoringEventsResult,
 )
@@ -60,7 +60,7 @@ class AutotekaBaseClient:
 class CatalogClient(AutotekaBaseClient):
     """Выполняет HTTP-операции автокаталога."""
 
-    def get_catalogs_resolve(self, request: JsonRequest) -> CatalogResolveResult:
+    def get_catalogs_resolve(self, request: AutotekaRequest) -> CatalogResolveResult:
         payload = self.transport.request_json(
             "POST",
             "/autoteka/v1/catalogs/resolve",
@@ -74,7 +74,7 @@ class CatalogClient(AutotekaBaseClient):
 class LeadsClient(AutotekaBaseClient):
     """Выполняет HTTP-операции сервиса Сигнал."""
 
-    def get_leads(self, request: JsonRequest) -> AutotekaLeadsResult:
+    def get_leads(self, request: AutotekaRequest) -> AutotekaLeadsResult:
         payload = self.transport.request_json(
             "POST",
             "/autoteka/v1/get-leads/",
@@ -88,26 +88,26 @@ class LeadsClient(AutotekaBaseClient):
 class PreviewClient(AutotekaBaseClient):
     """Выполняет HTTP-операции превью автомобиля."""
 
-    def create_by_vin(self, request: JsonRequest) -> AutotekaPreviewInfo:
+    def create_by_vin(self, request: AutotekaRequest) -> AutotekaPreviewInfo:
         return self._post_preview(
             "/autoteka/v1/previews", "autoteka.preview.create_by_vin", request
         )
 
-    def create_by_external_item(self, request: JsonRequest) -> AutotekaPreviewInfo:
+    def create_by_external_item(self, request: AutotekaRequest) -> AutotekaPreviewInfo:
         return self._post_preview(
             "/autoteka/v1/request-preview-by-external-item",
             "autoteka.preview.create_by_external_item",
             request,
         )
 
-    def create_by_item_id(self, request: JsonRequest) -> AutotekaPreviewInfo:
+    def create_by_item_id(self, request: AutotekaRequest) -> AutotekaPreviewInfo:
         return self._post_preview(
             "/autoteka/v1/request-preview-by-item-id",
             "autoteka.preview.create_by_item_id",
             request,
         )
 
-    def create_by_reg_number(self, request: JsonRequest) -> AutotekaPreviewInfo:
+    def create_by_reg_number(self, request: AutotekaRequest) -> AutotekaPreviewInfo:
         return self._post_preview(
             "/autoteka/v1/request-preview-by-regnumber",
             "autoteka.preview.create_by_reg_number",
@@ -122,7 +122,7 @@ class PreviewClient(AutotekaBaseClient):
         )
         return map_preview(payload)
 
-    def _post_preview(self, path: str, operation: str, request: JsonRequest) -> AutotekaPreviewInfo:
+    def _post_preview(self, path: str, operation: str, request: AutotekaRequest) -> AutotekaPreviewInfo:
         payload = self.transport.request_json(
             "POST",
             path,
@@ -144,10 +144,10 @@ class ReportClient(AutotekaBaseClient):
         )
         return map_package(payload)
 
-    def create_report(self, request: JsonRequest) -> AutotekaReportInfo:
+    def create_report(self, request: AutotekaRequest) -> AutotekaReportInfo:
         return self._post_report("/autoteka/v1/reports", "autoteka.report.create", request)
 
-    def create_report_by_vehicle_id(self, request: JsonRequest) -> AutotekaReportInfo:
+    def create_report_by_vehicle_id(self, request: AutotekaRequest) -> AutotekaReportInfo:
         return self._post_report(
             "/autoteka/v1/reports-by-vehicle-id",
             "autoteka.report.create_by_vehicle_id",
@@ -170,21 +170,21 @@ class ReportClient(AutotekaBaseClient):
         )
         return map_report(payload)
 
-    def create_sync_report_by_reg_number(self, request: JsonRequest) -> AutotekaReportInfo:
+    def create_sync_report_by_reg_number(self, request: AutotekaRequest) -> AutotekaReportInfo:
         return self._post_report(
             "/autoteka/v1/sync/create-by-regnumber",
             "autoteka.report.create_sync_by_reg_number",
             request,
         )
 
-    def create_sync_report_by_vin(self, request: JsonRequest) -> AutotekaReportInfo:
+    def create_sync_report_by_vin(self, request: AutotekaRequest) -> AutotekaReportInfo:
         return self._post_report(
             "/autoteka/v1/sync/create-by-vin",
             "autoteka.report.create_sync_by_vin",
             request,
         )
 
-    def _post_report(self, path: str, operation: str, request: JsonRequest) -> AutotekaReportInfo:
+    def _post_report(self, path: str, operation: str, request: AutotekaRequest) -> AutotekaReportInfo:
         payload = self.transport.request_json(
             "POST",
             path,
@@ -198,7 +198,7 @@ class ReportClient(AutotekaBaseClient):
 class MonitoringClient(AutotekaBaseClient):
     """Выполняет HTTP-операции мониторинга."""
 
-    def add_bucket(self, request: JsonRequest) -> MonitoringBucketResult:
+    def add_bucket(self, request: AutotekaRequest) -> MonitoringBucketResult:
         return self._post_bucket(
             "/autoteka/v1/monitoring/bucket/add",
             "autoteka.monitoring.bucket_add",
@@ -213,7 +213,7 @@ class MonitoringClient(AutotekaBaseClient):
         )
         return map_monitoring_bucket(payload)
 
-    def remove_bucket(self, request: JsonRequest) -> MonitoringBucketResult:
+    def remove_bucket(self, request: AutotekaRequest) -> MonitoringBucketResult:
         return self._post_bucket(
             "/autoteka/v1/monitoring/bucket/remove",
             "autoteka.monitoring.bucket_remove",
@@ -221,18 +221,18 @@ class MonitoringClient(AutotekaBaseClient):
         )
 
     def get_reg_actions(
-        self, *, params: Mapping[str, object] | None = None
+        self, *, query: AutotekaQuery | None = None
     ) -> MonitoringEventsResult:
         payload = self.transport.request_json(
             "GET",
             "/autoteka/v1/monitoring/get-reg-actions/",
             context=self._context("autoteka.monitoring.get_reg_actions"),
-            params=params,
+            params=query.to_params() if query is not None else None,
         )
         return map_monitoring_events(payload)
 
     def _post_bucket(
-        self, path: str, operation: str, request: JsonRequest
+        self, path: str, operation: str, request: AutotekaRequest
     ) -> MonitoringBucketResult:
         payload = self.transport.request_json(
             "POST",
@@ -247,7 +247,7 @@ class MonitoringClient(AutotekaBaseClient):
 class ScoringClient(AutotekaBaseClient):
     """Выполняет HTTP-операции скоринга рисков."""
 
-    def create_by_vehicle_id(self, request: JsonRequest) -> AutotekaScoringInfo:
+    def create_by_vehicle_id(self, request: AutotekaRequest) -> AutotekaScoringInfo:
         payload = self.transport.request_json(
             "POST",
             "/autoteka/v1/scoring/by-vehicle-id",
@@ -269,14 +269,14 @@ class ScoringClient(AutotekaBaseClient):
 class SpecificationsClient(AutotekaBaseClient):
     """Выполняет HTTP-операции спецификаций автомобиля."""
 
-    def create_by_plate_number(self, request: JsonRequest) -> AutotekaSpecificationInfo:
+    def create_by_plate_number(self, request: AutotekaRequest) -> AutotekaSpecificationInfo:
         return self._post_specification(
             "/autoteka/v1/specifications/by-plate-number",
             "autoteka.specification.create_by_plate_number",
             request,
         )
 
-    def create_by_vehicle_id(self, request: JsonRequest) -> AutotekaSpecificationInfo:
+    def create_by_vehicle_id(self, request: AutotekaRequest) -> AutotekaSpecificationInfo:
         return self._post_specification(
             "/autoteka/v1/specifications/by-vehicle-id",
             "autoteka.specification.create_by_vehicle_id",
@@ -295,7 +295,7 @@ class SpecificationsClient(AutotekaBaseClient):
         self,
         path: str,
         operation: str,
-        request: JsonRequest,
+        request: AutotekaRequest,
     ) -> AutotekaSpecificationInfo:
         payload = self.transport.request_json(
             "POST",
@@ -310,7 +310,7 @@ class SpecificationsClient(AutotekaBaseClient):
 class TeaserClient(AutotekaBaseClient):
     """Выполняет HTTP-операции тизеров."""
 
-    def create(self, request: JsonRequest) -> AutotekaTeaserInfo:
+    def create(self, request: AutotekaRequest) -> AutotekaTeaserInfo:
         payload = self.transport.request_json(
             "POST",
             "/autoteka/v1/teasers",
@@ -332,7 +332,7 @@ class TeaserClient(AutotekaBaseClient):
 class ValuationClient(AutotekaBaseClient):
     """Выполняет HTTP-операции оценки стоимости."""
 
-    def get_by_specification(self, request: JsonRequest) -> AutotekaValuationInfo:
+    def get_by_specification(self, request: AutotekaRequest) -> AutotekaValuationInfo:
         payload = self.transport.request_json(
             "POST",
             "/autoteka/v1/valuation/by-specification",

@@ -5,10 +5,12 @@ from __future__ import annotations
 from collections.abc import Mapping
 from dataclasses import dataclass, field
 
+from avito.core.serialization import enable_module_serialization
+
 
 @dataclass(slots=True, frozen=True)
-class JsonRequest:
-    """Типизированная обертка над JSON payload запроса."""
+class AutotekaRequest:
+    """Унифицированный typed request для Автотеки."""
 
     payload: Mapping[str, object]
 
@@ -19,12 +21,24 @@ class JsonRequest:
 
 
 @dataclass(slots=True, frozen=True)
+class AutotekaQuery:
+    """Унифицированный typed query для Автотеки."""
+
+    params: Mapping[str, object]
+
+    def to_params(self) -> dict[str, object]:
+        """Сериализует query-параметры запроса."""
+
+        return dict(self.params)
+
+
+@dataclass(slots=True, frozen=True)
 class CatalogFieldValue:
     """Значение параметра автокаталога."""
 
     value_id: str | None
     label: str | None
-    raw_payload: Mapping[str, object] = field(default_factory=dict)
+    _payload: Mapping[str, object] = field(default_factory=dict)
 
 
 @dataclass(slots=True, frozen=True)
@@ -35,7 +49,7 @@ class CatalogField:
     label: str | None
     data_type: str | None
     values: list[CatalogFieldValue]
-    raw_payload: Mapping[str, object] = field(default_factory=dict)
+    _payload: Mapping[str, object] = field(default_factory=dict)
 
 
 @dataclass(slots=True, frozen=True)
@@ -43,7 +57,7 @@ class CatalogResolveResult:
     """Результат актуализации параметров автокаталога."""
 
     items: list[CatalogField]
-    raw_payload: Mapping[str, object] = field(default_factory=dict)
+    _payload: Mapping[str, object] = field(default_factory=dict)
 
 
 @dataclass(slots=True, frozen=True)
@@ -59,7 +73,7 @@ class AutotekaLeadEvent:
     price: int | None
     created_at: str | None
     url: str | None
-    raw_payload: Mapping[str, object] = field(default_factory=dict)
+    _payload: Mapping[str, object] = field(default_factory=dict)
 
 
 @dataclass(slots=True, frozen=True)
@@ -68,7 +82,7 @@ class AutotekaLeadsResult:
 
     items: list[AutotekaLeadEvent]
     last_id: int | None = None
-    raw_payload: Mapping[str, object] = field(default_factory=dict)
+    _payload: Mapping[str, object] = field(default_factory=dict)
 
 
 @dataclass(slots=True, frozen=True)
@@ -77,7 +91,7 @@ class MonitoringInvalidVehicle:
 
     vehicle_id: str | None
     description: str | None
-    raw_payload: Mapping[str, object] = field(default_factory=dict)
+    _payload: Mapping[str, object] = field(default_factory=dict)
 
 
 @dataclass(slots=True, frozen=True)
@@ -86,7 +100,7 @@ class MonitoringBucketResult:
 
     success: bool
     invalid_vehicles: list[MonitoringInvalidVehicle]
-    raw_payload: Mapping[str, object] = field(default_factory=dict)
+    _payload: Mapping[str, object] = field(default_factory=dict)
 
 
 @dataclass(slots=True, frozen=True)
@@ -102,7 +116,7 @@ class MonitoringEvent:
     operation_date_to: str | None
     owner_code: int | None
     actual_at: int | None
-    raw_payload: Mapping[str, object] = field(default_factory=dict)
+    _payload: Mapping[str, object] = field(default_factory=dict)
 
 
 @dataclass(slots=True, frozen=True)
@@ -113,7 +127,7 @@ class MonitoringEventsResult:
     has_next: bool | None = None
     next_cursor: str | None = None
     next_link: str | None = None
-    raw_payload: Mapping[str, object] = field(default_factory=dict)
+    _payload: Mapping[str, object] = field(default_factory=dict)
 
 
 @dataclass(slots=True, frozen=True)
@@ -124,7 +138,7 @@ class AutotekaPackageInfo:
     reports_remaining: int | None
     created_at: str | None
     expires_at: str | None
-    raw_payload: Mapping[str, object] = field(default_factory=dict)
+    _payload: Mapping[str, object] = field(default_factory=dict)
 
 
 @dataclass(slots=True, frozen=True)
@@ -135,7 +149,7 @@ class AutotekaPreviewInfo:
     status: str | None
     vehicle_id: str | None
     reg_number: str | None
-    raw_payload: Mapping[str, object] = field(default_factory=dict)
+    _payload: Mapping[str, object] = field(default_factory=dict)
 
 
 @dataclass(slots=True, frozen=True)
@@ -148,7 +162,7 @@ class AutotekaReportInfo:
     created_at: str | None
     web_link: str | None
     pdf_link: str | None
-    raw_payload: Mapping[str, object] = field(default_factory=dict)
+    _payload: Mapping[str, object] = field(default_factory=dict)
 
 
 @dataclass(slots=True, frozen=True)
@@ -156,7 +170,7 @@ class AutotekaReportsResult:
     """Список отчетов Автотеки."""
 
     items: list[AutotekaReportInfo]
-    raw_payload: Mapping[str, object] = field(default_factory=dict)
+    _payload: Mapping[str, object] = field(default_factory=dict)
 
 
 @dataclass(slots=True, frozen=True)
@@ -166,7 +180,7 @@ class AutotekaScoringInfo:
     scoring_id: str | None
     is_completed: bool | None
     created_at: int | None
-    raw_payload: Mapping[str, object] = field(default_factory=dict)
+    _payload: Mapping[str, object] = field(default_factory=dict)
 
 
 @dataclass(slots=True, frozen=True)
@@ -177,7 +191,7 @@ class AutotekaSpecificationInfo:
     status: str | None
     vehicle_id: str | None
     plate_number: str | None
-    raw_payload: Mapping[str, object] = field(default_factory=dict)
+    _payload: Mapping[str, object] = field(default_factory=dict)
 
 
 @dataclass(slots=True, frozen=True)
@@ -189,7 +203,7 @@ class AutotekaTeaserInfo:
     brand: str | None = None
     model: str | None = None
     year: int | None = None
-    raw_payload: Mapping[str, object] = field(default_factory=dict)
+    _payload: Mapping[str, object] = field(default_factory=dict)
 
 
 @dataclass(slots=True, frozen=True)
@@ -205,4 +219,7 @@ class AutotekaValuationInfo:
     mileage: int | None
     avg_price_with_condition: int | None
     avg_market_price: int | None
-    raw_payload: Mapping[str, object] = field(default_factory=dict)
+    _payload: Mapping[str, object] = field(default_factory=dict)
+
+
+enable_module_serialization(globals())

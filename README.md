@@ -27,6 +27,8 @@ pip install avito-py
 
 ## Быстрый старт
 
+Получение ключей - https://www.avito.ru/professionals/api
+
 ```python
 from avito import AvitoClient
 
@@ -40,12 +42,51 @@ print(ad.title)
 
 По умолчанию настройки читаются из переменных окружения с префиксом `AVITO_`.
 
-Базовые переменные:
+Официальный способ конфигурации SDK:
 
-- `AVITO_AUTH__CLIENT_ID`
-- `AVITO_AUTH__CLIENT_SECRET`
-- `AVITO_AUTH__REFRESH_TOKEN`
-- `AVITO_BASE_URL`
+```python
+from avito import AuthSettings, AvitoClient, AvitoSettings
+
+settings = AvitoSettings(
+    base_url="https://api.avito.ru",
+    user_id=123,
+    auth=AuthSettings(
+        client_id="client-id",
+        client_secret="client-secret",
+    ),
+)
+client = AvitoClient(settings)
+```
+
+Инициализация из окружения и `.env`:
+
+```python
+from avito import AvitoClient, AvitoSettings
+
+settings = AvitoSettings.from_env()
+client = AvitoClient.from_env()
+```
+
+Поддерживаемые env-переменные и alias-имена:
+
+- `AVITO_BASE_URL`, alias: `BASE_URL`
+- `AVITO_USER_ID`, alias: `USER_ID`
+- `AVITO_AUTH__CLIENT_ID`, alias: `AVITO_CLIENT_ID`, `CLIENT_ID`
+- `AVITO_AUTH__CLIENT_SECRET`, alias: `AVITO_CLIENT_SECRET`, `AVITO_SECRET`, `CLIENT_SECRET`, `SECRET`
+- `AVITO_AUTH__REFRESH_TOKEN`, alias: `AVITO_REFRESH_TOKEN`, `REFRESH_TOKEN`
+- `AVITO_AUTH__SCOPE`, alias: `AVITO_SCOPE`, `SCOPE`
+- `AVITO_AUTH__TOKEN_URL`, alias: `AVITO_TOKEN_URL`, `TOKEN_URL`
+- `AVITO_AUTH__LEGACY_TOKEN_URL`, alias: `AVITO_LEGACY_TOKEN_URL`, `LEGACY_TOKEN_URL`
+- `AVITO_AUTH__AUTOTEKA_TOKEN_URL`, alias: `AVITO_AUTOTEKA_TOKEN_URL`, `AUTOTEKA_TOKEN_URL`
+- `AVITO_AUTH__AUTOTEKA_CLIENT_ID`, alias: `AVITO_AUTOTEKA_CLIENT_ID`, `AUTOTEKA_CLIENT_ID`
+- `AVITO_AUTH__AUTOTEKA_CLIENT_SECRET`, alias: `AVITO_AUTOTEKA_CLIENT_SECRET`, `AUTOTEKA_CLIENT_SECRET`
+- `AVITO_AUTH__AUTOTEKA_SCOPE`, alias: `AVITO_AUTOTEKA_SCOPE`, `AUTOTEKA_SCOPE`
+
+Правила resolution:
+
+- значения из process environment имеют приоритет над `.env`;
+- `AvitoSettings.from_env()` и `AvitoClient.from_env()` детерминированно читают `.env` из текущей рабочей директории или из переданного `env_file`;
+- при отсутствии `client_id` или `client_secret` SDK завершает инициализацию с typed-ошибкой `ConfigurationError`.
 
 ## Примеры по доменам
 
@@ -125,6 +166,30 @@ with AvitoClient() as avito:
     records = avito.call_tracking_call(call_id=10).download()
 ```
 
+## Пагинация
+
+Публичные list-операции, которые поддерживают lazy pagination, возвращают обычные SDK-результаты, а поле `items` в них ведет себя как list-like коллекция `PaginatedList`.
+
+Текущий стабильный контракт:
+
+- первая страница загружается сразу, остальные страницы подгружаются только при чтении элементов за ее пределами;
+- доступ к уже загруженным элементам не делает повторных запросов;
+- частичная итерация и slicing загружают только необходимые страницы;
+- явная полная материализация выполняется через `items.materialize()`.
+
+Пример:
+
+```python
+from avito import AvitoClient
+
+with AvitoClient() as avito:
+    result = avito.ad(user_id=123).list(status="active", limit=50)
+
+    first = result.items[0]
+    preview = result.items[:10]
+    all_items = result.items.materialize()
+```
+
 ### Автотека
 
 ```python
@@ -157,11 +222,12 @@ client = AvitoClient()
 info = client.debug_info()
 
 print(info.base_url)
+print(info.user_id)
 print(info.retry_max_attempts)
 client.close()
 ```
 
-`debug_info()` подходит для smoke-проверок окружения и диагностики конфигурации. Access token, `client_secret` и `Authorization` header в этот снимок не попадают.
+`debug_info()` подходит для smoke-проверок окружения и диагностики конфигурации. Стабильный контракт включает `base_url`, `user_id`, флаг `requires_auth`, таймауты и retry-настройки. Access token, `client_secret` и `Authorization` header в этот снимок не попадают.
 
 ## Проверки качества
 
@@ -201,7 +267,5 @@ git push origin v1.0.2
 
 ## Документация репозитория
 
-- [STYLEGUIDE.md](STYLEGUIDE.md) — нормативные архитектурные правила.
-- [TODO.md](TODO.md) — этапы реализации и релизный gate.
-- [docs/inventory.md](docs/inventory.md) — матрица соответствия swagger-операций и публичного API SDK.
-- [docs/release.md](docs/release.md) — политика changelog и checklist релиза.
+- [STYLEGUIDE.md](STYLEGUIDE.md) — нормативные архитектурные правила
+- [docs/inventory.md](docs/inventory.md) — матрица соответствия swagger-операций и публичного API SDK

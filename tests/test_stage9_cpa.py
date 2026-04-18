@@ -10,6 +10,15 @@ from avito.core import Transport
 from avito.core.retries import RetryPolicy
 from avito.core.types import ApiTimeouts
 from avito.cpa import CallTrackingCall, CpaCall, CpaChat, CpaLead, CpaLegacy
+from avito.cpa.models import (
+    CallTrackingCallsRequest,
+    CpaCallByIdRequest,
+    CpaCallComplaintRequest,
+    CpaCallsByTimeRequest,
+    CpaChatsByTimeRequest,
+    CpaLeadComplaintRequest,
+    CpaPhonesFromChatsRequest,
+)
 
 
 def make_transport(handler: httpx.MockTransport) -> Transport:
@@ -108,9 +117,16 @@ def test_cpa_chat_and_phone_flows() -> None:
     chat = CpaChat(make_transport(httpx.MockTransport(handler)), resource_id="act-1")
 
     item = chat.get()
-    chats_v1 = chat.list(payload={"createdAtFrom": "2026-04-18T00:00:00+03:00"}, version=1)
-    chats_v2 = chat.list(payload={"createdAtFrom": "2026-04-18T00:00:00+03:00", "limit": 10})
-    phones = chat.get_phones_info_from_chats(payload={"actionIds": ["act-1", "act-2"]})
+    chats_v1 = chat.list(
+        request=CpaChatsByTimeRequest(created_at_from="2026-04-18T00:00:00+03:00"),
+        version=1,
+    )
+    chats_v2 = chat.list(
+        request=CpaChatsByTimeRequest(created_at_from="2026-04-18T00:00:00+03:00", limit=10)
+    )
+    phones = chat.get_phones_info_from_chats(
+        request=CpaPhonesFromChatsRequest(action_ids=["act-1", "act-2"])
+    )
 
     assert item.chat_id == "chat-1"
     assert item.item_title == "Велосипед"
@@ -201,19 +217,21 @@ def test_cpa_calls_balance_and_legacy_flows() -> None:
     legacy = CpaLegacy(transport, resource_id="2001")
 
     calls = cpa_call.list(
-        payload={
-            "dateTimeFrom": "2026-04-18T00:00:00+03:00",
-            "dateTimeTo": "2026-04-18T23:59:59+03:00",
-        }
+        request=CpaCallsByTimeRequest(
+            date_time_from="2026-04-18T00:00:00+03:00",
+            date_time_to="2026-04-18T23:59:59+03:00",
+        )
     )
-    complaint = cpa_call.create_create_complaint(payload={"callId": 2001, "reason": "spam"})
+    complaint = cpa_call.create_complaint(
+        request=CpaCallComplaintRequest(call_id=2001, reason="spam")
+    )
     complaint_by_action = cpa_lead.create_complaint_by_action_id(
-        payload={"actionId": "act-1", "reason": "duplicate"}
+        request=CpaLeadComplaintRequest(action_id="act-1", reason="duplicate")
     )
     balance_v3 = cpa_lead.create_balance_info_v3()
-    balance_v2 = legacy.legacy_create_balance_info_v2()
-    call_v2 = legacy.legacy_create_call_by_id_v2(payload={"callId": 2001})
-    record = legacy.legacy_get_call()
+    balance_v2 = legacy.get_balance_info_v2()
+    call_v2 = legacy.get_call_by_id_v2(request=CpaCallByIdRequest(call_id=2001))
+    record = legacy.get_call()
 
     assert calls.items[0].record_url == "https://example.com/record-2001.mp3"
     assert complaint.success is True
@@ -231,7 +249,7 @@ def test_calltracking_flows() -> None:
     def handler(request: httpx.Request) -> httpx.Response:
         path = request.url.path
         if path == "/calltracking/v1/getCallById/":
-            assert json.loads(request.content.decode()) == {"callId": "7001"}
+            assert json.loads(request.content.decode()) == {"callId": 7001}
             return httpx.Response(
                 200,
                 json={
@@ -288,17 +306,18 @@ def test_calltracking_flows() -> None:
 
     item = call.get()
     items = call.list(
-        payload={
-            "dateTimeFrom": "2026-04-01T00:00:00Z",
-            "dateTimeTo": "2026-04-18T23:59:59Z",
-            "limit": 100,
-            "offset": 0,
-        }
+        request=CallTrackingCallsRequest(
+            date_time_from="2026-04-01T00:00:00Z",
+            date_time_to="2026-04-18T23:59:59Z",
+            limit=100,
+            offset=0,
+        )
     )
     record = call.download()
 
-    assert item.call_id == "7001"
-    assert item.talk_duration == 67
+    assert item.call.call_id == "7001"
+    assert item.call.talk_duration == 67
+    assert item.error.code == 0
     assert items.items[0].buyer_phone == "+79990000100"
     assert record.filename == "record-7001.wav"
     assert record.binary.content == audio_bytes

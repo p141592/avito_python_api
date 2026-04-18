@@ -2,12 +2,17 @@
 
 from __future__ import annotations
 
-from collections.abc import Mapping
 from dataclasses import dataclass
 
 from avito.core import RequestContext, Transport
 from avito.ratings.mappers import map_rating_profile, map_review_answer, map_reviews
-from avito.ratings.models import JsonRequest, RatingProfileInfo, ReviewAnswerInfo, ReviewsResult
+from avito.ratings.models import (
+    CreateReviewAnswerRequest,
+    RatingProfileInfo,
+    ReviewAnswerInfo,
+    ReviewsQuery,
+    ReviewsResult,
+)
 
 
 @dataclass(slots=True)
@@ -16,7 +21,7 @@ class RatingsClient:
 
     transport: Transport
 
-    def create_review_answer_v1(self, request: JsonRequest) -> ReviewAnswerInfo:
+    def create_review_answer_v1(self, request: CreateReviewAnswerRequest) -> ReviewAnswerInfo:
         payload = self.transport.request_json(
             "POST",
             "/ratings/v1/answers",
@@ -41,11 +46,11 @@ class RatingsClient:
         )
         return map_rating_profile(payload)
 
-    def list_reviews_v1(self, *, params: Mapping[str, object] | None = None) -> ReviewsResult:
+    def list_reviews_v1(self, *, query: ReviewsQuery | None = None) -> ReviewsResult:
         payload = self.transport.request_json(
             "GET",
             "/ratings/v1/reviews",
             context=RequestContext("ratings.reviews.list"),
-            params=params,
+            params=query.to_params() if query is not None else None,
         )
         return map_reviews(payload)

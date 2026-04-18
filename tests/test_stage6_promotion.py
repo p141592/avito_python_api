@@ -21,6 +21,12 @@ from avito.promotion import (
     TrxPromotion,
     TrxPromotionApplyItem,
 )
+from avito.promotion.models import (
+    CreateAutostrategyBudgetRequest,
+    CreateAutostrategyCampaignRequest,
+    ListAutostrategyCampaignsRequest,
+    UpdateAutostrategyCampaignRequest,
+)
 
 
 def make_transport(handler: httpx.MockTransport) -> Transport:
@@ -77,7 +83,10 @@ def test_promotion_dictionary_and_orders_flows() -> None:
             )
         assert path == "/promotion/v1/items/services/orders/status"
         assert payload == {"orderIds": ["ord-1"]}
-        return httpx.Response(200, json={"items": [{"orderId": "ord-1", "status": "processed"}]})
+        return httpx.Response(
+            200,
+            json={"orderId": "ord-1", "status": "processed", "items": [], "errors": []},
+        )
 
     promotion = PromotionOrder(make_transport(httpx.MockTransport(handler)), resource_id="ord-1")
 
@@ -89,7 +98,7 @@ def test_promotion_dictionary_and_orders_flows() -> None:
     assert dictionary.items[0].code == "x2"
     assert services.items[0].price == 9900
     assert orders.items[0].order_id == "ord-1"
-    assert statuses.items[0].status == "processed"
+    assert statuses.status == "processed"
 
 
 def test_bbip_and_trxpromo_flows() -> None:
@@ -188,10 +197,11 @@ def test_bbip_and_trxpromo_flows() -> None:
     commissions = trx.get_commissions()
 
     assert forecasts.items[0].max_views == 25
-    assert order_result.items[0].status == "created"
+    assert order_result.status == "created"
+    assert order_result.applied is True
     assert suggests.items[0].duration is not None and suggests.items[0].duration.recommended == 5
-    assert applied.items[0].success is True
-    assert cancelled.items[0].success is True
+    assert applied.applied is True
+    assert cancelled.applied is True
     assert commissions.items[0].valid_commission_range is not None
     assert commissions.items[0].valid_commission_range.value_max == 2000
 
@@ -223,21 +233,25 @@ def test_cpa_auction_and_target_action_pricing_flows() -> None:
             return httpx.Response(
                 200,
                 json={
-                    "items": [
-                        {
-                            "itemID": 101,
-                            "actionTypeID": 5,
-                            "bidPenny": 1400,
-                            "availableBids": [
-                                {
-                                    "valuePenny": 1500,
-                                    "minForecast": 2,
-                                    "maxForecast": 5,
-                                    "compare": 10,
-                                }
-                            ],
-                        }
-                    ]
+                    "actionTypeID": 5,
+                    "selectedType": "manual",
+                    "manual": {
+                        "bidPenny": 1400,
+                        "limitPenny": 15000,
+                        "recBidPenny": 1500,
+                        "minBidPenny": 1000,
+                        "maxBidPenny": 2000,
+                        "minLimitPenny": 5000,
+                        "maxLimitPenny": 50000,
+                        "bids": [
+                            {
+                                "valuePenny": 1500,
+                                "minForecast": 2,
+                                "maxForecast": 5,
+                                "compare": 10,
+                            }
+                        ],
+                    },
                 },
             )
         if path == "/cpxpromo/1/getPromotionsByItemIds":
@@ -249,9 +263,7 @@ def test_cpa_auction_and_target_action_pricing_flows() -> None:
                         {
                             "itemID": 102,
                             "actionTypeID": 7,
-                            "budgetPenny": 9000,
-                            "budgetType": "7d",
-                            "isAuto": True,
+                            "autoPromotion": {"budgetPenny": 9000, "budgetType": "7d"},
                         }
                     ]
                 },
@@ -290,12 +302,12 @@ def test_cpa_auction_and_target_action_pricing_flows() -> None:
     manual = pricing.update_manual(action_type_id=5, bid_penny=1500, limit_penny=15000)
 
     assert bids.items[0].available_prices[0].price_penny == 1200
-    assert saved.items[0].success is True
-    assert details.items[0].available_bids[0].compare == 10
-    assert promotions.items[0].is_auto is True
-    assert removed.items[0].status == "removed"
-    assert auto.items[0].status == "auto"
-    assert manual.items[0].status == "manual"
+    assert saved.applied is True
+    assert details.manual is not None and details.manual.bids[0].compare == 10
+    assert promotions.items[0].auto is not None
+    assert removed.status == "removed"
+    assert auto.status == "auto"
+    assert manual.status == "manual"
 
 
 def test_autostrategy_flows() -> None:
@@ -375,12 +387,16 @@ def test_autostrategy_flows() -> None:
 
     campaign = AutostrategyCampaign(make_transport(httpx.MockTransport(handler)), resource_id=77)
 
-    budget = campaign.create_budget(payload={"listingFee": 1000})
-    created = campaign.create(payload={"title": "Весенняя кампания", "budgetId": "budget-1"})
-    updated = campaign.update(payload={"campaignId": 77, "title": "Обновленная кампания"})
+    budget = campaign.create_budget(request=CreateAutostrategyBudgetRequest(payload={"listingFee": 1000}))
+    created = campaign.create(
+        request=CreateAutostrategyCampaignRequest(payload={"title": "Весенняя кампания", "budgetId": "budget-1"})
+    )
+    updated = campaign.update(
+        request=UpdateAutostrategyCampaignRequest(payload={"campaignId": 77, "title": "Обновленная кампания"})
+    )
     info = campaign.get()
     stopped = campaign.delete()
-    campaigns = campaign.list(payload={"status": "active"})
+    campaigns = campaign.list(request=ListAutostrategyCampaignsRequest(payload={"status": "active"}))
     stat = campaign.get_stat()
 
     assert budget.budget_id == "budget-1"

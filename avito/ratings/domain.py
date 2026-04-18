@@ -2,12 +2,17 @@
 
 from __future__ import annotations
 
-from collections.abc import Mapping
 from dataclasses import dataclass
 
-from avito.core import Transport
+from avito.core import Transport, ValidationError
 from avito.ratings.client import RatingsClient
-from avito.ratings.models import JsonRequest, RatingProfileInfo, ReviewAnswerInfo, ReviewsResult
+from avito.ratings.models import (
+    CreateReviewAnswerRequest,
+    RatingProfileInfo,
+    ReviewAnswerInfo,
+    ReviewsQuery,
+    ReviewsResult,
+)
 
 
 @dataclass(slots=True, frozen=True)
@@ -24,8 +29,8 @@ class Review(DomainObject):
     resource_id: int | str | None = None
     user_id: int | str | None = None
 
-    def list_reviews_v1(self, *, params: Mapping[str, object] | None = None) -> ReviewsResult:
-        return RatingsClient(self.transport).list_reviews_v1(params=params)
+    def list_reviews_v1(self, *, query: ReviewsQuery | None = None) -> ReviewsResult:
+        return RatingsClient(self.transport).list_reviews_v1(query=query)
 
 
 @dataclass(slots=True, frozen=True)
@@ -35,8 +40,12 @@ class ReviewAnswer(DomainObject):
     resource_id: int | str | None = None
     user_id: int | str | None = None
 
-    def create_review_answer_v1(self, *, payload: Mapping[str, object]) -> ReviewAnswerInfo:
-        return RatingsClient(self.transport).create_review_answer_v1(JsonRequest(payload))
+    def create_review_answer_v1(
+        self, *, review_id: int, text: str
+    ) -> ReviewAnswerInfo:
+        return RatingsClient(self.transport).create_review_answer_v1(
+            CreateReviewAnswerRequest(review_id=review_id, text=text)
+        )
 
     def delete_review_answer_v1(self, *, answer_id: int | str | None = None) -> ReviewAnswerInfo:
         return RatingsClient(self.transport).delete_review_answer_v1(
@@ -45,7 +54,7 @@ class ReviewAnswer(DomainObject):
 
     def _require_answer_id(self) -> str:
         if self.resource_id is None:
-            raise ValueError("Для операции требуется `answer_id`.")
+            raise ValidationError("Для операции требуется `answer_id`.")
         return str(self.resource_id)
 
 

@@ -2,10 +2,9 @@
 
 from __future__ import annotations
 
-from collections.abc import Mapping
 from dataclasses import dataclass
 
-from avito.core import Transport
+from avito.core import Transport, ValidationError
 from avito.orders.client import (
     DeliveryClient,
     DeliveryTasksClient,
@@ -19,10 +18,10 @@ from avito.orders.models import (
     DeliveryEntityResult,
     DeliverySortingCentersResult,
     DeliveryTaskInfo,
-    JsonRequest,
     LabelPdfResult,
     LabelTaskResult,
     OrderActionResult,
+    OrdersRequest,
     OrdersResult,
     StockInfoResult,
     StockUpdateResult,
@@ -46,29 +45,29 @@ class Order(DomainObject):
     def list(self) -> OrdersResult:
         return OrdersClient(self.transport).list_orders()
 
-    def update_markings(self, *, payload: Mapping[str, object]) -> OrderActionResult:
-        return OrdersClient(self.transport).update_markings(JsonRequest(payload))
+    def update_markings(self, *, request: OrdersRequest) -> OrderActionResult:
+        return OrdersClient(self.transport).update_markings(request)
 
-    def accept_return_order(self, *, payload: Mapping[str, object]) -> OrderActionResult:
-        return OrdersClient(self.transport).accept_return_order(JsonRequest(payload))
+    def accept_return_order(self, *, request: OrdersRequest) -> OrderActionResult:
+        return OrdersClient(self.transport).accept_return_order(request)
 
-    def apply(self, *, payload: Mapping[str, object]) -> OrderActionResult:
-        return OrdersClient(self.transport).apply_transition(JsonRequest(payload))
+    def apply(self, *, request: OrdersRequest) -> OrderActionResult:
+        return OrdersClient(self.transport).apply_transition(request)
 
-    def check_confirmation_code(self, *, payload: Mapping[str, object]) -> OrderActionResult:
-        return OrdersClient(self.transport).check_confirmation_code(JsonRequest(payload))
+    def check_confirmation_code(self, *, request: OrdersRequest) -> OrderActionResult:
+        return OrdersClient(self.transport).check_confirmation_code(request)
 
-    def set_cnc_details(self, *, payload: Mapping[str, object]) -> OrderActionResult:
-        return OrdersClient(self.transport).set_cnc_details(JsonRequest(payload))
+    def set_cnc_details(self, *, request: OrdersRequest) -> OrderActionResult:
+        return OrdersClient(self.transport).set_cnc_details(request)
 
     def get_courier_delivery_range(self) -> CourierRangesResult:
         return OrdersClient(self.transport).get_courier_delivery_range()
 
-    def set_courier_delivery_range(self, *, payload: Mapping[str, object]) -> OrderActionResult:
-        return OrdersClient(self.transport).set_courier_delivery_range(JsonRequest(payload))
+    def set_courier_delivery_range(self, *, request: OrdersRequest) -> OrderActionResult:
+        return OrdersClient(self.transport).set_courier_delivery_range(request)
 
-    def update_tracking_number(self, *, payload: Mapping[str, object]) -> OrderActionResult:
-        return OrdersClient(self.transport).set_tracking_number(JsonRequest(payload))
+    def update_tracking_number(self, *, request: OrdersRequest) -> OrderActionResult:
+        return OrdersClient(self.transport).set_tracking_number(request)
 
 
 @dataclass(slots=True, frozen=True)
@@ -78,9 +77,8 @@ class OrderLabel(DomainObject):
     resource_id: int | str | None = None
     user_id: int | str | None = None
 
-    def create(self, *, payload: Mapping[str, object], extended: bool = False) -> LabelTaskResult:
+    def create(self, *, request: OrdersRequest, extended: bool = False) -> LabelTaskResult:
         client = LabelsClient(self.transport)
-        request = JsonRequest(payload)
         if extended:
             return client.create_generate_labels_extended(request)
         return client.create_generate_labels(request)
@@ -91,7 +89,7 @@ class OrderLabel(DomainObject):
 
     def _require_task_id(self) -> str:
         if self.resource_id is None:
-            raise ValueError("Для операции требуется `task_id`.")
+            raise ValidationError("Для операции требуется `task_id`.")
         return str(self.resource_id)
 
 
@@ -102,20 +100,20 @@ class DeliveryOrder(DomainObject):
     resource_id: int | str | None = None
     user_id: int | str | None = None
 
-    def create_announcement(self, *, payload: Mapping[str, object]) -> DeliveryEntityResult:
-        return DeliveryClient(self.transport).create_announcement(JsonRequest(payload))
+    def create_announcement(self, *, request: OrdersRequest) -> DeliveryEntityResult:
+        return DeliveryClient(self.transport).create_announcement(request)
 
-    def delete(self, *, payload: Mapping[str, object]) -> DeliveryEntityResult:
-        return DeliveryClient(self.transport).cancel_announcement(JsonRequest(payload))
+    def delete(self, *, request: OrdersRequest) -> DeliveryEntityResult:
+        return DeliveryClient(self.transport).cancel_announcement(request)
 
-    def create(self, *, payload: Mapping[str, object]) -> DeliveryEntityResult:
-        return DeliveryClient(self.transport).create_parcel(JsonRequest(payload))
+    def create(self, *, request: OrdersRequest) -> DeliveryEntityResult:
+        return DeliveryClient(self.transport).create_parcel(request)
 
-    def update_change_parcels(self, *, payload: Mapping[str, object]) -> DeliveryEntityResult:
-        return DeliveryClient(self.transport).update_change_parcels(JsonRequest(payload))
+    def update_change_parcels(self, *, request: OrdersRequest) -> DeliveryEntityResult:
+        return DeliveryClient(self.transport).update_change_parcels(request)
 
-    def create_change_parcel_result(self, *, payload: Mapping[str, object]) -> DeliveryEntityResult:
-        return DeliveryClient(self.transport).change_parcel_result(JsonRequest(payload))
+    def create_change_parcel_result(self, *, request: OrdersRequest) -> DeliveryEntityResult:
+        return DeliveryClient(self.transport).change_parcel_result(request)
 
 
 @dataclass(slots=True, frozen=True)
@@ -125,105 +123,101 @@ class SandboxDelivery(DomainObject):
     resource_id: int | str | None = None
     user_id: int | str | None = None
 
-    def create_announcement(self, *, payload: Mapping[str, object]) -> DeliveryEntityResult:
-        return SandboxDeliveryClient(self.transport).create_announcement(JsonRequest(payload))
+    def create_announcement(self, *, request: OrdersRequest) -> DeliveryEntityResult:
+        return SandboxDeliveryClient(self.transport).create_announcement(request)
 
-    def track_announcement(self, *, payload: Mapping[str, object]) -> DeliveryEntityResult:
-        return SandboxDeliveryClient(self.transport).track_announcement(JsonRequest(payload))
+    def track_announcement(self, *, request: OrdersRequest) -> DeliveryEntityResult:
+        return SandboxDeliveryClient(self.transport).track_announcement(request)
 
-    def update_custom_area_schedule(self, *, payload: Mapping[str, object]) -> DeliveryEntityResult:
-        return SandboxDeliveryClient(self.transport).update_custom_area_schedule(
-            JsonRequest(payload)
-        )
+    def update_custom_area_schedule(self, *, request: OrdersRequest) -> DeliveryEntityResult:
+        return SandboxDeliveryClient(self.transport).update_custom_area_schedule(request)
 
-    def cancel_parcel(self, *, payload: Mapping[str, object]) -> DeliveryEntityResult:
-        return SandboxDeliveryClient(self.transport).cancel_parcel(JsonRequest(payload))
+    def cancel_parcel(self, *, request: OrdersRequest) -> DeliveryEntityResult:
+        return SandboxDeliveryClient(self.transport).cancel_parcel(request)
 
-    def check_confirmation_code(self, *, payload: Mapping[str, object]) -> DeliveryEntityResult:
-        return SandboxDeliveryClient(self.transport).check_confirmation_code(JsonRequest(payload))
+    def check_confirmation_code(self, *, request: OrdersRequest) -> DeliveryEntityResult:
+        return SandboxDeliveryClient(self.transport).check_confirmation_code(request)
 
-    def set_order_properties(self, *, payload: Mapping[str, object]) -> DeliveryEntityResult:
-        return SandboxDeliveryClient(self.transport).set_order_properties(JsonRequest(payload))
+    def set_order_properties(self, *, request: OrdersRequest) -> DeliveryEntityResult:
+        return SandboxDeliveryClient(self.transport).set_order_properties(request)
 
-    def set_order_real_address(self, *, payload: Mapping[str, object]) -> DeliveryEntityResult:
-        return SandboxDeliveryClient(self.transport).set_order_real_address(JsonRequest(payload))
+    def set_order_real_address(self, *, request: OrdersRequest) -> DeliveryEntityResult:
+        return SandboxDeliveryClient(self.transport).set_order_real_address(request)
 
-    def tracking(self, *, payload: Mapping[str, object]) -> DeliveryEntityResult:
-        return SandboxDeliveryClient(self.transport).tracking(JsonRequest(payload))
+    def tracking(self, *, request: OrdersRequest) -> DeliveryEntityResult:
+        return SandboxDeliveryClient(self.transport).tracking(request)
 
-    def prohibit_order_acceptance(self, *, payload: Mapping[str, object]) -> DeliveryEntityResult:
-        return SandboxDeliveryClient(self.transport).prohibit_order_acceptance(JsonRequest(payload))
+    def prohibit_order_acceptance(self, *, request: OrdersRequest) -> DeliveryEntityResult:
+        return SandboxDeliveryClient(self.transport).prohibit_order_acceptance(request)
 
     def list_sorting_center(self) -> DeliverySortingCentersResult:
         return SandboxDeliveryClient(self.transport).list_sorting_center()
 
-    def add_sorting_center(self, *, payload: Mapping[str, object]) -> DeliveryEntityResult:
-        return SandboxDeliveryClient(self.transport).add_sorting_center(JsonRequest(payload))
+    def add_sorting_center(self, *, request: OrdersRequest) -> DeliveryEntityResult:
+        return SandboxDeliveryClient(self.transport).add_sorting_center(request)
 
-    def add_areas(self, *, tariff_id: str, payload: Mapping[str, object]) -> DeliveryEntityResult:
+    def add_areas(self, *, tariff_id: str, request: OrdersRequest) -> DeliveryEntityResult:
         return SandboxDeliveryClient(self.transport).add_areas(
-            tariff_id=tariff_id, request=JsonRequest(payload)
+            tariff_id=tariff_id, request=request
         )
 
     def add_tags_to_sorting_center(
-        self, *, tariff_id: str, payload: Mapping[str, object]
+        self, *, tariff_id: str, request: OrdersRequest
     ) -> DeliveryEntityResult:
         return SandboxDeliveryClient(self.transport).add_tags_to_sorting_center(
             tariff_id=tariff_id,
-            request=JsonRequest(payload),
+            request=request,
         )
 
     def add_terminals(
-        self, *, tariff_id: str, payload: Mapping[str, object]
+        self, *, tariff_id: str, request: OrdersRequest
     ) -> DeliveryEntityResult:
         return SandboxDeliveryClient(self.transport).add_terminals(
-            tariff_id=tariff_id, request=JsonRequest(payload)
+            tariff_id=tariff_id, request=request
         )
 
     def update_terms(
-        self, *, tariff_id: str, payload: Mapping[str, object]
+        self, *, tariff_id: str, request: OrdersRequest
     ) -> DeliveryEntityResult:
         return SandboxDeliveryClient(self.transport).update_terms(
-            tariff_id=tariff_id, request=JsonRequest(payload)
+            tariff_id=tariff_id, request=request
         )
 
-    def add_tariff_v2(self, *, payload: Mapping[str, object]) -> DeliveryEntityResult:
-        return SandboxDeliveryClient(self.transport).add_tariff_v2(JsonRequest(payload))
+    def add_tariff_v2(self, *, request: OrdersRequest) -> DeliveryEntityResult:
+        return SandboxDeliveryClient(self.transport).add_tariff_v2(request)
 
-    def create_parcel(self, *, payload: Mapping[str, object]) -> DeliveryEntityResult:
-        return SandboxDeliveryClient(self.transport).create_parcel_v2(JsonRequest(payload))
+    def create_parcel(self, *, request: OrdersRequest) -> DeliveryEntityResult:
+        return SandboxDeliveryClient(self.transport).create_parcel_v2(request)
 
-    def legacy_cancel_announcement(self, *, payload: Mapping[str, object]) -> DeliveryEntityResult:
-        return SandboxDeliveryClient(self.transport).v1_cancel_announcement(JsonRequest(payload))
+    def cancel_announcement_v1(self, *, request: OrdersRequest) -> DeliveryEntityResult:
+        return SandboxDeliveryClient(self.transport).v1_cancel_announcement(request)
 
-    def legacy_cancel_parcel(self, *, payload: Mapping[str, object]) -> DeliveryEntityResult:
-        return SandboxDeliveryClient(self.transport).v1_cancel_parcel(JsonRequest(payload))
+    def cancel_parcel_v1(self, *, request: OrdersRequest) -> DeliveryEntityResult:
+        return SandboxDeliveryClient(self.transport).v1_cancel_parcel(request)
 
-    def legacy_change_parcel(self, *, payload: Mapping[str, object]) -> DeliveryEntityResult:
-        return SandboxDeliveryClient(self.transport).v1_change_parcel(JsonRequest(payload))
+    def change_parcel_v1(self, *, request: OrdersRequest) -> DeliveryEntityResult:
+        return SandboxDeliveryClient(self.transport).v1_change_parcel(request)
 
-    def legacy_create_announcement(self, *, payload: Mapping[str, object]) -> DeliveryEntityResult:
-        return SandboxDeliveryClient(self.transport).v1_create_announcement(JsonRequest(payload))
+    def create_announcement_v1(self, *, request: OrdersRequest) -> DeliveryEntityResult:
+        return SandboxDeliveryClient(self.transport).v1_create_announcement(request)
 
-    def legacy_get_announcement_event(
-        self, *, payload: Mapping[str, object]
+    def get_announcement_event_v1(
+        self, *, request: OrdersRequest
     ) -> DeliveryEntityResult:
-        return SandboxDeliveryClient(self.transport).v1_get_announcement_event(JsonRequest(payload))
+        return SandboxDeliveryClient(self.transport).v1_get_announcement_event(request)
 
-    def legacy_get_change_parcel_info(
-        self, *, payload: Mapping[str, object]
+    def get_change_parcel_info_v1(
+        self, *, request: OrdersRequest
     ) -> DeliveryEntityResult:
-        return SandboxDeliveryClient(self.transport).v1_get_change_parcel_info(JsonRequest(payload))
+        return SandboxDeliveryClient(self.transport).v1_get_change_parcel_info(request)
 
-    def legacy_get_parcel_info(self, *, payload: Mapping[str, object]) -> DeliveryEntityResult:
-        return SandboxDeliveryClient(self.transport).v1_get_parcel_info(JsonRequest(payload))
+    def get_parcel_info_v1(self, *, request: OrdersRequest) -> DeliveryEntityResult:
+        return SandboxDeliveryClient(self.transport).v1_get_parcel_info(request)
 
-    def legacy_get_registered_parcel_id(
-        self, *, payload: Mapping[str, object]
+    def get_registered_parcel_id_v1(
+        self, *, request: OrdersRequest
     ) -> DeliveryEntityResult:
-        return SandboxDeliveryClient(self.transport).v1_get_registered_parcel_id(
-            JsonRequest(payload)
-        )
+        return SandboxDeliveryClient(self.transport).v1_get_registered_parcel_id(request)
 
 
 @dataclass(slots=True, frozen=True)
@@ -239,7 +233,7 @@ class DeliveryTask(DomainObject):
 
     def _require_task_id(self) -> str:
         if self.resource_id is None:
-            raise ValueError("Для операции требуется `task_id`.")
+            raise ValidationError("Для операции требуется `task_id`.")
         return str(self.resource_id)
 
 
@@ -250,11 +244,11 @@ class Stock(DomainObject):
     resource_id: int | str | None = None
     user_id: int | str | None = None
 
-    def get(self, *, payload: Mapping[str, object]) -> StockInfoResult:
-        return StockManagementClient(self.transport).get_info(JsonRequest(payload))
+    def get(self, *, request: OrdersRequest) -> StockInfoResult:
+        return StockManagementClient(self.transport).get_info(request)
 
-    def update(self, *, payload: Mapping[str, object]) -> StockUpdateResult:
-        return StockManagementClient(self.transport).update_stocks(JsonRequest(payload))
+    def update(self, *, request: OrdersRequest) -> StockUpdateResult:
+        return StockManagementClient(self.transport).update_stocks(request)
 
 
 __all__ = (

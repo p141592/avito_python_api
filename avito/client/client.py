@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from pathlib import Path
+
 import httpx
 
 from avito.accounts import Account, AccountHierarchy
@@ -47,9 +49,15 @@ class AvitoClient:
     """
 
     def __init__(self, settings: AvitoSettings | None = None) -> None:
-        self.settings = settings or AvitoSettings.from_env()
+        self.settings = (settings or AvitoSettings.from_env()).validate_required()
         self.auth_provider = self._build_auth_provider()
         self.transport = Transport(self.settings, auth_provider=self.auth_provider)
+
+    @classmethod
+    def from_env(cls, *, env_file: str | Path | None = ".env") -> AvitoClient:
+        """Создает клиент из переменных окружения и optional `.env` файла."""
+
+        return cls(AvitoSettings.from_env(env_file=env_file))
 
     def auth(self) -> AuthProvider:
         """Возвращает объект аутентификации и token-flow операций."""

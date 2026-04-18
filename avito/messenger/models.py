@@ -5,6 +5,8 @@ from __future__ import annotations
 from collections.abc import Mapping
 from dataclasses import dataclass, field
 
+from avito.core.serialization import enable_module_serialization
+
 
 @dataclass(slots=True, frozen=True)
 class ChatInfo:
@@ -15,7 +17,7 @@ class ChatInfo:
     title: str | None
     unread_count: int | None
     last_message_text: str | None
-    raw_payload: Mapping[str, object] = field(default_factory=dict)
+    _payload: Mapping[str, object] = field(default_factory=dict)
 
 
 @dataclass(slots=True, frozen=True)
@@ -24,7 +26,7 @@ class ChatsResult:
 
     items: list[ChatInfo]
     total: int | None = None
-    raw_payload: Mapping[str, object] = field(default_factory=dict)
+    _payload: Mapping[str, object] = field(default_factory=dict)
 
 
 @dataclass(slots=True, frozen=True)
@@ -72,7 +74,7 @@ class MessageInfo:
     created_at: str | None
     direction: str | None
     type: str | None
-    raw_payload: Mapping[str, object] = field(default_factory=dict)
+    _payload: Mapping[str, object] = field(default_factory=dict)
 
 
 @dataclass(slots=True, frozen=True)
@@ -81,7 +83,7 @@ class MessagesResult:
 
     items: list[MessageInfo]
     total: int | None = None
-    raw_payload: Mapping[str, object] = field(default_factory=dict)
+    _payload: Mapping[str, object] = field(default_factory=dict)
 
 
 @dataclass(slots=True, frozen=True)
@@ -91,7 +93,7 @@ class MessageActionResult:
     success: bool
     message_id: str | None = None
     status: str | None = None
-    raw_payload: Mapping[str, object] = field(default_factory=dict)
+    _payload: Mapping[str, object] = field(default_factory=dict)
 
 
 @dataclass(slots=True, frozen=True)
@@ -102,7 +104,7 @@ class VoiceFile:
     url: str | None
     duration: int | None
     transcript: str | None
-    raw_payload: Mapping[str, object] = field(default_factory=dict)
+    _payload: Mapping[str, object] = field(default_factory=dict)
 
 
 @dataclass(slots=True, frozen=True)
@@ -110,7 +112,7 @@ class VoiceFilesResult:
     """Список голосовых сообщений."""
 
     items: list[VoiceFile]
-    raw_payload: Mapping[str, object] = field(default_factory=dict)
+    _payload: Mapping[str, object] = field(default_factory=dict)
 
 
 @dataclass(slots=True, frozen=True)
@@ -119,7 +121,7 @@ class UploadImageResult:
 
     image_id: str | None
     url: str | None
-    raw_payload: Mapping[str, object] = field(default_factory=dict)
+    _payload: Mapping[str, object] = field(default_factory=dict)
 
 
 @dataclass(slots=True, frozen=True)
@@ -127,7 +129,7 @@ class UploadImagesResult:
     """Список загруженных изображений."""
 
     items: list[UploadImageResult]
-    raw_payload: Mapping[str, object] = field(default_factory=dict)
+    _payload: Mapping[str, object] = field(default_factory=dict)
 
 
 @dataclass(slots=True, frozen=True)
@@ -137,7 +139,7 @@ class SubscriptionInfo:
     url: str | None
     version: str | None
     status: str | None
-    raw_payload: Mapping[str, object] = field(default_factory=dict)
+    _payload: Mapping[str, object] = field(default_factory=dict)
 
 
 @dataclass(slots=True, frozen=True)
@@ -145,7 +147,7 @@ class SubscriptionsResult:
     """Список webhook-подписок."""
 
     items: list[SubscriptionInfo]
-    raw_payload: Mapping[str, object] = field(default_factory=dict)
+    _payload: Mapping[str, object] = field(default_factory=dict)
 
 
 @dataclass(slots=True, frozen=True)
@@ -183,7 +185,7 @@ class WebhookActionResult:
 
     success: bool
     status: str | None = None
-    raw_payload: Mapping[str, object] = field(default_factory=dict)
+    _payload: Mapping[str, object] = field(default_factory=dict)
 
 
 @dataclass(slots=True, frozen=True)
@@ -217,7 +219,7 @@ class SpecialOfferAvailableItem:
     item_id: int | None
     title: str | None
     is_available: bool | None
-    raw_payload: Mapping[str, object] = field(default_factory=dict)
+    _payload: Mapping[str, object] = field(default_factory=dict)
 
 
 @dataclass(slots=True, frozen=True)
@@ -225,7 +227,7 @@ class SpecialOfferAvailableResult:
     """Результат получения доступных объявлений."""
 
     items: list[SpecialOfferAvailableItem]
-    raw_payload: Mapping[str, object] = field(default_factory=dict)
+    _payload: Mapping[str, object] = field(default_factory=dict)
 
 
 @dataclass(slots=True, frozen=True)
@@ -256,7 +258,7 @@ class MultiCreateSpecialOfferResult:
 
     campaign_id: str | None
     status: str | None
-    raw_payload: Mapping[str, object] = field(default_factory=dict)
+    _payload: Mapping[str, object] = field(default_factory=dict)
 
 
 @dataclass(slots=True, frozen=True)
@@ -291,7 +293,7 @@ class SpecialOfferStatsResult:
     sent_count: int | None
     delivered_count: int | None
     read_count: int | None
-    raw_payload: Mapping[str, object] = field(default_factory=dict)
+    _payload: Mapping[str, object] = field(default_factory=dict)
 
 
 @dataclass(slots=True, frozen=True)
@@ -301,7 +303,7 @@ class TariffInfo:
     price: float | None
     currency: str | None
     daily_limit: int | None
-    raw_payload: Mapping[str, object] = field(default_factory=dict)
+    _payload: Mapping[str, object] = field(default_factory=dict)
 
 
 __all__ = (
@@ -332,3 +334,5 @@ __all__ = (
     "VoiceFilesResult",
     "WebhookActionResult",
 )
+
+enable_module_serialization(globals())

@@ -10,6 +10,7 @@ from avito.core import Transport
 from avito.core.retries import RetryPolicy
 from avito.core.types import ApiTimeouts
 from avito.jobs import Application, JobDictionary, JobWebhook, Resume, Vacancy
+from avito.jobs.models import JobsQuery, JobsRequest
 
 
 def make_transport(handler: httpx.MockTransport) -> Transport:
@@ -88,13 +89,13 @@ def test_applications_and_webhooks_flows() -> None:
     application = Application(transport, resource_id="app-1")
     webhook = JobWebhook(transport)
 
-    ids = application.list(params={"updatedAtFrom": "2026-04-18"})
-    applications = application.list(payload={"ids": ["app-1"]})
+    ids = application.list(query=JobsQuery(params={"updatedAtFrom": "2026-04-18"}))
+    applications = application.list(request=JobsRequest(payload={"ids": ["app-1"]}))
     states = application.get_states()
-    viewed = application.update(payload={"applies": [{"id": "app-1", "is_viewed": True}]})
-    applied = application.apply(payload={"ids": ["app-1"], "action": "invited"})
+    viewed = application.update(request=JobsRequest(payload={"applies": [{"id": "app-1", "is_viewed": True}]}))
+    applied = application.apply(request=JobsRequest(payload={"ids": ["app-1"], "action": "invited"}))
     current_hook = webhook.get()
-    updated_hook = webhook.update(payload={"url": "https://example.com/job"})
+    updated_hook = webhook.update(request=JobsRequest(payload={"url": "https://example.com/job"}))
     deleted_hook = webhook.delete(url="https://example.com/job")
     hooks = webhook.list()
 
@@ -146,7 +147,7 @@ def test_resume_flows() -> None:
 
     resume = Resume(make_transport(httpx.MockTransport(handler)), resource_id="res-1")
 
-    results = resume.list(params={"query": "оператор"})
+    results = resume.list(query=JobsQuery(params={"query": "оператор"}))
     contacts = resume.get_contacts()
     item = resume.get()
 
@@ -225,20 +226,26 @@ def test_vacancy_v1_v2_flows() -> None:
 
     vacancy = Vacancy(make_transport(httpx.MockTransport(handler)), resource_id="101")
 
-    created_v1 = vacancy.create(payload={"title": "Продавец"}, version=1)
-    updated_v1 = vacancy.update(payload={"title": "Старший продавец"}, version=1)
-    archived_v1 = vacancy.delete(payload={"employee_id": 7})
-    prolonged_v1 = vacancy.prolongate(payload={"billing_type": "package"})
+    created_v1 = vacancy.create(request=JobsRequest(payload={"title": "Продавец"}), version=1)
+    updated_v1 = vacancy.update(
+        request=JobsRequest(payload={"title": "Старший продавец"}),
+        version=1,
+    )
+    archived_v1 = vacancy.delete(request=JobsRequest(payload={"employee_id": 7}))
+    prolonged_v1 = vacancy.prolongate(request=JobsRequest(payload={"billing_type": "package"}))
     list_v2 = vacancy.list()
-    created_v2 = vacancy.create(payload={"title": "Вакансия v2"})
-    batch_v2 = vacancy.get_by_ids(payload={"ids": [101]})
-    statuses_v2 = vacancy.get_statuses(payload={"ids": [101]})
+    created_v2 = vacancy.create(request=JobsRequest(payload={"title": "Вакансия v2"}))
+    batch_v2 = vacancy.get_by_ids(request=JobsRequest(payload={"ids": [101]}))
+    statuses_v2 = vacancy.get_statuses(request=JobsRequest(payload={"ids": [101]}))
     updated_v2 = vacancy.update(
-        payload={"title": "Вакансия v2 updated"}, version=2, vacancy_uuid="vac-uuid-1"
+        request=JobsRequest(payload={"title": "Вакансия v2 updated"}),
+        version=2,
+        vacancy_uuid="vac-uuid-1",
     )
     item_v2 = vacancy.get()
     auto_renewal = vacancy.update_auto_renewal(
-        payload={"auto_renewal": True}, vacancy_uuid="vac-uuid-1"
+        request=JobsRequest(payload={"auto_renewal": True}),
+        vacancy_uuid="vac-uuid-1",
     )
 
     assert created_v1.id == "101"

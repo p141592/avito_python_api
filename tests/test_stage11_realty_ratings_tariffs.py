@@ -10,7 +10,9 @@ from avito.core import Transport
 from avito.core.retries import RetryPolicy
 from avito.core.types import ApiTimeouts
 from avito.ratings import RatingProfile, Review, ReviewAnswer
+from avito.ratings.models import ReviewsQuery
 from avito.realty import RealtyAnalyticsReport, RealtyBooking, RealtyListing, RealtyPricing
+from avito.realty.models import RealtyRequest
 from avito.tariffs import Tariff
 
 
@@ -37,6 +39,9 @@ def test_realty_flows() -> None:
             assert payload == {"blockedDates": ["2026-04-18"]}
             return httpx.Response(200, json={"result": "success"})
         if path == "/realty/v1/accounts/10/items/20/bookings":
+            assert request.url.params["date_start"] == "2026-05-01"
+            assert request.url.params["date_end"] == "2026-05-05"
+            assert request.url.params["with_unpaid"] == "true"
             return httpx.Response(
                 200,
                 json={
@@ -47,8 +52,14 @@ def test_realty_flows() -> None:
                             "check_in": "2026-05-01",
                             "check_out": "2026-05-05",
                             "guest_count": 2,
+                            "nights": 4,
                             "base_price": 12000,
-                            "contact": {"name": "Иван", "email": "ivan@example.com"},
+                            "contact": {
+                                "name": "Иван",
+                                "email": "ivan@example.com",
+                                "phone": "9997770000",
+                            },
+                            "safe_deposit": {"owner_amount": 4500, "tax": 500, "total_amount": 5000},
                         }
                     ]
                 },
@@ -79,20 +90,31 @@ def test_realty_flows() -> None:
     listing = RealtyListing(transport, resource_id="20")
     analytics = RealtyAnalyticsReport(transport, resource_id="20")
 
-    updated_bookings = booking.update_bookings_info(payload={"blockedDates": ["2026-04-18"]})
-    bookings = booking.list_realty_bookings()
+    updated_bookings = booking.update_bookings_info(
+        request=RealtyRequest(payload={"blockedDates": ["2026-04-18"]})
+    )
+    bookings = booking.list_realty_bookings(
+        date_start="2026-05-01",
+        date_end="2026-05-05",
+        with_unpaid=True,
+    )
     updated_prices = pricing.update_realty_prices(
-        payload={"periods": [{"dateFrom": "2026-05-01", "price": 5000}]}
+        request=RealtyRequest(payload={"periods": [{"dateFrom": "2026-05-01", "price": 5000}]})
     )
     intervals = listing.get_intervals(
-        payload={"itemId": 20, "intervals": [{"date": "2026-05-01", "available": True}]}
+        request=RealtyRequest(
+            payload={"itemId": 20, "intervals": [{"date": "2026-05-01", "available": True}]}
+        )
     )
-    base = listing.update_base_params(payload={"minStayDays": 2})
+    base = listing.update_base_params(request=RealtyRequest(payload={"minStayDays": 2}))
     market = analytics.get_market_price_correspondence_v1(price=5000000)
     report = analytics.get_report_for_classified()
 
     assert updated_bookings.success is True
-    assert bookings.items[0].guest_name == "Иван"
+    assert bookings.items[0].contact is not None
+    assert bookings.items[0].contact.name == "Иван"
+    assert bookings.items[0].contact.phone == "9997770000"
+    assert bookings.items[0].safe_deposit is not None
     assert updated_prices.status == "success"
     assert intervals.success is True
     assert base.success is True
@@ -144,10 +166,10 @@ def test_ratings_flows() -> None:
     profile = RatingProfile(transport)
     review = Review(transport)
 
-    created = answer.create_review_answer_v1(payload={"reviewId": 123, "text": "Спасибо за отзыв"})
+    created = answer.create_review_answer_v1(review_id=123, text="Спасибо за отзыв")
     deleted = answer.delete_review_answer_v1()
     info = profile.get_ratings_info_v1()
-    reviews = review.list_reviews_v1(params={"page": 2})
+    reviews = review.list_reviews_v1(query=ReviewsQuery(page=2))
 
     assert created.answer_id == "456"
     assert deleted.success is True
