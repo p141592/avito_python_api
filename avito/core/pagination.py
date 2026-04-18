@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Callable, Iterator
-from typing import overload
+from typing import SupportsIndex, overload
 
 from avito.core.types import JsonPage
 
@@ -48,20 +48,30 @@ class PaginatedList[ItemT](list[ItemT]):
         return super().__len__()
 
     @overload
-    def __getitem__(self, index: int) -> ItemT: ...
+    def __getitem__(self, index: SupportsIndex, /) -> ItemT: ...
 
     @overload
-    def __getitem__(self, index: slice) -> list[ItemT]: ...
+    def __getitem__(
+        self,
+        index: slice[SupportsIndex | None, SupportsIndex | None, SupportsIndex | None],
+        /,
+    ) -> list[ItemT]: ...
 
-    def __getitem__(self, index: int | slice) -> ItemT | list[ItemT]:
+    def __getitem__(
+        self,
+        index: SupportsIndex
+        | slice[SupportsIndex | None, SupportsIndex | None, SupportsIndex | None],
+        /,
+    ) -> ItemT | list[ItemT]:
         if isinstance(index, slice):
             self._ensure_slice_loaded(index)
             return list(super().__getitem__(index))
 
-        if index < 0:
+        resolved_index = index.__index__()
+        if resolved_index < 0:
             self._ensure_all_loaded()
         else:
-            self._ensure_loaded_until(index)
+            self._ensure_loaded_until(resolved_index)
         return super().__getitem__(index)
 
     def __eq__(self, other: object) -> bool:
