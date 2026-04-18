@@ -31,23 +31,11 @@ jobs:
       - name: Install dependencies
         run: poetry install --no-interaction
 
-      - name: Validate tag against package version
+      - name: Set package version from git tag
         shell: bash
         run: |
-          PACKAGE_VERSION="$(python - <<'PY'
-          import tomllib
-          from pathlib import Path
-
-          data = tomllib.loads(Path("pyproject.toml").read_text(encoding="utf-8"))
-          print(data["tool"]["poetry"]["version"])
-          PY
-          )"
           TAG_VERSION="${GITHUB_REF_NAME#v}"
-
-          if [ "$PACKAGE_VERSION" != "$TAG_VERSION" ]; then
-            echo "Tag version '$TAG_VERSION' does not match pyproject version '$PACKAGE_VERSION'."
-            exit 1
-          fi
+          poetry version "$TAG_VERSION"
 
       - name: Run quality gate
         run: make check

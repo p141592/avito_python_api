@@ -186,7 +186,7 @@ make build
 Для репозитория настроены два workflow:
 
 - `CI` запускается на каждый `push` в `main`/`master` и на каждый `pull_request`, выполняет `make check`.
-- `Release` запускается при пуше тега вида `v*`, повторно выполняет `make check`, сверяет тег с версией в `pyproject.toml`, публикует пакет на PyPI и создаёт GitHub Release.
+- `Release` запускается при пуше тега вида `v*`, выставляет версию пакета из тега, повторно выполняет `make check`, публикует пакет на PyPI и создаёт GitHub Release.
 
 Для публикации релиза нужно добавить secret:
 
@@ -195,10 +195,8 @@ make build
 Порядок релиза:
 
 ```bash
-poetry version patch
-git commit -am "Релиз 1.0.2"
 git tag v1.0.2
-git push origin main --tags
+git push origin v1.0.2
 ```
 
 ## Документация репозитория
