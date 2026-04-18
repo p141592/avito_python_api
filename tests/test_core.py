@@ -11,6 +11,7 @@ from avito.config import AvitoSettings
 from avito.core import (
     AuthenticationError,
     JsonPage,
+    PaginatedList,
     Paginator,
     RateLimitError,
     RequestContext,
@@ -231,6 +232,34 @@ def test_paginator_collects_typed_pages() -> None:
     paginator = Paginator(lambda page, cursor: pages[page or 1])
 
     assert paginator.collect() == [1, 2, 3, 4, 5]
+
+
+def test_paginated_list_behaves_like_list_and_loads_pages_lazily() -> None:
+    calls: list[int] = []
+    pages = {
+        1: JsonPage(items=[1, 2], page=1, per_page=2, total=5),
+        2: JsonPage(items=[3, 4], page=2, per_page=2, total=5),
+        3: JsonPage(items=[5], page=3, per_page=2, total=5),
+    }
+
+    def fetch(page: int | None, cursor: str | None) -> JsonPage[int]:
+        resolved_page = page or 1
+        calls.append(resolved_page)
+        return pages[resolved_page]
+
+    items = PaginatedList(fetch, first_page=pages[1])
+
+    assert items[0] == 1
+    assert calls == []
+
+    assert items[3] == 4
+    assert calls == [2]
+
+    assert items[:] == [1, 2, 3, 4, 5]
+    assert calls == [2, 3]
+
+    assert len(items) == 5
+    assert items == [1, 2, 3, 4, 5]
 
 
 def test_transport_raises_authentication_error_after_failed_refresh() -> None:

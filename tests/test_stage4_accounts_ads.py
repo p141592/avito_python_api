@@ -113,6 +113,43 @@ def test_account_hierarchy_domain_maps_employees_phones_and_items() -> None:
     assert items.items[0].title == "Объявление"
 
 
+def test_ads_list_uses_lazy_pagination_with_list_like_items() -> None:
+    seen_offsets: list[str] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        assert request.url.path == "/core/v1/items"
+        assert request.url.params["user_id"] == "7"
+        assert request.url.params["status"] == "active"
+        assert request.url.params["limit"] == "2"
+
+        offset = request.url.params["offset"]
+        seen_offsets.append(offset)
+        page_items = {
+            "0": [{"id": 101, "title": "Смартфон"}, {"id": 102, "title": "Ноутбук"}],
+            "2": [{"id": 103, "title": "Планшет"}, {"id": 104, "title": "Наушники"}],
+            "4": [{"id": 105, "title": "Камера"}],
+        }
+        return httpx.Response(200, json={"items": page_items[offset], "total": 5})
+
+    transport = make_transport(httpx.MockTransport(handler))
+    ad = Ad(transport, user_id=7)
+
+    items = ad.list(status="active", limit=2)
+
+    assert seen_offsets == ["0"]
+    assert items.items[0].id == 101
+    assert items.items[3].id == 104
+    assert len(items.items) == 5
+    assert [item.title for item in items.items] == [
+        "Смартфон",
+        "Ноутбук",
+        "Планшет",
+        "Наушники",
+        "Камера",
+    ]
+    assert seen_offsets == ["0", "2", "4"]
+
+
 def test_ads_domain_covers_item_stats_spendings_and_promotion() -> None:
     def handler(request: httpx.Request) -> httpx.Response:
         if request.url.path == "/core/v1/accounts/7/items/101/":

@@ -12,7 +12,7 @@ from avito.core.exceptions import (
     TransportError,
     ValidationError,
 )
-from avito.core.pagination import Paginator
+from avito.core.pagination import PaginatedList, Paginator
 from avito.core.retries import RetryDecision, RetryPolicy
 from avito.core.transport import Transport
 from avito.core.types import (
@@ -31,6 +31,7 @@ __all__ = (
     "ClientError",
     "JsonPage",
     "NotFoundError",
+    "PaginatedList",
     "Paginator",
     "PermissionDeniedError",
     "RateLimitError",

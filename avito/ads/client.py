@@ -56,7 +56,7 @@ from avito.ads.models import (
     VasPricesRequest,
     VasPricesResult,
 )
-from avito.core import RequestContext, Transport
+from avito.core import JsonPage, Paginator, RequestContext, Transport
 
 
 @dataclass(slots=True)
@@ -85,6 +85,7 @@ class AdsClient:
     ) -> AdsListResult:
         """Получает список объявлений пользователя."""
 
+        start_offset = offset if offset is not None else 0 if limit is not None else None
         payload = self.transport.request_json(
             "GET",
             "/core/v1/items",
@@ -93,10 +94,66 @@ class AdsClient:
                 "user_id": user_id,
                 "status": status,
                 "limit": limit,
+                "offset": start_offset,
+            },
+        )
+        result = map_ads_list(payload)
+        page_size = limit if limit and limit > 0 else len(result.items)
+        resolved_offset = start_offset or 0
+
+        if result.total is None or page_size <= 0 or resolved_offset + len(result.items) >= result.total:
+            return result
+
+        start_page = resolved_offset // page_size + 1
+        paginator = Paginator(
+            lambda page, cursor: self._fetch_ads_page(
+                page=page,
+                user_id=user_id,
+                status=status,
+                page_size=page_size,
+            )
+        )
+        paginated_items = paginator.as_list(
+            start_page=start_page,
+            first_page=JsonPage(
+                items=list(result.items),
+                total=result.total,
+                page=start_page,
+                per_page=page_size,
+            ),
+        )
+        return AdsListResult(items=paginated_items, total=result.total, raw_payload=result.raw_payload)
+
+    def _fetch_ads_page(
+        self,
+        *,
+        page: int | None,
+        user_id: int | None,
+        status: str | None,
+        page_size: int,
+    ) -> JsonPage[AdItem]:
+        if page is None:
+            raise ValueError("Постраничная загрузка объявлений требует номера страницы.")
+
+        offset = (page - 1) * page_size
+        payload = self.transport.request_json(
+            "GET",
+            "/core/v1/items",
+            context=RequestContext("ads.list_items"),
+            params={
+                "user_id": user_id,
+                "status": status,
+                "limit": page_size,
                 "offset": offset,
             },
         )
-        return map_ads_list(payload)
+        result = map_ads_list(payload)
+        return JsonPage(
+            items=list(result.items),
+            total=result.total,
+            page=page,
+            per_page=page_size,
+        )
 
     def update_price(self, *, item_id: int, price: UpdatePriceRequest) -> UpdatePriceResult:
         """Обновляет цену объявления."""
