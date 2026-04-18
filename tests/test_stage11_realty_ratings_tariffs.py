@@ -57,7 +57,10 @@ def test_realty_flows() -> None:
             assert payload == {"periods": [{"dateFrom": "2026-05-01", "price": 5000}]}
             return httpx.Response(200, json={"result": "success"})
         if path == "/realty/v1/items/intervals":
-            assert payload == {"itemId": 20, "intervals": [{"date": "2026-05-01", "available": True}]}
+            assert payload == {
+                "itemId": 20,
+                "intervals": [{"date": "2026-05-01", "available": True}],
+            }
             return httpx.Response(200, json={"result": "success"})
         if path == "/realty/v1/items/20/base":
             assert payload == {"minStayDays": 2}
@@ -78,8 +81,12 @@ def test_realty_flows() -> None:
 
     updated_bookings = booking.update_bookings_info(payload={"blockedDates": ["2026-04-18"]})
     bookings = booking.list_realty_bookings()
-    updated_prices = pricing.update_realty_prices(payload={"periods": [{"dateFrom": "2026-05-01", "price": 5000}]})
-    intervals = listing.get_intervals(payload={"itemId": 20, "intervals": [{"date": "2026-05-01", "available": True}]})
+    updated_prices = pricing.update_realty_prices(
+        payload={"periods": [{"dateFrom": "2026-05-01", "price": 5000}]}
+    )
+    intervals = listing.get_intervals(
+        payload={"itemId": 20, "intervals": [{"date": "2026-05-01", "available": True}]}
+    )
     base = listing.update_base_params(payload={"minStayDays": 2})
     market = analytics.get_market_price_correspondence_v1(price=5000000)
     report = analytics.get_report_for_classified()
@@ -97,12 +104,21 @@ def test_ratings_flows() -> None:
     def handler(request: httpx.Request) -> httpx.Response:
         path = request.url.path
         if path == "/ratings/v1/answers":
-            assert json.loads(request.content.decode()) == {"reviewId": 123, "text": "Спасибо за отзыв"}
+            assert json.loads(request.content.decode()) == {
+                "reviewId": 123,
+                "text": "Спасибо за отзыв",
+            }
             return httpx.Response(200, json={"id": 456, "createdAt": 1713427200})
         if path == "/ratings/v1/answers/456":
             return httpx.Response(200, json={"success": True})
         if path == "/ratings/v1/info":
-            return httpx.Response(200, json={"isEnabled": True, "rating": {"score": 4.7, "reviewsCount": 25, "reviewsWithScoreCount": 20}})
+            return httpx.Response(
+                200,
+                json={
+                    "isEnabled": True,
+                    "rating": {"score": 4.7, "reviewsCount": 25, "reviewsWithScoreCount": 20},
+                },
+            )
         assert path == "/ratings/v1/reviews"
         assert request.url.params["page"] == "2"
         return httpx.Response(

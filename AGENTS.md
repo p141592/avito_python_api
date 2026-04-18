@@ -22,7 +22,7 @@ There is no dedicated local server or demo app in this repository. Treat `poetry
 
 ## Coding Style & Naming Conventions
 
-Target Python is `3.12` and dependency management is handled by Poetry. Follow `STYLEGUIDE.md` for architectural rules:
+Target Python is `3.14` and dependency management is handled by Poetry. Follow `STYLEGUIDE.md` for architectural rules:
 
 - Use 4-space indentation and full type annotations on public code.
 - Prefer clear domain models over loose `dict` payloads.

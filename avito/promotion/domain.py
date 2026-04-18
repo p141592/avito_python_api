@@ -79,7 +79,9 @@ class PromotionOrder(DomainObject):
     def list_services(self, *, item_ids: list[int]) -> PromotionServicesResult:
         """Получает список услуг продвижения по объявлениям."""
 
-        return PromotionClient(self.transport).list_services(ListPromotionServicesRequest(item_ids=item_ids))
+        return PromotionClient(self.transport).list_services(
+            ListPromotionServicesRequest(item_ids=item_ids)
+        )
 
     def list_orders(
         self,
@@ -93,10 +95,14 @@ class PromotionOrder(DomainObject):
             ListPromotionOrdersRequest(item_ids=item_ids, order_ids=order_ids)
         )
 
-    def get_order_status(self, *, order_ids: list[str] | None = None) -> PromotionOrderStatusesResult:
+    def get_order_status(
+        self, *, order_ids: list[str] | None = None
+    ) -> PromotionOrderStatusesResult:
         """Получает статусы заявок на продвижение."""
 
-        resolved_order_ids = order_ids or ([str(self.resource_id)] if self.resource_id is not None else [])
+        resolved_order_ids = order_ids or (
+            [str(self.resource_id)] if self.resource_id is not None else []
+        )
         if not resolved_order_ids:
             raise ValueError("Для операции требуется хотя бы один `order_id`.")
         return PromotionClient(self.transport).get_order_status(
@@ -125,7 +131,9 @@ class BbipPromotion(DomainObject):
         """Получает варианты бюджета BBIP."""
 
         resolved_item_ids = item_ids or self._resource_item_ids()
-        return BbipClient(self.transport).get_suggests(CreateBbipSuggestsRequest(item_ids=resolved_item_ids))
+        return BbipClient(self.transport).get_suggests(
+            CreateBbipSuggestsRequest(item_ids=resolved_item_ids)
+        )
 
     def _resource_item_ids(self) -> list[int]:
         if self.resource_id is None:
@@ -149,12 +157,16 @@ class TrxPromotion(DomainObject):
         """Останавливает TrxPromo."""
 
         resolved_item_ids = item_ids or self._resource_item_ids()
-        return TrxPromoClient(self.transport).cancel(CancelTrxPromotionRequest(item_ids=resolved_item_ids))
+        return TrxPromoClient(self.transport).cancel(
+            CancelTrxPromotionRequest(item_ids=resolved_item_ids)
+        )
 
     def get_commissions(self, *, item_ids: list[int] | None = None) -> TrxCommissionsResult:
         """Получает доступные комиссии TrxPromo."""
 
-        return TrxPromoClient(self.transport).get_commissions(item_ids=item_ids or self._resource_item_ids())
+        return TrxPromoClient(self.transport).get_commissions(
+            item_ids=item_ids or self._resource_item_ids()
+        )
 
     def _resource_item_ids(self) -> list[int]:
         if self.resource_id is None:
@@ -198,9 +210,13 @@ class TargetActionPricing(DomainObject):
     def get_bids(self, *, item_id: int | None = None) -> TargetActionPromotionsResult:
         """Получает детализированные цены и бюджеты."""
 
-        return TargetActionPriceClient(self.transport).get_bids(item_id=item_id or self._require_item_id())
+        return TargetActionPriceClient(self.transport).get_bids(
+            item_id=item_id or self._require_item_id()
+        )
 
-    def get_promotions_by_item_ids(self, *, item_ids: list[int] | None = None) -> TargetActionPromotionsResult:
+    def get_promotions_by_item_ids(
+        self, *, item_ids: list[int] | None = None
+    ) -> TargetActionPromotionsResult:
         """Получает текущие настройки по нескольким объявлениям."""
 
         resolved_item_ids = item_ids or [self._require_item_id()]
@@ -269,7 +285,9 @@ class AutostrategyCampaign(DomainObject):
     def create_budget(self, *, payload: Mapping[str, object]) -> AutostrategyBudget:
         """Рассчитывает бюджет кампании."""
 
-        return AutostrategyClient(self.transport).create_budget(CreateAutostrategyBudgetRequest(payload=payload))
+        return AutostrategyClient(self.transport).create_budget(
+            CreateAutostrategyBudgetRequest(payload=payload)
+        )
 
     def create(self, *, payload: Mapping[str, object]) -> CampaignActionResult:
         """Создает новую кампанию."""
@@ -289,7 +307,9 @@ class AutostrategyCampaign(DomainObject):
         """Получает полную информацию о кампании."""
 
         return AutostrategyClient(self.transport).get_campaign_info(
-            GetAutostrategyCampaignInfoRequest(campaign_id=campaign_id or self._require_campaign_id())
+            GetAutostrategyCampaignInfoRequest(
+                campaign_id=campaign_id or self._require_campaign_id()
+            )
         )
 
     def delete(self, *, campaign_id: int | None = None) -> CampaignActionResult:

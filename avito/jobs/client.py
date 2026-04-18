@@ -48,7 +48,9 @@ class ApplicationsClient:
     transport: Transport
 
     def apply_actions(self, request: JsonRequest) -> JobActionResult:
-        return self._post_action("/job/v1/applications/apply_actions", "jobs.applications.apply_actions", request)
+        return self._post_action(
+            "/job/v1/applications/apply_actions", "jobs.applications.apply_actions", request
+        )
 
     def get_by_ids(self, request: JsonRequest) -> ApplicationsResult:
         payload = self.transport.request_json(
@@ -77,7 +79,9 @@ class ApplicationsClient:
         return map_application_states(payload)
 
     def set_is_viewed(self, request: JsonRequest) -> JobActionResult:
-        return self._post_action("/job/v1/applications/set_is_viewed", "jobs.applications.set_is_viewed", request)
+        return self._post_action(
+            "/job/v1/applications/set_is_viewed", "jobs.applications.set_is_viewed", request
+        )
 
     def _post_action(self, path: str, operation: str, request: JsonRequest) -> JobActionResult:
         payload = self.transport.request_json(
@@ -249,7 +253,9 @@ class VacanciesClient:
         )
         return map_job_action(payload)
 
-    def get_item_v2(self, *, vacancy_id: int | str, params: Mapping[str, object] | None = None) -> VacancyInfo:
+    def get_item_v2(
+        self, *, vacancy_id: int | str, params: Mapping[str, object] | None = None
+    ) -> VacancyInfo:
         payload = self.transport.request_json(
             "GET",
             f"/job/v2/vacancies/{vacancy_id}",

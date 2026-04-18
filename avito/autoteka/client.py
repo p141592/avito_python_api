@@ -89,7 +89,9 @@ class PreviewClient(AutotekaBaseClient):
     """Выполняет HTTP-операции превью автомобиля."""
 
     def create_by_vin(self, request: JsonRequest) -> AutotekaPreviewInfo:
-        return self._post_preview("/autoteka/v1/previews", "autoteka.preview.create_by_vin", request)
+        return self._post_preview(
+            "/autoteka/v1/previews", "autoteka.preview.create_by_vin", request
+        )
 
     def create_by_external_item(self, request: JsonRequest) -> AutotekaPreviewInfo:
         return self._post_preview(
@@ -218,7 +220,9 @@ class MonitoringClient(AutotekaBaseClient):
             request,
         )
 
-    def get_reg_actions(self, *, params: Mapping[str, object] | None = None) -> MonitoringEventsResult:
+    def get_reg_actions(
+        self, *, params: Mapping[str, object] | None = None
+    ) -> MonitoringEventsResult:
         payload = self.transport.request_json(
             "GET",
             "/autoteka/v1/monitoring/get-reg-actions/",
@@ -227,7 +231,9 @@ class MonitoringClient(AutotekaBaseClient):
         )
         return map_monitoring_events(payload)
 
-    def _post_bucket(self, path: str, operation: str, request: JsonRequest) -> MonitoringBucketResult:
+    def _post_bucket(
+        self, path: str, operation: str, request: JsonRequest
+    ) -> MonitoringBucketResult:
         payload = self.transport.request_json(
             "POST",
             path,

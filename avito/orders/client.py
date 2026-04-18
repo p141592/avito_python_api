@@ -164,7 +164,9 @@ class DeliveryClient:
         )
 
     def update_change_parcels(self, request: JsonRequest) -> DeliveryEntityResult:
-        return self._post("/sandbox/changeParcels", "orders.delivery.update_change_parcels", request)
+        return self._post(
+            "/sandbox/changeParcels", "orders.delivery.update_change_parcels", request
+        )
 
     def _post(self, path: str, operation: str, request: JsonRequest) -> DeliveryEntityResult:
         payload = self.transport.request_json(
@@ -183,10 +185,14 @@ class SandboxDeliveryClient:
     transport: Transport
 
     def create_announcement(self, request: JsonRequest) -> DeliveryEntityResult:
-        return self._post("/delivery-sandbox/announcements/create", "orders.sandbox.create_announcement", request)
+        return self._post(
+            "/delivery-sandbox/announcements/create", "orders.sandbox.create_announcement", request
+        )
 
     def track_announcement(self, request: JsonRequest) -> DeliveryEntityResult:
-        return self._post("/delivery-sandbox/announcements/track", "orders.sandbox.track_announcement", request)
+        return self._post(
+            "/delivery-sandbox/announcements/track", "orders.sandbox.track_announcement", request
+        )
 
     def update_custom_area_schedule(self, request: JsonRequest) -> DeliveryEntityResult:
         return self._post(
@@ -251,7 +257,9 @@ class SandboxDeliveryClient:
             request,
         )
 
-    def add_tags_to_sorting_center(self, *, tariff_id: str, request: JsonRequest) -> DeliveryEntityResult:
+    def add_tags_to_sorting_center(
+        self, *, tariff_id: str, request: JsonRequest
+    ) -> DeliveryEntityResult:
         return self._post(
             f"/delivery-sandbox/tariffs/{tariff_id}/tagged-sorting-centers",
             "orders.sandbox.add_tags_to_sorting_center",
@@ -283,10 +291,14 @@ class SandboxDeliveryClient:
         )
 
     def v1_cancel_parcel(self, request: JsonRequest) -> DeliveryEntityResult:
-        return self._post("/delivery-sandbox/v1/cancelParcel", "orders.sandbox.v1_cancel_parcel", request)
+        return self._post(
+            "/delivery-sandbox/v1/cancelParcel", "orders.sandbox.v1_cancel_parcel", request
+        )
 
     def v1_change_parcel(self, request: JsonRequest) -> DeliveryEntityResult:
-        return self._post("/delivery-sandbox/v1/changeParcel", "orders.sandbox.v1_change_parcel", request)
+        return self._post(
+            "/delivery-sandbox/v1/changeParcel", "orders.sandbox.v1_change_parcel", request
+        )
 
     def v1_create_announcement(self, request: JsonRequest) -> DeliveryEntityResult:
         return self._post(
@@ -324,7 +336,9 @@ class SandboxDeliveryClient:
         )
 
     def create_parcel_v2(self, request: JsonRequest) -> DeliveryEntityResult:
-        return self._post("/delivery-sandbox/v2/createParcel", "orders.sandbox.create_parcel_v2", request)
+        return self._post(
+            "/delivery-sandbox/v2/createParcel", "orders.sandbox.create_parcel_v2", request
+        )
 
     def _post(self, path: str, operation: str, request: JsonRequest) -> DeliveryEntityResult:
         payload = self.transport.request_json(

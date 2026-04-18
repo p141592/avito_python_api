@@ -32,28 +32,57 @@ def test_applications_and_webhooks_flows() -> None:
         path = request.url.path
         if path == "/job/v1/applications/get_ids":
             assert request.url.params["updatedAtFrom"] == "2026-04-18"
-            return httpx.Response(200, json={"items": [{"id": "app-1", "updatedAt": "2026-04-18T10:00:00+03:00"}], "cursor": "app-1"})
+            return httpx.Response(
+                200,
+                json={
+                    "items": [{"id": "app-1", "updatedAt": "2026-04-18T10:00:00+03:00"}],
+                    "cursor": "app-1",
+                },
+            )
         if path == "/job/v1/applications/get_by_ids":
             assert json.loads(request.content.decode()) == {"ids": ["app-1"]}
-            return httpx.Response(200, json={"applies": [{"id": "app-1", "vacancy_id": 101, "state": "new", "is_viewed": False, "applicant": {"name": "Иван"}}]})
+            return httpx.Response(
+                200,
+                json={
+                    "applies": [
+                        {
+                            "id": "app-1",
+                            "vacancy_id": 101,
+                            "state": "new",
+                            "is_viewed": False,
+                            "applicant": {"name": "Иван"},
+                        }
+                    ]
+                },
+            )
         if path == "/job/v1/applications/get_states":
-            return httpx.Response(200, json={"states": [{"slug": "new", "description": "Новый отклик"}]})
+            return httpx.Response(
+                200, json={"states": [{"slug": "new", "description": "Новый отклик"}]}
+            )
         if path == "/job/v1/applications/set_is_viewed":
-            assert json.loads(request.content.decode()) == {"applies": [{"id": "app-1", "is_viewed": True}]}
+            assert json.loads(request.content.decode()) == {
+                "applies": [{"id": "app-1", "is_viewed": True}]
+            }
             return httpx.Response(200, json={"ok": True, "status": "viewed"})
         if path == "/job/v1/applications/apply_actions":
             assert json.loads(request.content.decode()) == {"ids": ["app-1"], "action": "invited"}
             return httpx.Response(200, json={"ok": True, "status": "invited"})
         if path == "/job/v1/applications/webhook" and request.method == "GET":
-            return httpx.Response(200, json={"url": "https://example.com/job", "is_active": True, "version": "v1"})
+            return httpx.Response(
+                200, json={"url": "https://example.com/job", "is_active": True, "version": "v1"}
+            )
         if path == "/job/v1/applications/webhook" and request.method == "PUT":
             assert json.loads(request.content.decode()) == {"url": "https://example.com/job"}
-            return httpx.Response(200, json={"url": "https://example.com/job", "is_active": True, "version": "v1"})
+            return httpx.Response(
+                200, json={"url": "https://example.com/job", "is_active": True, "version": "v1"}
+            )
         if path == "/job/v1/applications/webhook" and request.method == "DELETE":
             assert request.url.params["url"] == "https://example.com/job"
             return httpx.Response(200, json={"ok": True})
         assert path == "/job/v1/applications/webhooks"
-        return httpx.Response(200, json=[{"url": "https://example.com/job", "is_active": True, "version": "v1"}])
+        return httpx.Response(
+            200, json=[{"url": "https://example.com/job", "is_active": True, "version": "v1"}]
+        )
 
     transport = make_transport(httpx.MockTransport(handler))
     application = Application(transport, resource_id="app-1")
@@ -86,12 +115,34 @@ def test_resume_flows() -> None:
             assert request.url.params["query"] == "оператор"
             return httpx.Response(
                 200,
-                json={"meta": {"cursor": "2", "total": 1}, "resumes": [{"id": "res-1", "title": "Оператор call-центра", "name": "Петр", "location": "Москва", "salary": 90000}]},
+                json={
+                    "meta": {"cursor": "2", "total": 1},
+                    "resumes": [
+                        {
+                            "id": "res-1",
+                            "title": "Оператор call-центра",
+                            "name": "Петр",
+                            "location": "Москва",
+                            "salary": 90000,
+                        }
+                    ],
+                },
             )
         if request.url.path == "/job/v1/resumes/res-1/contacts/":
-            return httpx.Response(200, json={"name": "Петр", "phone": "+79990000000", "email": "petr@example.com"})
+            return httpx.Response(
+                200, json={"name": "Петр", "phone": "+79990000000", "email": "petr@example.com"}
+            )
         assert request.url.path == "/job/v2/resumes/res-1"
-        return httpx.Response(200, json={"id": "res-1", "title": "Оператор call-центра", "fullName": "Петр Петров", "address_details": {"location": "Москва"}, "salary": {"from": 90000}})
+        return httpx.Response(
+            200,
+            json={
+                "id": "res-1",
+                "title": "Оператор call-центра",
+                "fullName": "Петр Петров",
+                "address_details": {"location": "Москва"},
+                "salary": {"from": 90000},
+            },
+        )
 
     resume = Resume(make_transport(httpx.MockTransport(handler)), resource_id="res-1")
 
@@ -123,20 +174,51 @@ def test_vacancy_v1_v2_flows() -> None:
             return httpx.Response(200, json={"ok": True, "status": "prolongated"})
         if path == "/job/v2/vacancies":
             if request.method == "GET":
-                return httpx.Response(200, json={"vacancies": [{"id": 101, "uuid": "vac-uuid-1", "title": "Продавец", "status": "active"}], "total": 1})
+                return httpx.Response(
+                    200,
+                    json={
+                        "vacancies": [
+                            {
+                                "id": 101,
+                                "uuid": "vac-uuid-1",
+                                "title": "Продавец",
+                                "status": "active",
+                            }
+                        ],
+                        "total": 1,
+                    },
+                )
             assert json.loads(request.content.decode()) == {"title": "Вакансия v2"}
             return httpx.Response(202, json={"vacancy_uuid": "vac-uuid-1", "status": "created"})
         if path == "/job/v2/vacancies/batch":
             assert json.loads(request.content.decode()) == {"ids": [101]}
-            return httpx.Response(200, json={"vacancies": [{"id": 101, "uuid": "vac-uuid-1", "title": "Продавец", "status": "active"}]})
+            return httpx.Response(
+                200,
+                json={
+                    "vacancies": [
+                        {"id": 101, "uuid": "vac-uuid-1", "title": "Продавец", "status": "active"}
+                    ]
+                },
+            )
         if path == "/job/v2/vacancies/statuses":
             assert json.loads(request.content.decode()) == {"ids": [101]}
-            return httpx.Response(200, json={"items": [{"id": 101, "uuid": "vac-uuid-1", "status": "active"}]})
+            return httpx.Response(
+                200, json={"items": [{"id": 101, "uuid": "vac-uuid-1", "status": "active"}]}
+            )
         if path == "/job/v2/vacancies/update/vac-uuid-1":
             assert json.loads(request.content.decode()) == {"title": "Вакансия v2 updated"}
             return httpx.Response(202, json={"vacancy_uuid": "vac-uuid-1", "status": "updated"})
         if path == "/job/v2/vacancies/101":
-            return httpx.Response(200, json={"id": 101, "uuid": "vac-uuid-1", "title": "Продавец", "status": "active", "url": "https://avito.ru/vacancy/101"})
+            return httpx.Response(
+                200,
+                json={
+                    "id": 101,
+                    "uuid": "vac-uuid-1",
+                    "title": "Продавец",
+                    "status": "active",
+                    "url": "https://avito.ru/vacancy/101",
+                },
+            )
         assert path == "/job/v2/vacancies/vac-uuid-1/auto_renewal"
         assert json.loads(request.content.decode()) == {"auto_renewal": True}
         return httpx.Response(200, json={"ok": True, "status": "auto-renewal-updated"})
@@ -151,9 +233,13 @@ def test_vacancy_v1_v2_flows() -> None:
     created_v2 = vacancy.create(payload={"title": "Вакансия v2"})
     batch_v2 = vacancy.get_by_ids(payload={"ids": [101]})
     statuses_v2 = vacancy.get_statuses(payload={"ids": [101]})
-    updated_v2 = vacancy.update(payload={"title": "Вакансия v2 updated"}, version=2, vacancy_uuid="vac-uuid-1")
+    updated_v2 = vacancy.update(
+        payload={"title": "Вакансия v2 updated"}, version=2, vacancy_uuid="vac-uuid-1"
+    )
     item_v2 = vacancy.get()
-    auto_renewal = vacancy.update_auto_renewal(payload={"auto_renewal": True}, vacancy_uuid="vac-uuid-1")
+    auto_renewal = vacancy.update_auto_renewal(
+        payload={"auto_renewal": True}, vacancy_uuid="vac-uuid-1"
+    )
 
     assert created_v1.id == "101"
     assert updated_v1.status == "updated"
@@ -173,9 +259,13 @@ def test_job_dictionary_flows() -> None:
         if request.url.path == "/job/v2/vacancy/dict":
             return httpx.Response(200, json=[{"id": "profession", "description": "Профессия"}])
         assert request.url.path == "/job/v2/vacancy/dict/profession"
-        return httpx.Response(200, json=[{"id": 10106, "name": "IT, интернет, телеком", "deprecated": True}])
+        return httpx.Response(
+            200, json=[{"id": 10106, "name": "IT, интернет, телеком", "deprecated": True}]
+        )
 
-    dictionary = JobDictionary(make_transport(httpx.MockTransport(handler)), resource_id="profession")
+    dictionary = JobDictionary(
+        make_transport(httpx.MockTransport(handler)), resource_id="profession"
+    )
 
     dictionaries = dictionary.list()
     values = dictionary.get()

@@ -31,9 +31,24 @@ def test_messenger_chat_and_message_flows() -> None:
     def handler(request: httpx.Request) -> httpx.Response:
         path = request.url.path
         if path == "/messenger/v2/accounts/7/chats":
-            return httpx.Response(200, json={"chats": [{"id": "chat-1", "user_id": 7, "title": "Покупатель", "unread_count": 2}]})
+            return httpx.Response(
+                200,
+                json={
+                    "chats": [
+                        {"id": "chat-1", "user_id": 7, "title": "Покупатель", "unread_count": 2}
+                    ]
+                },
+            )
         if path == "/messenger/v2/accounts/7/chats/chat-1":
-            return httpx.Response(200, json={"id": "chat-1", "user_id": 7, "title": "Покупатель", "last_message": {"text": "Привет"}})
+            return httpx.Response(
+                200,
+                json={
+                    "id": "chat-1",
+                    "user_id": 7,
+                    "title": "Покупатель",
+                    "last_message": {"text": "Привет"},
+                },
+            )
         if path == "/messenger/v1/accounts/7/chats/chat-1/read":
             return httpx.Response(200, json={"success": True, "status": "read"})
         if path == "/messenger/v2/accounts/7/blacklist":
@@ -41,9 +56,24 @@ def test_messenger_chat_and_message_flows() -> None:
             return httpx.Response(200, json={"success": True, "status": "blacklisted"})
         if path == "/messenger/v1/accounts/7/chats/chat-1/messages":
             assert json.loads(request.content.decode()) == {"message": "Здравствуйте"}
-            return httpx.Response(200, json={"success": True, "message_id": "msg-1", "status": "sent"})
+            return httpx.Response(
+                200, json={"success": True, "message_id": "msg-1", "status": "sent"}
+            )
         if path == "/messenger/v3/accounts/7/chats/chat-1/messages/":
-            return httpx.Response(200, json={"messages": [{"id": "msg-1", "chat_id": "chat-1", "text": "Здравствуйте", "direction": "out"}], "total": 1})
+            return httpx.Response(
+                200,
+                json={
+                    "messages": [
+                        {
+                            "id": "msg-1",
+                            "chat_id": "chat-1",
+                            "text": "Здравствуйте",
+                            "direction": "out",
+                        }
+                    ],
+                    "total": 1,
+                },
+            )
         assert path == "/messenger/v1/accounts/7/chats/chat-1/messages/msg-1"
         return httpx.Response(200, json={"success": True, "status": "deleted"})
 
@@ -72,12 +102,23 @@ def test_messenger_media_upload_and_send_image_flow() -> None:
     def handler(request: httpx.Request) -> httpx.Response:
         if request.url.path == "/messenger/v1/accounts/7/uploadImages":
             assert request.headers["Content-Type"].startswith("multipart/form-data")
-            return httpx.Response(200, json={"images": [{"image_id": "img-1", "url": "https://cdn/img-1.jpg"}]})
+            return httpx.Response(
+                200, json={"images": [{"image_id": "img-1", "url": "https://cdn/img-1.jpg"}]}
+            )
         if request.url.path == "/messenger/v1/accounts/7/getVoiceFiles":
-            return httpx.Response(200, json={"voice_files": [{"id": "voice-1", "url": "https://cdn/voice.mp3", "duration": 5}]})
+            return httpx.Response(
+                200,
+                json={
+                    "voice_files": [
+                        {"id": "voice-1", "url": "https://cdn/voice.mp3", "duration": 5}
+                    ]
+                },
+            )
         assert request.url.path == "/messenger/v1/accounts/7/chats/chat-1/messages/image"
         assert json.loads(request.content.decode()) == {"imageId": "img-1", "caption": "Фото"}
-        return httpx.Response(200, json={"success": True, "message_id": "msg-img-1", "status": "sent"})
+        return httpx.Response(
+            200, json={"success": True, "message_id": "msg-img-1", "status": "sent"}
+        )
 
     transport = make_transport(httpx.MockTransport(handler))
     media = ChatMedia(transport, user_id=7)
@@ -85,7 +126,9 @@ def test_messenger_media_upload_and_send_image_flow() -> None:
 
     uploaded = media.upload_images(files={"image": ("photo.jpg", b"binary", "image/jpeg")})
     voice_files = media.get_voice_files()
-    sent = message.send_image(chat_id="chat-1", image_id=uploaded.items[0].image_id or "", caption="Фото")
+    sent = message.send_image(
+        chat_id="chat-1", image_id=uploaded.items[0].image_id or "", caption="Фото"
+    )
 
     assert uploaded.items[0].image_id == "img-1"
     assert voice_files.items[0].duration == 5
@@ -95,12 +138,22 @@ def test_messenger_media_upload_and_send_image_flow() -> None:
 def test_messenger_webhook_flows() -> None:
     def handler(request: httpx.Request) -> httpx.Response:
         if request.url.path == "/messenger/v1/subscriptions":
-            return httpx.Response(200, json={"subscriptions": [{"url": "https://example.com/hook", "version": "v2", "status": "active"}]})
+            return httpx.Response(
+                200,
+                json={
+                    "subscriptions": [
+                        {"url": "https://example.com/hook", "version": "v2", "status": "active"}
+                    ]
+                },
+            )
         if request.url.path == "/messenger/v1/webhook/unsubscribe":
             assert json.loads(request.content.decode()) == {"url": "https://example.com/hook"}
             return httpx.Response(200, json={"success": True, "status": "unsubscribed"})
         assert request.url.path == "/messenger/v3/webhook"
-        assert json.loads(request.content.decode()) == {"url": "https://example.com/hook", "secret": "top-secret"}
+        assert json.loads(request.content.decode()) == {
+            "url": "https://example.com/hook",
+            "secret": "top-secret",
+        }
         return httpx.Response(200, json={"success": True, "status": "subscribed"})
 
     webhook = ChatWebhook(make_transport(httpx.MockTransport(handler)))
@@ -120,7 +173,9 @@ def test_special_offer_campaign_flows() -> None:
         payload = json.loads(request.content.decode()) if request.content else None
         if path == "/special-offers/v1/available":
             assert payload == {"itemIds": [1, 2]}
-            return httpx.Response(200, json={"items": [{"item_id": 1, "title": "Объявление", "is_available": True}]})
+            return httpx.Response(
+                200, json={"items": [{"item_id": 1, "title": "Объявление", "is_available": True}]}
+            )
         if path == "/special-offers/v1/multiCreate":
             assert payload == {"itemIds": [1], "message": "Скидка 10%", "discountPercent": 10}
             return httpx.Response(200, json={"campaign_id": "camp-1", "status": "draft"})
@@ -129,11 +184,21 @@ def test_special_offer_campaign_flows() -> None:
             return httpx.Response(200, json={"success": True, "status": "confirmed"})
         if path == "/special-offers/v1/stats":
             assert payload == {"campaignId": "camp-1"}
-            return httpx.Response(200, json={"campaign_id": "camp-1", "sent_count": 20, "delivered_count": 18, "read_count": 10})
+            return httpx.Response(
+                200,
+                json={
+                    "campaign_id": "camp-1",
+                    "sent_count": 20,
+                    "delivered_count": 18,
+                    "read_count": 10,
+                },
+            )
         assert path == "/special-offers/v1/tariffInfo"
         return httpx.Response(200, json={"price": 9.9, "currency": "RUB", "daily_limit": 100})
 
-    campaign = SpecialOfferCampaign(make_transport(httpx.MockTransport(handler)), resource_id="camp-1")
+    campaign = SpecialOfferCampaign(
+        make_transport(httpx.MockTransport(handler)), resource_id="camp-1"
+    )
 
     available = campaign.get_available(item_ids=[1, 2])
     created = campaign.create_multi(item_ids=[1], message="Скидка 10%", discount_percent=10)

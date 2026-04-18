@@ -8,7 +8,9 @@ from typing import Literal
 from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
-RetryReason = Literal["transport_error", "timeout", "rate_limit", "server_error", "unauthorized_refresh"]
+RetryReason = Literal[
+    "transport_error", "timeout", "rate_limit", "server_error", "unauthorized_refresh"
+]
 
 
 class RetryPolicy(BaseSettings):

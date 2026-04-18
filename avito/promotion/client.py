@@ -99,7 +99,9 @@ class PromotionClient:
         )
         return map_promotion_orders(payload)
 
-    def get_order_status(self, request: GetPromotionOrderStatusRequest) -> PromotionOrderStatusesResult:
+    def get_order_status(
+        self, request: GetPromotionOrderStatusRequest
+    ) -> PromotionOrderStatusesResult:
         """Получает статусы заявок на продвижение."""
 
         payload = self.transport.request_json(
@@ -251,7 +253,9 @@ class TargetActionPriceClient:
         payload = self.transport.request_json(
             "POST",
             "/cpxpromo/1/getPromotionsByItemIds",
-            context=RequestContext("promotion.target_action.get_promotions_by_item_ids", allow_retry=True),
+            context=RequestContext(
+                "promotion.target_action.get_promotions_by_item_ids", allow_retry=True
+            ),
             json_body=request.to_payload(),
         )
         return map_target_action_promotions(payload)

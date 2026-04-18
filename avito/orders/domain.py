@@ -132,7 +132,9 @@ class SandboxDelivery(DomainObject):
         return SandboxDeliveryClient(self.transport).track_announcement(JsonRequest(payload))
 
     def update_custom_area_schedule(self, *, payload: Mapping[str, object]) -> DeliveryEntityResult:
-        return SandboxDeliveryClient(self.transport).update_custom_area_schedule(JsonRequest(payload))
+        return SandboxDeliveryClient(self.transport).update_custom_area_schedule(
+            JsonRequest(payload)
+        )
 
     def cancel_parcel(self, *, payload: Mapping[str, object]) -> DeliveryEntityResult:
         return SandboxDeliveryClient(self.transport).cancel_parcel(JsonRequest(payload))
@@ -159,19 +161,31 @@ class SandboxDelivery(DomainObject):
         return SandboxDeliveryClient(self.transport).add_sorting_center(JsonRequest(payload))
 
     def add_areas(self, *, tariff_id: str, payload: Mapping[str, object]) -> DeliveryEntityResult:
-        return SandboxDeliveryClient(self.transport).add_areas(tariff_id=tariff_id, request=JsonRequest(payload))
+        return SandboxDeliveryClient(self.transport).add_areas(
+            tariff_id=tariff_id, request=JsonRequest(payload)
+        )
 
-    def add_tags_to_sorting_center(self, *, tariff_id: str, payload: Mapping[str, object]) -> DeliveryEntityResult:
+    def add_tags_to_sorting_center(
+        self, *, tariff_id: str, payload: Mapping[str, object]
+    ) -> DeliveryEntityResult:
         return SandboxDeliveryClient(self.transport).add_tags_to_sorting_center(
             tariff_id=tariff_id,
             request=JsonRequest(payload),
         )
 
-    def add_terminals(self, *, tariff_id: str, payload: Mapping[str, object]) -> DeliveryEntityResult:
-        return SandboxDeliveryClient(self.transport).add_terminals(tariff_id=tariff_id, request=JsonRequest(payload))
+    def add_terminals(
+        self, *, tariff_id: str, payload: Mapping[str, object]
+    ) -> DeliveryEntityResult:
+        return SandboxDeliveryClient(self.transport).add_terminals(
+            tariff_id=tariff_id, request=JsonRequest(payload)
+        )
 
-    def update_terms(self, *, tariff_id: str, payload: Mapping[str, object]) -> DeliveryEntityResult:
-        return SandboxDeliveryClient(self.transport).update_terms(tariff_id=tariff_id, request=JsonRequest(payload))
+    def update_terms(
+        self, *, tariff_id: str, payload: Mapping[str, object]
+    ) -> DeliveryEntityResult:
+        return SandboxDeliveryClient(self.transport).update_terms(
+            tariff_id=tariff_id, request=JsonRequest(payload)
+        )
 
     def add_tariff_v2(self, *, payload: Mapping[str, object]) -> DeliveryEntityResult:
         return SandboxDeliveryClient(self.transport).add_tariff_v2(JsonRequest(payload))
@@ -191,17 +205,25 @@ class SandboxDelivery(DomainObject):
     def legacy_create_announcement(self, *, payload: Mapping[str, object]) -> DeliveryEntityResult:
         return SandboxDeliveryClient(self.transport).v1_create_announcement(JsonRequest(payload))
 
-    def legacy_get_announcement_event(self, *, payload: Mapping[str, object]) -> DeliveryEntityResult:
+    def legacy_get_announcement_event(
+        self, *, payload: Mapping[str, object]
+    ) -> DeliveryEntityResult:
         return SandboxDeliveryClient(self.transport).v1_get_announcement_event(JsonRequest(payload))
 
-    def legacy_get_change_parcel_info(self, *, payload: Mapping[str, object]) -> DeliveryEntityResult:
+    def legacy_get_change_parcel_info(
+        self, *, payload: Mapping[str, object]
+    ) -> DeliveryEntityResult:
         return SandboxDeliveryClient(self.transport).v1_get_change_parcel_info(JsonRequest(payload))
 
     def legacy_get_parcel_info(self, *, payload: Mapping[str, object]) -> DeliveryEntityResult:
         return SandboxDeliveryClient(self.transport).v1_get_parcel_info(JsonRequest(payload))
 
-    def legacy_get_registered_parcel_id(self, *, payload: Mapping[str, object]) -> DeliveryEntityResult:
-        return SandboxDeliveryClient(self.transport).v1_get_registered_parcel_id(JsonRequest(payload))
+    def legacy_get_registered_parcel_id(
+        self, *, payload: Mapping[str, object]
+    ) -> DeliveryEntityResult:
+        return SandboxDeliveryClient(self.transport).v1_get_registered_parcel_id(
+            JsonRequest(payload)
+        )
 
 
 @dataclass(slots=True, frozen=True)
@@ -235,4 +257,12 @@ class Stock(DomainObject):
         return StockManagementClient(self.transport).update_stocks(JsonRequest(payload))
 
 
-__all__ = ("DeliveryOrder", "DeliveryTask", "DomainObject", "Order", "OrderLabel", "SandboxDelivery", "Stock")
+__all__ = (
+    "DeliveryOrder",
+    "DeliveryTask",
+    "DomainObject",
+    "Order",
+    "OrderLabel",
+    "SandboxDelivery",
+    "Stock",
+)

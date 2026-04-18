@@ -136,13 +136,19 @@ class Transport:
                     continue
                 raise TransportError(str(exc)) from exc
 
-            if response.status_code == 401 and context.requires_auth and self._auth_provider is not None:
+            if (
+                response.status_code == 401
+                and context.requires_auth
+                and self._auth_provider is not None
+            ):
                 if unauthorized_refresh_used:
                     raise self._map_http_error(response)
                 unauthorized_refresh_used = True
                 self._auth_provider.invalidate_token()
                 refreshed_headers = dict(request_headers)
-                refreshed_headers["Authorization"] = f"Bearer {self._auth_provider.get_access_token()}"
+                refreshed_headers["Authorization"] = (
+                    f"Bearer {self._auth_provider.get_access_token()}"
+                )
                 request_headers = refreshed_headers
                 continue
 
@@ -241,7 +247,9 @@ class Transport:
         if stripped.startswith("http://") or stripped.startswith("https://"):
             return stripped
         has_trailing_slash = stripped.endswith("/")
-        segments = [quote(segment, safe=":@") for segment in stripped.strip("/").split("/") if segment]
+        segments = [
+            quote(segment, safe=":@") for segment in stripped.strip("/").split("/") if segment
+        ]
         normalized = "/" + "/".join(segments)
         if has_trailing_slash and normalized != "/":
             normalized += "/"
@@ -345,18 +353,40 @@ class Transport:
         headers = dict(response.headers)
 
         if response.status_code == 401:
-            return AuthenticationError(message, status_code=401, error_code=error_code, payload=payload, headers=headers)
+            return AuthenticationError(
+                message, status_code=401, error_code=error_code, payload=payload, headers=headers
+            )
         if response.status_code == 403:
-            return PermissionDeniedError(message, status_code=403, error_code=error_code, payload=payload, headers=headers)
+            return PermissionDeniedError(
+                message, status_code=403, error_code=error_code, payload=payload, headers=headers
+            )
         if response.status_code == 404:
-            return NotFoundError(message, status_code=404, error_code=error_code, payload=payload, headers=headers)
+            return NotFoundError(
+                message, status_code=404, error_code=error_code, payload=payload, headers=headers
+            )
         if response.status_code == 422:
-            return ValidationError(message, status_code=422, error_code=error_code, payload=payload, headers=headers)
+            return ValidationError(
+                message, status_code=422, error_code=error_code, payload=payload, headers=headers
+            )
         if response.status_code == 429:
-            return RateLimitError(message, status_code=429, error_code=error_code, payload=payload, headers=headers)
+            return RateLimitError(
+                message, status_code=429, error_code=error_code, payload=payload, headers=headers
+            )
         if 400 <= response.status_code < 500:
-            return ClientError(message, status_code=response.status_code, error_code=error_code, payload=payload, headers=headers)
-        return ServerError(message, status_code=response.status_code, error_code=error_code, payload=payload, headers=headers)
+            return ClientError(
+                message,
+                status_code=response.status_code,
+                error_code=error_code,
+                payload=payload,
+                headers=headers,
+            )
+        return ServerError(
+            message,
+            status_code=response.status_code,
+            error_code=error_code,
+            payload=payload,
+            headers=headers,
+        )
 
     def _safe_payload(self, response: httpx.Response) -> object:
         content_type = response.headers.get("content-type", "")

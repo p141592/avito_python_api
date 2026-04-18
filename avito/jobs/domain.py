@@ -62,16 +62,24 @@ class Vacancy(DomainObject):
         client = VacanciesClient(self.transport)
         request = JsonRequest(payload)
         if version == 1:
-            return client.update_v1(vacancy_id=vacancy_id or self._require_resource_id(), request=request)
-        return client.update_v2(vacancy_uuid=vacancy_uuid or self._require_resource_id(), request=request)
+            return client.update_v1(
+                vacancy_id=vacancy_id or self._require_resource_id(), request=request
+            )
+        return client.update_v2(
+            vacancy_uuid=vacancy_uuid or self._require_resource_id(), request=request
+        )
 
-    def delete(self, *, payload: Mapping[str, object], vacancy_id: int | str | None = None) -> JobActionResult:
+    def delete(
+        self, *, payload: Mapping[str, object], vacancy_id: int | str | None = None
+    ) -> JobActionResult:
         return VacanciesClient(self.transport).archive_v1(
             vacancy_id=vacancy_id or self._require_resource_id(),
             request=JsonRequest(payload),
         )
 
-    def prolongate(self, *, payload: Mapping[str, object], vacancy_id: int | str | None = None) -> JobActionResult:
+    def prolongate(
+        self, *, payload: Mapping[str, object], vacancy_id: int | str | None = None
+    ) -> JobActionResult:
         return VacanciesClient(self.transport).prolongate_v1(
             vacancy_id=vacancy_id or self._require_resource_id(),
             request=JsonRequest(payload),
@@ -80,7 +88,9 @@ class Vacancy(DomainObject):
     def list(self, *, params: Mapping[str, object] | None = None) -> VacanciesResult:
         return VacanciesClient(self.transport).list_v2(params=params)
 
-    def get(self, *, vacancy_id: int | str | None = None, params: Mapping[str, object] | None = None) -> VacancyInfo:
+    def get(
+        self, *, vacancy_id: int | str | None = None, params: Mapping[str, object] | None = None
+    ) -> VacancyInfo:
         return VacanciesClient(self.transport).get_item_v2(
             vacancy_id=vacancy_id or self._require_resource_id(),
             params=params,
@@ -92,7 +102,9 @@ class Vacancy(DomainObject):
     def get_statuses(self, *, payload: Mapping[str, object]) -> VacancyStatusesResult:
         return VacanciesClient(self.transport).get_statuses_v2(JsonRequest(payload))
 
-    def update_auto_renewal(self, *, payload: Mapping[str, object], vacancy_uuid: str | None = None) -> JobActionResult:
+    def update_auto_renewal(
+        self, *, payload: Mapping[str, object], vacancy_uuid: str | None = None
+    ) -> JobActionResult:
         return VacanciesClient(self.transport).auto_renewal_v2(
             vacancy_uuid=vacancy_uuid or self._require_resource_id(),
             request=JsonRequest(payload),
@@ -114,7 +126,12 @@ class Application(DomainObject):
     def apply(self, *, payload: Mapping[str, object]) -> JobActionResult:
         return ApplicationsClient(self.transport).apply_actions(JsonRequest(payload))
 
-    def list(self, *, payload: Mapping[str, object] | None = None, params: Mapping[str, object] | None = None) -> object:
+    def list(
+        self,
+        *,
+        payload: Mapping[str, object] | None = None,
+        params: Mapping[str, object] | None = None,
+    ) -> object:
         client = ApplicationsClient(self.transport)
         if payload is not None:
             return client.get_by_ids(JsonRequest(payload))
@@ -138,10 +155,14 @@ class Resume(DomainObject):
         return ResumeClient(self.transport).search(params=params)
 
     def get(self, *, resume_id: int | str | None = None) -> ResumeInfo:
-        return ResumeClient(self.transport).get_item(resume_id=str(resume_id or self._require_resource_id()))
+        return ResumeClient(self.transport).get_item(
+            resume_id=str(resume_id or self._require_resource_id())
+        )
 
     def get_contacts(self, *, resume_id: int | str | None = None) -> ResumeContactInfo:
-        return ResumeClient(self.transport).get_contacts(resume_id=str(resume_id or self._require_resource_id()))
+        return ResumeClient(self.transport).get_contacts(
+            resume_id=str(resume_id or self._require_resource_id())
+        )
 
     def _require_resource_id(self) -> str:
         if self.resource_id is None:

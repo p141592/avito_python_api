@@ -40,7 +40,9 @@ def test_client_context_manager_closes_transport_and_auth_clients() -> None:
         autoteka_token_client=TokenClient(settings.auth, client=autoteka_http_client),
     )
     client = AvitoClient(settings)
-    client.transport = Transport(settings, auth_provider=auth_provider, client=transport_http_client)
+    client.transport = Transport(
+        settings, auth_provider=auth_provider, client=transport_http_client
+    )
     client.auth_provider = auth_provider
 
     with client as managed_client:

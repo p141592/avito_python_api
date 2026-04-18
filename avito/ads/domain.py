@@ -59,17 +59,23 @@ class Ad(DomainObject):
         item_id, user_id = self._require_ids()
         return AdsClient(self.transport).get_item(user_id=user_id, item_id=item_id)
 
-    def list(self, *, status: str | None = None, limit: int | None = None, offset: int | None = None) -> AdsListResult:
+    def list(
+        self, *, status: str | None = None, limit: int | None = None, offset: int | None = None
+    ) -> AdsListResult:
         """Получает список объявлений."""
 
         user_id = int(self.user_id) if self.user_id is not None else None
-        return AdsClient(self.transport).list_items(user_id=user_id, status=status, limit=limit, offset=offset)
+        return AdsClient(self.transport).list_items(
+            user_id=user_id, status=status, limit=limit, offset=offset
+        )
 
     def update_price(self, *, price: int | float) -> UpdatePriceResult:
         """Обновляет цену текущего объявления."""
 
         item_id = self._require_item_id()
-        return AdsClient(self.transport).update_price(item_id=item_id, price=UpdatePriceRequest(price=price))
+        return AdsClient(self.transport).update_price(
+            item_id=item_id, price=UpdatePriceRequest(price=price)
+        )
 
     def get_stats(
         self,
@@ -119,10 +125,14 @@ class AdStats(DomainObject):
         """Получает статистику звонков."""
 
         user_id = self._require_user_id()
-        resolved_item_ids = item_ids or ([int(self.resource_id)] if self.resource_id is not None else [])
+        resolved_item_ids = item_ids or (
+            [int(self.resource_id)] if self.resource_id is not None else []
+        )
         return StatsClient(self.transport).get_calls_stats(
             user_id=user_id,
-            request=CallsStatsRequest(item_ids=resolved_item_ids, date_from=date_from, date_to=date_to),
+            request=CallsStatsRequest(
+                item_ids=resolved_item_ids, date_from=date_from, date_to=date_to
+            ),
         )
 
     def get_item_stats(
@@ -136,7 +146,9 @@ class AdStats(DomainObject):
         """Получает статистику по списку объявлений."""
 
         user_id = self._require_user_id()
-        resolved_item_ids = item_ids or ([int(self.resource_id)] if self.resource_id is not None else [])
+        resolved_item_ids = item_ids or (
+            [int(self.resource_id)] if self.resource_id is not None else []
+        )
         return StatsClient(self.transport).get_item_stats(
             user_id=user_id,
             request=ItemStatsRequest(
@@ -158,7 +170,9 @@ class AdStats(DomainObject):
         """Получает аналитику по профилю."""
 
         user_id = self._require_user_id()
-        resolved_item_ids = item_ids or ([int(self.resource_id)] if self.resource_id is not None else [])
+        resolved_item_ids = item_ids or (
+            [int(self.resource_id)] if self.resource_id is not None else []
+        )
         return StatsClient(self.transport).get_item_analytics(
             user_id=user_id,
             request=ItemStatsRequest(
@@ -180,7 +194,9 @@ class AdStats(DomainObject):
         """Получает статистику расходов профиля."""
 
         user_id = self._require_user_id()
-        resolved_item_ids = item_ids or ([int(self.resource_id)] if self.resource_id is not None else [])
+        resolved_item_ids = item_ids or (
+            [int(self.resource_id)] if self.resource_id is not None else []
+        )
         return StatsClient(self.transport).get_account_spendings(
             user_id=user_id,
             request=ItemStatsRequest(
@@ -204,7 +220,9 @@ class AdPromotion(DomainObject):
     resource_id: int | str | None = None
     user_id: int | str | None = None
 
-    def get_vas_prices(self, *, item_ids: list[int], location_id: int | None = None) -> VasPricesResult:
+    def get_vas_prices(
+        self, *, item_ids: list[int], location_id: int | None = None
+    ) -> VasPricesResult:
         """Получает цены продвижения и доступные услуги."""
 
         user_id = self._require_user_id()
@@ -237,7 +255,9 @@ class AdPromotion(DomainObject):
         """Применяет услуги продвижения через v2 endpoint."""
 
         item_id = self._require_item_id()
-        return VasClient(self.transport).apply_vas_v2(item_id=item_id, request=ApplyVasRequest(codes=codes))
+        return VasClient(self.transport).apply_vas_v2(
+            item_id=item_id, request=ApplyVasRequest(codes=codes)
+        )
 
     def _require_item_id(self) -> int:
         if self.resource_id is None:
@@ -265,11 +285,19 @@ class AutoloadProfile(DomainObject):
 
         return AutoloadClient(self.transport).get_profile()
 
-    def save(self, *, is_enabled: bool | None = None, email: str | None = None, callback_url: str | None = None) -> ActionResult:
+    def save(
+        self,
+        *,
+        is_enabled: bool | None = None,
+        email: str | None = None,
+        callback_url: str | None = None,
+    ) -> ActionResult:
         """Сохраняет профиль автозагрузки."""
 
         return AutoloadClient(self.transport).save_profile(
-            AutoloadProfileUpdateRequest(is_enabled=is_enabled, email=email, callback_url=callback_url)
+            AutoloadProfileUpdateRequest(
+                is_enabled=is_enabled, email=email, callback_url=callback_url
+            )
         )
 
     def upload_by_url(self, *, url: str) -> UploadResult:
@@ -356,11 +384,19 @@ class AutoloadLegacy(DomainObject):
 
         return AutoloadLegacyClient(self.transport).get_profile()
 
-    def save_profile(self, *, is_enabled: bool | None = None, email: str | None = None, callback_url: str | None = None) -> ActionResult:
+    def save_profile(
+        self,
+        *,
+        is_enabled: bool | None = None,
+        email: str | None = None,
+        callback_url: str | None = None,
+    ) -> ActionResult:
         """Сохраняет legacy профиль автозагрузки."""
 
         return AutoloadLegacyClient(self.transport).save_profile(
-            AutoloadProfileUpdateRequest(is_enabled=is_enabled, email=email, callback_url=callback_url)
+            AutoloadProfileUpdateRequest(
+                is_enabled=is_enabled, email=email, callback_url=callback_url
+            )
         )
 
     def get_last_completed_report(self) -> LegacyAutoloadReport:
@@ -380,4 +416,12 @@ class AutoloadLegacy(DomainObject):
         return int(self.resource_id)
 
 
-__all__ = ("DomainObject", "Ad", "AdStats", "AdPromotion", "AutoloadProfile", "AutoloadReport", "AutoloadLegacy")
+__all__ = (
+    "DomainObject",
+    "Ad",
+    "AdStats",
+    "AdPromotion",
+    "AutoloadProfile",
+    "AutoloadReport",
+    "AutoloadLegacy",
+)

@@ -47,7 +47,9 @@ def test_transport_retries_timeout_and_returns_json() -> None:
 
     transport = Transport(
         make_settings(),
-        client=httpx.Client(transport=httpx.MockTransport(handler), base_url="https://api.avito.ru"),
+        client=httpx.Client(
+            transport=httpx.MockTransport(handler), base_url="https://api.avito.ru"
+        ),
         sleep=lambda _: None,
     )
 
@@ -80,7 +82,9 @@ def test_transport_refreshes_token_after_401() -> None:
     transport = Transport(
         make_settings(),
         auth_provider=auth_provider,
-        client=httpx.Client(transport=httpx.MockTransport(handler), base_url="https://api.avito.ru"),
+        client=httpx.Client(
+            transport=httpx.MockTransport(handler), base_url="https://api.avito.ru"
+        ),
         sleep=lambda _: None,
     )
 
@@ -99,7 +103,9 @@ def test_transport_does_not_retry_non_idempotent_request_without_explicit_permis
 
     transport = Transport(
         make_settings(),
-        client=httpx.Client(transport=httpx.MockTransport(handler), base_url="https://api.avito.ru"),
+        client=httpx.Client(
+            transport=httpx.MockTransport(handler), base_url="https://api.avito.ru"
+        ),
         sleep=lambda _: None,
     )
 
@@ -115,7 +121,9 @@ def test_transport_handles_rate_limit_and_classifies_errors() -> None:
         make_settings(retry_policy=RetryPolicy(max_attempts=1)),
         client=httpx.Client(
             transport=httpx.MockTransport(
-                lambda request: httpx.Response(429, headers={"retry-after": "60"}, json={"message": "too many"})
+                lambda request: httpx.Response(
+                    429, headers={"retry-after": "60"}, json={"message": "too many"}
+                )
             ),
             base_url="https://api.avito.ru",
         ),
@@ -128,7 +136,9 @@ def test_transport_handles_rate_limit_and_classifies_errors() -> None:
     server_transport = Transport(
         make_settings(retry_policy=RetryPolicy(max_attempts=1)),
         client=httpx.Client(
-            transport=httpx.MockTransport(lambda request: httpx.Response(500, json={"message": "server down"})),
+            transport=httpx.MockTransport(
+                lambda request: httpx.Response(500, json={"message": "server down"})
+            ),
             base_url="https://api.avito.ru",
         ),
         sleep=lambda _: None,
@@ -140,14 +150,18 @@ def test_transport_handles_rate_limit_and_classifies_errors() -> None:
     validation_transport = Transport(
         make_settings(retry_policy=RetryPolicy(max_attempts=1)),
         client=httpx.Client(
-            transport=httpx.MockTransport(lambda request: httpx.Response(422, json={"message": "invalid"})),
+            transport=httpx.MockTransport(
+                lambda request: httpx.Response(422, json={"message": "invalid"})
+            ),
             base_url="https://api.avito.ru",
         ),
         sleep=lambda _: None,
     )
 
     with pytest.raises(ValidationError):
-        validation_transport.request_json("POST", "/validation", context=RequestContext("validation"))
+        validation_transport.request_json(
+            "POST", "/validation", context=RequestContext("validation")
+        )
 
 
 def test_transport_raises_mapping_error_for_invalid_json() -> None:
@@ -155,7 +169,9 @@ def test_transport_raises_mapping_error_for_invalid_json() -> None:
         make_settings(),
         client=httpx.Client(
             transport=httpx.MockTransport(
-                lambda request: httpx.Response(200, text="not-json", headers={"content-type": "application/json"})
+                lambda request: httpx.Response(
+                    200, text="not-json", headers={"content-type": "application/json"}
+                )
             ),
             base_url="https://api.avito.ru",
         ),
@@ -184,7 +200,9 @@ def test_transport_supports_binary_download_and_multipart_upload() -> None:
 
     transport = Transport(
         make_settings(),
-        client=httpx.Client(transport=httpx.MockTransport(handler), base_url="https://api.avito.ru"),
+        client=httpx.Client(
+            transport=httpx.MockTransport(handler), base_url="https://api.avito.ru"
+        ),
         sleep=lambda _: None,
     )
 
@@ -230,7 +248,9 @@ def test_transport_raises_authentication_error_after_failed_refresh() -> None:
         make_settings(),
         auth_provider=auth_provider,
         client=httpx.Client(
-            transport=httpx.MockTransport(lambda request: httpx.Response(401, json={"message": "unauthorized"})),
+            transport=httpx.MockTransport(
+                lambda request: httpx.Response(401, json={"message": "unauthorized"})
+            ),
             base_url="https://api.avito.ru",
         ),
         sleep=lambda _: None,

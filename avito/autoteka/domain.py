@@ -58,9 +58,13 @@ class AutotekaVehicle(DomainObject):
         return PreviewClient(self.transport).create_by_vin(JsonRequest(payload))
 
     def get_preview(self, *, preview_id: int | str | None = None) -> AutotekaPreviewInfo:
-        return PreviewClient(self.transport).get_preview(preview_id=preview_id or self._require_resource_id("preview_id"))
+        return PreviewClient(self.transport).get_preview(
+            preview_id=preview_id or self._require_resource_id("preview_id")
+        )
 
-    def create_preview_by_external_item(self, *, payload: Mapping[str, object]) -> AutotekaPreviewInfo:
+    def create_preview_by_external_item(
+        self, *, payload: Mapping[str, object]
+    ) -> AutotekaPreviewInfo:
         return PreviewClient(self.transport).create_by_external_item(JsonRequest(payload))
 
     def create_preview_by_item_id(self, *, payload: Mapping[str, object]) -> AutotekaPreviewInfo:
@@ -69,10 +73,14 @@ class AutotekaVehicle(DomainObject):
     def create_preview_by_reg_number(self, *, payload: Mapping[str, object]) -> AutotekaPreviewInfo:
         return PreviewClient(self.transport).create_by_reg_number(JsonRequest(payload))
 
-    def create_specification_by_plate_number(self, *, payload: Mapping[str, object]) -> AutotekaSpecificationInfo:
+    def create_specification_by_plate_number(
+        self, *, payload: Mapping[str, object]
+    ) -> AutotekaSpecificationInfo:
         return SpecificationsClient(self.transport).create_by_plate_number(JsonRequest(payload))
 
-    def create_specification_by_vehicle_id(self, *, payload: Mapping[str, object]) -> AutotekaSpecificationInfo:
+    def create_specification_by_vehicle_id(
+        self, *, payload: Mapping[str, object]
+    ) -> AutotekaSpecificationInfo:
         return SpecificationsClient(self.transport).create_by_vehicle_id(JsonRequest(payload))
 
     def get_specification_get_by_id(
@@ -88,7 +96,9 @@ class AutotekaVehicle(DomainObject):
         return TeaserClient(self.transport).create(JsonRequest(payload))
 
     def get_teaser(self, *, teaser_id: int | str | None = None) -> AutotekaTeaserInfo:
-        return TeaserClient(self.transport).get(teaser_id=teaser_id or self._require_resource_id("teaser_id"))
+        return TeaserClient(self.transport).get(
+            teaser_id=teaser_id or self._require_resource_id("teaser_id")
+        )
 
     def _require_resource_id(self, field_name: str) -> str:
         if self.resource_id is None:
@@ -116,12 +126,18 @@ class AutotekaReport(DomainObject):
         return ReportClient(self.transport).list_reports()
 
     def get_report(self, *, report_id: int | str | None = None) -> AutotekaReportInfo:
-        return ReportClient(self.transport).get_report(report_id=report_id or self._require_resource_id())
+        return ReportClient(self.transport).get_report(
+            report_id=report_id or self._require_resource_id()
+        )
 
-    def create_sync_create_report_by_reg_number(self, *, payload: Mapping[str, object]) -> AutotekaReportInfo:
+    def create_sync_create_report_by_reg_number(
+        self, *, payload: Mapping[str, object]
+    ) -> AutotekaReportInfo:
         return ReportClient(self.transport).create_sync_report_by_reg_number(JsonRequest(payload))
 
-    def create_sync_create_report_by_vin(self, *, payload: Mapping[str, object]) -> AutotekaReportInfo:
+    def create_sync_create_report_by_vin(
+        self, *, payload: Mapping[str, object]
+    ) -> AutotekaReportInfo:
         return ReportClient(self.transport).create_sync_report_by_vin(JsonRequest(payload))
 
     def _require_resource_id(self) -> str:
@@ -137,13 +153,17 @@ class AutotekaMonitoring(DomainObject):
     resource_id: int | str | None = None
     user_id: int | str | None = None
 
-    def create_monitoring_bucket_add(self, *, payload: Mapping[str, object]) -> MonitoringBucketResult:
+    def create_monitoring_bucket_add(
+        self, *, payload: Mapping[str, object]
+    ) -> MonitoringBucketResult:
         return MonitoringClient(self.transport).add_bucket(JsonRequest(payload))
 
     def list_monitoring_bucket_delete(self) -> MonitoringBucketResult:
         return MonitoringClient(self.transport).delete_bucket()
 
-    def delete_monitoring_bucket_remove(self, *, payload: Mapping[str, object]) -> MonitoringBucketResult:
+    def delete_monitoring_bucket_remove(
+        self, *, payload: Mapping[str, object]
+    ) -> MonitoringBucketResult:
         return MonitoringClient(self.transport).remove_bucket(JsonRequest(payload))
 
     def get_monitoring_get_reg_actions(
@@ -165,7 +185,9 @@ class AutotekaScoring(DomainObject):
         return ScoringClient(self.transport).create_by_vehicle_id(JsonRequest(payload))
 
     def get_scoring_get_by_id(self, *, scoring_id: int | str | None = None) -> AutotekaScoringInfo:
-        return ScoringClient(self.transport).get_by_id(scoring_id=scoring_id or self._require_resource_id())
+        return ScoringClient(self.transport).get_by_id(
+            scoring_id=scoring_id or self._require_resource_id()
+        )
 
     def _require_resource_id(self) -> str:
         if self.resource_id is None:
@@ -180,8 +202,17 @@ class AutotekaValuation(DomainObject):
     resource_id: int | str | None = None
     user_id: int | str | None = None
 
-    def get_valuation_by_specification(self, *, payload: Mapping[str, object]) -> AutotekaValuationInfo:
+    def get_valuation_by_specification(
+        self, *, payload: Mapping[str, object]
+    ) -> AutotekaValuationInfo:
         return ValuationClient(self.transport).get_by_specification(JsonRequest(payload))
 
 
-__all__ = ("AutotekaMonitoring", "AutotekaReport", "AutotekaScoring", "AutotekaValuation", "AutotekaVehicle", "DomainObject")
+__all__ = (
+    "AutotekaMonitoring",
+    "AutotekaReport",
+    "AutotekaScoring",
+    "AutotekaValuation",
+    "AutotekaVehicle",
+    "DomainObject",
+)

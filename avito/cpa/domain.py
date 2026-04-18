@@ -46,7 +46,9 @@ class CpaLead(DomainObject):
     def create_complaint_by_action_id(self, *, payload: Mapping[str, object]) -> CpaActionResult:
         return CpaLeadsClient(self.transport).create_complaint_by_action_id(JsonRequest(payload))
 
-    def create_balance_info_v3(self, *, payload: Mapping[str, object] | None = None) -> CpaBalanceInfo:
+    def create_balance_info_v3(
+        self, *, payload: Mapping[str, object] | None = None
+    ) -> CpaBalanceInfo:
         return CpaLeadsClient(self.transport).get_balance_info_v3(JsonRequest(payload or {}))
 
 
@@ -58,7 +60,9 @@ class CpaChat(DomainObject):
     user_id: int | str | None = None
 
     def get(self, *, action_id: int | str | None = None) -> CpaChatInfo:
-        return CpaChatsClient(self.transport).get_by_action_id(action_id=action_id or self._require_resource_id())
+        return CpaChatsClient(self.transport).get_by_action_id(
+            action_id=action_id or self._require_resource_id()
+        )
 
     def list(
         self,
@@ -103,7 +107,9 @@ class CpaLegacy(DomainObject):
     user_id: int | str | None = None
 
     def legacy_get_call(self, *, call_id: int | str | None = None) -> CpaAudioRecord:
-        return CpaLegacyClient(self.transport).get_record(call_id=call_id or self._require_resource_id())
+        return CpaLegacyClient(self.transport).get_record(
+            call_id=call_id or self._require_resource_id()
+        )
 
     def legacy_create_balance_info_v2(
         self,

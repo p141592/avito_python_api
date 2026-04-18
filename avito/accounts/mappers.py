@@ -96,7 +96,9 @@ def map_account_balance(payload: object) -> AccountBalance:
     wallet_data = cast(Payload, wallet_data)
     real = _as_float(wallet_data, "real", "amount", "balance")
     bonus = _as_float(wallet_data, "bonus")
-    total = _as_float(wallet_data, "total") or (real + bonus if real is not None and bonus is not None else real)
+    total = _as_float(wallet_data, "total") or (
+        real + bonus if real is not None and bonus is not None else real
+    )
     return AccountBalance(
         user_id=_as_int(data, "user_id", "userId", "id"),
         real=real,

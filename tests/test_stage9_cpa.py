@@ -127,7 +127,10 @@ def test_cpa_calls_balance_and_legacy_flows() -> None:
         path = request.url.path
         payload = json.loads(request.content.decode()) if request.content else None
         if path == "/cpa/v2/callsByTime":
-            assert payload == {"dateTimeFrom": "2026-04-18T00:00:00+03:00", "dateTimeTo": "2026-04-18T23:59:59+03:00"}
+            assert payload == {
+                "dateTimeFrom": "2026-04-18T00:00:00+03:00",
+                "dateTimeTo": "2026-04-18T23:59:59+03:00",
+            }
             return httpx.Response(
                 200,
                 json={
@@ -197,9 +200,16 @@ def test_cpa_calls_balance_and_legacy_flows() -> None:
     cpa_lead = CpaLead(transport, resource_id="act-1")
     legacy = CpaLegacy(transport, resource_id="2001")
 
-    calls = cpa_call.list(payload={"dateTimeFrom": "2026-04-18T00:00:00+03:00", "dateTimeTo": "2026-04-18T23:59:59+03:00"})
+    calls = cpa_call.list(
+        payload={
+            "dateTimeFrom": "2026-04-18T00:00:00+03:00",
+            "dateTimeTo": "2026-04-18T23:59:59+03:00",
+        }
+    )
     complaint = cpa_call.create_create_complaint(payload={"callId": 2001, "reason": "spam"})
-    complaint_by_action = cpa_lead.create_complaint_by_action_id(payload={"actionId": "act-1", "reason": "duplicate"})
+    complaint_by_action = cpa_lead.create_complaint_by_action_id(
+        payload={"actionId": "act-1", "reason": "duplicate"}
+    )
     balance_v3 = cpa_lead.create_balance_info_v3()
     balance_v2 = legacy.legacy_create_balance_info_v2()
     call_v2 = legacy.legacy_create_call_by_id_v2(payload={"callId": 2001})

@@ -33,7 +33,9 @@ class RealtyListing(DomainObject):
     def get_intervals(self, *, payload: Mapping[str, object]) -> RealtyActionResult:
         return ShortTermRentClient(self.transport).get_intervals(JsonRequest(payload))
 
-    def update_base_params(self, *, payload: Mapping[str, object], item_id: int | str | None = None) -> RealtyActionResult:
+    def update_base_params(
+        self, *, payload: Mapping[str, object], item_id: int | str | None = None
+    ) -> RealtyActionResult:
         return ShortTermRentClient(self.transport).update_base_params(
             item_id=item_id or self._require_item_id(),
             request=JsonRequest(payload),
@@ -147,4 +149,10 @@ class RealtyAnalyticsReport(DomainObject):
         return str(self.resource_id)
 
 
-__all__ = ("DomainObject", "RealtyAnalyticsReport", "RealtyBooking", "RealtyListing", "RealtyPricing")
+__all__ = (
+    "DomainObject",
+    "RealtyAnalyticsReport",
+    "RealtyBooking",
+    "RealtyListing",
+    "RealtyPricing",
+)

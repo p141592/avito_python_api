@@ -147,7 +147,9 @@ def test_legacy_token_client_uses_same_public_contract_for_duplicate_token_path(
         return httpx.Response(200, json={"access_token": "legacy-access", "expires_in": 3600})
 
     legacy_token_client = LegacyTokenClient(
-        AuthSettings(client_id="client-id", client_secret="client-secret", legacy_token_url="/token"),
+        AuthSettings(
+            client_id="client-id", client_secret="client-secret", legacy_token_url="/token"
+        ),
         client=make_token_http_client(httpx.MockTransport(handler)),
     )
 

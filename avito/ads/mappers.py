@@ -158,7 +158,10 @@ def map_item_stats(payload: object) -> ItemStatsResult:
     """Преобразует статистику по списку объявлений."""
 
     data = _expect_mapping(payload)
-    return ItemStatsResult(items=[_map_item_stat(item) for item in _list(data, "items", "result", "stats")], raw_payload=data)
+    return ItemStatsResult(
+        items=[_map_item_stat(item) for item in _list(data, "items", "result", "stats")],
+        raw_payload=data,
+    )
 
 
 def map_item_analytics(payload: object) -> ItemAnalyticsResult:
@@ -348,7 +351,9 @@ def map_autoload_report_items(payload: object) -> AutoloadReportItemsResult:
         )
         for item in _list(data, "items", "result")
     ]
-    return AutoloadReportItemsResult(items=items, total=_int(data, "total", "count"), raw_payload=data)
+    return AutoloadReportItemsResult(
+        items=items, total=_int(data, "total", "count"), raw_payload=data
+    )
 
 
 def map_autoload_fees(payload: object) -> AutoloadFeesResult:
@@ -375,7 +380,11 @@ def map_action_result(payload: object) -> ActionResult:
 
     if isinstance(payload, Mapping):
         data = cast(Payload, payload)
-        return ActionResult(success=bool(data.get("success", True)), message=_str(data, "message", "status"), raw_payload=data)
+        return ActionResult(
+            success=bool(data.get("success", True)),
+            message=_str(data, "message", "status"),
+            raw_payload=data,
+        )
     return ActionResult(success=True, raw_payload={})
 
 

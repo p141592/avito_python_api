@@ -91,7 +91,9 @@ class MessengerClient:
         )
         return map_message_action(payload)
 
-    def send_message(self, *, user_id: int, chat_id: str, request: SendMessageRequest) -> MessageActionResult:
+    def send_message(
+        self, *, user_id: int, chat_id: str, request: SendMessageRequest
+    ) -> MessageActionResult:
         """Отправляет текстовое сообщение."""
 
         payload = self.transport.request_json(
@@ -102,7 +104,9 @@ class MessengerClient:
         )
         return map_message_action(payload)
 
-    def send_image_message(self, *, user_id: int, chat_id: str, request: SendImageMessageRequest) -> MessageActionResult:
+    def send_image_message(
+        self, *, user_id: int, chat_id: str, request: SendImageMessageRequest
+    ) -> MessageActionResult:
         """Отправляет сообщение с изображением."""
 
         payload = self.transport.request_json(
@@ -223,7 +227,9 @@ class SpecialOffersClient:
         )
         return map_available_special_offers(payload)
 
-    def create_multi(self, request: MultiCreateSpecialOfferRequest) -> MultiCreateSpecialOfferResult:
+    def create_multi(
+        self, request: MultiCreateSpecialOfferRequest
+    ) -> MultiCreateSpecialOfferResult:
         """Создает рассылку спецпредложений."""
 
         payload = self.transport.request_json(

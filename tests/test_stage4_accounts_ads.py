@@ -31,9 +31,14 @@ def make_transport(handler: httpx.MockTransport) -> Transport:
 def test_accounts_domain_maps_profile_balance_and_operations() -> None:
     def handler(request: httpx.Request) -> httpx.Response:
         if request.url.path == "/core/v1/accounts/self":
-            return httpx.Response(200, json={"id": 7, "name": "Иван", "email": "user@example.com", "phone": "+7999"})
+            return httpx.Response(
+                200, json={"id": 7, "name": "Иван", "email": "user@example.com", "phone": "+7999"}
+            )
         if request.url.path == "/core/v1/accounts/7/balance/":
-            return httpx.Response(200, json={"user_id": 7, "balance": {"real": 150.5, "bonus": 20.0, "currency": "RUB"}})
+            return httpx.Response(
+                200,
+                json={"user_id": 7, "balance": {"real": 150.5, "bonus": 20.0, "currency": "RUB"}},
+            )
         assert request.url.path == "/core/v1/accounts/operations_history/"
         assert json.loads(request.content.decode()) == {"dateFrom": "2025-01-01", "limit": 2}
         return httpx.Response(
@@ -70,17 +75,30 @@ def test_account_hierarchy_domain_maps_employees_phones_and_items() -> None:
         if request.url.path == "/checkAhUserV1":
             return httpx.Response(200, json={"user_id": 7, "is_active": True, "role": "manager"})
         if request.url.path == "/getEmployeesV1":
-            return httpx.Response(200, json={"employees": [{"employee_id": 10, "user_id": 7, "name": "Пётр"}], "total": 1})
+            return httpx.Response(
+                200,
+                json={"employees": [{"employee_id": 10, "user_id": 7, "name": "Пётр"}], "total": 1},
+            )
         if request.url.path == "/listCompanyPhonesV1":
-            return httpx.Response(200, json={"phones": [{"id": 1, "phone": "+7000", "comment": "Основной"}]})
+            return httpx.Response(
+                200, json={"phones": [{"id": 1, "phone": "+7000", "comment": "Основной"}]}
+            )
         if request.url.path == "/linkItemsV1":
             assert json.loads(request.content.decode()) == {"employeeId": 10, "itemIds": [1, 2]}
             return httpx.Response(200, json={"success": True, "message": "linked"})
         assert request.url.path == "/listItemsByEmployeeIdV1"
         assert json.loads(request.content.decode()) == {"employeeId": 10, "limit": 5}
-        return httpx.Response(200, json={"items": [{"item_id": 1, "title": "Объявление", "status": "active", "price": 99}], "total": 1})
+        return httpx.Response(
+            200,
+            json={
+                "items": [{"item_id": 1, "title": "Объявление", "status": "active", "price": 99}],
+                "total": 1,
+            },
+        )
 
-    hierarchy = AccountHierarchy(make_transport(httpx.MockTransport(handler)), resource_id=7, user_id=7)
+    hierarchy = AccountHierarchy(
+        make_transport(httpx.MockTransport(handler)), resource_id=7, user_id=7
+    )
 
     status = hierarchy.get_status()
     employees = hierarchy.list_employees()
@@ -98,27 +116,52 @@ def test_account_hierarchy_domain_maps_employees_phones_and_items() -> None:
 def test_ads_domain_covers_item_stats_spendings_and_promotion() -> None:
     def handler(request: httpx.Request) -> httpx.Response:
         if request.url.path == "/core/v1/accounts/7/items/101/":
-            return httpx.Response(200, json={"id": 101, "user_id": 7, "title": "Смартфон", "price": 1000, "status": "active"})
+            return httpx.Response(
+                200,
+                json={
+                    "id": 101,
+                    "user_id": 7,
+                    "title": "Смартфон",
+                    "price": 1000,
+                    "status": "active",
+                },
+            )
         if request.url.path == "/core/v1/items":
             assert request.url.params["user_id"] == "7"
             assert request.url.params["status"] == "active"
-            return httpx.Response(200, json={"items": [{"id": 101, "title": "Смартфон"}], "total": 1})
+            return httpx.Response(
+                200, json={"items": [{"id": 101, "title": "Смартфон"}], "total": 1}
+            )
         if request.url.path == "/core/v1/items/101/update_price":
             assert json.loads(request.content.decode()) == {"price": 1500}
             return httpx.Response(200, json={"item_id": 101, "price": 1500, "status": "updated"})
         if request.url.path == "/stats/v1/accounts/7/items":
             body = json.loads(request.content.decode())
             assert body["itemIds"] == [101]
-            return httpx.Response(200, json={"items": [{"item_id": 101, "views": 45, "contacts": 5, "favorites": 2}]})
+            return httpx.Response(
+                200, json={"items": [{"item_id": 101, "views": 45, "contacts": 5, "favorites": 2}]}
+            )
         if request.url.path == "/core/v1/accounts/7/calls/stats/":
-            return httpx.Response(200, json={"items": [{"item_id": 101, "calls": 3, "answered_calls": 2, "missed_calls": 1}]})
+            return httpx.Response(
+                200,
+                json={
+                    "items": [{"item_id": 101, "calls": 3, "answered_calls": 2, "missed_calls": 1}]
+                },
+            )
         if request.url.path == "/stats/v2/accounts/7/items":
-            return httpx.Response(200, json={"period": "month", "items": [{"item_id": 101, "views": 100}]})
+            return httpx.Response(
+                200, json={"period": "month", "items": [{"item_id": 101, "views": 100}]}
+            )
         if request.url.path == "/stats/v2/accounts/7/spendings":
-            return httpx.Response(200, json={"items": [{"item_id": 101, "amount": 77.5, "service": "xl"}]})
+            return httpx.Response(
+                200, json={"items": [{"item_id": 101, "amount": 77.5, "service": "xl"}]}
+            )
         if request.url.path == "/core/v1/accounts/7/vas/prices":
             assert json.loads(request.content.decode()) == {"itemIds": [101], "locationId": 213}
-            return httpx.Response(200, json={"services": [{"code": "xl", "title": "XL", "price": 50, "available": True}]})
+            return httpx.Response(
+                200,
+                json={"services": [{"code": "xl", "title": "XL", "price": 50, "available": True}]},
+            )
         if request.url.path == "/core/v1/accounts/7/items/101/vas":
             assert json.loads(request.content.decode()) == {"codes": ["xl"]}
             return httpx.Response(200, json={"success": True, "status": "applied"})
@@ -163,27 +206,56 @@ def test_autoload_domains_cover_profile_report_and_legacy_flows() -> None:
     def handler(request: httpx.Request) -> httpx.Response:
         path = request.url.path
         if path == "/autoload/v2/profile" and request.method == "GET":
-            return httpx.Response(200, json={"user_id": 7, "is_enabled": True, "upload_url": "https://upload"})
+            return httpx.Response(
+                200, json={"user_id": 7, "is_enabled": True, "upload_url": "https://upload"}
+            )
         if path == "/autoload/v2/profile" and request.method == "POST":
-            assert json.loads(request.content.decode()) == {"isEnabled": True, "email": "feed@example.com"}
+            assert json.loads(request.content.decode()) == {
+                "isEnabled": True,
+                "email": "feed@example.com",
+            }
             return httpx.Response(200, json={"success": True, "message": "saved"})
         if path == "/autoload/v1/upload":
             assert json.loads(request.content.decode()) == {"url": "https://example.com/feed.xml"}
             return httpx.Response(200, json={"success": True, "report_id": 501})
         if path == "/autoload/v1/user-docs/tree":
-            return httpx.Response(200, json={"tree": [{"slug": "transport", "title": "Транспорт", "children": []}]})
+            return httpx.Response(
+                200, json={"tree": [{"slug": "transport", "title": "Транспорт", "children": []}]}
+            )
         if path == "/autoload/v1/user-docs/node/cars/fields":
-            return httpx.Response(200, json={"fields": [{"slug": "brand", "title": "Марка", "type": "string", "required": True}]})
+            return httpx.Response(
+                200,
+                json={
+                    "fields": [
+                        {"slug": "brand", "title": "Марка", "type": "string", "required": True}
+                    ]
+                },
+            )
         if path == "/autoload/v2/reports":
-            return httpx.Response(200, json={"reports": [{"report_id": 501, "status": "done"}], "total": 1})
+            return httpx.Response(
+                200, json={"reports": [{"report_id": 501, "status": "done"}], "total": 1}
+            )
         if path == "/autoload/v3/reports/501":
-            return httpx.Response(200, json={"report_id": 501, "status": "done", "errors_count": 0, "warnings_count": 1})
+            return httpx.Response(
+                200,
+                json={"report_id": 501, "status": "done", "errors_count": 0, "warnings_count": 1},
+            )
         if path == "/autoload/v3/reports/last_completed_report":
             return httpx.Response(200, json={"report_id": 500, "status": "done"})
         if path == "/autoload/v2/reports/501/items":
-            return httpx.Response(200, json={"items": [{"item_id": 101, "avito_id": 9001, "status": "active", "title": "Авто"}], "total": 1})
+            return httpx.Response(
+                200,
+                json={
+                    "items": [
+                        {"item_id": 101, "avito_id": 9001, "status": "active", "title": "Авто"}
+                    ],
+                    "total": 1,
+                },
+            )
         if path == "/autoload/v2/reports/501/items/fees":
-            return httpx.Response(200, json={"items": [{"item_id": 101, "amount": 42.0, "service": "xl"}]})
+            return httpx.Response(
+                200, json={"items": [{"item_id": 101, "amount": 42.0, "service": "xl"}]}
+            )
         if path == "/autoload/v2/items/ad_ids":
             assert request.url.params["avito_ids"] == "9001,9002"
             return httpx.Response(200, json={"mappings": [{"ad_id": 1, "avito_id": 9001}]})
@@ -192,7 +264,9 @@ def test_autoload_domains_cover_profile_report_and_legacy_flows() -> None:
             return httpx.Response(200, json={"mappings": [{"ad_id": 1, "avito_id": 9001}]})
         if path == "/autoload/v2/reports/items":
             assert request.url.params["item_ids"] == "101"
-            return httpx.Response(200, json={"items": [{"item_id": 101, "avito_id": 9001, "status": "active"}]})
+            return httpx.Response(
+                200, json={"items": [{"item_id": 101, "avito_id": 9001, "status": "active"}]}
+            )
         if path == "/autoload/v1/profile" and request.method == "GET":
             return httpx.Response(200, json={"user_id": 7, "is_enabled": False})
         if path == "/autoload/v1/profile" and request.method == "POST":

@@ -3,7 +3,7 @@ export
 
 REGISTRY=10.11.0.9:5000
 
-build: lock clean linter
+build: test lock clean linter
 
 clean:
 	rm -rf dist
@@ -12,14 +12,23 @@ lock:
 	poetry lock
 
 test: 
-	poetry run pytest --ff --cov=admiral --cov-report=term:skip-covered --cov-report=html -vvv
+	poetry run pytest
 
 profile: 
 	poetry run pytest --profile-svg
 
 linter:
-	poetry run black .
-	poetry run isort --atomic .
+	poetry run ruff format .
+	poetry run ruff check .
 
-pypi: clean lock linter test
+minor: build
+	poetry version minor
+
+patch: build
+	poetry version patch
+
+major: build
+	poetry version major
+
+release: patch
 	poetry build && poetry publish

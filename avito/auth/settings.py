@@ -22,7 +22,9 @@ class AuthSettings(BaseSettings):
     )
     client_secret: str | None = Field(
         default=None,
-        validation_alias=AliasChoices("CLIENT_SECRET", "SECRET", "AVITO_CLIENT_SECRET", "AVITO_SECRET"),
+        validation_alias=AliasChoices(
+            "CLIENT_SECRET", "SECRET", "AVITO_CLIENT_SECRET", "AVITO_SECRET"
+        ),
     )
     scope: str | None = Field(default=None, validation_alias=AliasChoices("SCOPE", "AVITO_SCOPE"))
     refresh_token: str | None = Field(

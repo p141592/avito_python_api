@@ -41,7 +41,18 @@ def test_autoteka_vehicle_flows() -> None:
             assert payload == {"brandId": 1}
             return httpx.Response(
                 200,
-                json={"result": {"fields": [{"id": 110000, "label": "Марка", "dataType": "integer", "values": [{"valueId": 1, "label": "Audi"}]}]}},
+                json={
+                    "result": {
+                        "fields": [
+                            {
+                                "id": 110000,
+                                "label": "Марка",
+                                "dataType": "integer",
+                                "values": [{"valueId": 1, "label": "Audi"}],
+                            }
+                        ]
+                    }
+                },
             )
         if path == "/autoteka/v1/get-leads/":
             assert payload == {"limit": 1}
@@ -81,7 +92,16 @@ def test_autoteka_vehicle_flows() -> None:
         if path == "/autoteka/v1/previews/77":
             return httpx.Response(
                 200,
-                json={"result": {"preview": {"previewId": 77, "status": "success", "vin": "VIN-1", "regNumber": "A123AA77"}}},
+                json={
+                    "result": {
+                        "preview": {
+                            "previewId": 77,
+                            "status": "success",
+                            "vin": "VIN-1",
+                            "regNumber": "A123AA77",
+                        }
+                    }
+                },
             )
         if path == "/autoteka/v1/specifications/by-plate-number":
             assert payload == {"plateNumber": "A123AA77"}
@@ -92,15 +112,30 @@ def test_autoteka_vehicle_flows() -> None:
         if path == "/autoteka/v1/specifications/specification/501":
             return httpx.Response(
                 200,
-                json={"result": {"specification": {"specificationId": 501, "status": "success", "vehicleId": "VIN-1", "plateNumber": "A123AA77"}}},
+                json={
+                    "result": {
+                        "specification": {
+                            "specificationId": 501,
+                            "status": "success",
+                            "vehicleId": "VIN-1",
+                            "plateNumber": "A123AA77",
+                        }
+                    }
+                },
             )
         if path == "/autoteka/v1/teasers":
             assert payload == {"vehicleId": "VIN-1"}
-            return httpx.Response(200, json={"result": {"teaser": {"teaserId": 601, "status": "processing"}}})
+            return httpx.Response(
+                200, json={"result": {"teaser": {"teaserId": 601, "status": "processing"}}}
+            )
         assert path == "/autoteka/v1/teasers/601"
         return httpx.Response(
             200,
-            json={"teaserId": 601, "status": "success", "data": {"brand": "Audi", "model": "A4", "year": 2018}},
+            json={
+                "teaserId": 601,
+                "status": "success",
+                "data": {"brand": "Audi", "model": "A4", "year": 2018},
+            },
         )
 
     vehicle = AutotekaVehicle(make_transport(httpx.MockTransport(handler)), resource_id="77")
@@ -110,10 +145,16 @@ def test_autoteka_vehicle_flows() -> None:
     preview_vin = vehicle.create_preview_by_vin(payload={"vin": "VIN-1"})
     preview_item = vehicle.create_preview_by_item_id(payload={"itemId": 901})
     preview_reg = vehicle.create_preview_by_reg_number(payload={"regNumber": "A123AA77"})
-    preview_external = vehicle.create_preview_by_external_item(payload={"itemId": "ext-1", "site": "cars.example"})
+    preview_external = vehicle.create_preview_by_external_item(
+        payload={"itemId": "ext-1", "site": "cars.example"}
+    )
     preview = vehicle.get_preview()
-    specification_plate = vehicle.create_specification_by_plate_number(payload={"plateNumber": "A123AA77"})
-    specification_vehicle = vehicle.create_specification_by_vehicle_id(payload={"vehicleId": "VIN-1"})
+    specification_plate = vehicle.create_specification_by_plate_number(
+        payload={"plateNumber": "A123AA77"}
+    )
+    specification_vehicle = vehicle.create_specification_by_vehicle_id(
+        payload={"vehicleId": "VIN-1"}
+    )
     specification = vehicle.get_specification_get_by_id(specification_id="501")
     teaser_create = vehicle.create_teaser(payload={"vehicleId": "VIN-1"})
     teaser = vehicle.get_teaser(teaser_id="601")
@@ -138,29 +179,84 @@ def test_autoteka_report_monitoring_scoring_and_valuation_flows() -> None:
         path = request.url.path
         payload = json.loads(request.content.decode()) if request.content else None
         if path == "/autoteka/v1/packages/active_package":
-            return httpx.Response(200, json={"result": {"package": {"createdTime": "2026-04-01", "expireTime": "2026-05-01", "reportsCnt": 100, "reportsCntRemain": 77}}})
+            return httpx.Response(
+                200,
+                json={
+                    "result": {
+                        "package": {
+                            "createdTime": "2026-04-01",
+                            "expireTime": "2026-05-01",
+                            "reportsCnt": 100,
+                            "reportsCntRemain": 77,
+                        }
+                    }
+                },
+            )
         if path == "/autoteka/v1/reports":
             assert payload == {"previewId": 77}
-            return httpx.Response(200, json={"result": {"report": {"reportId": 701, "status": "processing"}}})
+            return httpx.Response(
+                200, json={"result": {"report": {"reportId": 701, "status": "processing"}}}
+            )
         if path == "/autoteka/v1/reports-by-vehicle-id":
             assert payload == {"vehicleId": "VIN-1"}
-            return httpx.Response(200, json={"result": {"report": {"reportId": 702, "status": "processing"}}})
+            return httpx.Response(
+                200, json={"result": {"report": {"reportId": 702, "status": "processing"}}}
+            )
         if path == "/autoteka/v1/reports/list/":
-            return httpx.Response(200, json={"result": [{"reportId": 701, "vin": "VIN-1", "createdAt": "2026-04-18 12:00:00"}]})
+            return httpx.Response(
+                200,
+                json={
+                    "result": [
+                        {"reportId": 701, "vin": "VIN-1", "createdAt": "2026-04-18 12:00:00"}
+                    ]
+                },
+            )
         if path == "/autoteka/v1/reports/701":
             return httpx.Response(
                 200,
-                json={"result": {"report": {"reportId": 701, "status": "success", "webLink": "https://autoteka/web/701", "pdfLink": "https://autoteka/pdf/701", "data": {"vin": "VIN-1"}}}},
+                json={
+                    "result": {
+                        "report": {
+                            "reportId": 701,
+                            "status": "success",
+                            "webLink": "https://autoteka/web/701",
+                            "pdfLink": "https://autoteka/pdf/701",
+                            "data": {"vin": "VIN-1"},
+                        }
+                    }
+                },
             )
         if path == "/autoteka/v1/sync/create-by-regnumber":
             assert payload == {"regNumber": "A123AA77"}
-            return httpx.Response(200, json={"result": {"report": {"reportId": 703, "status": "success", "data": {"vin": "VIN-1"}}}})
+            return httpx.Response(
+                200,
+                json={
+                    "result": {
+                        "report": {"reportId": 703, "status": "success", "data": {"vin": "VIN-1"}}
+                    }
+                },
+            )
         if path == "/autoteka/v1/sync/create-by-vin":
             assert payload == {"vin": "VIN-1"}
-            return httpx.Response(200, json={"result": {"report": {"reportId": 704, "status": "success", "data": {"vin": "VIN-1"}}}})
+            return httpx.Response(
+                200,
+                json={
+                    "result": {
+                        "report": {"reportId": 704, "status": "success", "data": {"vin": "VIN-1"}}
+                    }
+                },
+            )
         if path == "/autoteka/v1/monitoring/bucket/add":
             assert payload == {"vehicles": ["VIN-1", "bad-vin"]}
-            return httpx.Response(200, json={"result": {"isOk": True, "invalidVehicles": [{"vehicleID": "bad-vin", "description": "invalid"}]}})
+            return httpx.Response(
+                200,
+                json={
+                    "result": {
+                        "isOk": True,
+                        "invalidVehicles": [{"vehicleID": "bad-vin", "description": "invalid"}],
+                    }
+                },
+            )
         if path == "/autoteka/v1/monitoring/bucket/delete":
             return httpx.Response(200, json={"result": {"isOk": True}})
         if path == "/autoteka/v1/monitoring/bucket/remove":
@@ -170,18 +266,56 @@ def test_autoteka_report_monitoring_scoring_and_valuation_flows() -> None:
             assert request.url.params["limit"] == "10"
             return httpx.Response(
                 200,
-                json={"data": [{"vin": "VIN-1", "brand": "Audi", "model": "A4", "year": 2018, "operationCode": 11, "operationDateFrom": "2026-04-01T00:00:00+03:00"}], "pagination": {"hasNext": True, "nextCursor": "cursor-2", "nextLink": "https://api.avito.ru/next"}},
+                json={
+                    "data": [
+                        {
+                            "vin": "VIN-1",
+                            "brand": "Audi",
+                            "model": "A4",
+                            "year": 2018,
+                            "operationCode": 11,
+                            "operationDateFrom": "2026-04-01T00:00:00+03:00",
+                        }
+                    ],
+                    "pagination": {
+                        "hasNext": True,
+                        "nextCursor": "cursor-2",
+                        "nextLink": "https://api.avito.ru/next",
+                    },
+                },
             )
         if path == "/autoteka/v1/scoring/by-vehicle-id":
             assert payload == {"vehicleId": "VIN-1"}
             return httpx.Response(200, json={"result": {"scoring": {"scoringId": 801}}})
         if path == "/autoteka/v1/scoring/801":
-            return httpx.Response(200, json={"result": {"risksAssessment": {"scoringId": 801, "isCompleted": True, "createdAt": 1713427200}}})
+            return httpx.Response(
+                200,
+                json={
+                    "result": {
+                        "risksAssessment": {
+                            "scoringId": 801,
+                            "isCompleted": True,
+                            "createdAt": 1713427200,
+                        }
+                    }
+                },
+            )
         assert path == "/autoteka/v1/valuation/by-specification"
         assert payload == {"specificationId": 501, "mileage": 30000}
         return httpx.Response(
             200,
-            json={"result": {"status": "success", "vehicleId": "VIN-1", "brand": "Audi", "model": "A4", "year": 2018, "ownersCount": "2", "mileage": 30000, "valuation": {"avgPriceWithCondition": 2100000, "avgMarketPrice": 2200000}}},
+            json={
+                "result": {
+                    "status": "success",
+                    "vehicleId": "VIN-1",
+                    "brand": "Audi",
+                    "model": "A4",
+                    "year": 2018,
+                    "ownersCount": "2",
+                    "mileage": 30000,
+                    "valuation": {"avgPriceWithCondition": 2100000, "avgMarketPrice": 2200000},
+                }
+            },
         )
 
     transport = make_transport(httpx.MockTransport(handler))
@@ -203,7 +337,9 @@ def test_autoteka_report_monitoring_scoring_and_valuation_flows() -> None:
     events = monitoring.get_monitoring_get_reg_actions(params={"limit": 10})
     scoring_created = scoring.create_scoring_by_vehicle_id(payload={"vehicleId": "VIN-1"})
     scoring_item = scoring.get_scoring_get_by_id()
-    valuation_item = valuation.get_valuation_by_specification(payload={"specificationId": 501, "mileage": 30000})
+    valuation_item = valuation.get_valuation_by_specification(
+        payload={"specificationId": 501, "mileage": 30000}
+    )
 
     assert package.reports_remaining == 77
     assert created.report_id == "701"

@@ -21,7 +21,9 @@ class ShortTermRentClient:
 
     transport: Transport
 
-    def update_bookings_info(self, *, user_id: int | str, item_id: int | str, request: JsonRequest) -> RealtyActionResult:
+    def update_bookings_info(
+        self, *, user_id: int | str, item_id: int | str, request: JsonRequest
+    ) -> RealtyActionResult:
         payload = self.transport.request_json(
             "POST",
             f"/core/v1/accounts/{user_id}/items/{item_id}/bookings",
@@ -30,7 +32,9 @@ class ShortTermRentClient:
         )
         return map_action(payload)
 
-    def list_realty_bookings(self, *, user_id: int | str, item_id: int | str) -> RealtyBookingsResult:
+    def list_realty_bookings(
+        self, *, user_id: int | str, item_id: int | str
+    ) -> RealtyBookingsResult:
         payload = self.transport.request_json(
             "GET",
             f"/realty/v1/accounts/{user_id}/items/{item_id}/bookings",
@@ -38,7 +42,9 @@ class ShortTermRentClient:
         )
         return map_bookings(payload)
 
-    def update_realty_prices(self, *, user_id: int | str, item_id: int | str, request: JsonRequest) -> RealtyActionResult:
+    def update_realty_prices(
+        self, *, user_id: int | str, item_id: int | str, request: JsonRequest
+    ) -> RealtyActionResult:
         payload = self.transport.request_json(
             "POST",
             f"/realty/v1/accounts/{user_id}/items/{item_id}/prices",
@@ -72,7 +78,9 @@ class RealtyAnalyticsClient:
 
     transport: Transport
 
-    def get_market_price_correspondence_v1(self, *, item_id: int | str, price: int | str) -> RealtyMarketPriceInfo:
+    def get_market_price_correspondence_v1(
+        self, *, item_id: int | str, price: int | str
+    ) -> RealtyMarketPriceInfo:
         payload = self.transport.request_json(
             "GET",
             f"/realty/v1/marketPriceCorrespondence/{item_id}/{price}",

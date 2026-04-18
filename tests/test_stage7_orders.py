@@ -32,21 +32,50 @@ def test_order_management_flows() -> None:
         path = request.url.path
         payload = json.loads(request.content.decode()) if request.content else None
         if path == "/order-management/1/orders":
-            return httpx.Response(200, json={"orders": [{"id": "ord-1", "status": "new", "buyerInfo": {"fullName": "Иван"}}], "total": 1})
+            return httpx.Response(
+                200,
+                json={
+                    "orders": [{"id": "ord-1", "status": "new", "buyerInfo": {"fullName": "Иван"}}],
+                    "total": 1,
+                },
+            )
         if path == "/order-management/1/markings":
             assert payload == {"orderId": "ord-1", "codes": ["abc"]}
-            return httpx.Response(200, json={"result": {"success": True, "orderId": "ord-1", "status": "marked"}})
+            return httpx.Response(
+                200, json={"result": {"success": True, "orderId": "ord-1", "status": "marked"}}
+            )
         if path == "/order-management/1/order/applyTransition":
             assert payload == {"orderId": "ord-1", "transition": "confirm"}
-            return httpx.Response(200, json={"result": {"success": True, "orderId": "ord-1", "status": "confirmed"}})
+            return httpx.Response(
+                200, json={"result": {"success": True, "orderId": "ord-1", "status": "confirmed"}}
+            )
         if path == "/order-management/1/order/checkConfirmationCode":
             assert payload == {"orderId": "ord-1", "code": "1234"}
-            return httpx.Response(200, json={"result": {"success": True, "orderId": "ord-1", "status": "code-valid"}})
+            return httpx.Response(
+                200, json={"result": {"success": True, "orderId": "ord-1", "status": "code-valid"}}
+            )
         if path == "/order-management/1/order/cncSetDetails":
             assert payload == {"orderId": "ord-1", "pickupPointId": "pvz-1"}
-            return httpx.Response(200, json={"result": {"success": True, "orderId": "ord-1", "status": "pickup-set"}})
+            return httpx.Response(
+                200, json={"result": {"success": True, "orderId": "ord-1", "status": "pickup-set"}}
+            )
         if path == "/order-management/1/order/getCourierDeliveryRange":
-            return httpx.Response(200, json={"result": {"address": "Москва", "timeIntervals": [{"id": "int-1", "date": "2026-04-18", "startAt": "10:00", "endAt": "12:00"}]}})
+            return httpx.Response(
+                200,
+                json={
+                    "result": {
+                        "address": "Москва",
+                        "timeIntervals": [
+                            {
+                                "id": "int-1",
+                                "date": "2026-04-18",
+                                "startAt": "10:00",
+                                "endAt": "12:00",
+                            }
+                        ],
+                    }
+                },
+            )
         if path == "/order-management/1/order/setCourierDeliveryRange":
             assert payload == {"orderId": "ord-1", "intervalId": "int-1"}
             return httpx.Response(200, json={"result": {"success": True, "status": "range-set"}})
@@ -65,7 +94,9 @@ def test_order_management_flows() -> None:
     code_checked = order.check_confirmation_code(payload={"orderId": "ord-1", "code": "1234"})
     cnc = order.set_cnc_details(payload={"orderId": "ord-1", "pickupPointId": "pvz-1"})
     courier_ranges = order.get_courier_delivery_range()
-    courier_set = order.set_courier_delivery_range(payload={"orderId": "ord-1", "intervalId": "int-1"})
+    courier_set = order.set_courier_delivery_range(
+        payload={"orderId": "ord-1", "intervalId": "int-1"}
+    )
     tracking = order.update_tracking_number(payload={"orderId": "ord-1", "trackingNumber": "TRK-1"})
     returned = order.accept_return_order(payload={"orderId": "ord-1", "postalOfficeId": "ops-1"})
 
@@ -113,10 +144,14 @@ def test_delivery_production_and_sandbox_flows() -> None:
         payload = json.loads(request.content.decode()) if request.content else None
         if path == "/createAnnouncement":
             assert payload == {"orderId": "ord-1"}
-            return httpx.Response(200, json={"data": {"taskId": 11, "status": "announcement-created"}})
+            return httpx.Response(
+                200, json={"data": {"taskId": 11, "status": "announcement-created"}}
+            )
         if path == "/createParcel":
             assert payload == {"orderId": "ord-1", "parcelId": "par-1"}
-            return httpx.Response(200, json={"data": {"parcelId": "par-1", "status": "parcel-created"}})
+            return httpx.Response(
+                200, json={"data": {"parcelId": "par-1", "status": "parcel-created"}}
+            )
         if path == "/cancelAnnouncement":
             assert payload == {"orderId": "ord-1"}
             return httpx.Response(200, json={"data": {"status": "announcement-cancelled"}})
@@ -128,18 +163,29 @@ def test_delivery_production_and_sandbox_flows() -> None:
             return httpx.Response(200, json={"data": {"status": "parcels-updated"}})
         if path == "/delivery-sandbox/announcements/create":
             assert payload == {"orderId": "sand-1"}
-            return httpx.Response(200, json={"data": {"taskId": 51, "status": "sandbox-announcement-created"}})
+            return httpx.Response(
+                200, json={"data": {"taskId": 51, "status": "sandbox-announcement-created"}}
+            )
         if path == "/delivery-sandbox/announcements/track":
             assert payload == {"orderId": "sand-1"}
             return httpx.Response(200, json={"data": {"status": "tracked"}})
         if path == "/delivery-sandbox/sorting-center":
-            return httpx.Response(200, json={"data": {"sortingCenters": [{"id": "sc-1", "name": "Центр 1", "city": "Москва"}]}})
+            return httpx.Response(
+                200,
+                json={
+                    "data": {
+                        "sortingCenters": [{"id": "sc-1", "name": "Центр 1", "city": "Москва"}]
+                    }
+                },
+            )
         if path == "/delivery-sandbox/tariffs/tf-1/areas":
             assert payload == {"areas": [{"city": "Москва"}]}
             return httpx.Response(200, json={"data": {"taskId": 61, "status": "areas-added"}})
         if path == "/delivery-sandbox/v2/createParcel":
             assert payload == {"orderId": "sand-1", "parcelId": "spar-1"}
-            return httpx.Response(200, json={"data": {"parcelId": "spar-1", "status": "sandbox-parcel-created"}})
+            return httpx.Response(
+                200, json={"data": {"parcelId": "spar-1", "status": "sandbox-parcel-created"}}
+            )
         assert path == "/delivery-sandbox/tasks/51"
         return httpx.Response(200, json={"data": {"taskId": 51, "status": "done"}})
 
@@ -179,14 +225,30 @@ def test_stock_management_flows() -> None:
             assert json.loads(request.content.decode()) == {"itemIds": [123321]}
             return httpx.Response(
                 200,
-                json={"stocks": [{"item_id": 123321, "quantity": 5, "is_multiple": True, "is_unlimited": False, "is_out_of_stock": False}]},
+                json={
+                    "stocks": [
+                        {
+                            "item_id": 123321,
+                            "quantity": 5,
+                            "is_multiple": True,
+                            "is_unlimited": False,
+                            "is_out_of_stock": False,
+                        }
+                    ]
+                },
             )
         assert request.url.path == "/stock-management/1/stocks"
         assert request.method == "PUT"
-        assert json.loads(request.content.decode()) == {"stocks": [{"item_id": 123321, "quantity": 7}]}
+        assert json.loads(request.content.decode()) == {
+            "stocks": [{"item_id": 123321, "quantity": 7}]
+        }
         return httpx.Response(
             200,
-            json={"stocks": [{"item_id": 123321, "external_id": "AB123456", "success": True, "errors": []}]},
+            json={
+                "stocks": [
+                    {"item_id": 123321, "external_id": "AB123456", "success": True, "errors": []}
+                ]
+            },
         )
 
     stock = Stock(make_transport(httpx.MockTransport(handler)), resource_id="123321")

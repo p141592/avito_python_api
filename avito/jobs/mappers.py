@@ -120,7 +120,10 @@ def map_applications(payload: object) -> ApplicationsResult:
 
     data = _expect_mapping(payload)
     return ApplicationsResult(
-        items=[map_application(item) for item in _list(data, "applies", "applications", "items", "result")],
+        items=[
+            map_application(item)
+            for item in _list(data, "applies", "applications", "items", "result")
+        ],
         raw_payload=data,
     )
 
@@ -166,7 +169,8 @@ def map_resume(payload: Payload) -> ResumeInfo:
         id=_str(payload, "id", "resume_id", "resumeId"),
         title=_str(payload, "title"),
         candidate_name=_str(payload, "name", "full_name", "fullName"),
-        location=_str(payload, "location") or _str(_mapping(payload, "address_details"), "location"),
+        location=_str(payload, "location")
+        or _str(_mapping(payload, "address_details"), "location"),
         salary=_int(payload, "salary") or _int(salary_payload, "value", "from"),
         raw_payload=payload,
     )
@@ -206,7 +210,12 @@ def map_resume_contacts(payload: object) -> ResumeContactInfo:
 
 def map_vacancy(payload: Payload) -> VacancyInfo:
     return VacancyInfo(
-        id=_str(payload, "id", "vacancy_id", "vacancyId") or (str(_int(payload, "id", "vacancy_id", "vacancyId")) if _int(payload, "id", "vacancy_id", "vacancyId") is not None else None),
+        id=_str(payload, "id", "vacancy_id", "vacancyId")
+        or (
+            str(_int(payload, "id", "vacancy_id", "vacancyId"))
+            if _int(payload, "id", "vacancy_id", "vacancyId") is not None
+            else None
+        ),
         uuid=_str(payload, "uuid", "vacancy_uuid", "vacancyUuid"),
         title=_str(payload, "title", "name"),
         status=_str(payload, "status", "state"),
@@ -244,7 +253,12 @@ def map_vacancy_statuses(payload: object) -> VacancyStatusesResult:
     return VacancyStatusesResult(
         items=[
             VacancyStatusInfo(
-                id=_str(item, "id", "vacancy_id") or (str(_int(item, "id", "vacancy_id")) if _int(item, "id", "vacancy_id") is not None else None),
+                id=_str(item, "id", "vacancy_id")
+                or (
+                    str(_int(item, "id", "vacancy_id"))
+                    if _int(item, "id", "vacancy_id") is not None
+                    else None
+                ),
                 uuid=_str(item, "uuid", "vacancy_uuid"),
                 status=_str(item, "status", "state"),
                 raw_payload=item,
@@ -272,7 +286,9 @@ def map_job_webhooks(payload: object) -> JobWebhooksResult:
 
     if isinstance(payload, list):
         items_payload = _expect_list(payload)
-        return JobWebhooksResult(items=[map_job_webhook(item) for item in items_payload], raw_payload={})
+        return JobWebhooksResult(
+            items=[map_job_webhook(item) for item in items_payload], raw_payload={}
+        )
 
     data = _expect_mapping(payload)
     return JobWebhooksResult(
@@ -284,7 +300,11 @@ def map_job_webhooks(payload: object) -> JobWebhooksResult:
 def map_job_dictionaries(payload: object) -> JobDictionariesResult:
     """Преобразует список доступных словарей."""
 
-    items_payload = _expect_list(payload) if isinstance(payload, list) else _list(_expect_mapping(payload), "items", "result")
+    items_payload = (
+        _expect_list(payload)
+        if isinstance(payload, list)
+        else _list(_expect_mapping(payload), "items", "result")
+    )
     return JobDictionariesResult(
         items=[
             JobDictionaryInfo(
@@ -301,7 +321,11 @@ def map_job_dictionaries(payload: object) -> JobDictionariesResult:
 def map_job_dictionary_values(payload: object) -> JobDictionaryValuesResult:
     """Преобразует значения словаря вакансий."""
 
-    items_payload = _expect_list(payload) if isinstance(payload, list) else _list(_expect_mapping(payload), "items", "result")
+    items_payload = (
+        _expect_list(payload)
+        if isinstance(payload, list)
+        else _list(_expect_mapping(payload), "items", "result")
+    )
     return JobDictionaryValuesResult(
         items=[
             JobDictionaryValue(

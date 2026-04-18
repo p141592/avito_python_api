@@ -39,7 +39,9 @@ class ReviewAnswer(DomainObject):
         return RatingsClient(self.transport).create_review_answer_v1(JsonRequest(payload))
 
     def delete_review_answer_v1(self, *, answer_id: int | str | None = None) -> ReviewAnswerInfo:
-        return RatingsClient(self.transport).delete_review_answer_v1(answer_id=answer_id or self._require_answer_id())
+        return RatingsClient(self.transport).delete_review_answer_v1(
+            answer_id=answer_id or self._require_answer_id()
+        )
 
     def _require_answer_id(self) -> str:
         if self.resource_id is None:

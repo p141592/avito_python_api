@@ -48,13 +48,32 @@ def test_promotion_dictionary_and_orders_flows() -> None:
             assert payload == {"itemIds": [101]}
             return httpx.Response(
                 200,
-                json={"items": [{"itemId": 101, "serviceCode": "x2", "serviceName": "X2", "price": 9900, "status": "available"}]},
+                json={
+                    "items": [
+                        {
+                            "itemId": 101,
+                            "serviceCode": "x2",
+                            "serviceName": "X2",
+                            "price": 9900,
+                            "status": "available",
+                        }
+                    ]
+                },
             )
         if path == "/promotion/v1/items/services/orders/get":
             assert payload == {"itemIds": [101]}
             return httpx.Response(
                 200,
-                json={"items": [{"orderId": "ord-1", "itemId": 101, "serviceCode": "x2", "status": "created"}]},
+                json={
+                    "items": [
+                        {
+                            "orderId": "ord-1",
+                            "itemId": 101,
+                            "serviceCode": "x2",
+                            "status": "created",
+                        }
+                    ]
+                },
             )
         assert path == "/promotion/v1/items/services/orders/status"
         assert payload == {"orderIds": ["ord-1"]}
@@ -78,12 +97,31 @@ def test_bbip_and_trxpromo_flows() -> None:
         path = request.url.path
         payload = json.loads(request.content.decode()) if request.content else None
         if path == "/promotion/v1/items/services/bbip/forecasts/get":
-            assert payload == {"items": [{"itemId": 101, "duration": 7, "price": 1000, "oldPrice": 1200}]}
-            return httpx.Response(200, json={"items": [{"itemId": 101, "min": 10, "max": 25, "totalPrice": 7000, "totalOldPrice": 8400}]})
+            assert payload == {
+                "items": [{"itemId": 101, "duration": 7, "price": 1000, "oldPrice": 1200}]
+            }
+            return httpx.Response(
+                200,
+                json={
+                    "items": [
+                        {
+                            "itemId": 101,
+                            "min": 10,
+                            "max": 25,
+                            "totalPrice": 7000,
+                            "totalOldPrice": 8400,
+                        }
+                    ]
+                },
+            )
         if path == "/promotion/v1/items/services/bbip/orders/create":
             assert request.method == "PUT"
-            assert payload == {"items": [{"itemId": 101, "duration": 7, "price": 1000, "oldPrice": 1200}]}
-            return httpx.Response(200, json={"items": [{"itemId": 101, "success": True, "status": "created"}]})
+            assert payload == {
+                "items": [{"itemId": 101, "duration": 7, "price": 1000, "oldPrice": 1200}]
+            }
+            return httpx.Response(
+                200, json={"items": [{"itemId": 101, "success": True, "status": "created"}]}
+            )
         if path == "/promotion/v1/items/services/bbip/suggests/get":
             assert payload == {"itemIds": [101]}
             return httpx.Response(
@@ -99,11 +137,17 @@ def test_bbip_and_trxpromo_flows() -> None:
                 },
             )
         if path == "/trx-promo/1/apply":
-            assert payload == {"items": [{"itemID": 101, "commission": 1500, "dateFrom": "2026-04-18"}]}
-            return httpx.Response(200, json={"success": {"items": [{"itemID": 101, "success": True}]}})
+            assert payload == {
+                "items": [{"itemID": 101, "commission": 1500, "dateFrom": "2026-04-18"}]
+            }
+            return httpx.Response(
+                200, json={"success": {"items": [{"itemID": 101, "success": True}]}}
+            )
         if path == "/trx-promo/1/cancel":
             assert payload == {"items": [{"itemID": 101}]}
-            return httpx.Response(200, json={"success": {"items": [{"itemID": 101, "success": True}]}})
+            return httpx.Response(
+                200, json={"success": {"items": [{"itemID": 101, "success": True}]}}
+            )
         assert path == "/trx-promo/1/commissions"
         assert request.url.params["itemIDs"] == "101"
         return httpx.Response(
@@ -115,7 +159,11 @@ def test_bbip_and_trxpromo_flows() -> None:
                             "itemID": 101,
                             "commission": 1500,
                             "isActive": True,
-                            "validCommissionRange": {"valueMin": 100, "valueMax": 2000, "step": 100},
+                            "validCommissionRange": {
+                                "valueMin": 100,
+                                "valueMax": 2000,
+                                "step": 100,
+                            },
                         }
                     ]
                 }
@@ -126,10 +174,16 @@ def test_bbip_and_trxpromo_flows() -> None:
     bbip = BbipPromotion(transport, resource_id=101)
     trx = TrxPromotion(transport, resource_id=101)
 
-    forecasts = bbip.get_forecasts(items=[BbipForecastRequestItem(item_id=101, duration=7, price=1000, old_price=1200)])
-    order_result = bbip.create_order(items=[BbipOrderItem(item_id=101, duration=7, price=1000, old_price=1200)])
+    forecasts = bbip.get_forecasts(
+        items=[BbipForecastRequestItem(item_id=101, duration=7, price=1000, old_price=1200)]
+    )
+    order_result = bbip.create_order(
+        items=[BbipOrderItem(item_id=101, duration=7, price=1000, old_price=1200)]
+    )
     suggests = bbip.get_suggests()
-    applied = trx.apply(items=[TrxPromotionApplyItem(item_id=101, commission=1500, date_from="2026-04-18")])
+    applied = trx.apply(
+        items=[TrxPromotionApplyItem(item_id=101, commission=1500, date_from="2026-04-18")]
+    )
     cancelled = trx.delete()
     commissions = trx.get_commissions()
 
@@ -168,20 +222,60 @@ def test_cpa_auction_and_target_action_pricing_flows() -> None:
         if path == "/cpxpromo/1/getBids/101":
             return httpx.Response(
                 200,
-                json={"items": [{"itemID": 101, "actionTypeID": 5, "bidPenny": 1400, "availableBids": [{"valuePenny": 1500, "minForecast": 2, "maxForecast": 5, "compare": 10}]}]},
+                json={
+                    "items": [
+                        {
+                            "itemID": 101,
+                            "actionTypeID": 5,
+                            "bidPenny": 1400,
+                            "availableBids": [
+                                {
+                                    "valuePenny": 1500,
+                                    "minForecast": 2,
+                                    "maxForecast": 5,
+                                    "compare": 10,
+                                }
+                            ],
+                        }
+                    ]
+                },
             )
         if path == "/cpxpromo/1/getPromotionsByItemIds":
             assert payload == {"itemIDs": [101, 102]}
-            return httpx.Response(200, json={"items": [{"itemID": 102, "actionTypeID": 7, "budgetPenny": 9000, "budgetType": "7d", "isAuto": True}]})
+            return httpx.Response(
+                200,
+                json={
+                    "items": [
+                        {
+                            "itemID": 102,
+                            "actionTypeID": 7,
+                            "budgetPenny": 9000,
+                            "budgetType": "7d",
+                            "isAuto": True,
+                        }
+                    ]
+                },
+            )
         if path == "/cpxpromo/1/remove":
             assert payload == {"itemID": 101}
-            return httpx.Response(200, json={"items": [{"itemID": 101, "success": True, "status": "removed"}]})
+            return httpx.Response(
+                200, json={"items": [{"itemID": 101, "success": True, "status": "removed"}]}
+            )
         if path == "/cpxpromo/1/setAuto":
-            assert payload == {"itemID": 101, "actionTypeID": 5, "budgetPenny": 8000, "budgetType": "7d"}
-            return httpx.Response(200, json={"items": [{"itemID": 101, "success": True, "status": "auto"}]})
+            assert payload == {
+                "itemID": 101,
+                "actionTypeID": 5,
+                "budgetPenny": 8000,
+                "budgetType": "7d",
+            }
+            return httpx.Response(
+                200, json={"items": [{"itemID": 101, "success": True, "status": "auto"}]}
+            )
         assert path == "/cpxpromo/1/setManual"
         assert payload == {"itemID": 101, "actionTypeID": 5, "bidPenny": 1500, "limitPenny": 15000}
-        return httpx.Response(200, json={"items": [{"itemID": 101, "success": True, "status": "manual"}]})
+        return httpx.Response(
+            200, json={"items": [{"itemID": 101, "success": True, "status": "manual"}]}
+        )
 
     transport = make_transport(httpx.MockTransport(handler))
     auction = CpaAuction(transport)
@@ -215,9 +309,23 @@ def test_autostrategy_flows() -> None:
                 json={
                     "budgetId": "budget-1",
                     "budget": {
-                        "recommended": {"total": 10100, "real": 10000, "bonus": 100, "viewsFrom": 30, "viewsTo": 50},
+                        "recommended": {
+                            "total": 10100,
+                            "real": 10000,
+                            "bonus": 100,
+                            "viewsFrom": 30,
+                            "viewsTo": 50,
+                        },
                         "minimal": {"total": 5100, "real": 5000, "bonus": 100},
-                        "priceRanges": [{"priceFrom": 10000, "priceTo": 20000, "percent": 90, "viewsFrom": 20, "viewsTo": 40}],
+                        "priceRanges": [
+                            {
+                                "priceFrom": 10000,
+                                "priceTo": 20000,
+                                "percent": 90,
+                                "viewsFrom": 20,
+                                "viewsTo": 40,
+                            }
+                        ],
                     },
                 },
             )
@@ -229,16 +337,41 @@ def test_autostrategy_flows() -> None:
             return httpx.Response(200, json={"campaignId": 77, "status": "updated"})
         if path == "/autostrategy/v1/campaign/info":
             assert payload == {"campaignId": 77}
-            return httpx.Response(200, json={"campaign": {"campaignId": 77, "campaignType": "AS", "status": "active", "budget": 10000, "balance": 9000}})
+            return httpx.Response(
+                200,
+                json={
+                    "campaign": {
+                        "campaignId": 77,
+                        "campaignType": "AS",
+                        "status": "active",
+                        "budget": 10000,
+                        "balance": 9000,
+                    }
+                },
+            )
         if path == "/autostrategy/v1/campaign/stop":
             assert payload == {"campaignId": 77}
             return httpx.Response(200, json={"campaignId": 77, "status": "stopped"})
         if path == "/autostrategy/v1/campaigns":
             assert payload == {"status": "active"}
-            return httpx.Response(200, json={"items": [{"campaignId": 77, "campaignType": "AS", "status": "active", "budget": 10000}]})
+            return httpx.Response(
+                200,
+                json={
+                    "items": [
+                        {
+                            "campaignId": 77,
+                            "campaignType": "AS",
+                            "status": "active",
+                            "budget": 10000,
+                        }
+                    ]
+                },
+            )
         assert path == "/autostrategy/v1/stat"
         assert payload == {"campaignId": 77}
-        return httpx.Response(200, json={"stat": {"campaignId": 77, "views": 500, "contacts": 30, "spend": 4500}})
+        return httpx.Response(
+            200, json={"stat": {"campaignId": 77, "views": 500, "contacts": 30, "spend": 4500}}
+        )
 
     campaign = AutostrategyCampaign(make_transport(httpx.MockTransport(handler)), resource_id=77)
 

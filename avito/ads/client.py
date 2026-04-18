@@ -75,7 +75,14 @@ class AdsClient:
         )
         return map_ad_item(payload)
 
-    def list_items(self, *, user_id: int | None = None, status: str | None = None, limit: int | None = None, offset: int | None = None) -> AdsListResult:
+    def list_items(
+        self,
+        *,
+        user_id: int | None = None,
+        status: str | None = None,
+        limit: int | None = None,
+        offset: int | None = None,
+    ) -> AdsListResult:
         """Получает список объявлений пользователя."""
 
         payload = self.transport.request_json(
@@ -171,7 +178,9 @@ class VasClient:
         )
         return map_vas_prices(payload)
 
-    def apply_item_vas(self, *, user_id: int, item_id: int, request: ApplyVasRequest) -> ActionResult:
+    def apply_item_vas(
+        self, *, user_id: int, item_id: int, request: ApplyVasRequest
+    ) -> ActionResult:
         """Применяет дополнительные услуги к объявлению."""
 
         payload = self.transport.request_json(
@@ -182,7 +191,9 @@ class VasClient:
         )
         return map_action_result(payload)
 
-    def apply_item_vas_package(self, *, user_id: int, item_id: int, request: ApplyVasPackageRequest) -> ActionResult:
+    def apply_item_vas_package(
+        self, *, user_id: int, item_id: int, request: ApplyVasPackageRequest
+    ) -> ActionResult:
         """Применяет пакет дополнительных услуг."""
 
         payload = self.transport.request_json(
@@ -285,7 +296,9 @@ class AutoloadClient:
         )
         return map_id_mapping(payload)
 
-    def list_reports(self, *, limit: int | None = None, offset: int | None = None) -> AutoloadReportsResult:
+    def list_reports(
+        self, *, limit: int | None = None, offset: int | None = None
+    ) -> AutoloadReportsResult:
         """Получает список отчетов автозагрузки."""
 
         payload = self.transport.request_json(

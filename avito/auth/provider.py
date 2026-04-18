@@ -79,7 +79,9 @@ class AuthProvider:
             token_response = self._get_autoteka_token_client().request_client_credentials_token(
                 ClientCredentialsRequest(
                     client_id=self.settings.autoteka_client_id or self.settings.client_id or "",
-                    client_secret=self.settings.autoteka_client_secret or self.settings.client_secret or "",
+                    client_secret=self.settings.autoteka_client_secret
+                    or self.settings.client_secret
+                    or "",
                     scope=self.settings.autoteka_scope,
                 )
             )
@@ -145,7 +147,9 @@ class AuthProvider:
 
     def _get_autoteka_token_client(self) -> TokenClient:
         if self.autoteka_token_client is None:
-            self.autoteka_token_client = TokenClient(self.settings, token_url=self.settings.autoteka_token_url)
+            self.autoteka_token_client = TokenClient(
+                self.settings, token_url=self.settings.autoteka_token_url
+            )
         return self.autoteka_token_client
 
     def _require_client_id(self) -> str:

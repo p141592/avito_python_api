@@ -109,7 +109,9 @@ class ChatMessage(DomainObject):
             request=SendMessageRequest(message=message),
         )
 
-    def send_image(self, *, chat_id: str | None = None, image_id: str, caption: str | None = None) -> MessageActionResult:
+    def send_image(
+        self, *, chat_id: str | None = None, image_id: str, caption: str | None = None
+    ) -> MessageActionResult:
         """Отправляет сообщение с изображением."""
 
         return MessengerClient(self.transport).send_image_message(
@@ -118,7 +120,9 @@ class ChatMessage(DomainObject):
             request=SendImageMessageRequest(image_id=image_id, caption=caption),
         )
 
-    def delete(self, *, chat_id: str | None = None, message_id: str | None = None) -> MessageActionResult:
+    def delete(
+        self, *, chat_id: str | None = None, message_id: str | None = None
+    ) -> MessageActionResult:
         """Удаляет сообщение."""
 
         resolved_message_id = message_id or self._require_message_id()
@@ -182,7 +186,9 @@ class ChatMedia(DomainObject):
     def upload_images(self, *, files: dict[str, object]) -> UploadImagesResult:
         """Загружает изображения для сообщений."""
 
-        return MediaClient(self.transport).upload_images(user_id=self._require_user_id(), files=files)
+        return MediaClient(self.transport).upload_images(
+            user_id=self._require_user_id(), files=files
+        )
 
     def _require_user_id(self) -> int:
         if self.user_id is None:
@@ -200,9 +206,13 @@ class SpecialOfferCampaign(DomainObject):
     def get_available(self, *, item_ids: list[int]) -> SpecialOfferAvailableResult:
         """Получает объявления, доступные для рассылки."""
 
-        return SpecialOffersClient(self.transport).get_available(SpecialOfferAvailableRequest(item_ids=item_ids))
+        return SpecialOffersClient(self.transport).get_available(
+            SpecialOfferAvailableRequest(item_ids=item_ids)
+        )
 
-    def create_multi(self, *, item_ids: list[int], message: str, discount_percent: int | None = None) -> MultiCreateSpecialOfferResult:
+    def create_multi(
+        self, *, item_ids: list[int], message: str, discount_percent: int | None = None
+    ) -> MultiCreateSpecialOfferResult:
         """Создает рассылку спецпредложений."""
 
         return SpecialOffersClient(self.transport).create_multi(
@@ -238,4 +248,11 @@ class SpecialOfferCampaign(DomainObject):
         return str(self.resource_id)
 
 
-__all__ = ("Chat", "ChatMedia", "ChatMessage", "ChatWebhook", "DomainObject", "SpecialOfferCampaign")
+__all__ = (
+    "Chat",
+    "ChatMedia",
+    "ChatMessage",
+    "ChatWebhook",
+    "DomainObject",
+    "SpecialOfferCampaign",
+)

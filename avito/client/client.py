@@ -136,9 +136,7 @@ class AvitoClient:
 
         return AutoloadLegacy(self.transport, resource_id=report_id)
 
-    def chat(
-        self, chat_id: int | str | None = None, *, user_id: int | str | None = None
-    ) -> Chat:
+    def chat(self, chat_id: int | str | None = None, *, user_id: int | str | None = None) -> Chat:
         """Создает доменный объект чата."""
 
         return Chat(self.transport, resource_id=chat_id, user_id=user_id)
@@ -167,16 +165,12 @@ class AvitoClient:
 
         return ChatMedia(self.transport, resource_id=media_id, user_id=user_id)
 
-    def special_offer_campaign(
-        self, campaign_id: int | str | None = None
-    ) -> SpecialOfferCampaign:
+    def special_offer_campaign(self, campaign_id: int | str | None = None) -> SpecialOfferCampaign:
         """Создает доменный объект рассылки спецпредложений."""
 
         return SpecialOfferCampaign(self.transport, resource_id=campaign_id)
 
-    def promotion_order(
-        self, order_id: int | str | None = None
-    ) -> PromotionOrder:
+    def promotion_order(self, order_id: int | str | None = None) -> PromotionOrder:
         """Создает доменный объект заявки на продвижение."""
 
         return PromotionOrder(self.transport, resource_id=order_id)
@@ -196,16 +190,12 @@ class AvitoClient:
 
         return CpaAuction(self.transport, resource_id=item_id)
 
-    def target_action_pricing(
-        self, item_id: int | str | None = None
-    ) -> TargetActionPricing:
+    def target_action_pricing(self, item_id: int | str | None = None) -> TargetActionPricing:
         """Создает доменный объект цены целевого действия."""
 
         return TargetActionPricing(self.transport, resource_id=item_id)
 
-    def autostrategy_campaign(
-        self, campaign_id: int | str | None = None
-    ) -> AutostrategyCampaign:
+    def autostrategy_campaign(self, campaign_id: int | str | None = None) -> AutostrategyCampaign:
         """Создает доменный объект автостратегии."""
 
         return AutostrategyCampaign(self.transport, resource_id=campaign_id)
@@ -285,16 +275,12 @@ class AvitoClient:
 
         return CpaLegacy(self.transport, resource_id=legacy_id)
 
-    def call_tracking_call(
-        self, call_id: int | str | None = None
-    ) -> CallTrackingCall:
+    def call_tracking_call(self, call_id: int | str | None = None) -> CallTrackingCall:
         """Создает доменный объект CallTracking."""
 
         return CallTrackingCall(self.transport, resource_id=call_id)
 
-    def autoteka_vehicle(
-        self, vehicle_id: int | str | None = None
-    ) -> AutotekaVehicle:
+    def autoteka_vehicle(self, vehicle_id: int | str | None = None) -> AutotekaVehicle:
         """Создает доменный объект транспортного средства Автотеки."""
 
         return AutotekaVehicle(self.transport, resource_id=vehicle_id)
@@ -304,23 +290,17 @@ class AvitoClient:
 
         return AutotekaReport(self.transport, resource_id=report_id)
 
-    def autoteka_monitoring(
-        self, monitoring_id: int | str | None = None
-    ) -> AutotekaMonitoring:
+    def autoteka_monitoring(self, monitoring_id: int | str | None = None) -> AutotekaMonitoring:
         """Создает доменный объект мониторинга Автотеки."""
 
         return AutotekaMonitoring(self.transport, resource_id=monitoring_id)
 
-    def autoteka_scoring(
-        self, scoring_id: int | str | None = None
-    ) -> AutotekaScoring:
+    def autoteka_scoring(self, scoring_id: int | str | None = None) -> AutotekaScoring:
         """Создает доменный объект скоринга Автотеки."""
 
         return AutotekaScoring(self.transport, resource_id=scoring_id)
 
-    def autoteka_valuation(
-        self, valuation_id: int | str | None = None
-    ) -> AutotekaValuation:
+    def autoteka_valuation(self, valuation_id: int | str | None = None) -> AutotekaValuation:
         """Создает доменный объект оценки Автотеки."""
 
         return AutotekaValuation(self.transport, resource_id=valuation_id)
@@ -340,9 +320,7 @@ class AvitoClient:
 
         return RealtyPricing(self.transport, resource_id=item_id)
 
-    def realty_analytics_report(
-        self, report_id: int | str | None = None
-    ) -> RealtyAnalyticsReport:
+    def realty_analytics_report(self, report_id: int | str | None = None) -> RealtyAnalyticsReport:
         """Создает доменный объект аналитического отчета недвижимости."""
 
         return RealtyAnalyticsReport(self.transport, resource_id=report_id)
