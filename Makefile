@@ -39,4 +39,4 @@ major: check
 	poetry version major
 
 release: patch
-	poetry publish
+	poetry publish --no-interaction
