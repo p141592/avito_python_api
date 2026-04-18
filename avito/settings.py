@@ -1,6 +1,7 @@
-from pydantic_settings import BaseSettings
+"""Совместимые импорты конфигурации SDK."""
 
+from avito.config import AvitoSettings
+from avito.core.retries import RetryPolicy
+from avito.core.types import ApiTimeouts
 
-class AVITOSettings(BaseSettings):
-    AVITO_CLIENT_ID: str
-    AVITO_SECRET: str
+__all__ = ("ApiTimeouts", "AvitoSettings", "RetryPolicy")

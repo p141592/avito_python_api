@@ -1,0 +1,415 @@
+"""Единый transport-слой SDK поверх `httpx.Client`."""
+
+from __future__ import annotations
+
+import json
+import time
+from collections.abc import Callable, Mapping, Sequence
+from email.message import Message
+from io import BytesIO
+from typing import TYPE_CHECKING
+from urllib.parse import quote
+
+import httpx
+
+from avito.auth.provider import AuthProvider
+from avito.core.exceptions import (
+    AuthenticationError,
+    ClientError,
+    NotFoundError,
+    PermissionDeniedError,
+    RateLimitError,
+    ResponseMappingError,
+    ServerError,
+    TransportError,
+    ValidationError,
+)
+from avito.core.retries import RetryDecision
+from avito.core.types import (
+    ApiTimeouts,
+    BinaryResponse,
+    HttpMethod,
+    RequestContext,
+    TransportDebugInfo,
+)
+
+if TYPE_CHECKING:
+    from avito.config import AvitoSettings
+
+QueryScalar = str | int | float | bool | None
+QueryParamValue = QueryScalar | Sequence[QueryScalar]
+QueryParams = Mapping[str, QueryParamValue]
+FileValue = (
+    BytesIO
+    | bytes
+    | str
+    | tuple[str | None, BytesIO | bytes | str]
+    | tuple[str | None, BytesIO | bytes | str, str | None]
+    | tuple[str | None, BytesIO | bytes | str, str | None, Mapping[str, str]]
+)
+RequestFiles = Mapping[str, FileValue]
+
+
+class Transport:
+    """Выполняет HTTP-запросы, применяет retry и маппит ошибки API."""
+
+    def __init__(
+        self,
+        settings: AvitoSettings,
+        *,
+        auth_provider: AuthProvider | None = None,
+        client: httpx.Client | None = None,
+        sleep: Callable[[float], None] = time.sleep,
+    ) -> None:
+        self._settings = settings
+        self._auth_provider = auth_provider
+        self._retry_policy = settings.retry_policy
+        self._client = client or httpx.Client(
+            base_url=settings.base_url.rstrip("/"),
+            timeout=self._build_timeout(settings.timeouts),
+        )
+        self._sleep = sleep
+
+    def debug_info(self) -> TransportDebugInfo:
+        """Возвращает безопасный снимок transport-конфигурации без секретов."""
+
+        return TransportDebugInfo(
+            base_url=str(self._client.base_url),
+            requires_auth=self._auth_provider is not None,
+            timeout_connect=self._settings.timeouts.connect,
+            timeout_read=self._settings.timeouts.read,
+            timeout_write=self._settings.timeouts.write,
+            timeout_pool=self._settings.timeouts.pool,
+            retry_max_attempts=self._retry_policy.max_attempts,
+            retryable_methods=self._retry_policy.retryable_methods,
+        )
+
+    def close(self) -> None:
+        """Закрывает внутренний экземпляр `httpx.Client`."""
+
+        self._client.close()
+
+    def request(
+        self,
+        method: HttpMethod,
+        path: str,
+        *,
+        context: RequestContext,
+        params: Mapping[str, object] | None = None,
+        json_body: object | None = None,
+        data: Mapping[str, object] | None = None,
+        files: Mapping[str, object] | None = None,
+        headers: Mapping[str, str] | None = None,
+        content: bytes | None = None,
+    ) -> httpx.Response:
+        """Выполняет запрос и возвращает успешный `httpx.Response`."""
+
+        normalized_path = self._normalize_path(path)
+        request_headers = self._merge_headers(context=context, headers=headers)
+        timeout = self._build_timeout(context.timeout or self._settings.timeouts)
+        attempt = 0
+        unauthorized_refresh_used = False
+
+        while True:
+            attempt += 1
+            try:
+                response = self._client.request(
+                    method=method,
+                    url=normalized_path,
+                    params=self._normalize_params(params),
+                    json=json_body,
+                    data=data,
+                    files=self._normalize_files(files),
+                    headers=request_headers,
+                    content=content,
+                    timeout=timeout,
+                )
+            except (httpx.TimeoutException, httpx.NetworkError) as exc:
+                decision = self._decide_transport_retry(
+                    method=method,
+                    attempt=attempt,
+                    context=context,
+                    is_timeout=isinstance(exc, httpx.TimeoutException),
+                )
+                if decision.should_retry:
+                    self._sleep(decision.delay_seconds)
+                    continue
+                raise TransportError(str(exc)) from exc
+
+            if response.status_code == 401 and context.requires_auth and self._auth_provider is not None:
+                if unauthorized_refresh_used:
+                    raise self._map_http_error(response)
+                unauthorized_refresh_used = True
+                self._auth_provider.invalidate_token()
+                refreshed_headers = dict(request_headers)
+                refreshed_headers["Authorization"] = f"Bearer {self._auth_provider.get_access_token()}"
+                request_headers = refreshed_headers
+                continue
+
+            if response.status_code == 429:
+                decision = self._decide_http_retry(
+                    method=method,
+                    attempt=attempt,
+                    context=context,
+                    response=response,
+                )
+                if decision.should_retry:
+                    self._sleep(decision.delay_seconds)
+                    continue
+                raise self._map_http_error(response)
+
+            if 500 <= response.status_code < 600:
+                decision = self._decide_http_retry(
+                    method=method,
+                    attempt=attempt,
+                    context=context,
+                    response=response,
+                )
+                if decision.should_retry:
+                    self._sleep(decision.delay_seconds)
+                    continue
+                raise self._map_http_error(response)
+
+            if response.is_error:
+                raise self._map_http_error(response)
+
+            return response
+
+    def request_json(
+        self,
+        method: HttpMethod,
+        path: str,
+        *,
+        context: RequestContext,
+        params: Mapping[str, object] | None = None,
+        json_body: object | None = None,
+        data: Mapping[str, object] | None = None,
+        files: Mapping[str, object] | None = None,
+        headers: Mapping[str, str] | None = None,
+    ) -> object:
+        """Выполняет запрос и возвращает JSON-ответ."""
+
+        response = self.request(
+            method,
+            path,
+            context=context,
+            params=params,
+            json_body=json_body,
+            data=data,
+            files=files,
+            headers=headers,
+        )
+        try:
+            return response.json()
+        except json.JSONDecodeError as exc:
+            raise ResponseMappingError(
+                "Ответ API не является корректным JSON.",
+                status_code=response.status_code,
+                payload=response.text,
+                headers=dict(response.headers),
+            ) from exc
+
+    def download_binary(
+        self,
+        path: str,
+        *,
+        context: RequestContext,
+        params: Mapping[str, object] | None = None,
+        headers: Mapping[str, str] | None = None,
+    ) -> BinaryResponse:
+        """Выполняет запрос и возвращает бинарный ответ."""
+
+        response = self.request(
+            "GET",
+            path,
+            context=context,
+            params=params,
+            headers=headers,
+        )
+        return BinaryResponse(
+            content=response.content,
+            content_type=response.headers.get("content-type"),
+            filename=self._extract_filename(response.headers.get("content-disposition")),
+            status_code=response.status_code,
+            headers=dict(response.headers),
+        )
+
+    def _normalize_path(self, path: str) -> str:
+        stripped = path.strip()
+        if not stripped:
+            return "/"
+        if stripped.startswith("http://") or stripped.startswith("https://"):
+            return stripped
+        has_trailing_slash = stripped.endswith("/")
+        segments = [quote(segment, safe=":@") for segment in stripped.strip("/").split("/") if segment]
+        normalized = "/" + "/".join(segments)
+        if has_trailing_slash and normalized != "/":
+            normalized += "/"
+        return normalized
+
+    def _normalize_params(self, params: Mapping[str, object] | None) -> QueryParams | None:
+        if params is None:
+            return None
+        normalized: dict[str, QueryParamValue] = {}
+        for key, value in params.items():
+            if value is None:
+                continue
+            if isinstance(value, Sequence) and not isinstance(value, str | bytes | bytearray):
+                normalized[key] = [self._normalize_query_scalar(item) for item in value]
+            else:
+                normalized[key] = self._normalize_query_scalar(value)
+        return normalized
+
+    def _normalize_query_scalar(self, value: object) -> QueryScalar:
+        if isinstance(value, str | int | float | bool):
+            return value
+        return str(value)
+
+    def _normalize_files(self, files: Mapping[str, object] | None) -> RequestFiles | None:
+        if files is None:
+            return None
+        return {key: self._normalize_file_value(value) for key, value in files.items()}
+
+    def _normalize_file_value(self, value: object) -> FileValue:
+        if isinstance(value, bytes | str | BytesIO):
+            return value
+        if isinstance(value, tuple):
+            return value
+        raise TypeError("Неподдерживаемый тип файла для multipart upload.")
+
+    def _merge_headers(
+        self,
+        *,
+        context: RequestContext,
+        headers: Mapping[str, str] | None,
+    ) -> dict[str, str]:
+        merged: dict[str, str] = {"Accept": "application/json"}
+        merged.update(dict(context.headers))
+        if headers is not None:
+            merged.update(dict(headers))
+        if context.requires_auth and self._auth_provider is not None:
+            merged["Authorization"] = f"Bearer {self._auth_provider.get_access_token()}"
+        return merged
+
+    def _decide_transport_retry(
+        self,
+        *,
+        method: str,
+        attempt: int,
+        context: RequestContext,
+        is_timeout: bool,
+    ) -> RetryDecision:
+        if attempt >= self._retry_policy.max_attempts:
+            return RetryDecision(False)
+        if not self._retry_policy.retry_on_transport_error:
+            return RetryDecision(False)
+        if not self._retry_policy.is_retryable_method(method, explicit_retry=context.allow_retry):
+            return RetryDecision(False)
+        return RetryDecision(
+            True,
+            reason="timeout" if is_timeout else "transport_error",
+            delay_seconds=self._retry_policy.compute_backoff(attempt),
+        )
+
+    def _decide_http_retry(
+        self,
+        *,
+        method: str,
+        attempt: int,
+        context: RequestContext,
+        response: httpx.Response,
+    ) -> RetryDecision:
+        if attempt >= self._retry_policy.max_attempts:
+            return RetryDecision(False)
+        if not self._retry_policy.is_retryable_method(method, explicit_retry=context.allow_retry):
+            return RetryDecision(False)
+        if response.status_code == 429:
+            if not self._retry_policy.retry_on_rate_limit:
+                return RetryDecision(False)
+            delay = self._get_retry_after_seconds(response.headers)
+            if delay > self._retry_policy.max_rate_limit_wait_seconds:
+                return RetryDecision(False)
+            return RetryDecision(True, reason="rate_limit", delay_seconds=delay)
+        if 500 <= response.status_code < 600 and self._retry_policy.retry_on_server_error:
+            return RetryDecision(
+                True,
+                reason="server_error",
+                delay_seconds=self._retry_policy.compute_backoff(attempt),
+            )
+        return RetryDecision(False)
+
+    def _map_http_error(self, response: httpx.Response) -> Exception:
+        payload = self._safe_payload(response)
+        message = self._extract_message(payload) or f"HTTP {response.status_code}"
+        error_code = self._extract_error_code(payload)
+        headers = dict(response.headers)
+
+        if response.status_code == 401:
+            return AuthenticationError(message, status_code=401, error_code=error_code, payload=payload, headers=headers)
+        if response.status_code == 403:
+            return PermissionDeniedError(message, status_code=403, error_code=error_code, payload=payload, headers=headers)
+        if response.status_code == 404:
+            return NotFoundError(message, status_code=404, error_code=error_code, payload=payload, headers=headers)
+        if response.status_code == 422:
+            return ValidationError(message, status_code=422, error_code=error_code, payload=payload, headers=headers)
+        if response.status_code == 429:
+            return RateLimitError(message, status_code=429, error_code=error_code, payload=payload, headers=headers)
+        if 400 <= response.status_code < 500:
+            return ClientError(message, status_code=response.status_code, error_code=error_code, payload=payload, headers=headers)
+        return ServerError(message, status_code=response.status_code, error_code=error_code, payload=payload, headers=headers)
+
+    def _safe_payload(self, response: httpx.Response) -> object:
+        content_type = response.headers.get("content-type", "")
+        if "application/json" in content_type:
+            try:
+                return response.json()
+            except json.JSONDecodeError:
+                return response.text
+        return response.text
+
+    def _extract_message(self, payload: object) -> str | None:
+        if isinstance(payload, dict):
+            for key in ("message", "error_description", "error", "detail"):
+                value = payload.get(key)
+                if isinstance(value, str) and value:
+                    return value
+        if isinstance(payload, str) and payload:
+            return payload
+        return None
+
+    def _extract_error_code(self, payload: object) -> str | None:
+        if not isinstance(payload, dict):
+            return None
+        value = payload.get("code") or payload.get("error")
+        return value if isinstance(value, str) else None
+
+    def _get_retry_after_seconds(self, headers: Mapping[str, str]) -> float:
+        raw_value = headers.get("retry-after")
+        if raw_value is None:
+            return self._retry_policy.compute_backoff(1)
+        try:
+            return max(float(raw_value), 0.0)
+        except ValueError:
+            return self._retry_policy.compute_backoff(1)
+
+    def _extract_filename(self, content_disposition: str | None) -> str | None:
+        if content_disposition is None:
+            return None
+        message = Message()
+        message["content-disposition"] = content_disposition
+        filename = message.get_param("filename", header="content-disposition")
+        if isinstance(filename, tuple):
+            _, _, decoded_value = filename
+            return decoded_value
+        return filename
+
+    def _build_timeout(self, timeouts: ApiTimeouts) -> httpx.Timeout:
+        return httpx.Timeout(
+            connect=timeouts.connect,
+            read=timeouts.read,
+            write=timeouts.write,
+            pool=timeouts.pool,
+        )
+
+
+__all__ = ("Transport",)

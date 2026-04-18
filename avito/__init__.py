@@ -1,3 +1,6 @@
-from avito.client.client import Client
+"""Публичные экспорты пакета SDK для Avito."""
 
-__all__ = ("Client")
+from avito.client import AvitoClient
+from avito.config import AvitoSettings
+
+__all__ = ("AvitoClient", "AvitoSettings")

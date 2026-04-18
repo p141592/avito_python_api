@@ -5,11 +5,24 @@
 Полностью реализовать SDK для всех методов, описанных в `docs/*.json`, с архитектурой, строго соответствующей `STYLEGUIDE.md`:
 
 - публичный API только через объектный фасад `AvitoClient`;
-- отдельные слои `auth`, `core`, `section clients`, `mappers`, `errors`;
+- один публичный клиент без дерева section clients в пользовательском API;
+- отдельные слои `auth`, `core`, `domain objects`, `mappers`, `errors`;
 - публичные ответы только как `@dataclass(slots=True, frozen=True)`;
 - единый transport на `httpx.Client`;
 - централизованные retries, timeouts, обработка `401`, `4xx`, `5xx`, rate limit;
 - отсутствие `assert` и сырых `dict[str, Any]` в публичном API.
+- пользовательская документация репозитория и docstring публичных сущностей должны быть на русском языке.
+
+Целевая форма пользовательского API:
+
+```python
+avito = AvitoClient(...)
+ad = avito.ad(item_id).get()
+avito.account(user_id).get_balance()
+avito.chat(chat_id, user_id=user_id).send_message(...)
+```
+
+Доменные объекты создаются через один клиент и инкапсулируют операции своей предметной области. В публичном API не должно быть сценариев вида `client.ads.get(...)`, `client.orders.list(...)` или `client.messenger.send(...)`.
 
 ## Полный охват документации
 
@@ -34,31 +47,31 @@ Deprecated-методы из swagger не пропускать: реализов
 
 Ниже зафиксировано соответствие каждого документа и его endpoint-групп будущим пакетам SDK. Это обязательная часть плана, а не задача "на потом".
 
-| Документ | Операции | Пакет SDK | Клиент/подклиент | Этап |
+| Документ | Операции | Пакет SDK | Доменный объект | Этап |
 | --- | ---: | --- | --- | ---: |
-| `docs/Авторизация.json` | 3 | `auth` | `AuthProvider`, `TokenClient`, `LegacyTokenClient` | 3 |
-| `docs/Информацияопользователе.json` | 3 | `accounts` | `AccountsClient` | 4 |
-| `docs/ИерархияАккаунтов.json` | 5 | `accounts` | `HierarchyClient` | 4 |
-| `docs/Объявления.json` | 11 | `ads` | `AdsClient`, `StatsClient`, `VasClient` | 4 |
-| `docs/Автозагрузка.json` | 17 | `ads` | `AutoloadClient`, `AutoloadLegacyClient` | 4 |
-| `docs/Мессенджер.json` | 13 | `messenger` | `MessengerClient`, `WebhookClient`, `MediaClient` | 5 |
-| `docs/Рассылкаскидокиспецпредложенийвмессенджере.json` | 5 | `messenger` | `SpecialOffersClient` | 5 |
-| `docs/Продвижение.json` | 7 | `promotion` | `PromotionClient`, `BbipClient` | 6 |
-| `docs/TrxPromo.json` | 3 | `promotion` | `TrxPromoClient` | 6 |
-| `docs/CPA-аукцион.json` | 2 | `promotion` | `CpaAuctionClient` | 6 |
-| `docs/Настройкаценыцелевогодействия.json` | 5 | `promotion` | `TargetActionPriceClient` | 6 |
-| `docs/Автостратегия.json` | 7 | `promotion` | `AutostrategyClient` | 6 |
-| `docs/Управлениезаказами.json` | 12 | `orders` | `OrdersClient`, `LabelsClient` | 7 |
-| `docs/Доставка.json` | 31 | `orders` | `DeliveryClient`, `SandboxDeliveryClient`, `DeliveryTasksClient` | 7 |
-| `docs/Управлениеостатками.json` | 2 | `orders` | `StockClient` | 7 |
-| `docs/АвитоРабота.json` | 25 | `jobs` | `JobsClient`, `VacanciesClient`, `ApplicationsClient`, `ResumesClient`, `DictionariesClient`, `WebhookClient` | 8 |
-| `docs/CPAАвито.json` | 11 | `cpa` | `CpaClient`, `CpaLegacyClient` | 9 |
-| `docs/CallTracking[КТ].json` | 3 | `cpa` | `CallTrackingClient` | 9 |
-| `docs/Автотека.json` | 27 | `autoteka` | `AutotekaClient`, `CatalogClient`, `PreviewClient`, `ReportClient`, `ScoringClient`, `SpecificationsClient`, `MonitoringClient`, `TeaserClient`, `ValuationClient`, `PackageClient`, `SignalClient` | 10 |
-| `docs/Краткосрочнаяаренда.json` | 5 | `realty` | `RealtyClient`, `BookingsClient`, `PricesClient` | 11 |
-| `docs/Аналитикапонедвижимости.json` | 2 | `realty` | `RealtyAnalyticsClient` | 11 |
-| `docs/Рейтингииотзывы.json` | 4 | `ratings` | `RatingsClient`, `AnswersClient` | 11 |
-| `docs/Тарифы.json` | 1 | `tariffs` | `TariffsClient` | 11 |
+| `docs/Авторизация.json` | 3 | `auth` | `AvitoClient.auth()` и внутренние token flow-объекты | 3 |
+| `docs/Информацияопользователе.json` | 3 | `accounts` | `Account` | 4 |
+| `docs/ИерархияАккаунтов.json` | 5 | `accounts` | `AccountHierarchy` | 4 |
+| `docs/Объявления.json` | 11 | `ads` | `Ad`, `AdStats`, `AdPromotion` | 4 |
+| `docs/Автозагрузка.json` | 17 | `ads` | `AutoloadProfile`, `AutoloadReport`, `AutoloadLegacy` | 4 |
+| `docs/Мессенджер.json` | 13 | `messenger` | `Chat`, `ChatMessage`, `ChatWebhook`, `ChatMedia` | 5 |
+| `docs/Рассылкаскидокиспецпредложенийвмессенджере.json` | 5 | `messenger` | `SpecialOfferCampaign` | 5 |
+| `docs/Продвижение.json` | 7 | `promotion` | `PromotionOrder`, `BbipPromotion` | 6 |
+| `docs/TrxPromo.json` | 3 | `promotion` | `TrxPromotion` | 6 |
+| `docs/CPA-аукцион.json` | 2 | `promotion` | `CpaAuction` | 6 |
+| `docs/Настройкаценыцелевогодействия.json` | 5 | `promotion` | `TargetActionPricing` | 6 |
+| `docs/Автостратегия.json` | 7 | `promotion` | `AutostrategyCampaign` | 6 |
+| `docs/Управлениезаказами.json` | 12 | `orders` | `Order`, `OrderLabel` | 7 |
+| `docs/Доставка.json` | 31 | `orders` | `DeliveryOrder`, `SandboxDelivery`, `DeliveryTask` | 7 |
+| `docs/Управлениеостатками.json` | 2 | `orders` | `Stock` | 7 |
+| `docs/АвитоРабота.json` | 25 | `jobs` | `Vacancy`, `Application`, `Resume`, `JobWebhook`, `JobDictionary` | 8 |
+| `docs/CPAАвито.json` | 11 | `cpa` | `CpaLead`, `CpaChat`, `CpaCall`, `CpaLegacy` | 9 |
+| `docs/CallTracking[КТ].json` | 3 | `cpa` | `CallTrackingCall` | 9 |
+| `docs/Автотека.json` | 27 | `autoteka` | `AutotekaVehicle`, `AutotekaReport`, `AutotekaMonitoring`, `AutotekaScoring`, `AutotekaValuation` | 10 |
+| `docs/Краткосрочнаяаренда.json` | 5 | `realty` | `RealtyListing`, `RealtyBooking`, `RealtyPricing` | 11 |
+| `docs/Аналитикапонедвижимости.json` | 2 | `realty` | `RealtyAnalyticsReport` | 11 |
+| `docs/Рейтингииотзывы.json` | 4 | `ratings` | `Review`, `ReviewAnswer`, `RatingProfile` | 11 |
+| `docs/Тарифы.json` | 1 | `tariffs` | `Tariff` | 11 |
 
 Правила полноты:
 
@@ -67,7 +80,7 @@ Deprecated-методы из swagger не пропускать: реализов
   - path;
   - swagger summary;
   - target package;
-  - target client;
+  - target domain object;
   - публичный метод SDK;
   - признак `legacy/deprecated`;
   - тип request/response модели;
@@ -113,7 +126,7 @@ avito/
 
 В каждом доменном пакете:
 
-- `client.py` с section client;
+- `domain.py` с доменными объектами и их операциями;
 - `models.py` с dataclass-моделями;
 - `enums.py` для строковых констант API;
 - `mappers.py` для JSON -> dataclass;
@@ -132,6 +145,7 @@ avito/
 - Для `x-gateway`, rate-limiter и нестандартных заголовков добавить расширяемую конфигурацию transport, но скрыть детали от публичного API.
 - Сохранять обратную совместимость с текущим кодом не требуется: при конфликте старой структуры с новой архитектурой приоритет всегда у новой архитектуры из `STYLEGUIDE.md`.
 - Каждый публичный и внутренний класс должен иметь короткий обязательный docstring с описанием ответственности и контракта.
+- Пользовательская документация репозитория, `docs/*.md`, README и docstring публичных сущностей ведутся на русском языке.
 - Аномалии в swagger нормализовать в inventory:
   - дубли `/token` с невидимыми символами;
   - deprecated-версии;
@@ -142,17 +156,18 @@ avito/
 
 Что сделать:
 
-- Создать `docs/inventory.md` с перечнем всех операций: section, HTTP method, path, swagger summary, статус `deprecated`, пакет SDK, client/subclient, публичный метод SDK, тип request, тип response, тип теста.
+- Создать `docs/inventory.md` с перечнем всех операций: section, HTTP method, path, swagger summary, статус `deprecated`, пакет SDK, domain object, публичный метод SDK, тип request, тип response, тип теста.
 - Зафиксировать единый mapping `docs/*.json -> package/module`.
-- Удалить текущую смесь логики из `avito/client/client.py` и заменить на минимальный фасад, совместимый с новой архитектурой.
+- Удалить текущую смесь логики из `avito/client/client.py` и заменить на один минимальный клиент, совместимый с новой архитектурой.
 - Создать пакеты `auth`, `core` и доменные пакеты-заготовки.
-- Ввести единый стиль именования методов section clients:
+- Ввести единый стиль именования фабрик и методов доменных объектов:
+  - `avito.account(...)`, `avito.ad(...)`, `avito.chat(...)`, `avito.order(...)`, `avito.tariff(...)`;
   - `get_*`, `list_*`, `create_*`, `update_*`, `delete_*`, `apply_*`, `download_*`, `get_*_by_*`.
 
 Тесты:
 
 - Smoke-тест импорта `AvitoClient`.
-- Тест структуры фасада: `client.auth`, `client.ads`, `client.messenger`, `client.orders` и остальные разделы доступны как свойства.
+- Тест структуры единого клиента: `avito.account(...)`, `avito.ad(...)`, `avito.chat(...)`, `avito.order(...)` и другие доменные фабрики доступны как методы одного клиента.
 - Тест проверки соответствия `docs/inventory.md` исходным swagger-документам.
 
 Критерии готовности:
@@ -160,7 +175,7 @@ avito/
 - В репозитории есть полный inventory по всем swagger-операциям.
 - Inventory доказывает соответствие `каждый endpoint -> конкретный метод SDK -> конкретный тест`.
 - Новая пакетная структура создана.
-- Старый god-object больше не является точкой дальнейшей разработки.
+- Старый god-object больше не является точкой дальнейшей разработки, а новый единый клиент является единственной публичной точкой входа.
 
 ## Этап 2. Core: config, exceptions, transport, retries, pagination
 
@@ -192,7 +207,7 @@ avito/
 
 Критерии готовности:
 
-- Ни один section client не делает прямой вызов `httpx` или `requests`.
+- Ни один доменный объект не делает прямой вызов `httpx` или `requests`.
 - Все сетевые ошибки поднимаются как доменные исключения.
 - Transport покрыт regression-тестами на основные ветки поведения.
 
@@ -218,7 +233,7 @@ avito/
 Критерии готовности:
 
 - Ни один API-метод не получает токен самостоятельно.
-- Обновление токена происходит централизованно и прозрачно для section clients.
+- Обновление токена происходит централизованно и прозрачно для доменных объектов.
 
 ## Этап 4. Базовые account- и ads-разделы
 
@@ -231,7 +246,7 @@ avito/
 
 Что сделать:
 
-- Реализовать `AccountsClient` и `AdsClient`.
+- Реализовать доменные объекты `Account`, `AccountHierarchy`, `Ad`, `AdStats`, `AdPromotion`, `AutoloadProfile`, `AutoloadReport`.
 - В `accounts` покрыть:
   - `self`;
   - `balance`;
@@ -250,7 +265,7 @@ avito/
   - цены на услуги продвижения;
   - все отчеты и profile API автозагрузки;
   - `ad_ids`, `avito_ids`, tree/fields, upload by URL.
-- Для deprecated операций автозагрузки сделать `legacy`-подраздел.
+- Для deprecated операций автозагрузки сделать `legacy`-объект или `legacy`-методы с явным именованием.
 
 Тесты:
 
@@ -261,7 +276,7 @@ avito/
 
 Критерии готовности:
 
-- Пользователь может пройти сценарий `client.accounts.self()`, `client.ads.get_item(...)`, `client.ads.get_stats(...)`, `client.ads.autoload.list_reports(...)`.
+- Пользователь может пройти сценарий `avito.account(user_id).get_self()`, `avito.ad(item_id).get()`, `avito.ad(item_id).get_stats(...)`, `avito.autoload_report(report_id).get()`.
 - Все ответы этого блока возвращают dataclass-модели, а не `dict`.
 
 ## Этап 5. Messenger и messaging-adjacent API
@@ -496,7 +511,7 @@ avito/
 
 Критерии готовности:
 
-- Сложный большой API разбит на малые section clients и mappers.
+- Сложный большой API разбит на малые доменные объекты и mappers.
 - Пользователь может последовательно пройти сценарий `preview -> report -> scoring/specification`.
 
 ## Этап 11. Realty, ratings, tariffs
@@ -531,7 +546,7 @@ avito/
 Критерии готовности:
 
 - Все remaining sections из `docs/` реализованы.
-- Нет разделов swagger без соответствующего domain client.
+- Нет разделов swagger без соответствующего доменного объекта.
 
 ## Этап 12. Сквозная стабилизация, документация и релизный gate
 
@@ -559,7 +574,7 @@ avito/
 Критерии готовности:
 
 - Все этапы выше закрыты.
-- Все swagger-разделы имеют реализованные section clients, модели, мапперы и тесты.
+- Все swagger-разделы имеют реализованные доменные объекты, модели, мапперы и тесты.
 - `mypy` работает в strict-режиме или эквивалентном профиле, соответствующем `STYLEGUIDE.md`.
 - Сборка пакета проходит стабильно.
 - Все классы задокументированы обязательными docstring.

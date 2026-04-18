@@ -1,0 +1,260 @@
+from __future__ import annotations
+
+import json
+
+import httpx
+
+from avito.auth import AuthSettings
+from avito.config import AvitoSettings
+from avito.core import Transport
+from avito.core.retries import RetryPolicy
+from avito.core.types import ApiTimeouts
+from avito.promotion import (
+    AutostrategyCampaign,
+    BbipForecastRequestItem,
+    BbipOrderItem,
+    BbipPromotion,
+    CpaAuction,
+    CreateItemBid,
+    PromotionOrder,
+    TargetActionPricing,
+    TrxPromotion,
+    TrxPromotionApplyItem,
+)
+
+
+def make_transport(handler: httpx.MockTransport) -> Transport:
+    settings = AvitoSettings(
+        base_url="https://api.avito.ru",
+        auth=AuthSettings(),
+        retry_policy=RetryPolicy(),
+        timeouts=ApiTimeouts(),
+    )
+    return Transport(
+        settings,
+        auth_provider=None,
+        client=httpx.Client(transport=handler, base_url="https://api.avito.ru"),
+        sleep=lambda _: None,
+    )
+
+
+def test_promotion_dictionary_and_orders_flows() -> None:
+    def handler(request: httpx.Request) -> httpx.Response:
+        path = request.url.path
+        payload = json.loads(request.content.decode()) if request.content else None
+        if path == "/promotion/v1/items/services/dict":
+            return httpx.Response(200, json={"items": [{"code": "x2", "title": "X2"}]})
+        if path == "/promotion/v1/items/services/get":
+            assert payload == {"itemIds": [101]}
+            return httpx.Response(
+                200,
+                json={"items": [{"itemId": 101, "serviceCode": "x2", "serviceName": "X2", "price": 9900, "status": "available"}]},
+            )
+        if path == "/promotion/v1/items/services/orders/get":
+            assert payload == {"itemIds": [101]}
+            return httpx.Response(
+                200,
+                json={"items": [{"orderId": "ord-1", "itemId": 101, "serviceCode": "x2", "status": "created"}]},
+            )
+        assert path == "/promotion/v1/items/services/orders/status"
+        assert payload == {"orderIds": ["ord-1"]}
+        return httpx.Response(200, json={"items": [{"orderId": "ord-1", "status": "processed"}]})
+
+    promotion = PromotionOrder(make_transport(httpx.MockTransport(handler)), resource_id="ord-1")
+
+    dictionary = promotion.get_service_dictionary()
+    services = promotion.list_services(item_ids=[101])
+    orders = promotion.list_orders(item_ids=[101])
+    statuses = promotion.get_order_status()
+
+    assert dictionary.items[0].code == "x2"
+    assert services.items[0].price == 9900
+    assert orders.items[0].order_id == "ord-1"
+    assert statuses.items[0].status == "processed"
+
+
+def test_bbip_and_trxpromo_flows() -> None:
+    def handler(request: httpx.Request) -> httpx.Response:
+        path = request.url.path
+        payload = json.loads(request.content.decode()) if request.content else None
+        if path == "/promotion/v1/items/services/bbip/forecasts/get":
+            assert payload == {"items": [{"itemId": 101, "duration": 7, "price": 1000, "oldPrice": 1200}]}
+            return httpx.Response(200, json={"items": [{"itemId": 101, "min": 10, "max": 25, "totalPrice": 7000, "totalOldPrice": 8400}]})
+        if path == "/promotion/v1/items/services/bbip/orders/create":
+            assert request.method == "PUT"
+            assert payload == {"items": [{"itemId": 101, "duration": 7, "price": 1000, "oldPrice": 1200}]}
+            return httpx.Response(200, json={"items": [{"itemId": 101, "success": True, "status": "created"}]})
+        if path == "/promotion/v1/items/services/bbip/suggests/get":
+            assert payload == {"itemIds": [101]}
+            return httpx.Response(
+                200,
+                json={
+                    "items": [
+                        {
+                            "itemId": 101,
+                            "duration": {"from": 1, "to": 7, "recommended": 5},
+                            "budgets": [{"price": 1000, "oldPrice": 1200, "isRecommended": True}],
+                        }
+                    ]
+                },
+            )
+        if path == "/trx-promo/1/apply":
+            assert payload == {"items": [{"itemID": 101, "commission": 1500, "dateFrom": "2026-04-18"}]}
+            return httpx.Response(200, json={"success": {"items": [{"itemID": 101, "success": True}]}})
+        if path == "/trx-promo/1/cancel":
+            assert payload == {"items": [{"itemID": 101}]}
+            return httpx.Response(200, json={"success": {"items": [{"itemID": 101, "success": True}]}})
+        assert path == "/trx-promo/1/commissions"
+        assert request.url.params["itemIDs"] == "101"
+        return httpx.Response(
+            200,
+            json={
+                "success": {
+                    "items": [
+                        {
+                            "itemID": 101,
+                            "commission": 1500,
+                            "isActive": True,
+                            "validCommissionRange": {"valueMin": 100, "valueMax": 2000, "step": 100},
+                        }
+                    ]
+                }
+            },
+        )
+
+    transport = make_transport(httpx.MockTransport(handler))
+    bbip = BbipPromotion(transport, resource_id=101)
+    trx = TrxPromotion(transport, resource_id=101)
+
+    forecasts = bbip.get_forecasts(items=[BbipForecastRequestItem(item_id=101, duration=7, price=1000, old_price=1200)])
+    order_result = bbip.create_order(items=[BbipOrderItem(item_id=101, duration=7, price=1000, old_price=1200)])
+    suggests = bbip.get_suggests()
+    applied = trx.apply(items=[TrxPromotionApplyItem(item_id=101, commission=1500, date_from="2026-04-18")])
+    cancelled = trx.delete()
+    commissions = trx.get_commissions()
+
+    assert forecasts.items[0].max_views == 25
+    assert order_result.items[0].status == "created"
+    assert suggests.items[0].duration is not None and suggests.items[0].duration.recommended == 5
+    assert applied.items[0].success is True
+    assert cancelled.items[0].success is True
+    assert commissions.items[0].valid_commission_range is not None
+    assert commissions.items[0].valid_commission_range.value_max == 2000
+
+
+def test_cpa_auction_and_target_action_pricing_flows() -> None:
+    def handler(request: httpx.Request) -> httpx.Response:
+        path = request.url.path
+        payload = json.loads(request.content.decode()) if request.content else None
+        if path == "/auction/1/bids" and request.method == "GET":
+            assert request.url.params["fromItemID"] == "100"
+            assert request.url.params["batchSize"] == "50"
+            return httpx.Response(
+                200,
+                json={
+                    "items": [
+                        {
+                            "itemID": 101,
+                            "pricePenny": 1300,
+                            "expirationTime": "2026-04-18T10:00:00+03:00",
+                            "availablePrices": [{"pricePenny": 1200, "goodness": 1}],
+                        }
+                    ]
+                },
+            )
+        if path == "/auction/1/bids":
+            assert payload == {"items": [{"itemID": 101, "pricePenny": 1500}]}
+            return httpx.Response(200, json={"items": [{"itemID": 101, "success": True}]})
+        if path == "/cpxpromo/1/getBids/101":
+            return httpx.Response(
+                200,
+                json={"items": [{"itemID": 101, "actionTypeID": 5, "bidPenny": 1400, "availableBids": [{"valuePenny": 1500, "minForecast": 2, "maxForecast": 5, "compare": 10}]}]},
+            )
+        if path == "/cpxpromo/1/getPromotionsByItemIds":
+            assert payload == {"itemIDs": [101, 102]}
+            return httpx.Response(200, json={"items": [{"itemID": 102, "actionTypeID": 7, "budgetPenny": 9000, "budgetType": "7d", "isAuto": True}]})
+        if path == "/cpxpromo/1/remove":
+            assert payload == {"itemID": 101}
+            return httpx.Response(200, json={"items": [{"itemID": 101, "success": True, "status": "removed"}]})
+        if path == "/cpxpromo/1/setAuto":
+            assert payload == {"itemID": 101, "actionTypeID": 5, "budgetPenny": 8000, "budgetType": "7d"}
+            return httpx.Response(200, json={"items": [{"itemID": 101, "success": True, "status": "auto"}]})
+        assert path == "/cpxpromo/1/setManual"
+        assert payload == {"itemID": 101, "actionTypeID": 5, "bidPenny": 1500, "limitPenny": 15000}
+        return httpx.Response(200, json={"items": [{"itemID": 101, "success": True, "status": "manual"}]})
+
+    transport = make_transport(httpx.MockTransport(handler))
+    auction = CpaAuction(transport)
+    pricing = TargetActionPricing(transport, resource_id=101)
+
+    bids = auction.get_user_bids(from_item_id=100, batch_size=50)
+    saved = auction.create_item_bids(items=[CreateItemBid(item_id=101, price_penny=1500)])
+    details = pricing.get_bids()
+    promotions = pricing.get_promotions_by_item_ids(item_ids=[101, 102])
+    removed = pricing.delete()
+    auto = pricing.update_auto(action_type_id=5, budget_penny=8000, budget_type="7d")
+    manual = pricing.update_manual(action_type_id=5, bid_penny=1500, limit_penny=15000)
+
+    assert bids.items[0].available_prices[0].price_penny == 1200
+    assert saved.items[0].success is True
+    assert details.items[0].available_bids[0].compare == 10
+    assert promotions.items[0].is_auto is True
+    assert removed.items[0].status == "removed"
+    assert auto.items[0].status == "auto"
+    assert manual.items[0].status == "manual"
+
+
+def test_autostrategy_flows() -> None:
+    def handler(request: httpx.Request) -> httpx.Response:
+        path = request.url.path
+        payload = json.loads(request.content.decode()) if request.content else None
+        if path == "/autostrategy/v1/budget":
+            assert payload == {"listingFee": 1000}
+            return httpx.Response(
+                200,
+                json={
+                    "budgetId": "budget-1",
+                    "budget": {
+                        "recommended": {"total": 10100, "real": 10000, "bonus": 100, "viewsFrom": 30, "viewsTo": 50},
+                        "minimal": {"total": 5100, "real": 5000, "bonus": 100},
+                        "priceRanges": [{"priceFrom": 10000, "priceTo": 20000, "percent": 90, "viewsFrom": 20, "viewsTo": 40}],
+                    },
+                },
+            )
+        if path == "/autostrategy/v1/campaign/create":
+            assert payload == {"title": "Весенняя кампания", "budgetId": "budget-1"}
+            return httpx.Response(200, json={"campaignId": 77, "status": "created"})
+        if path == "/autostrategy/v1/campaign/edit":
+            assert payload == {"campaignId": 77, "title": "Обновленная кампания"}
+            return httpx.Response(200, json={"campaignId": 77, "status": "updated"})
+        if path == "/autostrategy/v1/campaign/info":
+            assert payload == {"campaignId": 77}
+            return httpx.Response(200, json={"campaign": {"campaignId": 77, "campaignType": "AS", "status": "active", "budget": 10000, "balance": 9000}})
+        if path == "/autostrategy/v1/campaign/stop":
+            assert payload == {"campaignId": 77}
+            return httpx.Response(200, json={"campaignId": 77, "status": "stopped"})
+        if path == "/autostrategy/v1/campaigns":
+            assert payload == {"status": "active"}
+            return httpx.Response(200, json={"items": [{"campaignId": 77, "campaignType": "AS", "status": "active", "budget": 10000}]})
+        assert path == "/autostrategy/v1/stat"
+        assert payload == {"campaignId": 77}
+        return httpx.Response(200, json={"stat": {"campaignId": 77, "views": 500, "contacts": 30, "spend": 4500}})
+
+    campaign = AutostrategyCampaign(make_transport(httpx.MockTransport(handler)), resource_id=77)
+
+    budget = campaign.create_budget(payload={"listingFee": 1000})
+    created = campaign.create(payload={"title": "Весенняя кампания", "budgetId": "budget-1"})
+    updated = campaign.update(payload={"campaignId": 77, "title": "Обновленная кампания"})
+    info = campaign.get()
+    stopped = campaign.delete()
+    campaigns = campaign.list(payload={"status": "active"})
+    stat = campaign.get_stat()
+
+    assert budget.budget_id == "budget-1"
+    assert budget.recommended is not None and budget.recommended.total == 10100
+    assert created.status == "created"
+    assert updated.status == "updated"
+    assert info.balance == 9000
+    assert stopped.status == "stopped"
+    assert campaigns.items[0].campaign_id == 77
+    assert stat.spend == 4500
