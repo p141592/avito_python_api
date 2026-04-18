@@ -33,15 +33,14 @@
 5. Выполнены команды:
 
 ```bash
-poetry run pytest
-poetry run mypy avito
-poetry run ruff check .
-poetry build
+make check
 ```
 
 6. Обновлён `CHANGELOG.md`.
 7. Проверены docstring публичных сущностей, затронутых изменениями.
 8. Проверено, что `debug_info()` не раскрывает секреты.
+9. GitHub Actions workflow для Python `3.14` проходит на ветке с релизом.
+10. Для публикации настроен GitHub secret `PYPI_API_TOKEN`.
 
 ## Запреты перед публикацией
 
@@ -50,4 +49,6 @@ poetry build
 - хотя бы один swagger-endpoint не сопоставлен inventory;
 - публичный метод возвращает сырой JSON вместо модели SDK;
 - `mypy` strict или эквивалентный профиль не проходит;
+- релизная ветка не проходит CI на Python `3.14`;
+- tag релиза не совпадает с версией в `pyproject.toml`;
 - сборка требует ручных локальных правок после запуска `poetry build`.

@@ -2,12 +2,14 @@
 
 ## Project Structure & Module Organization
 
-The package lives in `avito/`. Current modules are small and flat:
+The package lives in `avito/`. The repository already contains a domain-oriented SDK layout:
 
-- `avito/client/` contains the API client entry point.
-- `avito/settings.py` loads credentials from environment variables.
-- `avito/messages/` is the start of domain-specific models.
+- `avito/client/` contains the top-level SDK entry point.
+- `avito/core/` contains shared transport, retry, exception, pagination, and shared type abstractions.
+- `avito/auth/` contains auth settings, token clients, and auth provider logic.
+- `avito/<domain>/` packages such as `accounts/`, `ads/`, `messenger/`, `orders/`, `jobs/`, `cpa/`, `autoteka/`, `realty/`, `ratings/`, `tariffs/`, and `promotion/` contain domain models, mappers, enums, and domain clients.
 - `docs/` stores Avito API reference payloads and examples in JSON/Markdown.
+- `tests/` contains regression and release-gate coverage.
 
 Keep new code inside the `avito/` package and group it by API area (`ads/`, `messenger/`, `orders/`) as described in `STYLEGUIDE.md`. Avoid adding raw integration logic to `__init__.py`.
 
@@ -15,10 +17,12 @@ Keep new code inside the `avito/` package and group it by API area (`ads/`, `mes
 
 - `poetry install` installs runtime and developer dependencies.
 - `poetry run python -m avito` runs the package entry point if you add CLI behavior.
+- `make check` runs the repository quality gate: tests, mypy, ruff, and build.
+- `make fmt` formats the code with Ruff.
 - `poetry build` builds the wheel and source distribution.
-- `make pypi` builds and publishes the package to PyPI.
+- `make release` publishes the package after the quality gate passes.
 
-There is no dedicated local server or demo app in this repository. Treat `poetry build` as the minimum release validation step.
+There is no dedicated local server or demo app in this repository. Treat `make check` as the minimum release validation step.
 
 ## Coding Style & Naming Conventions
 
@@ -33,9 +37,9 @@ Target Python is `3.14` and dependency management is handled by Poetry. Follow `
 
 ## Testing Guidelines
 
-Automated tests are not set up yet. Add new tests under `tests/` with `test_*.py` names and mirror the package structure, for example `tests/client/test_client.py`.
+Automated tests are already set up under `tests/`. Add new tests with `test_*.py` names and mirror the package structure when possible, for example `tests/client/test_client.py`.
 
-When adding behavior, include at least one regression test and run it with `poetry run pytest` once `pytest` is added to the project. For API-facing changes, cover auth failures, retry behavior, and response mapping.
+When adding behavior, include at least one regression test and run `make check`. For API-facing changes, cover auth failures, retry behavior, and response mapping.
 
 ## Commit & Pull Request Guidelines
 

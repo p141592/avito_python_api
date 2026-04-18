@@ -1,5 +1,7 @@
 # SDK для Avito
 
+[![CI](https://github.com/p141592/avito/actions/workflows/ci.yml/badge.svg)](https://github.com/p141592/avito/actions/workflows/ci.yml)
+
 `avito-py` — Python SDK для работы с Avito API через единый объектный фасад `AvitoClient`.
 
 Цели SDK:
@@ -20,6 +22,8 @@ poetry add avito-py
 ```bash
 pip install avito-py
 ```
+
+Требование к интерпретатору: Python `3.14` и выше в рамках ветки `3.x`. Репозиторий и релизный контур валидируются именно на Python `3.14`.
 
 ## Быстрый старт
 
@@ -164,10 +168,37 @@ client.close()
 Минимальный релизный набор:
 
 ```bash
-poetry run pytest
-poetry run mypy avito
-poetry run ruff check .
-poetry build
+make check
+```
+
+Для локальной разработки команды разделены:
+
+```bash
+make fmt
+make lint
+make typecheck
+make test
+make build
+```
+
+## GitHub Actions
+
+Для репозитория настроены два workflow:
+
+- `CI` запускается на каждый `push` в `main`/`master` и на каждый `pull_request`, выполняет `make check`.
+- `Release` запускается при пуше тега вида `v*`, повторно выполняет `make check`, сверяет тег с версией в `pyproject.toml`, публикует пакет на PyPI и создаёт GitHub Release.
+
+Для публикации релиза нужно добавить secret:
+
+- `PYPI_API_TOKEN` — токен публикации в PyPI для `poetry publish`.
+
+Порядок релиза:
+
+```bash
+poetry version patch
+git commit -am "Релиз 1.0.2"
+git tag v1.0.2
+git push origin main --tags
 ```
 
 ## Документация репозитория

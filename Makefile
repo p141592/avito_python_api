@@ -3,7 +3,10 @@ export
 
 REGISTRY=10.11.0.9:5000
 
-build: test lock clean linter
+check: test typecheck lint build
+
+build: clean
+	poetry build
 
 clean:
 	rm -rf dist
@@ -14,21 +17,26 @@ lock:
 test: 
 	poetry run pytest
 
+typecheck:
+	poetry run mypy avito
+
 profile: 
 	poetry run pytest --profile-svg
 
-linter:
+fmt:
 	poetry run ruff format .
+
+lint:
 	poetry run ruff check .
 
-minor: build
+minor: check
 	poetry version minor
 
-patch: build
+patch: check
 	poetry version patch
 
-major: build
+major: check
 	poetry version major
 
 release: patch
-	poetry build && poetry publish
+	poetry publish
