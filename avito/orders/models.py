@@ -13,14 +13,192 @@ from avito.core.serialization import enable_module_serialization
 
 @dataclass(slots=True, frozen=True)
 class OrdersRequest:
-    """Унифицированный typed request для Orders API."""
+    """Временный generic request для ещё не мигрированных endpoints orders."""
 
     payload: Mapping[str, object]
 
     def to_payload(self) -> dict[str, object]:
-        """Сериализует payload запроса."""
-
         return dict(self.payload)
+
+
+@dataclass(slots=True, frozen=True)
+class OrderMarkingsRequest:
+    """Запрос обновления маркировок заказа."""
+
+    order_id: str
+    codes: list[str]
+
+    def to_payload(self) -> dict[str, object]:
+        return {"orderId": self.order_id, "codes": list(self.codes)}
+
+
+@dataclass(slots=True, frozen=True)
+class OrderAcceptReturnRequest:
+    """Запрос подтверждения возврата заказа."""
+
+    order_id: str
+    postal_office_id: str
+
+    def to_payload(self) -> dict[str, object]:
+        return {"orderId": self.order_id, "postalOfficeId": self.postal_office_id}
+
+
+@dataclass(slots=True, frozen=True)
+class OrderApplyTransitionRequest:
+    """Запрос перехода заказа в другой статус."""
+
+    order_id: str
+    transition: str
+
+    def to_payload(self) -> dict[str, object]:
+        return {"orderId": self.order_id, "transition": self.transition}
+
+
+@dataclass(slots=True, frozen=True)
+class OrderConfirmationCodeRequest:
+    """Запрос проверки кода подтверждения заказа."""
+
+    order_id: str
+    code: str
+
+    def to_payload(self) -> dict[str, object]:
+        return {"orderId": self.order_id, "code": self.code}
+
+
+@dataclass(slots=True, frozen=True)
+class OrderCncDetailsRequest:
+    """Запрос установки деталей cnc-заказа."""
+
+    order_id: str
+    pickup_point_id: str
+
+    def to_payload(self) -> dict[str, object]:
+        return {"orderId": self.order_id, "pickupPointId": self.pickup_point_id}
+
+
+@dataclass(slots=True, frozen=True)
+class OrderCourierRangeRequest:
+    """Запрос установки интервала курьерской доставки."""
+
+    order_id: str
+    interval_id: str
+
+    def to_payload(self) -> dict[str, object]:
+        return {"orderId": self.order_id, "intervalId": self.interval_id}
+
+
+@dataclass(slots=True, frozen=True)
+class OrderTrackingNumberRequest:
+    """Запрос установки трек-номера."""
+
+    order_id: str
+    tracking_number: str
+
+    def to_payload(self) -> dict[str, object]:
+        return {"orderId": self.order_id, "trackingNumber": self.tracking_number}
+
+
+@dataclass(slots=True, frozen=True)
+class OrderLabelsRequest:
+    """Запрос генерации этикеток."""
+
+    order_ids: list[str]
+
+    def to_payload(self) -> dict[str, object]:
+        return {"orderIds": list(self.order_ids)}
+
+
+@dataclass(slots=True, frozen=True)
+class DeliveryAnnouncementRequest:
+    """Запрос создания или отмены анонса доставки."""
+
+    order_id: str
+
+    def to_payload(self) -> dict[str, object]:
+        return {"orderId": self.order_id}
+
+
+@dataclass(slots=True, frozen=True)
+class DeliveryParcelRequest:
+    """Запрос создания посылки."""
+
+    order_id: str
+    parcel_id: str
+
+    def to_payload(self) -> dict[str, object]:
+        return {"orderId": self.order_id, "parcelId": self.parcel_id}
+
+
+@dataclass(slots=True, frozen=True)
+class DeliveryParcelResultRequest:
+    """Запрос передачи результата по посылке."""
+
+    parcel_id: str
+    result: str
+
+    def to_payload(self) -> dict[str, object]:
+        return {"parcelId": self.parcel_id, "result": self.result}
+
+
+@dataclass(slots=True, frozen=True)
+class DeliveryParcelIdsRequest:
+    """Запрос пакетной операции по посылкам."""
+
+    parcel_ids: list[str]
+
+    def to_payload(self) -> dict[str, object]:
+        return {"parcelIds": list(self.parcel_ids)}
+
+
+@dataclass(slots=True, frozen=True)
+class SandboxArea:
+    """Зона sandbox-доставки."""
+
+    city: str
+
+    def to_payload(self) -> dict[str, object]:
+        return {"city": self.city}
+
+
+@dataclass(slots=True, frozen=True)
+class SandboxAreasRequest:
+    """Запрос добавления зон sandbox-доставки."""
+
+    areas: list[SandboxArea]
+
+    def to_payload(self) -> dict[str, object]:
+        return {"areas": [area.to_payload() for area in self.areas]}
+
+
+@dataclass(slots=True, frozen=True)
+class StockInfoRequest:
+    """Запрос текущих остатков."""
+
+    item_ids: list[int]
+
+    def to_payload(self) -> dict[str, object]:
+        return {"itemIds": list(self.item_ids)}
+
+
+@dataclass(slots=True, frozen=True)
+class StockUpdateEntry:
+    """Остаток по одному объявлению."""
+
+    item_id: int
+    quantity: int
+
+    def to_payload(self) -> dict[str, object]:
+        return {"item_id": self.item_id, "quantity": self.quantity}
+
+
+@dataclass(slots=True, frozen=True)
+class StockUpdateRequest:
+    """Запрос обновления остатков."""
+
+    stocks: list[StockUpdateEntry]
+
+    def to_payload(self) -> dict[str, object]:
+        return {"stocks": [stock.to_payload() for stock in self.stocks]}
 
 
 @dataclass(slots=True, frozen=True)

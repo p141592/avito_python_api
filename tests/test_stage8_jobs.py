@@ -10,7 +10,21 @@ from avito.core import Transport
 from avito.core.retries import RetryPolicy
 from avito.core.types import ApiTimeouts
 from avito.jobs import Application, JobDictionary, JobWebhook, Resume, Vacancy
-from avito.jobs.models import JobsQuery, JobsRequest
+from avito.jobs.models import (
+    ApplicationActionRequest,
+    ApplicationIdsQuery,
+    ApplicationIdsRequest,
+    ApplicationViewedItem,
+    ApplicationViewedRequest,
+    JobWebhookUpdateRequest,
+    ResumeSearchQuery,
+    VacancyArchiveRequest,
+    VacancyAutoRenewalRequest,
+    VacancyCreateRequest,
+    VacancyIdsRequest,
+    VacancyProlongateRequest,
+    VacancyUpdateRequest,
+)
 
 
 def make_transport(handler: httpx.MockTransport) -> Transport:
@@ -89,13 +103,19 @@ def test_applications_and_webhooks_flows() -> None:
     application = Application(transport, resource_id="app-1")
     webhook = JobWebhook(transport)
 
-    ids = application.list(query=JobsQuery(params={"updatedAtFrom": "2026-04-18"}))
-    applications = application.list(request=JobsRequest(payload={"ids": ["app-1"]}))
+    ids = application.list(query=ApplicationIdsQuery(updated_at_from="2026-04-18"))
+    applications = application.list(request=ApplicationIdsRequest(ids=["app-1"]))
     states = application.get_states()
-    viewed = application.update(request=JobsRequest(payload={"applies": [{"id": "app-1", "is_viewed": True}]}))
-    applied = application.apply(request=JobsRequest(payload={"ids": ["app-1"], "action": "invited"}))
+    viewed = application.update(
+        request=ApplicationViewedRequest(
+            applies=[ApplicationViewedItem(id="app-1", is_viewed=True)]
+        )
+    )
+    applied = application.apply(request=ApplicationActionRequest(ids=["app-1"], action="invited"))
     current_hook = webhook.get()
-    updated_hook = webhook.update(request=JobsRequest(payload={"url": "https://example.com/job"}))
+    updated_hook = webhook.update(
+        request=JobWebhookUpdateRequest(url="https://example.com/job")
+    )
     deleted_hook = webhook.delete(url="https://example.com/job")
     hooks = webhook.list()
 
@@ -147,7 +167,7 @@ def test_resume_flows() -> None:
 
     resume = Resume(make_transport(httpx.MockTransport(handler)), resource_id="res-1")
 
-    results = resume.list(query=JobsQuery(params={"query": "оператор"}))
+    results = resume.list(query=ResumeSearchQuery(query="оператор"))
     contacts = resume.get_contacts()
     item = resume.get()
 
@@ -226,25 +246,25 @@ def test_vacancy_v1_v2_flows() -> None:
 
     vacancy = Vacancy(make_transport(httpx.MockTransport(handler)), resource_id="101")
 
-    created_v1 = vacancy.create(request=JobsRequest(payload={"title": "Продавец"}), version=1)
+    created_v1 = vacancy.create(request=VacancyCreateRequest(title="Продавец"), version=1)
     updated_v1 = vacancy.update(
-        request=JobsRequest(payload={"title": "Старший продавец"}),
+        request=VacancyUpdateRequest(title="Старший продавец"),
         version=1,
     )
-    archived_v1 = vacancy.delete(request=JobsRequest(payload={"employee_id": 7}))
-    prolonged_v1 = vacancy.prolongate(request=JobsRequest(payload={"billing_type": "package"}))
+    archived_v1 = vacancy.delete(request=VacancyArchiveRequest(employee_id=7))
+    prolonged_v1 = vacancy.prolongate(request=VacancyProlongateRequest(billing_type="package"))
     list_v2 = vacancy.list()
-    created_v2 = vacancy.create(request=JobsRequest(payload={"title": "Вакансия v2"}))
-    batch_v2 = vacancy.get_by_ids(request=JobsRequest(payload={"ids": [101]}))
-    statuses_v2 = vacancy.get_statuses(request=JobsRequest(payload={"ids": [101]}))
+    created_v2 = vacancy.create(request=VacancyCreateRequest(title="Вакансия v2"))
+    batch_v2 = vacancy.get_by_ids(request=VacancyIdsRequest(ids=[101]))
+    statuses_v2 = vacancy.get_statuses(request=VacancyIdsRequest(ids=[101]))
     updated_v2 = vacancy.update(
-        request=JobsRequest(payload={"title": "Вакансия v2 updated"}),
+        request=VacancyUpdateRequest(title="Вакансия v2 updated"),
         version=2,
         vacancy_uuid="vac-uuid-1",
     )
     item_v2 = vacancy.get()
     auto_renewal = vacancy.update_auto_renewal(
-        request=JobsRequest(payload={"auto_renewal": True}),
+        request=VacancyAutoRenewalRequest(auto_renewal=True),
         vacancy_uuid="vac-uuid-1",
     )
 

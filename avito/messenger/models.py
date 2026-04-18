@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from collections.abc import Mapping
 from dataclasses import dataclass, field
+from typing import BinaryIO
 
 from avito.core.serialization import enable_module_serialization
 
@@ -130,6 +131,31 @@ class UploadImagesResult:
 
     items: list[UploadImageResult]
     _payload: Mapping[str, object] = field(default_factory=dict)
+
+
+@dataclass(slots=True, frozen=True)
+class UploadImageFile:
+    """Файл изображения для загрузки в мессенджер."""
+
+    field_name: str
+    filename: str
+    content: bytes | BinaryIO
+    content_type: str
+
+
+@dataclass(slots=True, frozen=True)
+class UploadImagesRequest:
+    """Запрос загрузки изображений для сообщений."""
+
+    files: list[UploadImageFile]
+
+    def to_files(self) -> dict[str, object]:
+        """Сериализует multipart-структуру для transport."""
+
+        return {
+            file.field_name: (file.filename, file.content, file.content_type)
+            for file in self.files
+        }
 
 
 @dataclass(slots=True, frozen=True)
@@ -328,6 +354,8 @@ __all__ = (
     "TariffInfo",
     "UnsubscribeWebhookRequest",
     "UpdateWebhookRequest",
+    "UploadImageFile",
+    "UploadImagesRequest",
     "UploadImageResult",
     "UploadImagesResult",
     "VoiceFile",

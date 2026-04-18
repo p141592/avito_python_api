@@ -9,10 +9,13 @@ from avito.realty.client import RealtyAnalyticsClient, ShortTermRentClient
 from avito.realty.models import (
     RealtyActionResult,
     RealtyAnalyticsInfo,
+    RealtyBaseParamsUpdateRequest,
+    RealtyBookingsUpdateRequest,
     RealtyBookingsQuery,
     RealtyBookingsResult,
+    RealtyIntervalsRequest,
     RealtyMarketPriceInfo,
-    RealtyRequest,
+    RealtyPricesUpdateRequest,
 )
 
 
@@ -30,11 +33,11 @@ class RealtyListing(DomainObject):
     resource_id: int | str | None = None
     user_id: int | str | None = None
 
-    def get_intervals(self, *, request: RealtyRequest) -> RealtyActionResult:
+    def get_intervals(self, *, request: RealtyIntervalsRequest) -> RealtyActionResult:
         return ShortTermRentClient(self.transport).get_intervals(request)
 
     def update_base_params(
-        self, *, request: RealtyRequest, item_id: int | str | None = None
+        self, *, request: RealtyBaseParamsUpdateRequest, item_id: int | str | None = None
     ) -> RealtyActionResult:
         return ShortTermRentClient(self.transport).update_base_params(
             item_id=item_id or self._require_item_id(),
@@ -57,7 +60,7 @@ class RealtyBooking(DomainObject):
     def update_bookings_info(
         self,
         *,
-        request: RealtyRequest,
+        request: RealtyBookingsUpdateRequest,
         user_id: int | str | None = None,
         item_id: int | str | None = None,
     ) -> RealtyActionResult:
@@ -107,7 +110,7 @@ class RealtyPricing(DomainObject):
     def update_realty_prices(
         self,
         *,
-        request: RealtyRequest,
+        request: RealtyPricesUpdateRequest,
         user_id: int | str | None = None,
         item_id: int | str | None = None,
     ) -> RealtyActionResult:

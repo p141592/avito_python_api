@@ -9,10 +9,13 @@ from avito.realty.mappers import map_action, map_analytics_report, map_bookings,
 from avito.realty.models import (
     RealtyActionResult,
     RealtyAnalyticsInfo,
+    RealtyBaseParamsUpdateRequest,
+    RealtyBookingsUpdateRequest,
     RealtyBookingsQuery,
     RealtyBookingsResult,
+    RealtyIntervalsRequest,
     RealtyMarketPriceInfo,
-    RealtyRequest,
+    RealtyPricesUpdateRequest,
 )
 
 
@@ -23,7 +26,7 @@ class ShortTermRentClient:
     transport: Transport
 
     def update_bookings_info(
-        self, *, user_id: int | str, item_id: int | str, request: RealtyRequest
+        self, *, user_id: int | str, item_id: int | str, request: RealtyBookingsUpdateRequest
     ) -> RealtyActionResult:
         payload = self.transport.request_json(
             "POST",
@@ -45,7 +48,7 @@ class ShortTermRentClient:
         return map_bookings(payload)
 
     def update_realty_prices(
-        self, *, user_id: int | str, item_id: int | str, request: RealtyRequest
+        self, *, user_id: int | str, item_id: int | str, request: RealtyPricesUpdateRequest
     ) -> RealtyActionResult:
         payload = self.transport.request_json(
             "POST",
@@ -55,7 +58,7 @@ class ShortTermRentClient:
         )
         return map_action(payload)
 
-    def get_intervals(self, request: RealtyRequest) -> RealtyActionResult:
+    def get_intervals(self, request: RealtyIntervalsRequest) -> RealtyActionResult:
         payload = self.transport.request_json(
             "POST",
             "/realty/v1/items/intervals",
@@ -65,7 +68,7 @@ class ShortTermRentClient:
         return map_action(payload)
 
     def update_base_params(
-        self, *, item_id: int | str, request: RealtyRequest
+        self, *, item_id: int | str, request: RealtyBaseParamsUpdateRequest
     ) -> RealtyActionResult:
         payload = self.transport.request_json(
             "POST",

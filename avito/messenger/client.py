@@ -38,6 +38,7 @@ from avito.messenger.models import (
     TariffInfo,
     UnsubscribeWebhookRequest,
     UpdateWebhookRequest,
+    UploadImagesRequest,
     UploadImagesResult,
     VoiceFilesResult,
     WebhookActionResult,
@@ -197,7 +198,7 @@ class MediaClient:
         self,
         *,
         user_id: int,
-        files: dict[str, object],
+        request: UploadImagesRequest,
     ) -> UploadImagesResult:
         """Загружает изображения для сообщений."""
 
@@ -205,7 +206,7 @@ class MediaClient:
             "POST",
             f"/messenger/v1/accounts/{user_id}/uploadImages",
             context=RequestContext("messenger.media.upload_images", allow_retry=True),
-            files=files,
+            files=request.to_files(),
         )
         return map_upload_images(payload)
 

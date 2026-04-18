@@ -23,22 +23,33 @@ from avito.jobs.mappers import (
     map_vacancy_statuses,
 )
 from avito.jobs.models import (
+    ApplicationActionRequest,
     ApplicationIdsResult,
+    ApplicationIdsQuery,
+    ApplicationIdsRequest,
     ApplicationsResult,
     ApplicationStatesResult,
+    ApplicationViewedRequest,
     JobActionResult,
     JobDictionariesResult,
     JobDictionaryValuesResult,
-    JobsQuery,
-    JobsRequest,
+    JobWebhookUpdateRequest,
     JobWebhookInfo,
     JobWebhooksResult,
     ResumeContactInfo,
     ResumeInfo,
+    ResumeSearchQuery,
     ResumesResult,
     VacanciesResult,
     VacancyInfo,
+    VacancyArchiveRequest,
+    VacancyAutoRenewalRequest,
+    VacancyCreateRequest,
+    VacancyIdsRequest,
+    VacancyProlongateRequest,
+    VacanciesQuery,
     VacancyStatusesResult,
+    VacancyUpdateRequest,
 )
 
 
@@ -48,12 +59,12 @@ class ApplicationsClient:
 
     transport: Transport
 
-    def apply_actions(self, request: JobsRequest) -> JobActionResult:
+    def apply_actions(self, request: ApplicationActionRequest) -> JobActionResult:
         return self._post_action(
             "/job/v1/applications/apply_actions", "jobs.applications.apply_actions", request
         )
 
-    def get_by_ids(self, request: JobsRequest) -> ApplicationsResult:
+    def get_by_ids(self, request: ApplicationIdsRequest) -> ApplicationsResult:
         return request_public_model(
             self.transport,
             "POST",
@@ -63,7 +74,7 @@ class ApplicationsClient:
             json_body=request.to_payload(),
         )
 
-    def get_ids(self, *, query: JobsQuery) -> ApplicationIdsResult:
+    def get_ids(self, *, query: ApplicationIdsQuery) -> ApplicationIdsResult:
         return request_public_model(
             self.transport,
             "GET",
@@ -82,12 +93,17 @@ class ApplicationsClient:
             mapper=map_application_states,
         )
 
-    def set_is_viewed(self, request: JobsRequest) -> JobActionResult:
+    def set_is_viewed(self, request: ApplicationViewedRequest) -> JobActionResult:
         return self._post_action(
             "/job/v1/applications/set_is_viewed", "jobs.applications.set_is_viewed", request
         )
 
-    def _post_action(self, path: str, operation: str, request: JobsRequest) -> JobActionResult:
+    def _post_action(
+        self,
+        path: str,
+        operation: str,
+        request: ApplicationActionRequest | ApplicationViewedRequest,
+    ) -> JobActionResult:
         return request_public_model(
             self.transport,
             "POST",
@@ -113,7 +129,7 @@ class WebhookClient:
             mapper=map_job_webhook,
         )
 
-    def put_webhook(self, request: JobsRequest) -> JobWebhookInfo:
+    def put_webhook(self, request: JobWebhookUpdateRequest) -> JobWebhookInfo:
         return request_public_model(
             self.transport,
             "PUT",
@@ -149,7 +165,7 @@ class ResumeClient:
 
     transport: Transport
 
-    def search(self, *, query: JobsQuery | None = None) -> ResumesResult:
+    def search(self, *, query: ResumeSearchQuery | None = None) -> ResumesResult:
         return request_public_model(
             self.transport,
             "GET",
@@ -184,7 +200,7 @@ class VacanciesClient:
 
     transport: Transport
 
-    def create_v1(self, request: JobsRequest) -> JobActionResult:
+    def create_v1(self, request: VacancyCreateRequest) -> JobActionResult:
         return request_public_model(
             self.transport,
             "POST",
@@ -194,7 +210,12 @@ class VacanciesClient:
             json_body=request.to_payload(),
         )
 
-    def archive_v1(self, *, vacancy_id: int | str, request: JobsRequest) -> JobActionResult:
+    def archive_v1(
+        self,
+        *,
+        vacancy_id: int | str,
+        request: VacancyArchiveRequest,
+    ) -> JobActionResult:
         return request_public_model(
             self.transport,
             "PUT",
@@ -204,7 +225,12 @@ class VacanciesClient:
             json_body=request.to_payload(),
         )
 
-    def update_v1(self, *, vacancy_id: int | str, request: JobsRequest) -> JobActionResult:
+    def update_v1(
+        self,
+        *,
+        vacancy_id: int | str,
+        request: VacancyUpdateRequest,
+    ) -> JobActionResult:
         return request_public_model(
             self.transport,
             "PUT",
@@ -214,7 +240,12 @@ class VacanciesClient:
             json_body=request.to_payload(),
         )
 
-    def prolongate_v1(self, *, vacancy_id: int | str, request: JobsRequest) -> JobActionResult:
+    def prolongate_v1(
+        self,
+        *,
+        vacancy_id: int | str,
+        request: VacancyProlongateRequest,
+    ) -> JobActionResult:
         return request_public_model(
             self.transport,
             "POST",
@@ -224,7 +255,7 @@ class VacanciesClient:
             json_body=request.to_payload(),
         )
 
-    def list_v2(self, *, query: JobsQuery | None = None) -> VacanciesResult:
+    def list_v2(self, *, query: VacanciesQuery | None = None) -> VacanciesResult:
         return request_public_model(
             self.transport,
             "GET",
@@ -234,7 +265,7 @@ class VacanciesClient:
             params=query.to_params() if query is not None else None,
         )
 
-    def create_v2(self, request: JobsRequest) -> JobActionResult:
+    def create_v2(self, request: VacancyCreateRequest) -> JobActionResult:
         return request_public_model(
             self.transport,
             "POST",
@@ -244,7 +275,7 @@ class VacanciesClient:
             json_body=request.to_payload(),
         )
 
-    def get_by_ids_v2(self, request: JobsRequest) -> VacanciesResult:
+    def get_by_ids_v2(self, request: VacancyIdsRequest) -> VacanciesResult:
         return request_public_model(
             self.transport,
             "POST",
@@ -254,7 +285,7 @@ class VacanciesClient:
             json_body=request.to_payload(),
         )
 
-    def get_statuses_v2(self, request: JobsRequest) -> VacancyStatusesResult:
+    def get_statuses_v2(self, request: VacancyIdsRequest) -> VacancyStatusesResult:
         return request_public_model(
             self.transport,
             "POST",
@@ -264,7 +295,7 @@ class VacanciesClient:
             json_body=request.to_payload(),
         )
 
-    def update_v2(self, *, vacancy_uuid: str, request: JobsRequest) -> JobActionResult:
+    def update_v2(self, *, vacancy_uuid: str, request: VacancyUpdateRequest) -> JobActionResult:
         return request_public_model(
             self.transport,
             "POST",
@@ -275,7 +306,7 @@ class VacanciesClient:
         )
 
     def get_item_v2(
-        self, *, vacancy_id: int | str, query: JobsQuery | None = None
+        self, *, vacancy_id: int | str, query: VacanciesQuery | None = None
     ) -> VacancyInfo:
         return request_public_model(
             self.transport,
@@ -286,7 +317,12 @@ class VacanciesClient:
             params=query.to_params() if query is not None else None,
         )
 
-    def auto_renewal_v2(self, *, vacancy_uuid: str, request: JobsRequest) -> JobActionResult:
+    def auto_renewal_v2(
+        self,
+        *,
+        vacancy_uuid: str,
+        request: VacancyAutoRenewalRequest,
+    ) -> JobActionResult:
         return request_public_model(
             self.transport,
             "PUT",

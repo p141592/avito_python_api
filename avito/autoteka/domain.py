@@ -19,17 +19,28 @@ from avito.autoteka.models import (
     AutotekaLeadsResult,
     AutotekaPackageInfo,
     AutotekaPreviewInfo,
-    AutotekaQuery,
     AutotekaReportInfo,
     AutotekaReportsResult,
-    AutotekaRequest,
     AutotekaScoringInfo,
     AutotekaSpecificationInfo,
     AutotekaTeaserInfo,
     AutotekaValuationInfo,
     CatalogResolveResult,
+    CatalogResolveRequest,
+    ExternalItemPreviewRequest,
+    ItemIdRequest,
+    LeadsRequest,
+    MonitoringBucketRequest,
+    MonitoringEventsQuery,
     MonitoringBucketResult,
     MonitoringEventsResult,
+    PlateNumberRequest,
+    PreviewReportRequest,
+    RegNumberRequest,
+    TeaserCreateRequest,
+    ValuationBySpecificationRequest,
+    VehicleIdRequest,
+    VinRequest,
 )
 from avito.core import Transport, ValidationError
 
@@ -48,13 +59,13 @@ class AutotekaVehicle(DomainObject):
     resource_id: int | str | None = None
     user_id: int | str | None = None
 
-    def get_catalogs_resolve(self, *, request: AutotekaRequest) -> CatalogResolveResult:
+    def get_catalogs_resolve(self, *, request: CatalogResolveRequest) -> CatalogResolveResult:
         return CatalogClient(self.transport).get_catalogs_resolve(request)
 
-    def get_leads(self, *, request: AutotekaRequest) -> AutotekaLeadsResult:
+    def get_leads(self, *, request: LeadsRequest) -> AutotekaLeadsResult:
         return LeadsClient(self.transport).get_leads(request)
 
-    def create_preview_by_vin(self, *, request: AutotekaRequest) -> AutotekaPreviewInfo:
+    def create_preview_by_vin(self, *, request: VinRequest) -> AutotekaPreviewInfo:
         return PreviewClient(self.transport).create_by_vin(request)
 
     def get_preview(self, *, preview_id: int | str | None = None) -> AutotekaPreviewInfo:
@@ -63,23 +74,23 @@ class AutotekaVehicle(DomainObject):
         )
 
     def create_preview_by_external_item(
-        self, *, request: AutotekaRequest
+        self, *, request: ExternalItemPreviewRequest
     ) -> AutotekaPreviewInfo:
         return PreviewClient(self.transport).create_by_external_item(request)
 
-    def create_preview_by_item_id(self, *, request: AutotekaRequest) -> AutotekaPreviewInfo:
+    def create_preview_by_item_id(self, *, request: ItemIdRequest) -> AutotekaPreviewInfo:
         return PreviewClient(self.transport).create_by_item_id(request)
 
-    def create_preview_by_reg_number(self, *, request: AutotekaRequest) -> AutotekaPreviewInfo:
+    def create_preview_by_reg_number(self, *, request: RegNumberRequest) -> AutotekaPreviewInfo:
         return PreviewClient(self.transport).create_by_reg_number(request)
 
     def create_specification_by_plate_number(
-        self, *, request: AutotekaRequest
+        self, *, request: PlateNumberRequest
     ) -> AutotekaSpecificationInfo:
         return SpecificationsClient(self.transport).create_by_plate_number(request)
 
     def create_specification_by_vehicle_id(
-        self, *, request: AutotekaRequest
+        self, *, request: VehicleIdRequest
     ) -> AutotekaSpecificationInfo:
         return SpecificationsClient(self.transport).create_by_vehicle_id(request)
 
@@ -92,7 +103,7 @@ class AutotekaVehicle(DomainObject):
             specification_id=specification_id or self._require_resource_id("specification_id")
         )
 
-    def create_teaser(self, *, request: AutotekaRequest) -> AutotekaTeaserInfo:
+    def create_teaser(self, *, request: TeaserCreateRequest) -> AutotekaTeaserInfo:
         return TeaserClient(self.transport).create(request)
 
     def get_teaser(self, *, teaser_id: int | str | None = None) -> AutotekaTeaserInfo:
@@ -116,10 +127,10 @@ class AutotekaReport(DomainObject):
     def get_active_package(self) -> AutotekaPackageInfo:
         return ReportClient(self.transport).get_active_package()
 
-    def create_report(self, *, request: AutotekaRequest) -> AutotekaReportInfo:
+    def create_report(self, *, request: PreviewReportRequest) -> AutotekaReportInfo:
         return ReportClient(self.transport).create_report(request)
 
-    def create_report_by_vehicle_id(self, *, request: AutotekaRequest) -> AutotekaReportInfo:
+    def create_report_by_vehicle_id(self, *, request: VehicleIdRequest) -> AutotekaReportInfo:
         return ReportClient(self.transport).create_report_by_vehicle_id(request)
 
     def list_report_list(self) -> AutotekaReportsResult:
@@ -131,12 +142,12 @@ class AutotekaReport(DomainObject):
         )
 
     def create_sync_report_by_reg_number(
-        self, *, request: AutotekaRequest
+        self, *, request: RegNumberRequest
     ) -> AutotekaReportInfo:
         return ReportClient(self.transport).create_sync_report_by_reg_number(request)
 
     def create_sync_report_by_vin(
-        self, *, request: AutotekaRequest
+        self, *, request: VinRequest
     ) -> AutotekaReportInfo:
         return ReportClient(self.transport).create_sync_report_by_vin(request)
 
@@ -154,7 +165,7 @@ class AutotekaMonitoring(DomainObject):
     user_id: int | str | None = None
 
     def create_monitoring_bucket_add(
-        self, *, request: AutotekaRequest
+        self, *, request: MonitoringBucketRequest
     ) -> MonitoringBucketResult:
         return MonitoringClient(self.transport).add_bucket(request)
 
@@ -162,14 +173,14 @@ class AutotekaMonitoring(DomainObject):
         return MonitoringClient(self.transport).delete_bucket()
 
     def delete_monitoring_bucket_remove(
-        self, *, request: AutotekaRequest
+        self, *, request: MonitoringBucketRequest
     ) -> MonitoringBucketResult:
         return MonitoringClient(self.transport).remove_bucket(request)
 
     def get_monitoring_reg_actions(
         self,
         *,
-        query: AutotekaQuery | None = None,
+        query: MonitoringEventsQuery | None = None,
     ) -> MonitoringEventsResult:
         return MonitoringClient(self.transport).get_reg_actions(query=query)
 
@@ -181,7 +192,7 @@ class AutotekaScoring(DomainObject):
     resource_id: int | str | None = None
     user_id: int | str | None = None
 
-    def create_scoring_by_vehicle_id(self, *, request: AutotekaRequest) -> AutotekaScoringInfo:
+    def create_scoring_by_vehicle_id(self, *, request: VehicleIdRequest) -> AutotekaScoringInfo:
         return ScoringClient(self.transport).create_by_vehicle_id(request)
 
     def get_scoring_by_id(self, *, scoring_id: int | str | None = None) -> AutotekaScoringInfo:
@@ -203,7 +214,7 @@ class AutotekaValuation(DomainObject):
     user_id: int | str | None = None
 
     def get_valuation_by_specification(
-        self, *, request: AutotekaRequest
+        self, *, request: ValuationBySpecificationRequest
     ) -> AutotekaValuationInfo:
         return ValuationClient(self.transport).get_by_specification(request)
 

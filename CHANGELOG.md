@@ -26,3 +26,7 @@
 - `pyproject.toml` дополнен strict-конфигурацией `mypy`, правилами `ruff` и современным build backend `poetry-core`.
 - `Makefile` разделён на `fmt`, `lint`, `typecheck`, `test`, `build` и `check`, чтобы release не зависел от автоформатирования.
 - `AGENTS.md` синхронизирован с реальной структурой SDK, наличием тестов и Python `3.14` quality gate.
+- `realty` больше не использует generic `RealtyRequest`: публичные методы принимают `RealtyBookingsUpdateRequest`, `RealtyPricesUpdateRequest`, `RealtyIntervalsRequest` и `RealtyBaseParamsUpdateRequest`.
+- `jobs` больше не использует generic `JobsRequest` / `JobsQuery`: публичный surface переведен на отдельные typed request/query-модели для applications, vacancies, resumes и webhooks.
+- `autoteka` больше не использует generic `AutotekaRequest` / `AutotekaQuery`: публичный surface переведен на отдельные typed request/query-модели для preview, report, monitoring, scoring и valuation сценариев.
+- `messenger.ChatMedia.upload_images()` больше не принимает `dict[str, object]`; вместо него используется typed request через `UploadImageFile` / `UploadImagesRequest`.

@@ -12,7 +12,14 @@ from avito.core.types import ApiTimeouts
 from avito.ratings import RatingProfile, Review, ReviewAnswer
 from avito.ratings.models import ReviewsQuery
 from avito.realty import RealtyAnalyticsReport, RealtyBooking, RealtyListing, RealtyPricing
-from avito.realty.models import RealtyRequest
+from avito.realty.models import (
+    RealtyBaseParamsUpdateRequest,
+    RealtyBookingsUpdateRequest,
+    RealtyInterval,
+    RealtyIntervalsRequest,
+    RealtyPricePeriod,
+    RealtyPricesUpdateRequest,
+)
 from avito.tariffs import Tariff
 
 
@@ -91,7 +98,7 @@ def test_realty_flows() -> None:
     analytics = RealtyAnalyticsReport(transport, resource_id="20")
 
     updated_bookings = booking.update_bookings_info(
-        request=RealtyRequest(payload={"blockedDates": ["2026-04-18"]})
+        request=RealtyBookingsUpdateRequest(blocked_dates=["2026-04-18"])
     )
     bookings = booking.list_realty_bookings(
         date_start="2026-05-01",
@@ -99,14 +106,17 @@ def test_realty_flows() -> None:
         with_unpaid=True,
     )
     updated_prices = pricing.update_realty_prices(
-        request=RealtyRequest(payload={"periods": [{"dateFrom": "2026-05-01", "price": 5000}]})
-    )
-    intervals = listing.get_intervals(
-        request=RealtyRequest(
-            payload={"itemId": 20, "intervals": [{"date": "2026-05-01", "available": True}]}
+        request=RealtyPricesUpdateRequest(
+            periods=[RealtyPricePeriod(date_from="2026-05-01", price=5000)]
         )
     )
-    base = listing.update_base_params(request=RealtyRequest(payload={"minStayDays": 2}))
+    intervals = listing.get_intervals(
+        request=RealtyIntervalsRequest(
+            item_id=20,
+            intervals=[RealtyInterval(date="2026-05-01", available=True)],
+        )
+    )
+    base = listing.update_base_params(request=RealtyBaseParamsUpdateRequest(min_stay_days=2))
     market = analytics.get_market_price_correspondence_v1(price=5000000)
     report = analytics.get_report_for_classified()
 

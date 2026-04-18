@@ -8,23 +8,23 @@ from avito.core.serialization import SerializableModel, enable_module_serializat
 
 
 @dataclass(slots=True, frozen=True)
-class RealtyRequest:
-    """Унифицированный typed request для Realty API."""
-
-    payload: dict[str, object]
-
-    def to_payload(self) -> dict[str, object]:
-        """Сериализует JSON payload запроса."""
-
-        return dict(self.payload)
-
-
-@dataclass(slots=True, frozen=True)
 class RealtyActionResult(SerializableModel):
     """Результат mutation-операции по недвижимости."""
 
     success: bool
     status: str | None = None
+
+
+@dataclass(slots=True, frozen=True)
+class RealtyBookingsUpdateRequest:
+    """Запрос обновления занятости по объекту."""
+
+    blocked_dates: list[str]
+
+    def to_payload(self) -> dict[str, object]:
+        """Сериализует JSON payload запроса бронирований."""
+
+        return {"blockedDates": list(self.blocked_dates)}
 
 
 @dataclass(slots=True, frozen=True)
@@ -82,6 +82,72 @@ class RealtyBookingsQuery:
         if self.with_unpaid is not None:
             params["with_unpaid"] = "true" if self.with_unpaid else "false"
         return params
+
+
+@dataclass(slots=True, frozen=True)
+class RealtyPricePeriod:
+    """Период с ценой в запросе обновления цен."""
+
+    date_from: str
+    price: int
+
+    def to_payload(self) -> dict[str, object]:
+        """Сериализует период с ценой."""
+
+        return {"dateFrom": self.date_from, "price": self.price}
+
+
+@dataclass(slots=True, frozen=True)
+class RealtyPricesUpdateRequest:
+    """Запрос обновления цен по объекту."""
+
+    periods: list[RealtyPricePeriod]
+
+    def to_payload(self) -> dict[str, object]:
+        """Сериализует JSON payload запроса цен."""
+
+        return {"periods": [period.to_payload() for period in self.periods]}
+
+
+@dataclass(slots=True, frozen=True)
+class RealtyInterval:
+    """Интервал доступности объекта."""
+
+    date: str
+    available: bool
+
+    def to_payload(self) -> dict[str, object]:
+        """Сериализует интервал доступности."""
+
+        return {"date": self.date, "available": self.available}
+
+
+@dataclass(slots=True, frozen=True)
+class RealtyIntervalsRequest:
+    """Запрос заполнения интервалов доступности."""
+
+    item_id: int
+    intervals: list[RealtyInterval]
+
+    def to_payload(self) -> dict[str, object]:
+        """Сериализует JSON payload запроса интервалов."""
+
+        return {
+            "itemId": self.item_id,
+            "intervals": [interval.to_payload() for interval in self.intervals],
+        }
+
+
+@dataclass(slots=True, frozen=True)
+class RealtyBaseParamsUpdateRequest:
+    """Запрос обновления базовых параметров объекта."""
+
+    min_stay_days: int
+
+    def to_payload(self) -> dict[str, object]:
+        """Сериализует JSON payload запроса базовых параметров."""
+
+        return {"minStayDays": self.min_stay_days}
 
 
 @dataclass(slots=True, frozen=True)

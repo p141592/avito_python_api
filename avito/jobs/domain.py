@@ -13,22 +13,33 @@ from avito.jobs.client import (
     WebhookClient,
 )
 from avito.jobs.models import (
+    ApplicationActionRequest,
     ApplicationIdsResult,
+    ApplicationIdsQuery,
+    ApplicationIdsRequest,
     ApplicationsResult,
     ApplicationStatesResult,
+    ApplicationViewedRequest,
     JobActionResult,
     JobDictionariesResult,
     JobDictionaryValuesResult,
-    JobsQuery,
-    JobsRequest,
+    JobWebhookUpdateRequest,
     JobWebhookInfo,
     JobWebhooksResult,
     ResumeContactInfo,
     ResumeInfo,
+    ResumeSearchQuery,
     ResumesResult,
     VacanciesResult,
     VacancyInfo,
+    VacancyArchiveRequest,
+    VacancyAutoRenewalRequest,
+    VacancyCreateRequest,
+    VacancyIdsRequest,
+    VacancyProlongateRequest,
+    VacanciesQuery,
     VacancyStatusesResult,
+    VacancyUpdateRequest,
 )
 
 
@@ -46,7 +57,7 @@ class Vacancy(DomainObject):
     resource_id: int | str | None = None
     user_id: int | str | None = None
 
-    def create(self, *, request: JobsRequest, version: int = 2) -> JobActionResult:
+    def create(self, *, request: VacancyCreateRequest, version: int = 2) -> JobActionResult:
         client = VacanciesClient(self.transport)
         if version == 1:
             return client.create_v1(request)
@@ -55,7 +66,7 @@ class Vacancy(DomainObject):
     def update(
         self,
         *,
-        request: JobsRequest,
+        request: VacancyUpdateRequest,
         vacancy_id: int | str | None = None,
         vacancy_uuid: str | None = None,
         version: int = 2,
@@ -70,7 +81,7 @@ class Vacancy(DomainObject):
         )
 
     def delete(
-        self, *, request: JobsRequest, vacancy_id: int | str | None = None
+        self, *, request: VacancyArchiveRequest, vacancy_id: int | str | None = None
     ) -> JobActionResult:
         return VacanciesClient(self.transport).archive_v1(
             vacancy_id=vacancy_id or self._require_resource_id(),
@@ -78,32 +89,32 @@ class Vacancy(DomainObject):
         )
 
     def prolongate(
-        self, *, request: JobsRequest, vacancy_id: int | str | None = None
+        self, *, request: VacancyProlongateRequest, vacancy_id: int | str | None = None
     ) -> JobActionResult:
         return VacanciesClient(self.transport).prolongate_v1(
             vacancy_id=vacancy_id or self._require_resource_id(),
             request=request,
         )
 
-    def list(self, *, query: JobsQuery | None = None) -> VacanciesResult:
+    def list(self, *, query: VacanciesQuery | None = None) -> VacanciesResult:
         return VacanciesClient(self.transport).list_v2(query=query)
 
     def get(
-        self, *, vacancy_id: int | str | None = None, query: JobsQuery | None = None
+        self, *, vacancy_id: int | str | None = None, query: VacanciesQuery | None = None
     ) -> VacancyInfo:
         return VacanciesClient(self.transport).get_item_v2(
             vacancy_id=vacancy_id or self._require_resource_id(),
             query=query,
         )
 
-    def get_by_ids(self, *, request: JobsRequest) -> VacanciesResult:
+    def get_by_ids(self, *, request: VacancyIdsRequest) -> VacanciesResult:
         return VacanciesClient(self.transport).get_by_ids_v2(request)
 
-    def get_statuses(self, *, request: JobsRequest) -> VacancyStatusesResult:
+    def get_statuses(self, *, request: VacancyIdsRequest) -> VacancyStatusesResult:
         return VacanciesClient(self.transport).get_statuses_v2(request)
 
     def update_auto_renewal(
-        self, *, request: JobsRequest, vacancy_uuid: str | None = None
+        self, *, request: VacancyAutoRenewalRequest, vacancy_uuid: str | None = None
     ) -> JobActionResult:
         return VacanciesClient(self.transport).auto_renewal_v2(
             vacancy_uuid=vacancy_uuid or self._require_resource_id(),
@@ -123,24 +134,26 @@ class Application(DomainObject):
     resource_id: int | str | None = None
     user_id: int | str | None = None
 
-    def apply(self, *, request: JobsRequest) -> JobActionResult:
+    def apply(self, *, request: ApplicationActionRequest) -> JobActionResult:
         return ApplicationsClient(self.transport).apply_actions(request)
 
     def list(
         self,
         *,
-        request: JobsRequest | None = None,
-        query: JobsQuery | None = None,
+        request: ApplicationIdsRequest | None = None,
+        query: ApplicationIdsQuery | None = None,
     ) -> ApplicationsResult | ApplicationIdsResult:
         client = ApplicationsClient(self.transport)
         if request is not None:
             return client.get_by_ids(request)
-        return client.get_ids(query=query or JobsQuery(params={}))
+        if query is None:
+            raise ValidationError("Для операции требуется `query` или `request`.")
+        return client.get_ids(query=query)
 
     def get_states(self) -> ApplicationStatesResult:
         return ApplicationsClient(self.transport).get_states()
 
-    def update(self, *, request: JobsRequest) -> JobActionResult:
+    def update(self, *, request: ApplicationViewedRequest) -> JobActionResult:
         return ApplicationsClient(self.transport).set_is_viewed(request)
 
 
@@ -151,7 +164,7 @@ class Resume(DomainObject):
     resource_id: int | str | None = None
     user_id: int | str | None = None
 
-    def list(self, *, query: JobsQuery | None = None) -> ResumesResult:
+    def list(self, *, query: ResumeSearchQuery | None = None) -> ResumesResult:
         return ResumeClient(self.transport).search(query=query)
 
     def get(self, *, resume_id: int | str | None = None) -> ResumeInfo:
@@ -183,7 +196,7 @@ class JobWebhook(DomainObject):
     def list(self) -> JobWebhooksResult:
         return WebhookClient(self.transport).list_webhooks()
 
-    def update(self, *, request: JobsRequest) -> JobWebhookInfo:
+    def update(self, *, request: JobWebhookUpdateRequest) -> JobWebhookInfo:
         return WebhookClient(self.transport).put_webhook(request)
 
     def delete(self, *, url: str | None = None) -> JobActionResult:

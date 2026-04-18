@@ -25,6 +25,8 @@ from avito.messenger.models import (
     TariffInfo,
     UnsubscribeWebhookRequest,
     UpdateWebhookRequest,
+    UploadImageFile,
+    UploadImagesRequest,
     UploadImagesResult,
     VoiceFilesResult,
     WebhookActionResult,
@@ -183,11 +185,12 @@ class ChatMedia(DomainObject):
 
         return MediaClient(self.transport).get_voice_files(user_id=self._require_user_id())
 
-    def upload_images(self, *, files: dict[str, object]) -> UploadImagesResult:
+    def upload_images(self, *, files: list[UploadImageFile]) -> UploadImagesResult:
         """Загружает изображения для сообщений."""
 
         return MediaClient(self.transport).upload_images(
-            user_id=self._require_user_id(), files=files
+            user_id=self._require_user_id(),
+            request=UploadImagesRequest(files=files),
         )
 
     def _require_user_id(self) -> int:

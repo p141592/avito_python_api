@@ -10,7 +10,25 @@ from avito.core import Transport
 from avito.core.retries import RetryPolicy
 from avito.core.types import ApiTimeouts
 from avito.orders import DeliveryOrder, DeliveryTask, Order, OrderLabel, SandboxDelivery, Stock
-from avito.orders.models import OrdersRequest
+from avito.orders.models import (
+    DeliveryAnnouncementRequest,
+    DeliveryParcelIdsRequest,
+    DeliveryParcelRequest,
+    DeliveryParcelResultRequest,
+    OrderAcceptReturnRequest,
+    OrderApplyTransitionRequest,
+    OrderCncDetailsRequest,
+    OrderConfirmationCodeRequest,
+    OrderCourierRangeRequest,
+    OrderLabelsRequest,
+    OrderMarkingsRequest,
+    OrderTrackingNumberRequest,
+    SandboxArea,
+    SandboxAreasRequest,
+    StockInfoRequest,
+    StockUpdateEntry,
+    StockUpdateRequest,
+)
 
 
 def make_transport(handler: httpx.MockTransport) -> Transport:
@@ -90,21 +108,25 @@ def test_order_management_flows() -> None:
     order = Order(make_transport(httpx.MockTransport(handler)), resource_id="ord-1")
 
     orders = order.list()
-    marked = order.update_markings(request=OrdersRequest(payload={"orderId": "ord-1", "codes": ["abc"]}))
-    applied = order.apply(request=OrdersRequest(payload={"orderId": "ord-1", "transition": "confirm"}))
-    code_checked = order.check_confirmation_code(
-        request=OrdersRequest(payload={"orderId": "ord-1", "code": "1234"})
+    marked = order.update_markings(request=OrderMarkingsRequest(order_id="ord-1", codes=["abc"]))
+    applied = order.apply(
+        request=OrderApplyTransitionRequest(order_id="ord-1", transition="confirm")
     )
-    cnc = order.set_cnc_details(request=OrdersRequest(payload={"orderId": "ord-1", "pickupPointId": "pvz-1"}))
+    code_checked = order.check_confirmation_code(
+        request=OrderConfirmationCodeRequest(order_id="ord-1", code="1234")
+    )
+    cnc = order.set_cnc_details(
+        request=OrderCncDetailsRequest(order_id="ord-1", pickup_point_id="pvz-1")
+    )
     courier_ranges = order.get_courier_delivery_range()
     courier_set = order.set_courier_delivery_range(
-        request=OrdersRequest(payload={"orderId": "ord-1", "intervalId": "int-1"})
+        request=OrderCourierRangeRequest(order_id="ord-1", interval_id="int-1")
     )
     tracking = order.update_tracking_number(
-        request=OrdersRequest(payload={"orderId": "ord-1", "trackingNumber": "TRK-1"})
+        request=OrderTrackingNumberRequest(order_id="ord-1", tracking_number="TRK-1")
     )
     returned = order.accept_return_order(
-        request=OrdersRequest(payload={"orderId": "ord-1", "postalOfficeId": "ops-1"})
+        request=OrderAcceptReturnRequest(order_id="ord-1", postal_office_id="ops-1")
     )
 
     assert orders.items[0].buyer_name == "Иван"
@@ -137,7 +159,7 @@ def test_labels_binary_download_flow() -> None:
 
     label = OrderLabel(make_transport(httpx.MockTransport(handler)), resource_id="42")
 
-    task = label.create(request=OrdersRequest(payload={"orderIds": ["ord-1"]}))
+    task = label.create(request=OrderLabelsRequest(order_ids=["ord-1"]))
     pdf = label.download()
 
     assert task.task_id == "42"
@@ -201,24 +223,24 @@ def test_delivery_production_and_sandbox_flows() -> None:
     sandbox = SandboxDelivery(transport, resource_id="sand-1")
     task = DeliveryTask(transport, resource_id="51")
 
-    announcement = delivery.create_announcement(request=OrdersRequest(payload={"orderId": "ord-1"}))
-    parcel = delivery.create(request=OrdersRequest(payload={"orderId": "ord-1", "parcelId": "par-1"}))
-    cancelled = delivery.delete(request=OrdersRequest(payload={"orderId": "ord-1"}))
+    announcement = delivery.create_announcement(request=DeliveryAnnouncementRequest(order_id="ord-1"))
+    parcel = delivery.create(request=DeliveryParcelRequest(order_id="ord-1", parcel_id="par-1"))
+    cancelled = delivery.delete(request=DeliveryAnnouncementRequest(order_id="ord-1"))
     callback = delivery.create_change_parcel_result(
-        request=OrdersRequest(payload={"parcelId": "par-1", "result": "ok"})
+        request=DeliveryParcelResultRequest(parcel_id="par-1", result="ok")
     )
-    changed = delivery.update_change_parcels(request=OrdersRequest(payload={"parcelIds": ["par-1"]}))
+    changed = delivery.update_change_parcels(request=DeliveryParcelIdsRequest(parcel_ids=["par-1"]))
     sandbox_announcement = sandbox.create_announcement(
-        request=OrdersRequest(payload={"orderId": "sand-1"})
+        request=DeliveryAnnouncementRequest(order_id="sand-1")
     )
-    tracked = sandbox.track_announcement(request=OrdersRequest(payload={"orderId": "sand-1"}))
+    tracked = sandbox.track_announcement(request=DeliveryAnnouncementRequest(order_id="sand-1"))
     centers = sandbox.list_sorting_center()
     added_areas = sandbox.add_areas(
         tariff_id="tf-1",
-        request=OrdersRequest(payload={"areas": [{"city": "Москва"}]}),
+        request=SandboxAreasRequest(areas=[SandboxArea(city="Москва")]),
     )
     sandbox_parcel = sandbox.create_parcel(
-        request=OrdersRequest(payload={"orderId": "sand-1", "parcelId": "spar-1"})
+        request=DeliveryParcelRequest(order_id="sand-1", parcel_id="spar-1")
     )
     task_info = task.get()
 
@@ -269,8 +291,10 @@ def test_stock_management_flows() -> None:
 
     stock = Stock(make_transport(httpx.MockTransport(handler)), resource_id="123321")
 
-    info = stock.get(request=OrdersRequest(payload={"itemIds": [123321]}))
-    updated = stock.update(request=OrdersRequest(payload={"stocks": [{"item_id": 123321, "quantity": 7}]}))
+    info = stock.get(request=StockInfoRequest(item_ids=[123321]))
+    updated = stock.update(
+        request=StockUpdateRequest(stocks=[StockUpdateEntry(item_id=123321, quantity=7)])
+    )
 
     assert info.items[0].quantity == 5
     assert updated.items[0].external_id == "AB123456"

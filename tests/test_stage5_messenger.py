@@ -10,6 +10,7 @@ from avito.core import Transport
 from avito.core.retries import RetryPolicy
 from avito.core.types import ApiTimeouts
 from avito.messenger import Chat, ChatMedia, ChatMessage, ChatWebhook, SpecialOfferCampaign
+from avito.messenger.models import UploadImageFile
 
 
 def make_transport(handler: httpx.MockTransport) -> Transport:
@@ -124,7 +125,16 @@ def test_messenger_media_upload_and_send_image_flow() -> None:
     media = ChatMedia(transport, user_id=7)
     message = ChatMessage(transport, user_id=7)
 
-    uploaded = media.upload_images(files={"image": ("photo.jpg", b"binary", "image/jpeg")})
+    uploaded = media.upload_images(
+        files=[
+            UploadImageFile(
+                field_name="image",
+                filename="photo.jpg",
+                content=b"binary",
+                content_type="image/jpeg",
+            )
+        ]
+    )
     voice_files = media.get_voice_files()
     sent = message.send_image(
         chat_id="chat-1", image_id=uploaded.items[0].image_id or "", caption="Фото"

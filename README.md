@@ -116,10 +116,21 @@ with AvitoClient() as avito:
 
 ```python
 from avito import AvitoClient
+from avito.messenger import UploadImageFile
 
 with AvitoClient() as avito:
     chats = avito.chat(user_id=123).list()
     message = avito.chat(chat_id="chat-1", user_id=123).send_message(message="Здравствуйте")
+    uploaded = avito.chat_media(user_id=123).upload_images(
+        files=[
+            UploadImageFile(
+                field_name="image",
+                filename="photo.jpg",
+                content=b"...",
+                content_type="image/jpeg",
+            )
+        ]
+    )
     subscriptions = avito.chat_webhook().list()
 ```
 
@@ -149,10 +160,14 @@ with AvitoClient() as avito:
 
 ```python
 from avito import AvitoClient
+from avito.jobs import ApplicationIdsQuery, ResumeSearchQuery
 
 with AvitoClient() as avito:
     vacancies = avito.vacancy().list()
-    applications = avito.application().list()
+    applications = avito.application().list(
+        query=ApplicationIdsQuery(updated_at_from="2026-04-18")
+    )
+    resumes = avito.resume().list(query=ResumeSearchQuery(query="оператор"))
     webhooks = avito.job_webhook().list()
 ```
 
@@ -194,19 +209,34 @@ with AvitoClient() as avito:
 
 ```python
 from avito import AvitoClient
+from avito.autoteka import PreviewReportRequest, VinRequest
 
 with AvitoClient() as avito:
-    preview = avito.autoteka_vehicle().create_preview_by_vin(payload={"vin": "XTA00000000000000"})
-    report = avito.autoteka_report(report_id=preview.preview_id).get_report()
+    preview = avito.autoteka_vehicle().create_preview_by_vin(
+        request=VinRequest(vin="XTA00000000000000")
+    )
+    report = avito.autoteka_report().create_report(
+        request=PreviewReportRequest(preview_id=int(preview.preview_id or 0))
+    )
 ```
 
 ### Недвижимость, отзывы и тарифы
 
 ```python
 from avito import AvitoClient
+from avito.realty import RealtyBookingsUpdateRequest, RealtyPricePeriod, RealtyPricesUpdateRequest
 
 with AvitoClient() as avito:
-    bookings = avito.realty_booking().list()
+    booking = avito.realty_booking(item_id=20, user_id=10)
+    booking.update_bookings_info(
+        request=RealtyBookingsUpdateRequest(blocked_dates=["2026-05-01"])
+    )
+    bookings = booking.list_realty_bookings(date_start="2026-05-01", date_end="2026-05-05")
+    avito.realty_pricing(item_id=20, user_id=10).update_realty_prices(
+        request=RealtyPricesUpdateRequest(
+            periods=[RealtyPricePeriod(date_from="2026-05-01", price=5000)]
+        )
+    )
     reviews = avito.review().list_reviews_v1()
     tariff = avito.tariff().get_tariff_info()
 ```
