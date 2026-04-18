@@ -40,6 +40,9 @@ jobs:
       - name: Run quality gate
         run: make check
 
+      - name: Build package to PyPi
+        run: make build
+
       - name: Publish package to PyPI
         env:
           POETRY_PYPI_TOKEN_PYPI: ${{ secrets.PYPI_API_TOKEN }}
