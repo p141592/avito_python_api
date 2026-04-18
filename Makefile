@@ -1,4 +1,4 @@
-include $(PWD)/.env
+-include $(PWD)/.env
 export
 
 REGISTRY=10.11.0.9:5000
