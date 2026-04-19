@@ -21,7 +21,7 @@ class RatingsClient:
 
     transport: Transport
 
-    def create_review_answer_v1(self, request: CreateReviewAnswerRequest) -> ReviewAnswerInfo:
+    def create_review_answer(self, request: CreateReviewAnswerRequest) -> ReviewAnswerInfo:
         payload = self.transport.request_json(
             "POST",
             "/ratings/v1/answers",
@@ -30,7 +30,7 @@ class RatingsClient:
         )
         return map_review_answer(payload)
 
-    def delete_review_answer_v1(self, *, answer_id: int | str) -> ReviewAnswerInfo:
+    def delete_review_answer(self, *, answer_id: int | str) -> ReviewAnswerInfo:
         payload = self.transport.request_json(
             "DELETE",
             f"/ratings/v1/answers/{answer_id}",
@@ -38,7 +38,7 @@ class RatingsClient:
         )
         return map_review_answer(payload)
 
-    def get_ratings_info_v1(self) -> RatingProfileInfo:
+    def get_ratings_info(self) -> RatingProfileInfo:
         payload = self.transport.request_json(
             "GET",
             "/ratings/v1/info",
@@ -46,7 +46,7 @@ class RatingsClient:
         )
         return map_rating_profile(payload)
 
-    def list_reviews_v1(self, *, query: ReviewsQuery | None = None) -> ReviewsResult:
+    def list_reviews(self, *, query: ReviewsQuery | None = None) -> ReviewsResult:
         payload = self.transport.request_json(
             "GET",
             "/ratings/v1/reviews",

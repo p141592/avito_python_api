@@ -60,8 +60,8 @@ class Vacancy(DomainObject):
     def create(self, *, request: VacancyCreateRequest, version: int = 2) -> JobActionResult:
         client = VacanciesClient(self.transport)
         if version == 1:
-            return client.create_v1(request)
-        return client.create_v2(request)
+            return client.create_classic(request)
+        return client.create(request)
 
     def update(
         self,
@@ -73,17 +73,17 @@ class Vacancy(DomainObject):
     ) -> JobActionResult:
         client = VacanciesClient(self.transport)
         if version == 1:
-            return client.update_v1(
+            return client.update_classic(
                 vacancy_id=vacancy_id or self._require_resource_id(), request=request
             )
-        return client.update_v2(
+        return client.update(
             vacancy_uuid=vacancy_uuid or self._require_resource_id(), request=request
         )
 
     def delete(
         self, *, request: VacancyArchiveRequest, vacancy_id: int | str | None = None
     ) -> JobActionResult:
-        return VacanciesClient(self.transport).archive_v1(
+        return VacanciesClient(self.transport).archive(
             vacancy_id=vacancy_id or self._require_resource_id(),
             request=request,
         )
@@ -91,32 +91,32 @@ class Vacancy(DomainObject):
     def prolongate(
         self, *, request: VacancyProlongateRequest, vacancy_id: int | str | None = None
     ) -> JobActionResult:
-        return VacanciesClient(self.transport).prolongate_v1(
+        return VacanciesClient(self.transport).prolongate(
             vacancy_id=vacancy_id or self._require_resource_id(),
             request=request,
         )
 
     def list(self, *, query: VacanciesQuery | None = None) -> VacanciesResult:
-        return VacanciesClient(self.transport).list_v2(query=query)
+        return VacanciesClient(self.transport).list(query=query)
 
     def get(
         self, *, vacancy_id: int | str | None = None, query: VacanciesQuery | None = None
     ) -> VacancyInfo:
-        return VacanciesClient(self.transport).get_item_v2(
+        return VacanciesClient(self.transport).get_item(
             vacancy_id=vacancy_id or self._require_resource_id(),
             query=query,
         )
 
     def get_by_ids(self, *, request: VacancyIdsRequest) -> VacanciesResult:
-        return VacanciesClient(self.transport).get_by_ids_v2(request)
+        return VacanciesClient(self.transport).get_by_ids(request)
 
     def get_statuses(self, *, request: VacancyIdsRequest) -> VacancyStatusesResult:
-        return VacanciesClient(self.transport).get_statuses_v2(request)
+        return VacanciesClient(self.transport).get_statuses(request)
 
     def update_auto_renewal(
         self, *, request: VacancyAutoRenewalRequest, vacancy_uuid: str | None = None
     ) -> JobActionResult:
-        return VacanciesClient(self.transport).auto_renewal_v2(
+        return VacanciesClient(self.transport).update_auto_renewal(
             vacancy_uuid=vacancy_uuid or self._require_resource_id(),
             request=request,
         )

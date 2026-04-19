@@ -138,13 +138,13 @@ class RealtyAnalyticsReport(DomainObject):
     resource_id: int | str | None = None
     user_id: int | str | None = None
 
-    def get_market_price_correspondence_v1(
+    def get_market_price_correspondence(
         self,
         *,
         item_id: int | str | None = None,
         price: int | str,
     ) -> RealtyMarketPriceInfo:
-        return RealtyAnalyticsClient(self.transport).get_market_price_correspondence_v1(
+        return RealtyAnalyticsClient(self.transport).get_market_price_correspondence(
             item_id=item_id or self._require_item_id(),
             price=price,
         )

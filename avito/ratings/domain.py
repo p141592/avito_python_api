@@ -29,8 +29,8 @@ class Review(DomainObject):
     resource_id: int | str | None = None
     user_id: int | str | None = None
 
-    def list_reviews_v1(self, *, query: ReviewsQuery | None = None) -> ReviewsResult:
-        return RatingsClient(self.transport).list_reviews_v1(query=query)
+    def list(self, *, query: ReviewsQuery | None = None) -> ReviewsResult:
+        return RatingsClient(self.transport).list_reviews(query=query)
 
 
 @dataclass(slots=True, frozen=True)
@@ -40,13 +40,13 @@ class ReviewAnswer(DomainObject):
     resource_id: int | str | None = None
     user_id: int | str | None = None
 
-    def create_review_answer_v1(self, *, review_id: int, text: str) -> ReviewAnswerInfo:
-        return RatingsClient(self.transport).create_review_answer_v1(
+    def create(self, *, review_id: int, text: str) -> ReviewAnswerInfo:
+        return RatingsClient(self.transport).create_review_answer(
             CreateReviewAnswerRequest(review_id=review_id, text=text)
         )
 
-    def delete_review_answer_v1(self, *, answer_id: int | str | None = None) -> ReviewAnswerInfo:
-        return RatingsClient(self.transport).delete_review_answer_v1(
+    def delete(self, *, answer_id: int | str | None = None) -> ReviewAnswerInfo:
+        return RatingsClient(self.transport).delete_review_answer(
             answer_id=answer_id or self._require_answer_id()
         )
 
@@ -63,8 +63,8 @@ class RatingProfile(DomainObject):
     resource_id: int | str | None = None
     user_id: int | str | None = None
 
-    def get_ratings_info_v1(self) -> RatingProfileInfo:
-        return RatingsClient(self.transport).get_ratings_info_v1()
+    def get(self) -> RatingProfileInfo:
+        return RatingsClient(self.transport).get_ratings_info()
 
 
 __all__ = ("DomainObject", "RatingProfile", "Review", "ReviewAnswer")

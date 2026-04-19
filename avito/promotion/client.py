@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-from collections.abc import Mapping
 from dataclasses import dataclass
 
 from avito.core import RequestContext, Transport
@@ -31,7 +30,7 @@ from avito.promotion.models import (
     BbipForecastsResult,
     BbipSuggestsResult,
     CampaignActionResult,
-    CampaignInfo,
+    CampaignDetailsResult,
     CampaignsResult,
     CancelTrxPromotionRequest,
     CpaAuctionBidsResult,
@@ -142,16 +141,10 @@ class BbipClient:
     def create_order(
         self,
         request: CreateBbipOrderRequest,
-        *,
-        action: str = "create_order",
-        target: Mapping[str, object] | None = None,
-        request_payload: Mapping[str, object] | None = None,
     ) -> PromotionActionResult:
         """Подключает BBIP-услугу."""
 
-        payload_to_send = (
-            dict(request_payload) if request_payload is not None else request.to_payload()
-        )
+        payload_to_send = request.to_payload()
         payload = self.transport.request_json(
             "PUT",
             "/promotion/v1/items/services/bbip/orders/create",
@@ -160,8 +153,8 @@ class BbipClient:
         )
         return map_promotion_action(
             payload,
-            action=action,
-            target=target or {"item_ids": [item.item_id for item in request.items]},
+            action="create_order",
+            target={"item_ids": [item.item_id for item in request.items]},
             request_payload=payload_to_send,
         )
 
@@ -187,16 +180,10 @@ class TrxPromoClient:
     def apply(
         self,
         request: CreateTrxPromotionApplyRequest,
-        *,
-        action: str = "apply",
-        target: Mapping[str, object] | None = None,
-        request_payload: Mapping[str, object] | None = None,
     ) -> PromotionActionResult:
         """Запускает TrxPromo."""
 
-        payload_to_send = (
-            dict(request_payload) if request_payload is not None else request.to_payload()
-        )
+        payload_to_send = request.to_payload()
         payload = self.transport.request_json(
             "POST",
             "/trx-promo/1/apply",
@@ -205,24 +192,18 @@ class TrxPromoClient:
         )
         return map_promotion_action(
             payload,
-            action=action,
-            target=target or {"item_ids": [item.item_id for item in request.items]},
+            action="apply",
+            target={"item_ids": [item.item_id for item in request.items]},
             request_payload=payload_to_send,
         )
 
     def cancel(
         self,
         request: CancelTrxPromotionRequest,
-        *,
-        action: str = "delete",
-        target: Mapping[str, object] | None = None,
-        request_payload: Mapping[str, object] | None = None,
     ) -> PromotionActionResult:
         """Останавливает TrxPromo."""
 
-        payload_to_send = (
-            dict(request_payload) if request_payload is not None else request.to_payload()
-        )
+        payload_to_send = request.to_payload()
         payload = self.transport.request_json(
             "POST",
             "/trx-promo/1/cancel",
@@ -231,8 +212,8 @@ class TrxPromoClient:
         )
         return map_promotion_action(
             payload,
-            action=action,
-            target=target or {"item_ids": list(request.item_ids)},
+            action="delete",
+            target={"item_ids": list(request.item_ids)},
             request_payload=payload_to_send,
         )
 
@@ -276,16 +257,10 @@ class CpaAuctionClient:
     def create_item_bids(
         self,
         request: CreateItemBidsRequest,
-        *,
-        action: str = "create_item_bids",
-        target: Mapping[str, object] | None = None,
-        request_payload: Mapping[str, object] | None = None,
     ) -> PromotionActionResult:
         """Сохраняет новые ставки."""
 
-        payload_to_send = (
-            dict(request_payload) if request_payload is not None else request.to_payload()
-        )
+        payload_to_send = request.to_payload()
         payload = self.transport.request_json(
             "POST",
             "/auction/1/bids",
@@ -294,8 +269,8 @@ class CpaAuctionClient:
         )
         return map_promotion_action(
             payload,
-            action=action,
-            target=target or {"item_ids": [item.item_id for item in request.items]},
+            action="create_item_bids",
+            target={"item_ids": [item.item_id for item in request.items]},
             request_payload=payload_to_send,
         )
 
@@ -337,16 +312,10 @@ class TargetActionPriceClient:
     def delete_promotion(
         self,
         request: DeletePromotionRequest,
-        *,
-        action: str = "delete",
-        target: Mapping[str, object] | None = None,
-        request_payload: Mapping[str, object] | None = None,
     ) -> PromotionActionResult:
         """Останавливает продвижение с ценой целевого действия."""
 
-        payload_to_send = (
-            dict(request_payload) if request_payload is not None else request.to_payload()
-        )
+        payload_to_send = request.to_payload()
         payload = self.transport.request_json(
             "POST",
             "/cpxpromo/1/remove",
@@ -355,24 +324,18 @@ class TargetActionPriceClient:
         )
         return map_promotion_action(
             payload,
-            action=action,
-            target=target or {"item_id": request.item_id},
+            action="delete",
+            target={"item_id": request.item_id},
             request_payload=payload_to_send,
         )
 
     def update_auto_bid(
         self,
         request: UpdateAutoBidRequest,
-        *,
-        action: str = "update_auto",
-        target: Mapping[str, object] | None = None,
-        request_payload: Mapping[str, object] | None = None,
     ) -> PromotionActionResult:
         """Применяет автоматическую настройку."""
 
-        payload_to_send = (
-            dict(request_payload) if request_payload is not None else request.to_payload()
-        )
+        payload_to_send = request.to_payload()
         payload = self.transport.request_json(
             "POST",
             "/cpxpromo/1/setAuto",
@@ -381,24 +344,18 @@ class TargetActionPriceClient:
         )
         return map_promotion_action(
             payload,
-            action=action,
-            target=target or {"item_id": request.item_id},
+            action="update_auto",
+            target={"item_id": request.item_id},
             request_payload=payload_to_send,
         )
 
     def update_manual_bid(
         self,
         request: UpdateManualBidRequest,
-        *,
-        action: str = "update_manual",
-        target: Mapping[str, object] | None = None,
-        request_payload: Mapping[str, object] | None = None,
     ) -> PromotionActionResult:
         """Применяет ручную настройку."""
 
-        payload_to_send = (
-            dict(request_payload) if request_payload is not None else request.to_payload()
-        )
+        payload_to_send = request.to_payload()
         payload = self.transport.request_json(
             "POST",
             "/cpxpromo/1/setManual",
@@ -407,8 +364,8 @@ class TargetActionPriceClient:
         )
         return map_promotion_action(
             payload,
-            action=action,
-            target=target or {"item_id": request.item_id},
+            action="update_manual",
+            target={"item_id": request.item_id},
             request_payload=payload_to_send,
         )
 
@@ -455,7 +412,7 @@ class AutostrategyClient:
             json_body=request.to_payload(),
         )
 
-    def get_campaign_info(self, request: GetAutostrategyCampaignInfoRequest) -> CampaignInfo:
+    def get_campaign_info(self, request: GetAutostrategyCampaignInfoRequest) -> CampaignDetailsResult:
         """Получает полную информацию о кампании."""
 
         return request_public_model(

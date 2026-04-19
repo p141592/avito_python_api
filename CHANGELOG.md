@@ -30,3 +30,7 @@
 - `jobs` больше не использует generic `JobsRequest` / `JobsQuery`: публичный surface переведен на отдельные typed request/query-модели для applications, vacancies, resumes и webhooks.
 - `autoteka` больше не использует generic `AutotekaRequest` / `AutotekaQuery`: публичный surface переведен на отдельные typed request/query-модели для preview, report, monitoring, scoring и valuation сценариев.
 - `messenger.ChatMedia.upload_images()` больше не принимает `dict[str, object]`; вместо него используется typed request через `UploadImageFile` / `UploadImagesRequest`.
+- `promotion.autostrategy` больше не использует generic payload-wrapper’ы: `CreateAutostrategyBudgetRequest`, `CreateAutostrategyCampaignRequest`, `UpdateAutostrategyCampaignRequest` и `ListAutostrategyCampaignsRequest` теперь содержат typed поля по documented contract.
+- `promotion` и `ads` write-клиенты больше не раскрывают `Mapping[str, object]` в публичных сигнатурах helper/client-слоя; preview и apply используют одинаковый typed request contract.
+- Автостратегия приведена к documented shape ответов: бюджет теперь возвращает `calc_id`, список кампаний включает `total_count`, `CampaignDetailsResult` хранит `campaign` / `forecast` / `items`, а `AutostrategyStat` содержит ежедневные значения и `totals`.
+- Публичный surface очищен от неканоничных имен: `autoload_legacy()` -> `autoload_archive()`, `cpa_legacy()` -> `cpa_archive()`, `apply_vas_v2()` -> `apply_vas_direct()`, version-suffixed методы ratings/realty/orders заменены на каноничные имена без `_v1` / `_v2`.

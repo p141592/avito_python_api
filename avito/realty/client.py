@@ -85,7 +85,7 @@ class RealtyAnalyticsClient:
 
     transport: Transport
 
-    def get_market_price_correspondence_v1(
+    def get_market_price_correspondence(
         self, *, item_id: int | str, price: int | str
     ) -> RealtyMarketPriceInfo:
         payload = self.transport.request_json(

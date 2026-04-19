@@ -121,7 +121,7 @@ def test_realty_flows() -> None:
         )
     )
     base = listing.update_base_params(request=RealtyBaseParamsUpdateRequest(min_stay_days=2))
-    market = analytics.get_market_price_correspondence_v1(price=5000000)
+    market = analytics.get_market_price_correspondence(price=5000000)
     report = analytics.get_report_for_classified()
 
     assert updated_bookings.success is True
@@ -180,10 +180,10 @@ def test_ratings_flows() -> None:
     profile = RatingProfile(transport)
     review = Review(transport)
 
-    created = answer.create_review_answer_v1(review_id=123, text="Спасибо за отзыв")
-    deleted = answer.delete_review_answer_v1()
-    info = profile.get_ratings_info_v1()
-    reviews = review.list_reviews_v1(query=ReviewsQuery(page=2))
+    created = answer.create(review_id=123, text="Спасибо за отзыв")
+    deleted = answer.delete()
+    info = profile.get()
+    reviews = review.list(query=ReviewsQuery(page=2))
 
     assert created.answer_id == "456"
     assert deleted.success is True

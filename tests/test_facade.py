@@ -1,6 +1,8 @@
+import pytest
+
 from avito import AuthSettings, AvitoClient, AvitoSettings
 from avito.accounts import Account, AccountHierarchy
-from avito.ads import Ad, AdPromotion, AdStats, AutoloadLegacy, AutoloadProfile, AutoloadReport
+from avito.ads import Ad, AdPromotion, AdStats, AutoloadArchive, AutoloadProfile, AutoloadReport
 from avito.auth import AuthProvider
 from avito.autoteka import (
     AutotekaMonitoring,
@@ -9,7 +11,7 @@ from avito.autoteka import (
     AutotekaValuation,
     AutotekaVehicle,
 )
-from avito.cpa import CallTrackingCall, CpaCall, CpaChat, CpaLead, CpaLegacy
+from avito.cpa import CallTrackingCall, CpaArchive, CpaCall, CpaChat, CpaLead
 from avito.jobs import Application, JobDictionary, JobWebhook, Resume, Vacancy
 from avito.messenger import Chat, ChatMedia, ChatMessage, ChatWebhook, SpecialOfferCampaign
 from avito.orders import DeliveryOrder, DeliveryTask, Order, OrderLabel, SandboxDelivery, Stock
@@ -39,7 +41,7 @@ def test_single_client_exposes_domain_factories() -> None:
     assert isinstance(client.ad_promotion(1), AdPromotion)
     assert isinstance(client.autoload_profile(1), AutoloadProfile)
     assert isinstance(client.autoload_report(1), AutoloadReport)
-    assert isinstance(client.autoload_legacy(1), AutoloadLegacy)
+    assert isinstance(client.autoload_archive(1), AutoloadArchive)
     assert isinstance(client.chat("chat-1", user_id=1), Chat)
     assert isinstance(client.chat_message("msg-1", chat_id="chat-1", user_id=1), ChatMessage)
     assert isinstance(client.chat_webhook(), ChatWebhook)
@@ -65,7 +67,7 @@ def test_single_client_exposes_domain_factories() -> None:
     assert isinstance(client.cpa_lead(1), CpaLead)
     assert isinstance(client.cpa_chat(1), CpaChat)
     assert isinstance(client.cpa_call(1), CpaCall)
-    assert isinstance(client.cpa_legacy(1), CpaLegacy)
+    assert isinstance(client.cpa_archive(1), CpaArchive)
     assert isinstance(client.call_tracking_call(1), CallTrackingCall)
     assert isinstance(client.autoteka_vehicle(1), AutotekaVehicle)
     assert isinstance(client.autoteka_report(1), AutotekaReport)
@@ -84,3 +86,15 @@ def test_single_client_exposes_domain_factories() -> None:
 
 def test_package_exports_auth_settings_as_public_config_contract() -> None:
     assert AuthSettings.__name__ == "AuthSettings"
+
+
+def test_removed_legacy_factory_names_are_absent() -> None:
+    client = AvitoClient(
+        AvitoSettings(auth=AuthSettings(client_id="client-id", client_secret="client-secret"))
+    )
+
+    with pytest.raises(AttributeError):
+        _ = client.autoload_legacy  # type: ignore[attr-defined]
+
+    with pytest.raises(AttributeError):
+        _ = client.cpa_legacy  # type: ignore[attr-defined]

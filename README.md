@@ -11,6 +11,8 @@
 - дать единый вход в доменные сценарии вида `avito.ad(...).get()` и `avito.chat(...).send_message(...)`;
 - покрыть все swagger-документы из каталога [docs](docs).
 
+Каталог [docs](docs) рассматривается как upstream API contract. Эти файлы не редактируются вручную при развитии SDK: публичные модели, мапперы и тесты должны подстраиваться под documented shape из `docs/*`.
+
 ## Установка
 
 ```bash
@@ -138,11 +140,43 @@ with AvitoClient() as avito:
 
 ```python
 from avito import AvitoClient
+from avito.promotion.models import (
+    CampaignListFilter,
+    CampaignOrderBy,
+    CampaignUpdateTimeFilter,
+    CreateAutostrategyBudgetRequest,
+    ListAutostrategyCampaignsRequest,
+)
 
 with AvitoClient() as avito:
     services = avito.promotion_order().list_orders()
     forecast = avito.bbip_promotion(item_id=42).get_forecasts(items=[])
+    budget = avito.autostrategy_campaign().create_budget(
+        request=CreateAutostrategyBudgetRequest(
+            campaign_type="AS",
+            start_time="2026-04-20T00:00:00Z",
+            finish_time="2026-04-27T00:00:00Z",
+            items=[42, 43],
+        )
+    )
     campaign = avito.autostrategy_campaign(campaign_id=15).get()
+    campaigns = avito.autostrategy_campaign().list(
+        request=ListAutostrategyCampaignsRequest(
+            limit=50,
+            status_id=[1, 2],
+            order_by=[CampaignOrderBy(column="startTime", direction="asc")],
+            filter=CampaignListFilter(
+                by_update_time=CampaignUpdateTimeFilter(
+                    from_time="2026-04-01T00:00:00Z",
+                    to_time="2026-04-30T00:00:00Z",
+                )
+            ),
+        )
+    )
+
+print(budget.calc_id)
+print(campaign.campaign.title if campaign.campaign else None)
+print(campaigns.total_count)
 ```
 
 ### Заказы и доставка
@@ -237,7 +271,7 @@ with AvitoClient() as avito:
             periods=[RealtyPricePeriod(date_from="2026-05-01", price=5000)]
         )
     )
-    reviews = avito.review().list_reviews_v1()
+    reviews = avito.review().list()
     tariff = avito.tariff().get_tariff_info()
 ```
 

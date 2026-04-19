@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-from collections.abc import Mapping
 from dataclasses import dataclass
 
 from avito.ads.mappers import (
@@ -256,15 +255,10 @@ class VasClient:
         user_id: int,
         item_id: int,
         request: ApplyVasRequest,
-        action: str = "apply_vas",
-        target: Mapping[str, object] | None = None,
-        request_payload: Mapping[str, object] | None = None,
     ) -> PromotionActionResult:
         """Применяет дополнительные услуги к объявлению."""
 
-        payload_to_send = (
-            dict(request_payload) if request_payload is not None else request.to_payload()
-        )
+        payload_to_send = request.to_payload()
         payload = self.transport.request_json(
             "PUT",
             f"/core/v1/accounts/{user_id}/items/{item_id}/vas",
@@ -273,8 +267,8 @@ class VasClient:
         )
         return map_promotion_action(
             payload,
-            action=action,
-            target=target or {"item_id": item_id, "user_id": user_id},
+            action="apply_vas",
+            target={"item_id": item_id, "user_id": user_id},
             request_payload=payload_to_send,
         )
 
@@ -284,15 +278,10 @@ class VasClient:
         user_id: int,
         item_id: int,
         request: ApplyVasPackageRequest,
-        action: str = "apply_vas_package",
-        target: Mapping[str, object] | None = None,
-        request_payload: Mapping[str, object] | None = None,
     ) -> PromotionActionResult:
         """Применяет пакет дополнительных услуг."""
 
-        payload_to_send = (
-            dict(request_payload) if request_payload is not None else request.to_payload()
-        )
+        payload_to_send = request.to_payload()
         payload = self.transport.request_json(
             "PUT",
             f"/core/v2/accounts/{user_id}/items/{item_id}/vas_packages",
@@ -301,35 +290,30 @@ class VasClient:
         )
         return map_promotion_action(
             payload,
-            action=action,
-            target=target or {"item_id": item_id, "user_id": user_id},
+            action="apply_vas_package",
+            target={"item_id": item_id, "user_id": user_id},
             request_payload=payload_to_send,
         )
 
-    def apply_vas_v2(
+    def apply_vas_direct(
         self,
         *,
         item_id: int,
         request: ApplyVasRequest,
-        action: str = "apply_vas_v2",
-        target: Mapping[str, object] | None = None,
-        request_payload: Mapping[str, object] | None = None,
     ) -> PromotionActionResult:
         """Применяет услуги продвижения через v2 endpoint."""
 
-        payload_to_send = (
-            dict(request_payload) if request_payload is not None else request.to_payload()
-        )
+        payload_to_send = request.to_payload()
         payload = self.transport.request_json(
             "PUT",
             f"/core/v2/items/{item_id}/vas/",
-            context=RequestContext("ads.vas.apply_v2", allow_retry=True),
+            context=RequestContext("ads.vas.apply_direct", allow_retry=True),
             json_body=payload_to_send,
         )
         return map_promotion_action(
             payload,
-            action=action,
-            target=target or {"item_id": item_id},
+            action="apply_vas_direct",
+            target={"item_id": item_id},
             request_payload=payload_to_send,
         )
 
@@ -493,55 +477,55 @@ class AutoloadClient:
 
 
 @dataclass(slots=True)
-class AutoloadLegacyClient:
-    """Выполняет legacy HTTP-операции автозагрузки."""
+class AutoloadArchiveClient:
+    """Выполняет архивные HTTP-операции автозагрузки."""
 
     transport: Transport
 
     def get_profile(self) -> AutoloadProfileSettings:
-        """Получает legacy профиль автозагрузки."""
+        """Получает архивный профиль автозагрузки."""
 
         return request_public_model(
             self.transport,
             "GET",
             "/autoload/v1/profile",
-            context=RequestContext("ads.autoload_legacy.get_profile"),
+            context=RequestContext("ads.autoload_archive.get_profile"),
             mapper=map_autoload_profile,
         )
 
     def save_profile(self, request: AutoloadProfileUpdateRequest) -> ActionResult:
-        """Создает или редактирует legacy профиль автозагрузки."""
+        """Создает или редактирует архивный профиль автозагрузки."""
 
         return request_public_model(
             self.transport,
             "POST",
             "/autoload/v1/profile",
-            context=RequestContext("ads.autoload_legacy.save_profile", allow_retry=True),
+            context=RequestContext("ads.autoload_archive.save_profile", allow_retry=True),
             mapper=map_action_result,
             json_body=request.to_payload(),
         )
 
     def get_last_completed_report(self) -> LegacyAutoloadReport:
-        """Получает статистику по последней выгрузке legacy v2."""
+        """Получает статистику по последней архивной выгрузке."""
 
         return request_public_model(
             self.transport,
             "GET",
             "/autoload/v2/reports/last_completed_report",
-            context=RequestContext("ads.autoload_legacy.get_last_completed_report"),
+            context=RequestContext("ads.autoload_archive.get_last_completed_report"),
             mapper=map_legacy_autoload_report,
         )
 
     def get_report(self, *, report_id: int) -> LegacyAutoloadReport:
-        """Получает статистику по конкретной выгрузке legacy v2."""
+        """Получает статистику по конкретной архивной выгрузке."""
 
         return request_public_model(
             self.transport,
             "GET",
             f"/autoload/v2/reports/{report_id}",
-            context=RequestContext("ads.autoload_legacy.get_report"),
+            context=RequestContext("ads.autoload_archive.get_report"),
             mapper=map_legacy_autoload_report,
         )
 
 
-__all__ = ("AdsClient", "AutoloadClient", "AutoloadLegacyClient", "StatsClient", "VasClient")
+__all__ = ("AdsClient", "AutoloadArchiveClient", "AutoloadClient", "StatsClient", "VasClient")

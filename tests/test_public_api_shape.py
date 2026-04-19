@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import importlib
 import inspect
 
 import avito.autoteka as autoteka
@@ -71,3 +72,80 @@ def test_chat_media_upload_images_no_longer_accepts_raw_dict() -> None:
     signature_text = str(inspect.signature(ChatMedia.upload_images))
     assert "dict[str, object]" not in signature_text
     assert "UploadImageFile" in signature_text
+
+
+def test_public_domain_and_client_methods_avoid_raw_dict_mapping_object_signatures() -> None:
+    module_names = (
+        "avito.accounts.domain",
+        "avito.accounts.client",
+        "avito.ads.domain",
+        "avito.ads.client",
+        "avito.autoteka.domain",
+        "avito.autoteka.client",
+        "avito.cpa.domain",
+        "avito.cpa.client",
+        "avito.jobs.domain",
+        "avito.jobs.client",
+        "avito.messenger.domain",
+        "avito.messenger.client",
+        "avito.orders.domain",
+        "avito.orders.client",
+        "avito.promotion.domain",
+        "avito.promotion.client",
+        "avito.ratings.domain",
+        "avito.ratings.client",
+        "avito.realty.domain",
+        "avito.realty.client",
+        "avito.tariffs.domain",
+        "avito.tariffs.client",
+    )
+    banned_tokens = ("Mapping[str, object]", "dict[str, object]", "object]")
+    offenders: list[str] = []
+
+    for module_name in module_names:
+        module = importlib.import_module(module_name)
+        for _, cls in inspect.getmembers(module, inspect.isclass):
+            if cls.__module__ != module_name or cls.__name__.startswith("_"):
+                continue
+            for method_name, method in inspect.getmembers(cls, inspect.isfunction):
+                if method_name.startswith("_"):
+                    continue
+                signature_text = str(inspect.signature(method))
+                if any(token in signature_text for token in banned_tokens):
+                    offenders.append(f"{module_name}.{cls.__name__}.{method_name}{signature_text}")
+
+    assert offenders == []
+
+
+def test_public_surface_does_not_expose_legacy_or_version_suffixed_method_names() -> None:
+    module_names = (
+        "avito.client.client",
+        "avito.auth.provider",
+        "avito.ads.domain",
+        "avito.cpa.domain",
+        "avito.cpa.client",
+        "avito.jobs.domain",
+        "avito.jobs.client",
+        "avito.orders.domain",
+        "avito.orders.client",
+        "avito.ratings.domain",
+        "avito.realty.domain",
+    )
+    banned_fragments = ("legacy_",)
+    banned_suffixes = ("_v1", "_v2")
+    offenders: list[str] = []
+
+    for module_name in module_names:
+        module = importlib.import_module(module_name)
+        for _, cls in inspect.getmembers(module, inspect.isclass):
+            if cls.__module__ != module_name or cls.__name__.startswith("_"):
+                continue
+            for method_name, method in inspect.getmembers(cls, inspect.isfunction):
+                if method_name.startswith("_"):
+                    continue
+                if any(fragment in method_name for fragment in banned_fragments) or method_name.endswith(
+                    banned_suffixes
+                ):
+                    offenders.append(f"{module_name}.{cls.__name__}.{method_name}{inspect.signature(method)}")
+
+    assert offenders == []

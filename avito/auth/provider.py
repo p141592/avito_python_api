@@ -35,7 +35,7 @@ class AuthProvider:
 
     settings: AuthSettings
     token_client: TokenClient | None = None
-    legacy_token_client: LegacyTokenClient | None = None
+    alternate_token_client: AlternateTokenClient | None = None
     autoteka_token_client: TokenClient | None = None
     token_fetcher: TokenFetcher | None = None
     _access_token: AccessToken | None = field(default=None, init=False, repr=False)
@@ -66,7 +66,7 @@ class AuthProvider:
     def close(self) -> None:
         """Закрывает внутренние HTTP-клиенты provider-а."""
 
-        for client in (self.token_client, self.legacy_token_client, self.autoteka_token_client):
+        for client in (self.token_client, self.alternate_token_client, self.autoteka_token_client):
             if client is not None:
                 client.close()
 
@@ -94,10 +94,10 @@ class AuthProvider:
 
         return self._get_token_client()
 
-    def legacy_token_flow(self) -> LegacyTokenClient:
-        """Возвращает legacy alias token client без отдельного публичного API метода."""
+    def alternate_token_flow(self) -> AlternateTokenClient:
+        """Возвращает дополнительный token client для альтернативного `/token` flow."""
 
-        return self._get_legacy_token_client()
+        return self._get_alternate_token_client()
 
     def _fetch_token_response(self) -> TokenResponse:
         if self.token_fetcher is not None:
@@ -140,10 +140,10 @@ class AuthProvider:
             self.token_client = TokenClient(self.settings)
         return self.token_client
 
-    def _get_legacy_token_client(self) -> LegacyTokenClient:
-        if self.legacy_token_client is None:
-            self.legacy_token_client = LegacyTokenClient(self.settings)
-        return self.legacy_token_client
+    def _get_alternate_token_client(self) -> AlternateTokenClient:
+        if self.alternate_token_client is None:
+            self.alternate_token_client = AlternateTokenClient(self.settings)
+        return self.alternate_token_client
 
     def _get_autoteka_token_client(self) -> TokenClient:
         if self.autoteka_token_client is None:
@@ -265,14 +265,14 @@ class TokenClient:
 
 
 @dataclass(slots=True)
-class LegacyTokenClient:
-    """Служебный клиент для legacy alias token endpoint из swagger."""
+class AlternateTokenClient:
+    """Служебный клиент для альтернативного token endpoint из swagger."""
 
     settings: AuthSettings
     client: httpx.Client | None = None
 
     def close(self) -> None:
-        """Закрывает выделенный HTTP-клиент legacy token flow."""
+        """Закрывает выделенный HTTP-клиент альтернативного token flow."""
 
         if self.client is not None:
             self.client.close()
@@ -281,22 +281,22 @@ class LegacyTokenClient:
         self,
         request: ClientCredentialsRequest,
     ) -> TokenResponse:
-        """Запрашивает токен через legacy alias canonical `/token`."""
+        """Запрашивает токен через альтернативный canonical `/token`."""
 
         return TokenClient(
             self.settings,
-            token_url=self.settings.legacy_token_url,
+            token_url=self.settings.alternate_token_url,
             client=self.client,
         ).request_client_credentials_token(request)
 
     def request_refresh_token(self, request: RefreshTokenRequest) -> TokenResponse:
-        """Обновляет токен через legacy alias canonical `/token`."""
+        """Обновляет токен через альтернативный canonical `/token`."""
 
         return TokenClient(
             self.settings,
-            token_url=self.settings.legacy_token_url,
+            token_url=self.settings.alternate_token_url,
             client=self.client,
         ).request_refresh_token(request)
 
 
-__all__ = ("AuthProvider", "LegacyTokenClient", "TokenClient", "TokenFetcher")
+__all__ = ("AlternateTokenClient", "AuthProvider", "TokenClient", "TokenFetcher")

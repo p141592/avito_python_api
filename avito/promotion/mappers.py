@@ -11,6 +11,8 @@ from avito.promotion.models import (
     AutostrategyBudgetPoint,
     AutostrategyPriceRange,
     AutostrategyStat,
+    AutostrategyStatItem,
+    AutostrategyStatTotals,
     BbipBudgetOption,
     BbipDurationRange,
     BbipForecast,
@@ -18,7 +20,11 @@ from avito.promotion.models import (
     BbipSuggest,
     BbipSuggestsResult,
     CampaignActionResult,
+    CampaignDetailsResult,
+    CampaignForecast,
+    CampaignForecastRange,
     CampaignInfo,
+    CampaignItem,
     CampaignsResult,
     CpaAuctionBidOption,
     CpaAuctionBidsResult,
@@ -518,10 +524,9 @@ def map_autostrategy_budget(payload: object) -> AutostrategyBudget:
     """Преобразует расчет бюджета автокампании."""
 
     data = _expect_mapping(payload)
-    budget_payload = _mapping(data, "budget")
-    source = budget_payload or data
+    source = _mapping(data, "budget")
     return AutostrategyBudget(
-        budget_id=_str(data, "budgetId", "budgetID", "id"),
+        calc_id=_int(data, "calcId"),
         recommended=_map_budget_point(_mapping(source, "recommended")),
         minimal=_map_budget_point(_mapping(source, "minimal")),
         maximal=_map_budget_point(_mapping(source, "maximal")),
@@ -559,25 +564,74 @@ def map_campaign_action(payload: object) -> CampaignActionResult:
     """Преобразует результат операции с автокампанией."""
 
     data = _expect_mapping(payload)
-    return CampaignActionResult(
-        campaign_id=_int(data, "campaignId", "campaignID", "id"),
-        status=_str(data, "status"),
+    return CampaignActionResult(campaign=_map_campaign(_mapping(data, "campaign")))
+
+
+def _map_campaign(payload: Payload) -> CampaignInfo | None:
+    if not payload:
+        return None
+    return CampaignInfo(
+        campaign_id=_int(payload, "campaignId"),
+        campaign_type=_str(payload, "campaignType"),
+        budget=_int(payload, "budget"),
+        balance=_int(payload, "balance"),
+        create_time=_str(payload, "createTime"),
+        description=_str(payload, "description"),
+        finish_time=_str(payload, "finishTime"),
+        items_count=_int(payload, "itemsCount"),
+        start_time=_str(payload, "startTime"),
+        status_id=_int(payload, "statusId"),
+        title=_str(payload, "title"),
+        update_time=_str(payload, "updateTime"),
+        user_id=_int(payload, "userId"),
+        version=_int(payload, "version"),
     )
 
 
-def map_campaign_info(payload: object) -> CampaignInfo:
-    """Преобразует информацию об автокампании."""
+def map_campaign_info(payload: object) -> CampaignDetailsResult:
+    """Преобразует полную информацию об автокампании."""
 
     data = _expect_mapping(payload)
-    source = _mapping(data, "campaign") or data
-    return CampaignInfo(
-        campaign_id=_int(source, "campaignId", "campaignID", "id"),
-        campaign_type=_str(source, "campaignType"),
-        status=_str(source, "status"),
-        budget=_int(source, "budget"),
-        balance=_int(source, "balance"),
-        title=_str(source, "title", "name"),
+    return CampaignDetailsResult(
+        campaign=_map_campaign(_mapping(data, "campaign")),
+        forecast=_map_campaign_forecast(_mapping(data, "forecast")),
+        items=[_map_campaign_item(item) for item in _list(data, "items")],
     )
+
+
+def _map_campaign_forecast(payload: Payload) -> CampaignForecast | None:
+    if not payload:
+        return None
+    return CampaignForecast(
+        calls=_map_campaign_forecast_range(_mapping(payload, "calls")),
+        views=_map_campaign_forecast_range(_mapping(payload, "views")),
+    )
+
+
+def _map_campaign_forecast_range(payload: Payload) -> CampaignForecastRange | None:
+    if not payload:
+        return None
+    return CampaignForecastRange(
+        from_value=_int(payload, "from"),
+        to_value=_int(payload, "to"),
+    )
+
+
+def _map_campaign_item(payload: Payload) -> CampaignItem:
+    return CampaignItem(
+        item_id=_int(payload, "itemId"),
+        is_active=_bool(payload, "isActive"),
+    )
+
+
+def map_campaign_list_item(payload: object) -> CampaignInfo:
+    """Преобразует элемент списка автокампаний."""
+
+    data = _expect_mapping(payload)
+    campaign = _map_campaign(data)
+    if campaign is None:
+        raise ResponseMappingError("Не удалось смэппить кампанию.", payload=payload)
+    return campaign
 
 
 def map_campaigns(payload: object) -> CampaignsResult:
@@ -585,7 +639,8 @@ def map_campaigns(payload: object) -> CampaignsResult:
 
     data = _expect_mapping(payload)
     return CampaignsResult(
-        items=[map_campaign_info(item) for item in _items_payload(data)],
+        items=[map_campaign_list_item(item) for item in _list(data, "campaigns")],
+        total_count=_int(data, "totalCount"),
     )
 
 
@@ -593,10 +648,26 @@ def map_autostrategy_stat(payload: object) -> AutostrategyStat:
     """Преобразует статистику автокампании."""
 
     data = _expect_mapping(payload)
-    source = _mapping(data, "stat") or data
     return AutostrategyStat(
-        campaign_id=_int(source, "campaignId", "campaignID", "id"),
-        views=_int(source, "views"),
-        contacts=_int(source, "contacts", "leads"),
-        spend=_int(source, "spend", "spendTotal"),
+        items=[_map_autostrategy_stat_item(item) for item in _list(data, "stat")],
+        totals=_map_autostrategy_stat_totals(_mapping(data, "totals")),
+    )
+
+
+def _map_autostrategy_stat_item(payload: Payload) -> AutostrategyStatItem:
+    return AutostrategyStatItem(
+        date=_str(payload, "date"),
+        calls=_int(payload, "calls"),
+        views=_int(payload, "views"),
+        calls_forecast=_map_campaign_forecast_range(_mapping(payload, "callsForecast")),
+        views_forecast=_map_campaign_forecast_range(_mapping(payload, "viewsForecast")),
+    )
+
+
+def _map_autostrategy_stat_totals(payload: Payload) -> AutostrategyStatTotals | None:
+    if not payload:
+        return None
+    return AutostrategyStatTotals(
+        calls=_int(payload, "calls"),
+        views=_int(payload, "views"),
     )

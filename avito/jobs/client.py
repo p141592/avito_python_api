@@ -200,17 +200,17 @@ class VacanciesClient:
 
     transport: Transport
 
-    def create_v1(self, request: VacancyCreateRequest) -> JobActionResult:
+    def create_classic(self, request: VacancyCreateRequest) -> JobActionResult:
         return request_public_model(
             self.transport,
             "POST",
             "/job/v1/vacancies",
-            context=RequestContext("jobs.vacancies.create_v1", allow_retry=True),
+            context=RequestContext("jobs.vacancies.create_classic", allow_retry=True),
             mapper=map_job_action,
             json_body=request.to_payload(),
         )
 
-    def archive_v1(
+    def archive(
         self,
         *,
         vacancy_id: int | str,
@@ -220,12 +220,12 @@ class VacanciesClient:
             self.transport,
             "PUT",
             f"/job/v1/vacancies/archived/{vacancy_id}",
-            context=RequestContext("jobs.vacancies.archive_v1", allow_retry=True),
+            context=RequestContext("jobs.vacancies.archive", allow_retry=True),
             mapper=map_job_action,
             json_body=request.to_payload(),
         )
 
-    def update_v1(
+    def update_classic(
         self,
         *,
         vacancy_id: int | str,
@@ -235,12 +235,12 @@ class VacanciesClient:
             self.transport,
             "PUT",
             f"/job/v1/vacancies/{vacancy_id}",
-            context=RequestContext("jobs.vacancies.update_v1", allow_retry=True),
+            context=RequestContext("jobs.vacancies.update_classic", allow_retry=True),
             mapper=map_job_action,
             json_body=request.to_payload(),
         )
 
-    def prolongate_v1(
+    def prolongate(
         self,
         *,
         vacancy_id: int | str,
@@ -250,74 +250,74 @@ class VacanciesClient:
             self.transport,
             "POST",
             f"/job/v1/vacancies/{vacancy_id}/prolongate",
-            context=RequestContext("jobs.vacancies.prolongate_v1", allow_retry=True),
+            context=RequestContext("jobs.vacancies.prolongate", allow_retry=True),
             mapper=map_job_action,
             json_body=request.to_payload(),
         )
 
-    def list_v2(self, *, query: VacanciesQuery | None = None) -> VacanciesResult:
+    def list(self, *, query: VacanciesQuery | None = None) -> VacanciesResult:
         return request_public_model(
             self.transport,
             "GET",
             "/job/v2/vacancies",
-            context=RequestContext("jobs.vacancies.list_v2"),
+            context=RequestContext("jobs.vacancies.list"),
             mapper=map_vacancies,
             params=query.to_params() if query is not None else None,
         )
 
-    def create_v2(self, request: VacancyCreateRequest) -> JobActionResult:
+    def create(self, request: VacancyCreateRequest) -> JobActionResult:
         return request_public_model(
             self.transport,
             "POST",
             "/job/v2/vacancies",
-            context=RequestContext("jobs.vacancies.create_v2", allow_retry=True),
+            context=RequestContext("jobs.vacancies.create", allow_retry=True),
             mapper=map_job_action,
             json_body=request.to_payload(),
         )
 
-    def get_by_ids_v2(self, request: VacancyIdsRequest) -> VacanciesResult:
+    def get_by_ids(self, request: VacancyIdsRequest) -> VacanciesResult:
         return request_public_model(
             self.transport,
             "POST",
             "/job/v2/vacancies/batch",
-            context=RequestContext("jobs.vacancies.get_by_ids_v2", allow_retry=True),
+            context=RequestContext("jobs.vacancies.get_by_ids", allow_retry=True),
             mapper=map_vacancies,
             json_body=request.to_payload(),
         )
 
-    def get_statuses_v2(self, request: VacancyIdsRequest) -> VacancyStatusesResult:
+    def get_statuses(self, request: VacancyIdsRequest) -> VacancyStatusesResult:
         return request_public_model(
             self.transport,
             "POST",
             "/job/v2/vacancies/statuses",
-            context=RequestContext("jobs.vacancies.get_statuses_v2", allow_retry=True),
+            context=RequestContext("jobs.vacancies.get_statuses", allow_retry=True),
             mapper=map_vacancy_statuses,
             json_body=request.to_payload(),
         )
 
-    def update_v2(self, *, vacancy_uuid: str, request: VacancyUpdateRequest) -> JobActionResult:
+    def update(self, *, vacancy_uuid: str, request: VacancyUpdateRequest) -> JobActionResult:
         return request_public_model(
             self.transport,
             "POST",
             f"/job/v2/vacancies/update/{vacancy_uuid}",
-            context=RequestContext("jobs.vacancies.update_v2", allow_retry=True),
+            context=RequestContext("jobs.vacancies.update", allow_retry=True),
             mapper=map_job_action,
             json_body=request.to_payload(),
         )
 
-    def get_item_v2(
+    def get_item(
         self, *, vacancy_id: int | str, query: VacanciesQuery | None = None
     ) -> VacancyInfo:
         return request_public_model(
             self.transport,
             "GET",
             f"/job/v2/vacancies/{vacancy_id}",
-            context=RequestContext("jobs.vacancies.get_item_v2"),
+            context=RequestContext("jobs.vacancies.get_item"),
             mapper=map_vacancy_item,
             params=query.to_params() if query is not None else None,
         )
 
-    def auto_renewal_v2(
+    def update_auto_renewal(
         self,
         *,
         vacancy_uuid: str,
@@ -327,7 +327,7 @@ class VacanciesClient:
             self.transport,
             "PUT",
             f"/job/v2/vacancies/{vacancy_uuid}/auto_renewal",
-            context=RequestContext("jobs.vacancies.auto_renewal_v2", allow_retry=True),
+            context=RequestContext("jobs.vacancies.update_auto_renewal", allow_retry=True),
             mapper=map_job_action,
             json_body=request.to_payload(),
         )

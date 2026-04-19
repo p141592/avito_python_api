@@ -22,6 +22,9 @@ from avito.promotion import (
     TrxPromotionApplyItem,
 )
 from avito.promotion.models import (
+    CampaignListFilter,
+    CampaignOrderBy,
+    CampaignUpdateTimeFilter,
     CreateAutostrategyBudgetRequest,
     CreateAutostrategyCampaignRequest,
     ListAutostrategyCampaignsRequest,
@@ -315,11 +318,16 @@ def test_autostrategy_flows() -> None:
         path = request.url.path
         payload = json.loads(request.content.decode()) if request.content else None
         if path == "/autostrategy/v1/budget":
-            assert payload == {"listingFee": 1000}
+            assert payload == {
+                "campaignType": "AS",
+                "startTime": "2026-04-20T00:00:00Z",
+                "finishTime": "2026-04-27T00:00:00Z",
+                "items": [101, 102],
+            }
             return httpx.Response(
                 200,
                 json={
-                    "budgetId": "budget-1",
+                    "calcId": 501,
                     "budget": {
                         "recommended": {
                             "total": 10100,
@@ -342,11 +350,25 @@ def test_autostrategy_flows() -> None:
                 },
             )
         if path == "/autostrategy/v1/campaign/create":
-            assert payload == {"title": "Весенняя кампания", "budgetId": "budget-1"}
-            return httpx.Response(200, json={"campaignId": 77, "status": "created"})
+            assert payload == {
+                "campaignType": "AS",
+                "title": "Весенняя кампания",
+                "budget": 10000,
+                "calcId": 501,
+                "items": [101, 102],
+                "startTime": "2026-04-20T00:00:00Z",
+                "finishTime": "2026-04-27T00:00:00Z",
+            }
+            return httpx.Response(
+                200,
+                json={"campaign": {"campaignId": 77, "campaignType": "AS", "version": 3}},
+            )
         if path == "/autostrategy/v1/campaign/edit":
-            assert payload == {"campaignId": 77, "title": "Обновленная кампания"}
-            return httpx.Response(200, json={"campaignId": 77, "status": "updated"})
+            assert payload == {"campaignId": 77, "version": 3, "title": "Обновленная кампания"}
+            return httpx.Response(
+                200,
+                json={"campaign": {"campaignId": 77, "campaignType": "AS", "version": 4}},
+            )
         if path == "/autostrategy/v1/campaign/info":
             assert payload == {"campaignId": 77}
             return httpx.Response(
@@ -355,63 +377,124 @@ def test_autostrategy_flows() -> None:
                     "campaign": {
                         "campaignId": 77,
                         "campaignType": "AS",
-                        "status": "active",
+                        "statusId": 1,
                         "budget": 10000,
                         "balance": 9000,
-                    }
+                        "title": "Весенняя кампания",
+                        "version": 4,
+                    },
+                    "forecast": {
+                        "calls": {"from": 2, "to": 5},
+                        "views": {"from": 30, "to": 50},
+                    },
+                    "items": [{"itemId": 101, "isActive": True}],
                 },
             )
         if path == "/autostrategy/v1/campaign/stop":
-            assert payload == {"campaignId": 77}
-            return httpx.Response(200, json={"campaignId": 77, "status": "stopped"})
+            assert payload == {"campaignId": 77, "version": 4}
+            return httpx.Response(
+                200,
+                json={"campaign": {"campaignId": 77, "campaignType": "AS", "version": 5}},
+            )
         if path == "/autostrategy/v1/campaigns":
-            assert payload == {"status": "active"}
+            assert payload == {
+                "limit": 20,
+                "offset": 10,
+                "statusId": [1, 2],
+                "orderBy": [{"column": "startTime", "direction": "asc"}],
+                "filter": {
+                    "byUpdateTime": {
+                        "from": "2026-04-01T00:00:00Z",
+                        "to": "2026-04-30T00:00:00Z",
+                    }
+                },
+            }
             return httpx.Response(
                 200,
                 json={
-                    "items": [
+                    "campaigns": [
                         {
                             "campaignId": 77,
                             "campaignType": "AS",
-                            "status": "active",
+                            "statusId": 1,
                             "budget": 10000,
                         }
-                    ]
+                    ],
+                    "totalCount": 1,
                 },
             )
         assert path == "/autostrategy/v1/stat"
         assert payload == {"campaignId": 77}
         return httpx.Response(
-            200, json={"stat": {"campaignId": 77, "views": 500, "contacts": 30, "spend": 4500}}
+            200,
+            json={
+                "stat": [
+                    {
+                        "date": "2026-04-18",
+                        "calls": 30,
+                        "views": 500,
+                        "callsForecast": {"from": 25, "to": 35},
+                        "viewsForecast": {"from": 450, "to": 550},
+                    }
+                ],
+                "totals": {"calls": 30, "views": 500},
+            },
         )
 
     campaign = AutostrategyCampaign(make_transport(httpx.MockTransport(handler)), resource_id=77)
 
     budget = campaign.create_budget(
-        request=CreateAutostrategyBudgetRequest(payload={"listingFee": 1000})
+        request=CreateAutostrategyBudgetRequest(
+            campaign_type="AS",
+            start_time="2026-04-20T00:00:00Z",
+            finish_time="2026-04-27T00:00:00Z",
+            items=[101, 102],
+        )
     )
     created = campaign.create(
         request=CreateAutostrategyCampaignRequest(
-            payload={"title": "Весенняя кампания", "budgetId": "budget-1"}
+            campaign_type="AS",
+            title="Весенняя кампания",
+            budget=10000,
+            calc_id=501,
+            items=[101, 102],
+            start_time="2026-04-20T00:00:00Z",
+            finish_time="2026-04-27T00:00:00Z",
         )
     )
     updated = campaign.update(
         request=UpdateAutostrategyCampaignRequest(
-            payload={"campaignId": 77, "title": "Обновленная кампания"}
+            campaign_id=77,
+            version=3,
+            title="Обновленная кампания",
         )
     )
     info = campaign.get()
-    stopped = campaign.delete()
+    stopped = campaign.delete(version=4)
     campaigns = campaign.list(
-        request=ListAutostrategyCampaignsRequest(payload={"status": "active"})
+        request=ListAutostrategyCampaignsRequest(
+            limit=20,
+            offset=10,
+            status_id=[1, 2],
+            order_by=[CampaignOrderBy(column="startTime", direction="asc")],
+            filter=CampaignListFilter(
+                by_update_time=CampaignUpdateTimeFilter(
+                    from_time="2026-04-01T00:00:00Z",
+                    to_time="2026-04-30T00:00:00Z",
+                )
+            ),
+        )
     )
     stat = campaign.get_stat()
 
-    assert budget.budget_id == "budget-1"
+    assert budget.calc_id == 501
     assert budget.recommended is not None and budget.recommended.total == 10100
-    assert created.status == "created"
-    assert updated.status == "updated"
-    assert info.balance == 9000
-    assert stopped.status == "stopped"
+    assert created.campaign is not None and created.campaign.version == 3
+    assert updated.campaign is not None and updated.campaign.version == 4
+    assert info.campaign is not None and info.campaign.balance == 9000
+    assert info.items[0].item_id == 101
+    assert stopped.campaign is not None and stopped.campaign.version == 5
     assert campaigns.items[0].campaign_id == 77
-    assert stat.spend == 4500
+    assert campaigns.total_count == 1
+    assert stat.totals is not None and stat.totals.views == 500
+    assert stat.items[0].calls == 30

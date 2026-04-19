@@ -9,7 +9,7 @@ from avito.config import AvitoSettings
 from avito.core import Transport
 from avito.core.retries import RetryPolicy
 from avito.core.types import ApiTimeouts
-from avito.cpa import CallTrackingCall, CpaCall, CpaChat, CpaLead, CpaLegacy
+from avito.cpa import CallTrackingCall, CpaArchive, CpaCall, CpaChat, CpaLead
 from avito.cpa.models import (
     CallTrackingCallsRequest,
     CpaCallByIdRequest,
@@ -136,7 +136,7 @@ def test_cpa_chat_and_phone_flows() -> None:
     assert phones.items[1].phone_number == "+79990000002"
 
 
-def test_cpa_calls_balance_and_legacy_flows() -> None:
+def test_cpa_calls_balance_and_archive_flows() -> None:
     audio_bytes = b"ID3 fake audio"
 
     def handler(request: httpx.Request) -> httpx.Response:
@@ -214,7 +214,7 @@ def test_cpa_calls_balance_and_legacy_flows() -> None:
     transport = make_transport(httpx.MockTransport(handler))
     cpa_call = CpaCall(transport, resource_id="2001")
     cpa_lead = CpaLead(transport, resource_id="act-1")
-    legacy = CpaLegacy(transport, resource_id="2001")
+    archive = CpaArchive(transport, resource_id="2001")
 
     calls = cpa_call.list(
         request=CpaCallsByTimeRequest(
@@ -228,10 +228,10 @@ def test_cpa_calls_balance_and_legacy_flows() -> None:
     complaint_by_action = cpa_lead.create_complaint_by_action_id(
         request=CpaLeadComplaintRequest(action_id="act-1", reason="duplicate")
     )
-    balance_v3 = cpa_lead.create_balance_info_v3()
-    balance_v2 = legacy.get_balance_info_v2()
-    call_v2 = legacy.get_call_by_id_v2(request=CpaCallByIdRequest(call_id=2001))
-    record = legacy.get_call()
+    balance_v3 = cpa_lead.get_balance_info()
+    balance_v2 = archive.get_balance_info()
+    call_v2 = archive.get_call_by_id(request=CpaCallByIdRequest(call_id=2001))
+    record = archive.get_call()
 
     assert calls.items[0].record_url == "https://example.com/record-2001.mp3"
     assert complaint.success is True

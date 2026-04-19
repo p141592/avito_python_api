@@ -9,10 +9,10 @@ import pytest
 
 from avito import AvitoClient
 from avito.auth import (
+    AlternateTokenClient,
     AuthProvider,
     AuthSettings,
     ClientCredentialsRequest,
-    LegacyTokenClient,
     RefreshTokenRequest,
     TokenClient,
 )
@@ -122,7 +122,7 @@ def test_token_client_maps_authentication_error() -> None:
     assert error.value.error_code == "invalid_client"
 
 
-def test_legacy_token_alias_does_not_create_duplicate_public_client_api() -> None:
+def test_alternate_token_flow_does_not_create_duplicate_public_client_api() -> None:
     settings = AvitoSettings(
         base_url="https://api.avito.ru",
         auth=AuthSettings(client_id="client-id", client_secret="client-secret"),
@@ -133,27 +133,27 @@ def test_legacy_token_alias_does_not_create_duplicate_public_client_api() -> Non
 
     auth_provider = client.auth()
     assert isinstance(auth_provider.token_flow(), TokenClient)
-    assert isinstance(auth_provider.legacy_token_flow(), LegacyTokenClient)
+    assert isinstance(auth_provider.alternate_token_flow(), AlternateTokenClient)
 
     with pytest.raises(AttributeError):
         _ = client.legacy_auth  # type: ignore[attr-defined]
 
 
-def test_legacy_token_client_uses_same_public_contract_for_duplicate_token_path() -> None:
+def test_alternate_token_client_uses_same_public_contract_for_duplicate_token_path() -> None:
     captured_paths: list[str] = []
 
     def handler(request: httpx.Request) -> httpx.Response:
         captured_paths.append(request.url.path)
         return httpx.Response(200, json={"access_token": "legacy-access", "expires_in": 3600})
 
-    legacy_token_client = LegacyTokenClient(
+    alternate_token_client = AlternateTokenClient(
         AuthSettings(
-            client_id="client-id", client_secret="client-secret", legacy_token_url="/token"
+            client_id="client-id", client_secret="client-secret", alternate_token_url="/token"
         ),
         client=make_token_http_client(httpx.MockTransport(handler)),
     )
 
-    token_response = legacy_token_client.request_refresh_token(
+    token_response = alternate_token_client.request_refresh_token(
         RefreshTokenRequest(
             client_id="client-id",
             client_secret="client-secret",

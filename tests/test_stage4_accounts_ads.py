@@ -5,7 +5,7 @@ import json
 import httpx
 
 from avito.accounts import Account, AccountHierarchy
-from avito.ads import Ad, AdPromotion, AdStats, AutoloadLegacy, AutoloadProfile, AutoloadReport
+from avito.ads import Ad, AdPromotion, AdStats, AutoloadArchive, AutoloadProfile, AutoloadReport
 from avito.auth import AuthSettings
 from avito.config import AvitoSettings
 from avito.core import Transport
@@ -242,7 +242,7 @@ def test_ads_domain_covers_item_stats_spendings_and_promotion() -> None:
     vas_prices = promotion.get_vas_prices(item_ids=[101], location_id=213)
     vas_apply = promotion.apply_vas(codes=["xl"])
     package_apply = promotion.apply_vas_package(package_code="turbo")
-    vas_v2_apply = promotion.apply_vas_v2(codes=["highlight"])
+    vas_v2_apply = promotion.apply_vas_direct(codes=["highlight"])
 
     assert item.title == "Смартфон"
     assert items.total == 1
@@ -257,7 +257,7 @@ def test_ads_domain_covers_item_stats_spendings_and_promotion() -> None:
     assert vas_v2_apply.status == "v2_applied"
 
 
-def test_autoload_domains_cover_profile_report_and_legacy_flows() -> None:
+def test_autoload_domains_cover_profile_report_and_archive_flows() -> None:
     def handler(request: httpx.Request) -> httpx.Response:
         path = request.url.path
         if path == "/autoload/v2/profile" and request.method == "GET":
@@ -334,7 +334,7 @@ def test_autoload_domains_cover_profile_report_and_legacy_flows() -> None:
     transport = make_transport(httpx.MockTransport(handler))
     profile = AutoloadProfile(transport)
     report = AutoloadReport(transport, resource_id=501)
-    legacy = AutoloadLegacy(transport, resource_id=401)
+    archive = AutoloadArchive(transport, resource_id=401)
 
     current_profile = profile.get()
     saved_profile = profile.save(is_enabled=True, email="feed@example.com")
@@ -349,10 +349,10 @@ def test_autoload_domains_cover_profile_report_and_legacy_flows() -> None:
     ad_ids = report.get_ad_ids_by_avito_ids(avito_ids=[9001, 9002])
     avito_ids = report.get_avito_ids_by_ad_ids(ad_ids=[1, 2])
     items_info = report.get_items_info(item_ids=[101])
-    legacy_profile = legacy.get_profile()
-    legacy_saved = legacy.save_profile(email="legacy@example.com")
-    legacy_last = legacy.get_last_completed_report()
-    legacy_report = legacy.get_report()
+    legacy_profile = archive.get_profile()
+    legacy_saved = archive.save_profile(email="legacy@example.com")
+    legacy_last = archive.get_last_completed_report()
+    legacy_report = archive.get_report()
 
     assert current_profile.is_enabled is True
     assert saved_profile.success is True

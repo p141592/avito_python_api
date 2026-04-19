@@ -7,10 +7,10 @@ from dataclasses import dataclass
 from avito.core import Transport, ValidationError
 from avito.cpa.client import (
     CallTrackingClient,
+    CpaArchiveClient,
     CpaCallsClient,
     CpaChatsClient,
     CpaLeadsClient,
-    CpaLegacyClient,
 )
 from avito.cpa.models import (
     CallTrackingCallResponse,
@@ -56,8 +56,8 @@ class CpaLead(DomainObject):
     ) -> CpaActionResult:
         return CpaLeadsClient(self.transport).create_complaint_by_action_id(request)
 
-    def create_balance_info_v3(self) -> CpaBalanceInfo:
-        return CpaLeadsClient(self.transport).get_balance_info_v3()
+    def get_balance_info(self) -> CpaBalanceInfo:
+        return CpaLeadsClient(self.transport).get_balance_info()
 
 
 @dataclass(slots=True, frozen=True)
@@ -80,8 +80,8 @@ class CpaChat(DomainObject):
     ) -> CpaChatsResult:
         client = CpaChatsClient(self.transport)
         if version == 1:
-            return client.list_by_time_v1(request)
-        return client.list_by_time_v2(request)
+            return client.list_by_time_classic(request)
+        return client.list_by_time(request)
 
     def get_phones_info_from_chats(
         self,
@@ -104,29 +104,29 @@ class CpaCall(DomainObject):
     user_id: int | str | None = None
 
     def list(self, *, request: CpaCallsByTimeRequest) -> CpaCallsResult:
-        return CpaCallsClient(self.transport).list_by_time_v2(request)
+        return CpaCallsClient(self.transport).list_by_time(request)
 
     def create_complaint(self, *, request: CpaCallComplaintRequest) -> CpaActionResult:
         return CpaCallsClient(self.transport).create_complaint(request)
 
 
 @dataclass(slots=True, frozen=True)
-class CpaLegacy(DomainObject):
-    """Доменный объект legacy-операций CPA."""
+class CpaArchive(DomainObject):
+    """Доменный объект архивных операций CPA."""
 
     resource_id: int | str | None = None
     user_id: int | str | None = None
 
     def get_call(self, *, call_id: int | str | None = None) -> CpaAudioRecord:
-        return CpaLegacyClient(self.transport).get_record(
+        return CpaArchiveClient(self.transport).get_record(
             call_id=call_id or self._require_resource_id()
         )
 
-    def get_balance_info_v2(self) -> CpaBalanceInfo:
-        return CpaLegacyClient(self.transport).get_balance_info_v2()
+    def get_balance_info(self) -> CpaBalanceInfo:
+        return CpaArchiveClient(self.transport).get_balance_info()
 
-    def get_call_by_id_v2(self, *, request: CpaCallByIdRequest) -> CpaCallInfo:
-        return CpaLegacyClient(self.transport).get_call_by_id_v2(request)
+    def get_call_by_id(self, *, request: CpaCallByIdRequest) -> CpaCallInfo:
+        return CpaArchiveClient(self.transport).get_call_by_id(request)
 
     def _require_resource_id(self) -> str:
         if self.resource_id is None:
@@ -165,4 +165,4 @@ class CallTrackingCall(DomainObject):
         return str(self.resource_id)
 
 
-__all__ = ("CallTrackingCall", "CpaCall", "CpaChat", "CpaLead", "CpaLegacy", "DomainObject")
+__all__ = ("CallTrackingCall", "CpaArchive", "CpaCall", "CpaChat", "CpaLead", "DomainObject")

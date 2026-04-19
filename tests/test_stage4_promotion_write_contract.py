@@ -51,7 +51,7 @@ def test_write_methods_dry_run_skip_transport_and_return_preview() -> None:
     results = [
         ad_promotion.apply_vas(codes=["xl"], dry_run=True),
         ad_promotion.apply_vas_package(package_code="turbo", dry_run=True),
-        ad_promotion.apply_vas_v2(codes=["highlight"], dry_run=True),
+        ad_promotion.apply_vas_direct(codes=["highlight"], dry_run=True),
         bbip.create_order(
             items=[BbipOrderItem(item_id=101, duration=7, price=1000, old_price=1200)],
             dry_run=True,
@@ -145,7 +145,7 @@ def test_write_methods_dry_run_and_apply_build_identical_payloads() -> None:
 
     vas_preview = ad_promotion.apply_vas(codes=["xl"], dry_run=True)
     package_preview = ad_promotion.apply_vas_package(package_code="turbo", dry_run=True)
-    vas_v2_preview = ad_promotion.apply_vas_v2(codes=["highlight"], dry_run=True)
+    vas_v2_preview = ad_promotion.apply_vas_direct(codes=["highlight"], dry_run=True)
     bbip_preview = bbip.create_order(
         items=[BbipOrderItem(item_id=101, duration=7, price=1000, old_price=1200)],
         dry_run=True,
@@ -171,7 +171,7 @@ def test_write_methods_dry_run_and_apply_build_identical_payloads() -> None:
 
     vas_apply = ad_promotion.apply_vas(codes=["xl"])
     package_apply = ad_promotion.apply_vas_package(package_code="turbo")
-    vas_v2_apply = ad_promotion.apply_vas_v2(codes=["highlight"])
+    vas_v2_apply = ad_promotion.apply_vas_direct(codes=["highlight"])
     bbip_apply = bbip.create_order(
         items=[BbipOrderItem(item_id=101, duration=7, price=1000, old_price=1200)]
     )

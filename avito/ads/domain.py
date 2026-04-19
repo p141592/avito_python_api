@@ -2,10 +2,17 @@
 
 from __future__ import annotations
 
-from collections.abc import Mapping, Sequence
+from collections.abc import Sequence
 from dataclasses import dataclass
+from typing import Any
 
-from avito.ads.client import AdsClient, AutoloadClient, AutoloadLegacyClient, StatsClient, VasClient
+from avito.ads.client import (
+    AdsClient,
+    AutoloadArchiveClient,
+    AutoloadClient,
+    StatsClient,
+    VasClient,
+)
 from avito.ads.models import (
     ActionResult,
     AdItem,
@@ -39,7 +46,7 @@ from avito.core import Transport, ValidationError
 from avito.promotion.models import PromotionActionResult
 
 
-def _validate_non_empty_items(name: str, items: Sequence[object]) -> None:
+def _validate_non_empty_items(name: str, items: Sequence[Any]) -> None:
     if not items:
         raise ValidationError(f"`{name}` must contain at least one item.")
 
@@ -58,8 +65,8 @@ def _validate_string_items(name: str, values: Sequence[str]) -> None:
 def _preview_result(
     *,
     action: str,
-    target: Mapping[str, object],
-    request_payload: Mapping[str, object],
+    target: dict[str, Any],
+    request_payload: dict[str, Any],
 ) -> PromotionActionResult:
     return PromotionActionResult(
         action=action,
@@ -286,9 +293,6 @@ class AdPromotion(DomainObject):
             user_id=user_id,
             item_id=item_id,
             request=request,
-            action="apply_vas",
-            target=target,
-            request_payload=request_payload,
         )
 
     def apply_vas_package(
@@ -314,18 +318,15 @@ class AdPromotion(DomainObject):
             user_id=user_id,
             item_id=item_id,
             request=request,
-            action="apply_vas_package",
-            target=target,
-            request_payload=request_payload,
         )
 
-    def apply_vas_v2(
+    def apply_vas_direct(
         self,
         *,
         codes: list[str],
         dry_run: bool = False,
     ) -> PromotionActionResult:
-        """Применяет услуги продвижения через v2 endpoint."""
+        """Применяет услуги продвижения через прямой v2 endpoint."""
 
         item_id = self._require_item_id()
         _validate_string_items("codes", codes)
@@ -334,16 +335,13 @@ class AdPromotion(DomainObject):
         target = {"item_id": item_id}
         if dry_run:
             return _preview_result(
-                action="apply_vas_v2",
+                action="apply_vas_direct",
                 target=target,
                 request_payload=request_payload,
             )
-        return VasClient(self.transport).apply_vas_v2(
+        return VasClient(self.transport).apply_vas_direct(
             item_id=item_id,
             request=request,
-            action="apply_vas_v2",
-            target=target,
-            request_payload=request_payload,
         )
 
     def _require_item_id(self) -> int:
@@ -460,16 +458,16 @@ class AutoloadReport(DomainObject):
 
 
 @dataclass(slots=True, frozen=True)
-class AutoloadLegacy(DomainObject):
-    """Доменный объект legacy-операций автозагрузки."""
+class AutoloadArchive(DomainObject):
+    """Доменный объект архивных операций автозагрузки."""
 
     resource_id: int | str | None = None
     user_id: int | str | None = None
 
     def get_profile(self) -> AutoloadProfileSettings:
-        """Получает legacy профиль автозагрузки."""
+        """Получает архивный профиль автозагрузки."""
 
-        return AutoloadLegacyClient(self.transport).get_profile()
+        return AutoloadArchiveClient(self.transport).get_profile()
 
     def save_profile(
         self,
@@ -478,24 +476,24 @@ class AutoloadLegacy(DomainObject):
         email: str | None = None,
         callback_url: str | None = None,
     ) -> ActionResult:
-        """Сохраняет legacy профиль автозагрузки."""
+        """Сохраняет архивный профиль автозагрузки."""
 
-        return AutoloadLegacyClient(self.transport).save_profile(
+        return AutoloadArchiveClient(self.transport).save_profile(
             AutoloadProfileUpdateRequest(
                 is_enabled=is_enabled, email=email, callback_url=callback_url
             )
         )
 
     def get_last_completed_report(self) -> LegacyAutoloadReport:
-        """Получает legacy статистику по последней выгрузке."""
+        """Получает архивную статистику по последней выгрузке."""
 
-        return AutoloadLegacyClient(self.transport).get_last_completed_report()
+        return AutoloadArchiveClient(self.transport).get_last_completed_report()
 
     def get_report(self) -> LegacyAutoloadReport:
-        """Получает legacy статистику по конкретной выгрузке."""
+        """Получает архивную статистику по конкретной выгрузке."""
 
         report_id = self._require_report_id()
-        return AutoloadLegacyClient(self.transport).get_report(report_id=report_id)
+        return AutoloadArchiveClient(self.transport).get_report(report_id=report_id)
 
     def _require_report_id(self) -> int:
         if self.resource_id is None:
@@ -510,5 +508,5 @@ __all__ = (
     "AdPromotion",
     "AutoloadProfile",
     "AutoloadReport",
-    "AutoloadLegacy",
+    "AutoloadArchive",
 )

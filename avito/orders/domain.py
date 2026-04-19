@@ -225,45 +225,47 @@ class SandboxDelivery(DomainObject):
             tariff_id=tariff_id, request=request
         )
 
-    def add_tariff_v2(self, *, request: AddTariffV2Request) -> DeliveryEntityResult:
-        return SandboxDeliveryClient(self.transport).add_tariff_v2(request)
+    def add_tariff(self, *, request: AddTariffV2Request) -> DeliveryEntityResult:
+        return SandboxDeliveryClient(self.transport).add_tariff(request)
 
     def create_parcel(self, *, request: DeliveryParcelRequest) -> DeliveryEntityResult:
-        return SandboxDeliveryClient(self.transport).create_parcel_v2(request)
+        return SandboxDeliveryClient(self.transport).create_parcel(request)
 
-    def cancel_announcement_v1(
+    def cancel_sandbox_announcement(
         self, *, request: SandboxCancelAnnouncementRequest
     ) -> DeliveryEntityResult:
-        return SandboxDeliveryClient(self.transport).v1_cancel_announcement(request)
+        return SandboxDeliveryClient(self.transport).cancel_sandbox_announcement(request)
 
-    def cancel_parcel_v1(self, *, request: CancelSandboxParcelRequest) -> DeliveryEntityResult:
-        return SandboxDeliveryClient(self.transport).v1_cancel_parcel(request)
+    def cancel_sandbox_parcel(self, *, request: CancelSandboxParcelRequest) -> DeliveryEntityResult:
+        return SandboxDeliveryClient(self.transport).cancel_sandbox_parcel(request)
 
-    def change_parcel_v1(self, *, request: ChangeParcelRequest) -> DeliveryEntityResult:
-        return SandboxDeliveryClient(self.transport).v1_change_parcel(request)
+    def change_sandbox_parcel(self, *, request: ChangeParcelRequest) -> DeliveryEntityResult:
+        return SandboxDeliveryClient(self.transport).change_sandbox_parcel(request)
 
-    def create_announcement_v1(
+    def create_sandbox_announcement(
         self, *, request: SandboxCreateAnnouncementRequest
     ) -> DeliveryEntityResult:
-        return SandboxDeliveryClient(self.transport).v1_create_announcement(request)
+        return SandboxDeliveryClient(self.transport).create_sandbox_announcement(request)
 
-    def get_announcement_event_v1(
+    def get_sandbox_announcement_event(
         self, *, request: SandboxGetAnnouncementEventRequest
     ) -> DeliveryEntityResult:
-        return SandboxDeliveryClient(self.transport).v1_get_announcement_event(request)
+        return SandboxDeliveryClient(self.transport).get_sandbox_announcement_event(request)
 
-    def get_change_parcel_info_v1(
+    def get_sandbox_change_parcel_info(
         self, *, request: GetChangeParcelInfoRequest
     ) -> DeliveryEntityResult:
-        return SandboxDeliveryClient(self.transport).v1_get_change_parcel_info(request)
+        return SandboxDeliveryClient(self.transport).get_sandbox_change_parcel_info(request)
 
-    def get_parcel_info_v1(self, *, request: GetSandboxParcelInfoRequest) -> DeliveryEntityResult:
-        return SandboxDeliveryClient(self.transport).v1_get_parcel_info(request)
+    def get_sandbox_parcel_info(
+        self, *, request: GetSandboxParcelInfoRequest
+    ) -> DeliveryEntityResult:
+        return SandboxDeliveryClient(self.transport).get_sandbox_parcel_info(request)
 
-    def get_registered_parcel_id_v1(
+    def get_sandbox_registered_parcel_id(
         self, *, request: GetRegisteredParcelIdRequest
     ) -> DeliveryEntityResult:
-        return SandboxDeliveryClient(self.transport).v1_get_registered_parcel_id(request)
+        return SandboxDeliveryClient(self.transport).get_sandbox_registered_parcel_id(request)
 
 
 @dataclass(slots=True, frozen=True)

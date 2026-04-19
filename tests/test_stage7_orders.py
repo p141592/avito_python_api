@@ -574,7 +574,7 @@ def test_delivery_production_and_sandbox_flows() -> None:
             ]
         ),
     )
-    tariff = sandbox.add_tariff_v2(
+    tariff = sandbox.add_tariff(
         request=AddTariffV2Request(
             name="Tariff",
             delivery_provider_tariff_id="tariff-1",
@@ -611,7 +611,7 @@ def test_delivery_production_and_sandbox_flows() -> None:
             ],
         )
     )
-    cancelled_announcement_v1 = sandbox.cancel_announcement_v1(
+    cancelled_announcement_v1 = sandbox.cancel_sandbox_announcement(
         request=SandboxCancelAnnouncementRequest(
             announcement_id="ann-1",
             date="2026-04-20T10:00:00Z",
@@ -620,13 +620,13 @@ def test_delivery_production_and_sandbox_flows() -> None:
             ),
         )
     )
-    cancelled_parcel_v1 = sandbox.cancel_parcel_v1(
+    cancelled_parcel_v1 = sandbox.cancel_sandbox_parcel(
         request=CancelSandboxParcelRequest(parcel_id="spar-1")
     )
-    changed_parcel_v1 = sandbox.change_parcel_v1(
+    changed_parcel_v1 = sandbox.change_sandbox_parcel(
         request=ChangeParcelRequest(type="changeReceiver", parcel_id="spar-1")
     )
-    created_announcement_v1 = sandbox.create_announcement_v1(
+    created_announcement_v1 = sandbox.create_sandbox_announcement(
         request=SandboxCreateAnnouncementRequest(
             announcement_id="ann-1",
             barcode="barcode-1",
@@ -658,16 +658,16 @@ def test_delivery_production_and_sandbox_flows() -> None:
             ),
         )
     )
-    event_v1 = sandbox.get_announcement_event_v1(
+    event_v1 = sandbox.get_sandbox_announcement_event(
         request=SandboxGetAnnouncementEventRequest(announcement_id="ann-1")
     )
-    change_info_v1 = sandbox.get_change_parcel_info_v1(
+    change_info_v1 = sandbox.get_sandbox_change_parcel_info(
         request=GetChangeParcelInfoRequest(application_id="app-1")
     )
-    parcel_info_v1 = sandbox.get_parcel_info_v1(
+    parcel_info_v1 = sandbox.get_sandbox_parcel_info(
         request=GetSandboxParcelInfoRequest(parcel_id="spar-1")
     )
-    registered_parcel_id_v1 = sandbox.get_registered_parcel_id_v1(
+    registered_parcel_id_v1 = sandbox.get_sandbox_registered_parcel_id(
         request=GetRegisteredParcelIdRequest(order_id="sand-1")
     )
     sandbox_parcel = sandbox.create_parcel(

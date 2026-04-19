@@ -6,15 +6,15 @@ from avito.auth.models import (
     RefreshTokenRequest,
     TokenResponse,
 )
-from avito.auth.provider import AuthProvider, LegacyTokenClient, TokenClient
+from avito.auth.provider import AlternateTokenClient, AuthProvider, TokenClient
 from avito.auth.settings import AuthSettings
 
 __all__ = (
     "AccessToken",
+    "AlternateTokenClient",
     "AuthProvider",
     "AuthSettings",
     "ClientCredentialsRequest",
-    "LegacyTokenClient",
     "RefreshTokenRequest",
     "TokenClient",
     "TokenResponse",

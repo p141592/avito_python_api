@@ -3,7 +3,7 @@ from __future__ import annotations
 import httpx
 
 from avito import AvitoClient
-from avito.auth import AuthProvider, LegacyTokenClient, TokenClient
+from avito.auth import AlternateTokenClient, AuthProvider, TokenClient
 from avito.auth.settings import AuthSettings
 from avito.config import AvitoSettings
 from avito.core import Transport
@@ -28,7 +28,7 @@ def test_debug_info_does_not_expose_secrets() -> None:
 def test_client_context_manager_closes_transport_and_auth_clients() -> None:
     transport_http_client = httpx.Client()
     token_http_client = httpx.Client()
-    legacy_http_client = httpx.Client()
+    alternate_http_client = httpx.Client()
     autoteka_http_client = httpx.Client()
 
     settings = AvitoSettings(
@@ -37,7 +37,9 @@ def test_client_context_manager_closes_transport_and_auth_clients() -> None:
     auth_provider = AuthProvider(
         settings.auth,
         token_client=TokenClient(settings.auth, client=token_http_client),
-        legacy_token_client=LegacyTokenClient(settings.auth, client=legacy_http_client),
+        alternate_token_client=AlternateTokenClient(
+            settings.auth, client=alternate_http_client
+        ),
         autoteka_token_client=TokenClient(settings.auth, client=autoteka_http_client),
     )
     client = AvitoClient(settings)
@@ -51,5 +53,5 @@ def test_client_context_manager_closes_transport_and_auth_clients() -> None:
 
     assert transport_http_client.is_closed is True
     assert token_http_client.is_closed is True
-    assert legacy_http_client.is_closed is True
+    assert alternate_http_client.is_closed is True
     assert autoteka_http_client.is_closed is True

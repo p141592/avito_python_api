@@ -55,22 +55,22 @@ class CpaChatsClient:
             mapper=map_chat_item,
         )
 
-    def list_by_time_v1(self, request: CpaChatsByTimeRequest) -> CpaChatsResult:
+    def list_by_time_classic(self, request: CpaChatsByTimeRequest) -> CpaChatsResult:
         return request_public_model(
             self.transport,
             "POST",
             "/cpa/v1/chatsByTime",
-            context=RequestContext("cpa.chats.list_by_time_v1", allow_retry=True),
+            context=RequestContext("cpa.chats.list_by_time_classic", allow_retry=True),
             mapper=map_chats,
             json_body=request.to_payload(),
         )
 
-    def list_by_time_v2(self, request: CpaChatsByTimeRequest) -> CpaChatsResult:
+    def list_by_time(self, request: CpaChatsByTimeRequest) -> CpaChatsResult:
         return request_public_model(
             self.transport,
             "POST",
             "/cpa/v2/chatsByTime",
-            context=RequestContext("cpa.chats.list_by_time_v2", allow_retry=True),
+            context=RequestContext("cpa.chats.list_by_time", allow_retry=True),
             mapper=map_chats,
             json_body=request.to_payload(),
         )
@@ -92,12 +92,12 @@ class CpaCallsClient:
 
     transport: Transport
 
-    def list_by_time_v2(self, request: CpaCallsByTimeRequest) -> CpaCallsResult:
+    def list_by_time(self, request: CpaCallsByTimeRequest) -> CpaCallsResult:
         return request_public_model(
             self.transport,
             "POST",
             "/cpa/v2/callsByTime",
-            context=RequestContext("cpa.calls.list_by_time_v2", allow_retry=True),
+            context=RequestContext("cpa.calls.list_by_time", allow_retry=True),
             mapper=map_calls,
             json_body=request.to_payload(),
         )
@@ -129,46 +129,46 @@ class CpaLeadsClient:
             json_body=request.to_payload(),
         )
 
-    def get_balance_info_v3(self) -> CpaBalanceInfo:
+    def get_balance_info(self) -> CpaBalanceInfo:
         return request_public_model(
             self.transport,
             "POST",
             "/cpa/v3/balanceInfo",
-            context=RequestContext("cpa.leads.get_balance_info_v3", allow_retry=True),
+            context=RequestContext("cpa.leads.get_balance_info", allow_retry=True),
             mapper=map_balance,
             json_body={},
         )
 
 
 @dataclass(slots=True)
-class CpaLegacyClient:
-    """Выполняет legacy HTTP-операции CPA."""
+class CpaArchiveClient:
+    """Выполняет архивные HTTP-операции CPA."""
 
     transport: Transport
 
     def get_record(self, *, call_id: int | str) -> CpaAudioRecord:
         binary = self.transport.download_binary(
             f"/cpa/v1/call/{call_id}",
-            context=RequestContext("cpa.legacy.get_record"),
+            context=RequestContext("cpa.archive.get_record"),
         )
         return CpaAudioRecord(binary)
 
-    def get_balance_info_v2(self) -> CpaBalanceInfo:
+    def get_balance_info(self) -> CpaBalanceInfo:
         return request_public_model(
             self.transport,
             "POST",
             "/cpa/v2/balanceInfo",
-            context=RequestContext("cpa.legacy.get_balance_info_v2", allow_retry=True),
+            context=RequestContext("cpa.archive.get_balance_info", allow_retry=True),
             mapper=map_balance,
             json_body={},
         )
 
-    def get_call_by_id_v2(self, request: CpaCallByIdRequest) -> CpaCallInfo:
+    def get_call_by_id(self, request: CpaCallByIdRequest) -> CpaCallInfo:
         return request_public_model(
             self.transport,
             "POST",
             "/cpa/v2/callById",
-            context=RequestContext("cpa.legacy.get_call_by_id_v2", allow_retry=True),
+            context=RequestContext("cpa.archive.get_call_by_id", allow_retry=True),
             mapper=map_call_item,
             json_body=request.to_payload(),
         )

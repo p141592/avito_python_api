@@ -341,74 +341,76 @@ class SandboxDeliveryClient:
             request,
         )
 
-    def add_tariff_v2(self, request: AddTariffV2Request) -> DeliveryEntityResult:
-        return self._post("/delivery-sandbox/tariffsV2", "orders.sandbox.add_tariff_v2", request)
+    def add_tariff(self, request: AddTariffV2Request) -> DeliveryEntityResult:
+        return self._post("/delivery-sandbox/tariffsV2", "orders.sandbox.add_tariff", request)
 
-    def v1_cancel_announcement(
+    def cancel_sandbox_announcement(
         self, request: SandboxCancelAnnouncementRequest
     ) -> DeliveryEntityResult:
         return self._post(
             "/delivery-sandbox/v1/cancelAnnouncement",
-            "orders.sandbox.v1_cancel_announcement",
+            "orders.sandbox.cancel_sandbox_announcement",
             request,
         )
 
-    def v1_cancel_parcel(self, request: CancelSandboxParcelRequest) -> DeliveryEntityResult:
+    def cancel_sandbox_parcel(self, request: CancelSandboxParcelRequest) -> DeliveryEntityResult:
         return self._post(
-            "/delivery-sandbox/v1/cancelParcel", "orders.sandbox.v1_cancel_parcel", request
+            "/delivery-sandbox/v1/cancelParcel", "orders.sandbox.cancel_sandbox_parcel", request
         )
 
-    def v1_change_parcel(self, request: ChangeParcelRequest) -> DeliveryEntityResult:
+    def change_sandbox_parcel(self, request: ChangeParcelRequest) -> DeliveryEntityResult:
         return self._post(
-            "/delivery-sandbox/v1/changeParcel", "orders.sandbox.v1_change_parcel", request
+            "/delivery-sandbox/v1/changeParcel", "orders.sandbox.change_sandbox_parcel", request
         )
 
-    def v1_create_announcement(
+    def create_sandbox_announcement(
         self, request: SandboxCreateAnnouncementRequest
     ) -> DeliveryEntityResult:
         return self._post(
             "/delivery-sandbox/v1/createAnnouncement",
-            "orders.sandbox.v1_create_announcement",
+            "orders.sandbox.create_sandbox_announcement",
             request,
         )
 
-    def v1_get_announcement_event(
+    def get_sandbox_announcement_event(
         self, request: SandboxGetAnnouncementEventRequest
     ) -> DeliveryEntityResult:
         return self._post(
             "/delivery-sandbox/v1/getAnnouncementEvent",
-            "orders.sandbox.v1_get_announcement_event",
+            "orders.sandbox.get_sandbox_announcement_event",
             request,
         )
 
-    def v1_get_change_parcel_info(
+    def get_sandbox_change_parcel_info(
         self, request: GetChangeParcelInfoRequest
     ) -> DeliveryEntityResult:
         return self._post(
             "/delivery-sandbox/v1/getChangeParcelInfo",
-            "orders.sandbox.v1_get_change_parcel_info",
+            "orders.sandbox.get_sandbox_change_parcel_info",
             request,
         )
 
-    def v1_get_parcel_info(self, request: GetSandboxParcelInfoRequest) -> DeliveryEntityResult:
+    def get_sandbox_parcel_info(
+        self, request: GetSandboxParcelInfoRequest
+    ) -> DeliveryEntityResult:
         return self._post(
             "/delivery-sandbox/v1/getParcelInfo",
-            "orders.sandbox.v1_get_parcel_info",
+            "orders.sandbox.get_sandbox_parcel_info",
             request,
         )
 
-    def v1_get_registered_parcel_id(
+    def get_sandbox_registered_parcel_id(
         self, request: GetRegisteredParcelIdRequest
     ) -> DeliveryEntityResult:
         return self._post(
             "/delivery-sandbox/v1/getRegisteredParcelID",
-            "orders.sandbox.v1_get_registered_parcel_id",
+            "orders.sandbox.get_sandbox_registered_parcel_id",
             request,
         )
 
-    def create_parcel_v2(self, request: DeliveryParcelRequest) -> DeliveryEntityResult:
+    def create_parcel(self, request: DeliveryParcelRequest) -> DeliveryEntityResult:
         return self._post(
-            "/delivery-sandbox/v2/createParcel", "orders.sandbox.create_parcel_v2", request
+            "/delivery-sandbox/v2/createParcel", "orders.sandbox.create_parcel", request
         )
 
     def _post(

@@ -30,10 +30,10 @@ class AuthSettings(BaseModel):
             "REFRESH_TOKEN",
         ),
         "token_url": ("AVITO_AUTH__TOKEN_URL", "AVITO_TOKEN_URL", "TOKEN_URL"),
-        "legacy_token_url": (
-            "AVITO_AUTH__LEGACY_TOKEN_URL",
-            "AVITO_LEGACY_TOKEN_URL",
-            "LEGACY_TOKEN_URL",
+        "alternate_token_url": (
+            "AVITO_AUTH__ALTERNATE_TOKEN_URL",
+            "AVITO_ALTERNATE_TOKEN_URL",
+            "ALTERNATE_TOKEN_URL",
         ),
         "autoteka_token_url": (
             "AVITO_AUTH__AUTOTEKA_TOKEN_URL",
@@ -90,12 +90,12 @@ class AuthSettings(BaseModel):
         default="/token",
         validation_alias=AliasChoices("AVITO_AUTH__TOKEN_URL", "AVITO_TOKEN_URL", "TOKEN_URL"),
     )
-    legacy_token_url: str = Field(
+    alternate_token_url: str = Field(
         default="/token",
         validation_alias=AliasChoices(
-            "AVITO_AUTH__LEGACY_TOKEN_URL",
-            "AVITO_LEGACY_TOKEN_URL",
-            "LEGACY_TOKEN_URL",
+            "AVITO_AUTH__ALTERNATE_TOKEN_URL",
+            "AVITO_ALTERNATE_TOKEN_URL",
+            "ALTERNATE_TOKEN_URL",
         ),
     )
     autoteka_token_url: str = Field(

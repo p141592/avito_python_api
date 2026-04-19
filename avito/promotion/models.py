@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-from collections.abc import Mapping
 from dataclasses import dataclass, field
 
 from avito.core.serialization import SerializableModel, enable_module_serialization
@@ -230,13 +229,13 @@ class PromotionActionResult(SerializableModel):
     """Стабильный результат write-операции продвижения."""
 
     action: str
-    target: Mapping[str, object] | None
+    target: dict[str, object] | None
     status: str
     applied: bool
-    request_payload: Mapping[str, object] | None = None
+    request_payload: dict[str, object] | None = None
     warnings: list[str] = field(default_factory=list)
     upstream_reference: str | None = None
-    details: Mapping[str, object] = field(default_factory=dict)
+    details: dict[str, object] = field(default_factory=dict)
 
 
 @dataclass(slots=True, frozen=True)
@@ -593,7 +592,7 @@ class AutostrategyPriceRange:
 class AutostrategyBudget:
     """Расчет бюджета автокампании."""
 
-    budget_id: str | None
+    calc_id: int | None
     recommended: AutostrategyBudgetPoint | None
     minimal: AutostrategyBudgetPoint | None
     maximal: AutostrategyBudgetPoint | None
@@ -604,20 +603,29 @@ class AutostrategyBudget:
 class CreateAutostrategyBudgetRequest:
     """Запрос расчета бюджета кампании."""
 
-    payload: Mapping[str, object]
+    campaign_type: str
+    start_time: str | None = None
+    finish_time: str | None = None
+    items: list[int] | None = None
 
     def to_payload(self) -> dict[str, object]:
         """Сериализует запрос расчета бюджета."""
 
-        return dict(self.payload)
+        payload: dict[str, object] = {"campaignType": self.campaign_type}
+        if self.start_time is not None:
+            payload["startTime"] = self.start_time
+        if self.finish_time is not None:
+            payload["finishTime"] = self.finish_time
+        if self.items is not None:
+            payload["items"] = list(self.items)
+        return payload
 
 
 @dataclass(slots=True, frozen=True)
 class CampaignActionResult:
     """Результат операции с автокампанией."""
 
-    campaign_id: int | None
-    status: str | None
+    campaign: CampaignInfo | None
 
 
 @dataclass(slots=True, frozen=True)
@@ -626,10 +634,51 @@ class CampaignInfo:
 
     campaign_id: int | None
     campaign_type: str | None
-    status: str | None
     budget: int | None
     balance: int | None
+    create_time: str | None
+    description: str | None
+    finish_time: str | None
+    items_count: int | None
+    start_time: str | None
+    status_id: int | None
     title: str | None
+    update_time: str | None
+    user_id: int | None
+    version: int | None
+
+
+@dataclass(slots=True, frozen=True)
+class CampaignForecastRange(SerializableModel):
+    """Диапазон прогноза кампании."""
+
+    from_value: int | None
+    to_value: int | None
+
+
+@dataclass(slots=True, frozen=True)
+class CampaignForecast(SerializableModel):
+    """Прогноз кампании автостратегии."""
+
+    calls: CampaignForecastRange | None
+    views: CampaignForecastRange | None
+
+
+@dataclass(slots=True, frozen=True)
+class CampaignItem(SerializableModel):
+    """Объявление внутри автокампании."""
+
+    item_id: int | None
+    is_active: bool | None
+
+
+@dataclass(slots=True, frozen=True)
+class CampaignDetailsResult(SerializableModel):
+    """Полный ответ ручки информации о кампании."""
+
+    campaign: CampaignInfo | None
+    forecast: CampaignForecast | None
+    items: list[CampaignItem]
 
 
 @dataclass(slots=True, frozen=True)
@@ -637,40 +686,94 @@ class CampaignsResult:
     """Список автокампаний."""
 
     items: list[CampaignInfo]
+    total_count: int | None = None
 
 
 @dataclass(slots=True, frozen=True)
 class AutostrategyStat:
     """Статистика автокампании."""
 
-    campaign_id: int | None
-    views: int | None
-    contacts: int | None
-    spend: int | None
+    items: list[AutostrategyStatItem]
+    totals: AutostrategyStatTotals | None
 
 
 @dataclass(slots=True, frozen=True)
 class CreateAutostrategyCampaignRequest:
     """Запрос создания автокампании."""
 
-    payload: Mapping[str, object]
+    campaign_type: str
+    title: str
+    budget: int | None = None
+    budget_bonus: int | None = None
+    budget_real: int | None = None
+    calc_id: int | None = None
+    description: str | None = None
+    finish_time: str | None = None
+    items: list[int] | None = None
+    start_time: str | None = None
 
     def to_payload(self) -> dict[str, object]:
         """Сериализует запрос создания кампании."""
 
-        return dict(self.payload)
+        payload: dict[str, object] = {
+            "campaignType": self.campaign_type,
+            "title": self.title,
+        }
+        if self.budget is not None:
+            payload["budget"] = self.budget
+        if self.budget_bonus is not None:
+            payload["budgetBonus"] = self.budget_bonus
+        if self.budget_real is not None:
+            payload["budgetReal"] = self.budget_real
+        if self.calc_id is not None:
+            payload["calcId"] = self.calc_id
+        if self.description is not None:
+            payload["description"] = self.description
+        if self.finish_time is not None:
+            payload["finishTime"] = self.finish_time
+        if self.items is not None:
+            payload["items"] = list(self.items)
+        if self.start_time is not None:
+            payload["startTime"] = self.start_time
+        return payload
 
 
 @dataclass(slots=True, frozen=True)
 class UpdateAutostrategyCampaignRequest:
     """Запрос редактирования автокампании."""
 
-    payload: Mapping[str, object]
+    campaign_id: int
+    version: int
+    budget: int | None = None
+    calc_id: int | None = None
+    description: str | None = None
+    finish_time: str | None = None
+    items: list[int] | None = None
+    start_time: str | None = None
+    title: str | None = None
 
     def to_payload(self) -> dict[str, object]:
         """Сериализует запрос редактирования кампании."""
 
-        return dict(self.payload)
+        payload: dict[str, object] = {
+            "campaignId": self.campaign_id,
+            "version": self.version,
+        }
+        if self.budget is not None:
+            payload["budget"] = self.budget
+        if self.calc_id is not None:
+            payload["calcId"] = self.calc_id
+        if self.description is not None:
+            payload["description"] = self.description
+        if self.finish_time is not None:
+            payload["finishTime"] = self.finish_time
+        if self.items is not None:
+            payload["items"] = list(self.items)
+        if self.start_time is not None:
+            payload["startTime"] = self.start_time
+        if self.title is not None:
+            payload["title"] = self.title
+        return payload
 
 
 @dataclass(slots=True, frozen=True)
@@ -690,23 +793,77 @@ class StopAutostrategyCampaignRequest:
     """Запрос остановки автокампании."""
 
     campaign_id: int
+    version: int
 
     def to_payload(self) -> dict[str, object]:
         """Сериализует запрос остановки кампании."""
 
-        return {"campaignId": self.campaign_id}
+        return {"campaignId": self.campaign_id, "version": self.version}
+
+
+@dataclass(slots=True, frozen=True)
+class CampaignUpdateTimeFilter:
+    """Фильтр кампаний по времени обновления."""
+
+    from_time: str | None = None
+    to_time: str | None = None
+
+    def to_payload(self) -> dict[str, object]:
+        payload: dict[str, object] = {}
+        if self.from_time is not None:
+            payload["from"] = self.from_time
+        if self.to_time is not None:
+            payload["to"] = self.to_time
+        return payload
+
+
+@dataclass(slots=True, frozen=True)
+class CampaignListFilter:
+    """Фильтр списка кампаний."""
+
+    by_update_time: CampaignUpdateTimeFilter | None = None
+
+    def to_payload(self) -> dict[str, object]:
+        payload: dict[str, object] = {}
+        if self.by_update_time is not None:
+            payload["byUpdateTime"] = self.by_update_time.to_payload()
+        return payload
+
+
+@dataclass(slots=True, frozen=True)
+class CampaignOrderBy:
+    """Параметры сортировки списка кампаний."""
+
+    column: str
+    direction: str
+
+    def to_payload(self) -> dict[str, object]:
+        return {"column": self.column, "direction": self.direction}
 
 
 @dataclass(slots=True, frozen=True)
 class ListAutostrategyCampaignsRequest:
     """Запрос списка автокампаний."""
 
-    payload: Mapping[str, object] = field(default_factory=dict)
+    limit: int
+    offset: int | None = None
+    status_id: list[int] | None = None
+    order_by: list[CampaignOrderBy] | None = None
+    filter: CampaignListFilter | None = None
 
     def to_payload(self) -> dict[str, object]:
         """Сериализует запрос списка кампаний."""
 
-        return dict(self.payload)
+        payload: dict[str, object] = {"limit": self.limit}
+        if self.offset is not None:
+            payload["offset"] = self.offset
+        if self.status_id is not None:
+            payload["statusId"] = list(self.status_id)
+        if self.order_by is not None:
+            payload["orderBy"] = [item.to_payload() for item in self.order_by]
+        if self.filter is not None:
+            payload["filter"] = self.filter.to_payload()
+        return payload
 
 
 @dataclass(slots=True, frozen=True)
@@ -719,6 +876,25 @@ class GetAutostrategyStatRequest:
         """Сериализует запрос статистики кампании."""
 
         return {"campaignId": self.campaign_id}
+
+
+@dataclass(slots=True, frozen=True)
+class AutostrategyStatItem(SerializableModel):
+    """Статистика кампании за день."""
+
+    date: str | None
+    calls: int | None
+    views: int | None
+    calls_forecast: CampaignForecastRange | None = None
+    views_forecast: CampaignForecastRange | None = None
+
+
+@dataclass(slots=True, frozen=True)
+class AutostrategyStatTotals(SerializableModel):
+    """Суммарная статистика кампании."""
+
+    calls: int | None
+    views: int | None
 
 
 PromotionOrder = PromotionOrderInfo

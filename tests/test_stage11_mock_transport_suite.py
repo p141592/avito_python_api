@@ -363,7 +363,7 @@ def test_mock_transport_happy_path_write_methods_and_dry_run(
     previews = [
         ad_promotion.apply_vas(codes=["xl"], dry_run=True),
         ad_promotion.apply_vas_package(package_code="turbo", dry_run=True),
-        ad_promotion.apply_vas_v2(codes=["highlight"], dry_run=True),
+        ad_promotion.apply_vas_direct(codes=["highlight"], dry_run=True),
         bbip.create_order(
             items=[BbipOrderItem(item_id=101, duration=7, price=1000, old_price=1200)],
             dry_run=True,
@@ -389,7 +389,7 @@ def test_mock_transport_happy_path_write_methods_and_dry_run(
     applied = [
         ad_promotion.apply_vas(codes=["xl"]),
         ad_promotion.apply_vas_package(package_code="turbo"),
-        ad_promotion.apply_vas_v2(codes=["highlight"]),
+        ad_promotion.apply_vas_direct(codes=["highlight"]),
         bbip.create_order(
             items=[BbipOrderItem(item_id=101, duration=7, price=1000, old_price=1200)]
         ),

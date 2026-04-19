@@ -3,12 +3,13 @@
 from __future__ import annotations
 
 from pathlib import Path
+from types import TracebackType
 
 import httpx
 
 from avito.accounts import Account, AccountHierarchy
-from avito.ads import Ad, AdPromotion, AdStats, AutoloadLegacy, AutoloadProfile, AutoloadReport
-from avito.auth import AuthProvider, LegacyTokenClient, TokenClient
+from avito.ads import Ad, AdPromotion, AdStats, AutoloadArchive, AutoloadProfile, AutoloadReport
+from avito.auth import AlternateTokenClient, AuthProvider, TokenClient
 from avito.autoteka import (
     AutotekaMonitoring,
     AutotekaReport,
@@ -18,7 +19,7 @@ from avito.autoteka import (
 )
 from avito.config import AvitoSettings
 from avito.core import Transport, TransportDebugInfo
-from avito.cpa import CallTrackingCall, CpaCall, CpaChat, CpaLead, CpaLegacy
+from avito.cpa import CallTrackingCall, CpaArchive, CpaCall, CpaChat, CpaLead
 from avito.jobs import Application, JobDictionary, JobWebhook, Resume, Vacancy
 from avito.messenger import Chat, ChatMedia, ChatMessage, ChatWebhook, SpecialOfferCampaign
 from avito.orders import DeliveryOrder, DeliveryTask, Order, OrderLabel, SandboxDelivery, Stock
@@ -80,19 +81,26 @@ class AvitoClient:
 
         return self
 
-    def __exit__(self, exc_type: object, exc: object, traceback: object) -> None:
+    def __exit__(
+        self,
+        exc_type: type[BaseException] | None,
+        exc: BaseException | None,
+        traceback: TracebackType | None,
+    ) -> None:
         """Закрывает клиент при выходе из контекстного менеджера."""
 
         self.close()
 
     def _build_auth_provider(self) -> AuthProvider:
         token_http_client = httpx.Client(base_url=self.settings.base_url.rstrip("/"))
-        legacy_http_client = httpx.Client(base_url=self.settings.base_url.rstrip("/"))
+        alternate_http_client = httpx.Client(base_url=self.settings.base_url.rstrip("/"))
         autoteka_http_client = httpx.Client(base_url=self.settings.base_url.rstrip("/"))
         return AuthProvider(
             self.settings.auth,
             token_client=TokenClient(self.settings.auth, client=token_http_client),
-            legacy_token_client=LegacyTokenClient(self.settings.auth, client=legacy_http_client),
+            alternate_token_client=AlternateTokenClient(
+                self.settings.auth, client=alternate_http_client
+            ),
             autoteka_token_client=TokenClient(
                 self.settings.auth,
                 token_url=self.settings.auth.autoteka_token_url,
@@ -139,10 +147,10 @@ class AvitoClient:
 
         return AutoloadReport(self.transport, resource_id=report_id)
 
-    def autoload_legacy(self, report_id: int | str | None = None) -> AutoloadLegacy:
-        """Создает доменный объект legacy-операций автозагрузки."""
+    def autoload_archive(self, report_id: int | str | None = None) -> AutoloadArchive:
+        """Создает доменный объект архивных операций автозагрузки."""
 
-        return AutoloadLegacy(self.transport, resource_id=report_id)
+        return AutoloadArchive(self.transport, resource_id=report_id)
 
     def chat(self, chat_id: int | str | None = None, *, user_id: int | str | None = None) -> Chat:
         """Создает доменный объект чата."""
@@ -278,10 +286,10 @@ class AvitoClient:
 
         return CpaCall(self.transport, resource_id=call_id)
 
-    def cpa_legacy(self, legacy_id: int | str | None = None) -> CpaLegacy:
-        """Создает доменный объект legacy-операций CPA."""
+    def cpa_archive(self, call_id: int | str | None = None) -> CpaArchive:
+        """Создает доменный объект архивных операций CPA."""
 
-        return CpaLegacy(self.transport, resource_id=legacy_id)
+        return CpaArchive(self.transport, resource_id=call_id)
 
     def call_tracking_call(self, call_id: int | str | None = None) -> CallTrackingCall:
         """Создает доменный объект CallTracking."""
