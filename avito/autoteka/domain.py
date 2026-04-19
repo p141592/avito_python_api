@@ -59,8 +59,10 @@ class AutotekaVehicle(DomainObject):
     resource_id: int | str | None = None
     user_id: int | str | None = None
 
-    def get_catalogs_resolve(self, *, request: CatalogResolveRequest) -> CatalogResolveResult:
-        return CatalogClient(self.transport).get_catalogs_resolve(request)
+    def resolve_catalog(self, *, request: CatalogResolveRequest) -> CatalogResolveResult:
+        """Актуализирует параметры автокаталога."""
+
+        return CatalogClient(self.transport).resolve_catalog(request)
 
     def get_leads(self, *, request: LeadsRequest) -> AutotekaLeadsResult:
         return LeadsClient(self.transport).get_leads(request)
@@ -133,7 +135,9 @@ class AutotekaReport(DomainObject):
     def create_report_by_vehicle_id(self, *, request: VehicleIdRequest) -> AutotekaReportInfo:
         return ReportClient(self.transport).create_report_by_vehicle_id(request)
 
-    def list_report_list(self) -> AutotekaReportsResult:
+    def list_reports(self) -> AutotekaReportsResult:
+        """Получает список отчетов Автотеки."""
+
         return ReportClient(self.transport).list_reports()
 
     def get_report(self, *, report_id: int | str | None = None) -> AutotekaReportInfo:
@@ -165,12 +169,14 @@ class AutotekaMonitoring(DomainObject):
     ) -> MonitoringBucketResult:
         return MonitoringClient(self.transport).add_bucket(request)
 
-    def list_monitoring_bucket_delete(self) -> MonitoringBucketResult:
+    def delete_bucket(self) -> MonitoringBucketResult:
+        """Очищает bucket мониторинга."""
+
         return MonitoringClient(self.transport).delete_bucket()
 
-    def delete_monitoring_bucket_remove(
-        self, *, request: MonitoringBucketRequest
-    ) -> MonitoringBucketResult:
+    def remove_bucket(self, *, request: MonitoringBucketRequest) -> MonitoringBucketResult:
+        """Удаляет автомобили из bucket мониторинга."""
+
         return MonitoringClient(self.transport).remove_bucket(request)
 
     def get_monitoring_reg_actions(

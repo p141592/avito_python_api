@@ -122,6 +122,8 @@ def test_public_surface_does_not_expose_legacy_or_version_suffixed_method_names(
         "avito.client.client",
         "avito.auth.provider",
         "avito.ads.domain",
+        "avito.autoteka.client",
+        "avito.autoteka.domain",
         "avito.cpa.domain",
         "avito.cpa.client",
         "avito.jobs.domain",
@@ -133,6 +135,7 @@ def test_public_surface_does_not_expose_legacy_or_version_suffixed_method_names(
     )
     banned_fragments = ("legacy_",)
     banned_suffixes = ("_v1", "_v2")
+    banned_prefixes = ("get_catalogs_", "list_report_", "list_monitoring_", "delete_monitoring_")
     offenders: list[str] = []
 
     for module_name in module_names:
@@ -143,8 +146,10 @@ def test_public_surface_does_not_expose_legacy_or_version_suffixed_method_names(
             for method_name, method in inspect.getmembers(cls, inspect.isfunction):
                 if method_name.startswith("_"):
                     continue
-                if any(fragment in method_name for fragment in banned_fragments) or method_name.endswith(
-                    banned_suffixes
+                if (
+                    any(fragment in method_name for fragment in banned_fragments)
+                    or method_name.endswith(banned_suffixes)
+                    or method_name.startswith(banned_prefixes)
                 ):
                     offenders.append(f"{module_name}.{cls.__name__}.{method_name}{inspect.signature(method)}")
 

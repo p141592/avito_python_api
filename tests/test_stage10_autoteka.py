@@ -155,7 +155,7 @@ def test_autoteka_vehicle_flows() -> None:
 
     vehicle = AutotekaVehicle(make_transport(httpx.MockTransport(handler)), resource_id="77")
 
-    catalog = vehicle.get_catalogs_resolve(request=CatalogResolveRequest(brand_id=1))
+    catalog = vehicle.resolve_catalog(request=CatalogResolveRequest(brand_id=1))
     leads = vehicle.get_leads(request=LeadsRequest(limit=1))
     preview_vin = vehicle.create_preview_by_vin(request=VinRequest(vin="VIN-1"))
     preview_item = vehicle.create_preview_by_item_id(request=ItemIdRequest(item_id=901))
@@ -346,7 +346,7 @@ def test_autoteka_report_monitoring_scoring_and_valuation_flows() -> None:
     created_by_vehicle = report.create_report_by_vehicle_id(
         request=VehicleIdRequest(vehicle_id="VIN-1")
     )
-    reports = report.list_report_list()
+    reports = report.list_reports()
     fetched = report.get_report()
     sync_reg = report.create_sync_report_by_reg_number(
         request=RegNumberRequest(reg_number="A123AA77")
@@ -355,10 +355,8 @@ def test_autoteka_report_monitoring_scoring_and_valuation_flows() -> None:
     added = monitoring.create_monitoring_bucket_add(
         request=MonitoringBucketRequest(vehicles=["VIN-1", "bad-vin"])
     )
-    deleted = monitoring.list_monitoring_bucket_delete()
-    removed = monitoring.delete_monitoring_bucket_remove(
-        request=MonitoringBucketRequest(vehicles=["VIN-1"])
-    )
+    deleted = monitoring.delete_bucket()
+    removed = monitoring.remove_bucket(request=MonitoringBucketRequest(vehicles=["VIN-1"]))
     events = monitoring.get_monitoring_reg_actions(query=MonitoringEventsQuery(limit=10))
     scoring_created = scoring.create_scoring_by_vehicle_id(
         request=VehicleIdRequest(vehicle_id="VIN-1")

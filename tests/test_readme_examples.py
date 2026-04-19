@@ -3,6 +3,8 @@ from __future__ import annotations
 import inspect
 
 from avito import AvitoClient
+from avito.autoteka import AutotekaMonitoring, AutotekaReport, AutotekaVehicle
+from avito.autoteka.models import CatalogResolveRequest, MonitoringBucketRequest
 from avito.promotion.models import (
     CampaignListFilter,
     CampaignOrderBy,
@@ -55,9 +57,22 @@ def test_readme_references_current_public_method_names() -> None:
     assert hasattr(AvitoClient, "autoload_archive")
     assert hasattr(AvitoClient, "cpa_archive")
     assert hasattr(Review, "list")
+    assert hasattr(AutotekaVehicle, "resolve_catalog")
+    assert hasattr(AutotekaReport, "list_reports")
+    assert hasattr(AutotekaMonitoring, "delete_bucket")
+    assert hasattr(AutotekaMonitoring, "remove_bucket")
     assert not hasattr(AvitoClient, "autoload_legacy")
     assert not hasattr(AvitoClient, "cpa_legacy")
     assert not hasattr(Review, "list_reviews_v1")
+    assert not hasattr(AutotekaVehicle, "get_catalogs_resolve")
+    assert not hasattr(AutotekaReport, "list_report_list")
+    assert not hasattr(AutotekaMonitoring, "list_monitoring_bucket_delete")
+    assert not hasattr(AutotekaMonitoring, "delete_monitoring_bucket_remove")
 
     review_signature = str(inspect.signature(Review.list))
     assert "query" in review_signature
+
+
+def test_readme_uses_current_autoteka_request_models() -> None:
+    assert CatalogResolveRequest(brand_id=1).to_payload() == {"brandId": 1}
+    assert MonitoringBucketRequest(vehicles=["VIN-1"]).to_payload() == {"vehicles": ["VIN-1"]}

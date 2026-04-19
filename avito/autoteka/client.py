@@ -71,7 +71,7 @@ class AutotekaBaseClient:
 class CatalogClient(AutotekaBaseClient):
     """Выполняет HTTP-операции автокаталога."""
 
-    def get_catalogs_resolve(self, request: CatalogResolveRequest) -> CatalogResolveResult:
+    def resolve_catalog(self, request: CatalogResolveRequest) -> CatalogResolveResult:
         payload = self.transport.request_json(
             "POST",
             "/autoteka/v1/catalogs/resolve",

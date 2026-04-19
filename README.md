@@ -183,11 +183,13 @@ print(campaigns.total_count)
 
 ```python
 from avito import AvitoClient
+from avito.orders import OrderLabelsRequest, StockInfoRequest
 
 with AvitoClient() as avito:
-    order = avito.order(order_id=100500).get()
-    label = avito.order_label(task_id="task-1").download()
-    sandbox = avito.sandbox_delivery(task_id="task-1").get()
+    orders = avito.order().list()
+    label_task = avito.order_label().create(request=OrderLabelsRequest(order_ids=["100500"]))
+    label_pdf = avito.order_label(task_id=label_task.task_id).download()
+    stock_info = avito.stock().get(request=StockInfoRequest(item_ids=[100500]))
 ```
 
 ### Работа
@@ -209,10 +211,17 @@ with AvitoClient() as avito:
 
 ```python
 from avito import AvitoClient
+from avito.cpa import CpaCallsByTimeRequest
 
 with AvitoClient() as avito:
-    calls = avito.cpa_call().list()
-    records = avito.call_tracking_call(call_id=10).download()
+    calls = avito.cpa_call().list(
+        request=CpaCallsByTimeRequest(
+            date_time_from="2026-04-18T00:00:00Z",
+            date_time_to="2026-04-19T00:00:00Z",
+        )
+    )
+    calltracking = avito.call_tracking_call(10).get()
+    records = avito.call_tracking_call(10).download()
 ```
 
 ## Пагинация
@@ -243,15 +252,19 @@ with AvitoClient() as avito:
 
 ```python
 from avito import AvitoClient
-from avito.autoteka import PreviewReportRequest, VinRequest
+from avito.autoteka import CatalogResolveRequest, PreviewReportRequest, VinRequest
 
 with AvitoClient() as avito:
+    catalog = avito.autoteka_vehicle().resolve_catalog(
+        request=CatalogResolveRequest(brand_id=1)
+    )
     preview = avito.autoteka_vehicle().create_preview_by_vin(
         request=VinRequest(vin="XTA00000000000000")
     )
     report = avito.autoteka_report().create_report(
         request=PreviewReportRequest(preview_id=int(preview.preview_id or 0))
     )
+    reports = avito.autoteka_report().list_reports()
 ```
 
 ### Недвижимость, отзывы и тарифы
@@ -261,12 +274,12 @@ from avito import AvitoClient
 from avito.realty import RealtyBookingsUpdateRequest, RealtyPricePeriod, RealtyPricesUpdateRequest
 
 with AvitoClient() as avito:
-    booking = avito.realty_booking(item_id=20, user_id=10)
+    booking = avito.realty_booking(20, user_id=10)
     booking.update_bookings_info(
         request=RealtyBookingsUpdateRequest(blocked_dates=["2026-05-01"])
     )
     bookings = booking.list_realty_bookings(date_start="2026-05-01", date_end="2026-05-05")
-    avito.realty_pricing(item_id=20, user_id=10).update_realty_prices(
+    avito.realty_pricing(20, user_id=10).update_realty_prices(
         request=RealtyPricesUpdateRequest(
             periods=[RealtyPricePeriod(date_from="2026-05-01", price=5000)]
         )

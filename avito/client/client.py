@@ -321,25 +321,45 @@ class AvitoClient:
 
         return AutotekaValuation(self.transport, resource_id=valuation_id)
 
-    def realty_listing(self, item_id: int | str | None = None) -> RealtyListing:
+    def realty_listing(
+        self,
+        item_id: int | str | None = None,
+        *,
+        user_id: int | str | None = None,
+    ) -> RealtyListing:
         """Создает доменный объект объявления недвижимости."""
 
-        return RealtyListing(self.transport, resource_id=item_id)
+        return RealtyListing(self.transport, resource_id=item_id, user_id=user_id)
 
-    def realty_booking(self, booking_id: int | str | None = None) -> RealtyBooking:
+    def realty_booking(
+        self,
+        item_id: int | str | None = None,
+        *,
+        user_id: int | str | None = None,
+    ) -> RealtyBooking:
         """Создает доменный объект бронирования недвижимости."""
 
-        return RealtyBooking(self.transport, resource_id=booking_id)
+        return RealtyBooking(self.transport, resource_id=item_id, user_id=user_id)
 
-    def realty_pricing(self, item_id: int | str | None = None) -> RealtyPricing:
+    def realty_pricing(
+        self,
+        item_id: int | str | None = None,
+        *,
+        user_id: int | str | None = None,
+    ) -> RealtyPricing:
         """Создает доменный объект цен недвижимости."""
 
-        return RealtyPricing(self.transport, resource_id=item_id)
+        return RealtyPricing(self.transport, resource_id=item_id, user_id=user_id)
 
-    def realty_analytics_report(self, report_id: int | str | None = None) -> RealtyAnalyticsReport:
+    def realty_analytics_report(
+        self,
+        item_id: int | str | None = None,
+        *,
+        user_id: int | str | None = None,
+    ) -> RealtyAnalyticsReport:
         """Создает доменный объект аналитического отчета недвижимости."""
 
-        return RealtyAnalyticsReport(self.transport, resource_id=report_id)
+        return RealtyAnalyticsReport(self.transport, resource_id=item_id, user_id=user_id)
 
     def review(self, review_id: int | str | None = None) -> Review:
         """Создает доменный объект отзыва."""

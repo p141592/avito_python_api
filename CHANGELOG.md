@@ -23,6 +23,7 @@
 ### Изменено
 
 - `README.md` приведён к объектному API SDK и дополнен сценарными примерами по доменам.
+- `autoteka` очищена от неканоничных public methods: `resolve_catalog()`, `list_reports()`, `delete_bucket()` и `remove_bucket()` заменили старые составные имена без compatibility alias-ов.
 - `pyproject.toml` дополнен strict-конфигурацией `mypy`, правилами `ruff` и современным build backend `poetry-core`.
 - `Makefile` разделён на `fmt`, `lint`, `typecheck`, `test`, `build` и `check`, чтобы release не зависел от автоформатирования.
 - `AGENTS.md` синхронизирован с реальной структурой SDK, наличием тестов и Python `3.14` quality gate.
