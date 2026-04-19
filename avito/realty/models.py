@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from avito.core.serialization import SerializableModel, enable_module_serialization
+from avito.core.serialization import SerializableModel
 
 
 @dataclass(slots=True, frozen=True)
@@ -167,4 +167,3 @@ class RealtyAnalyticsInfo(SerializableModel):
     error_message: str | None = None
 
 
-enable_module_serialization(globals())

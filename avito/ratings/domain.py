@@ -26,7 +26,6 @@ class DomainObject:
 class Review(DomainObject):
     """Доменный объект отзывов."""
 
-    resource_id: int | str | None = None
     user_id: int | str | None = None
 
     def list(self, *, query: ReviewsQuery | None = None) -> ReviewsResult:
@@ -37,7 +36,7 @@ class Review(DomainObject):
 class ReviewAnswer(DomainObject):
     """Доменный объект ответов на отзывы."""
 
-    resource_id: int | str | None = None
+    answer_id: int | str | None = None
     user_id: int | str | None = None
 
     def create(self, *, review_id: int, text: str) -> ReviewAnswerInfo:
@@ -51,16 +50,15 @@ class ReviewAnswer(DomainObject):
         )
 
     def _require_answer_id(self) -> str:
-        if self.resource_id is None:
+        if self.answer_id is None:
             raise ValidationError("Для операции требуется `answer_id`.")
-        return str(self.resource_id)
+        return str(self.answer_id)
 
 
 @dataclass(slots=True, frozen=True)
 class RatingProfile(DomainObject):
     """Доменный объект рейтингового профиля."""
 
-    resource_id: int | str | None = None
     user_id: int | str | None = None
 
     def get(self) -> RatingProfileInfo:

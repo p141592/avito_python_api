@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
-from typing import TYPE_CHECKING, Protocol
+from typing import Protocol
 
 import httpx
 
@@ -18,9 +18,6 @@ from avito.auth.models import (
 )
 from avito.auth.settings import AuthSettings
 from avito.core.exceptions import AuthenticationError
-
-if TYPE_CHECKING:
-    pass
 
 
 class TokenFetcher(Protocol):

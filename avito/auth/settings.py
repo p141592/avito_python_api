@@ -19,9 +19,7 @@ class AuthSettings(BaseModel):
         "client_secret": (
             "AVITO_AUTH__CLIENT_SECRET",
             "AVITO_CLIENT_SECRET",
-            "AVITO_SECRET",
             "CLIENT_SECRET",
-            "SECRET",
         ),
         "scope": ("AVITO_AUTH__SCOPE", "AVITO_SCOPE", "SCOPE"),
         "refresh_token": (
@@ -71,9 +69,7 @@ class AuthSettings(BaseModel):
         validation_alias=AliasChoices(
             "AVITO_AUTH__CLIENT_SECRET",
             "AVITO_CLIENT_SECRET",
-            "AVITO_SECRET",
             "CLIENT_SECRET",
-            "SECRET",
         ),
     )
     scope: str | None = Field(

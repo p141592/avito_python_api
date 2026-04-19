@@ -23,6 +23,8 @@ from avito.promotion.models import (
     BbipSuggestsResult,
     CampaignActionResult,
     CampaignDetailsResult,
+    CampaignListFilter,
+    CampaignOrderBy,
     CampaignsResult,
     CancelTrxPromotionRequest,
     CpaAuctionBidsResult,
@@ -60,17 +62,17 @@ from avito.promotion.models import (
 
 def _validate_non_empty_items(name: str, items: Sequence[object]) -> None:
     if not items:
-        raise ValidationError(f"`{name}` must contain at least one item.")
+        raise ValidationError(f"`{name}` должен содержать хотя бы один элемент.")
 
 
 def _validate_positive_int(name: str, value: int) -> None:
     if value <= 0:
-        raise ValidationError(f"`{name}` must be a positive integer.")
+        raise ValidationError(f"`{name}` должен быть положительным целым числом.")
 
 
 def _validate_non_empty_string(name: str, value: str) -> None:
     if not value.strip():
-        raise ValidationError(f"`{name}` must be a non-empty string.")
+        raise ValidationError(f"`{name}` не может быть пустой строкой.")
 
 
 def _validate_string_items(name: str, values: Sequence[str]) -> None:
@@ -106,7 +108,7 @@ class DomainObject:
 class PromotionOrder(DomainObject):
     """Доменный объект заявок и словарей promotion API."""
 
-    resource_id: int | str | None = None
+    order_id: int | str | None = None
     user_id: int | str | None = None
 
     def get_service_dictionary(self) -> PromotionServiceDictionary:
@@ -137,7 +139,7 @@ class PromotionOrder(DomainObject):
         """Получает статусы заявок на продвижение."""
 
         resolved_order_ids = order_ids or (
-            [str(self.resource_id)] if self.resource_id is not None else []
+            [str(self.order_id)] if self.order_id is not None else []
         )
         if not resolved_order_ids:
             raise ValidationError("Для операции требуется хотя бы один `order_id`.")
@@ -150,7 +152,7 @@ class PromotionOrder(DomainObject):
 class BbipPromotion(DomainObject):
     """Доменный объект BBIP-продвижения."""
 
-    resource_id: int | str | None = None
+    item_id: int | str | None = None
     user_id: int | str | None = None
 
     def get_forecasts(self, *, items: list[BbipForecastRequestItem]) -> BbipForecastsResult:
@@ -192,16 +194,16 @@ class BbipPromotion(DomainObject):
         )
 
     def _resource_item_ids(self) -> list[int]:
-        if self.resource_id is None:
+        if self.item_id is None:
             raise ValidationError("Для операции требуется `item_id` или список `item_ids`.")
-        return [int(self.resource_id)]
+        return [int(self.item_id)]
 
 
 @dataclass(slots=True, frozen=True)
 class TrxPromotion(DomainObject):
     """Доменный объект TrxPromo."""
 
-    resource_id: int | str | None = None
+    item_id: int | str | None = None
     user_id: int | str | None = None
 
     def apply(
@@ -251,16 +253,16 @@ class TrxPromotion(DomainObject):
         )
 
     def _resource_item_ids(self) -> list[int]:
-        if self.resource_id is None:
+        if self.item_id is None:
             raise ValidationError("Для операции требуется `item_id` или список `item_ids`.")
-        return [int(self.resource_id)]
+        return [int(self.item_id)]
 
 
 @dataclass(slots=True, frozen=True)
 class CpaAuction(DomainObject):
     """Доменный объект CPA-аукциона."""
 
-    resource_id: int | str | None = None
+    item_id: int | str | None = None
     user_id: int | str | None = None
 
     def get_user_bids(
@@ -286,7 +288,7 @@ class CpaAuction(DomainObject):
 class TargetActionPricing(DomainObject):
     """Доменный объект цены целевого действия."""
 
-    resource_id: int | str | None = None
+    item_id: int | str | None = None
     user_id: int | str | None = None
 
     def get_bids(self, *, item_id: int | None = None) -> TargetActionGetBidsResult:
@@ -389,32 +391,96 @@ class TargetActionPricing(DomainObject):
         return TargetActionPriceClient(self.transport).update_manual_bid(request)
 
     def _require_item_id(self) -> int:
-        if self.resource_id is None:
+        if self.item_id is None:
             raise ValidationError("Для операции требуется `item_id`.")
-        return int(self.resource_id)
+        return int(self.item_id)
 
 
 @dataclass(slots=True, frozen=True)
 class AutostrategyCampaign(DomainObject):
     """Доменный объект кампаний автостратегии."""
 
-    resource_id: int | str | None = None
+    campaign_id: int | str | None = None
     user_id: int | str | None = None
 
-    def create_budget(self, *, request: CreateAutostrategyBudgetRequest) -> AutostrategyBudget:
+    def create_budget(
+        self,
+        *,
+        campaign_type: str,
+        start_time: str | None = None,
+        finish_time: str | None = None,
+        items: list[int] | None = None,
+    ) -> AutostrategyBudget:
         """Рассчитывает бюджет кампании."""
 
-        return AutostrategyClient(self.transport).create_budget(request)
+        return AutostrategyClient(self.transport).create_budget(
+            CreateAutostrategyBudgetRequest(
+                campaign_type=campaign_type,
+                start_time=start_time,
+                finish_time=finish_time,
+                items=items,
+            )
+        )
 
-    def create(self, *, request: CreateAutostrategyCampaignRequest) -> CampaignActionResult:
+    def create(
+        self,
+        *,
+        campaign_type: str,
+        title: str,
+        budget: int | None = None,
+        budget_bonus: int | None = None,
+        budget_real: int | None = None,
+        calc_id: int | None = None,
+        description: str | None = None,
+        finish_time: str | None = None,
+        items: list[int] | None = None,
+        start_time: str | None = None,
+    ) -> CampaignActionResult:
         """Создает новую кампанию."""
 
-        return AutostrategyClient(self.transport).create_campaign(request)
+        return AutostrategyClient(self.transport).create_campaign(
+            CreateAutostrategyCampaignRequest(
+                campaign_type=campaign_type,
+                title=title,
+                budget=budget,
+                budget_bonus=budget_bonus,
+                budget_real=budget_real,
+                calc_id=calc_id,
+                description=description,
+                finish_time=finish_time,
+                items=items,
+                start_time=start_time,
+            )
+        )
 
-    def update(self, *, request: UpdateAutostrategyCampaignRequest) -> CampaignActionResult:
+    def update(
+        self,
+        *,
+        version: int,
+        campaign_id: int | None = None,
+        budget: int | None = None,
+        calc_id: int | None = None,
+        description: str | None = None,
+        finish_time: str | None = None,
+        items: list[int] | None = None,
+        start_time: str | None = None,
+        title: str | None = None,
+    ) -> CampaignActionResult:
         """Редактирует кампанию."""
 
-        return AutostrategyClient(self.transport).edit_campaign(request)
+        return AutostrategyClient(self.transport).edit_campaign(
+            UpdateAutostrategyCampaignRequest(
+                campaign_id=campaign_id or self._require_campaign_id(),
+                version=version,
+                budget=budget,
+                calc_id=calc_id,
+                description=description,
+                finish_time=finish_time,
+                items=items,
+                start_time=start_time,
+                title=title,
+            )
+        )
 
     def get(self, *, campaign_id: int | None = None) -> CampaignDetailsResult:
         """Получает полную информацию о кампании."""
@@ -435,11 +501,25 @@ class AutostrategyCampaign(DomainObject):
             )
         )
 
-    def list(self, *, request: ListAutostrategyCampaignsRequest | None = None) -> CampaignsResult:
+    def list(
+        self,
+        *,
+        limit: int = 100,
+        offset: int | None = None,
+        status_id: list[int] | None = None,
+        order_by: list[CampaignOrderBy] | None = None,
+        filter: CampaignListFilter | None = None,
+    ) -> CampaignsResult:
         """Получает список кампаний."""
 
         return AutostrategyClient(self.transport).list_campaigns(
-            request or ListAutostrategyCampaignsRequest(limit=100)
+            ListAutostrategyCampaignsRequest(
+                limit=limit,
+                offset=offset,
+                status_id=status_id,
+                order_by=order_by,
+                filter=filter,
+            )
         )
 
     def get_stat(self, *, campaign_id: int | None = None) -> AutostrategyStat:
@@ -450,9 +530,9 @@ class AutostrategyCampaign(DomainObject):
         )
 
     def _require_campaign_id(self) -> int:
-        if self.resource_id is None:
+        if self.campaign_id is None:
             raise ValidationError("Для операции требуется `campaign_id`.")
-        return int(self.resource_id)
+        return int(self.campaign_id)
 
 
 __all__ = (

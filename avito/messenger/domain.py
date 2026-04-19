@@ -44,7 +44,7 @@ class DomainObject:
 class Chat(DomainObject):
     """Доменный объект чата."""
 
-    resource_id: int | str | None = None
+    chat_id: int | str | None = None
     user_id: int | str | None = None
 
     def get(self) -> ChatInfo:
@@ -82,16 +82,17 @@ class Chat(DomainObject):
         return int(self.user_id)
 
     def _require_chat_id(self) -> str:
-        if self.resource_id is None:
+        if self.chat_id is None:
             raise ValidationError("Для операции требуется `chat_id`.")
-        return str(self.resource_id)
+        return str(self.chat_id)
 
 
 @dataclass(slots=True, frozen=True)
 class ChatMessage(DomainObject):
     """Доменный объект сообщения чата."""
 
-    resource_id: int | str | None = None
+    chat_id: int | str | None = None
+    message_id: int | str | None = None
     user_id: int | str | None = None
 
     def list(self, *, chat_id: str | None = None) -> MessagesResult:
@@ -140,21 +141,20 @@ class ChatMessage(DomainObject):
         return int(self.user_id)
 
     def _require_chat_id(self) -> str:
-        if self.resource_id is None:
+        if self.chat_id is None:
             raise ValidationError("Для операции требуется `chat_id`.")
-        return str(self.resource_id)
+        return str(self.chat_id)
 
     def _require_message_id(self) -> str:
-        if self.resource_id is None:
+        if self.message_id is None:
             raise ValidationError("Для операции требуется `message_id`.")
-        return str(self.resource_id)
+        return str(self.message_id)
 
 
 @dataclass(slots=True, frozen=True)
 class ChatWebhook(DomainObject):
     """Доменный объект webhook мессенджера."""
 
-    resource_id: int | str | None = None
     user_id: int | str | None = None
 
     def list(self) -> SubscriptionsResult:
@@ -177,7 +177,6 @@ class ChatWebhook(DomainObject):
 class ChatMedia(DomainObject):
     """Доменный объект media-функций мессенджера."""
 
-    resource_id: int | str | None = None
     user_id: int | str | None = None
 
     def get_voice_files(self) -> VoiceFilesResult:
@@ -203,7 +202,7 @@ class ChatMedia(DomainObject):
 class SpecialOfferCampaign(DomainObject):
     """Доменный объект рассылки скидок и спецпредложений."""
 
-    resource_id: int | str | None = None
+    campaign_id: int | str | None = None
     user_id: int | str | None = None
 
     def get_available(self, *, item_ids: list[int]) -> SpecialOfferAvailableResult:
@@ -246,9 +245,9 @@ class SpecialOfferCampaign(DomainObject):
         return SpecialOffersClient(self.transport).get_tariff_info()
 
     def _require_campaign_id(self) -> str:
-        if self.resource_id is None:
+        if self.campaign_id is None:
             raise ValidationError("Для операции требуется `campaign_id`.")
-        return str(self.resource_id)
+        return str(self.campaign_id)
 
 
 __all__ = (

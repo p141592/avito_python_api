@@ -30,7 +30,7 @@ class DomainObject:
 class RealtyListing(DomainObject):
     """Доменный объект объявления краткосрочной аренды."""
 
-    resource_id: int | str | None = None
+    item_id: int | str | None = None
     user_id: int | str | None = None
 
     def get_intervals(self, *, request: RealtyIntervalsRequest) -> RealtyActionResult:
@@ -45,16 +45,16 @@ class RealtyListing(DomainObject):
         )
 
     def _require_item_id(self) -> str:
-        if self.resource_id is None:
+        if self.item_id is None:
             raise ValidationError("Для операции требуется `item_id`.")
-        return str(self.resource_id)
+        return str(self.item_id)
 
 
 @dataclass(slots=True, frozen=True)
 class RealtyBooking(DomainObject):
     """Доменный объект бронирований недвижимости."""
 
-    resource_id: int | str | None = None
+    item_id: int | str | None = None
     user_id: int | str | None = None
 
     def update_bookings_info(
@@ -90,9 +90,9 @@ class RealtyBooking(DomainObject):
         )
 
     def _require_item_id(self) -> str:
-        if self.resource_id is None:
+        if self.item_id is None:
             raise ValidationError("Для операции требуется `item_id`.")
-        return str(self.resource_id)
+        return str(self.item_id)
 
     def _require_user_id(self) -> str:
         if self.user_id is None:
@@ -104,7 +104,7 @@ class RealtyBooking(DomainObject):
 class RealtyPricing(DomainObject):
     """Доменный объект цен краткосрочной аренды."""
 
-    resource_id: int | str | None = None
+    item_id: int | str | None = None
     user_id: int | str | None = None
 
     def update_realty_prices(
@@ -121,9 +121,9 @@ class RealtyPricing(DomainObject):
         )
 
     def _require_item_id(self) -> str:
-        if self.resource_id is None:
+        if self.item_id is None:
             raise ValidationError("Для операции требуется `item_id`.")
-        return str(self.resource_id)
+        return str(self.item_id)
 
     def _require_user_id(self) -> str:
         if self.user_id is None:
@@ -135,7 +135,7 @@ class RealtyPricing(DomainObject):
 class RealtyAnalyticsReport(DomainObject):
     """Доменный объект аналитики по недвижимости."""
 
-    resource_id: int | str | None = None
+    item_id: int | str | None = None
     user_id: int | str | None = None
 
     def get_market_price_correspondence(
@@ -155,9 +155,9 @@ class RealtyAnalyticsReport(DomainObject):
         )
 
     def _require_item_id(self) -> str:
-        if self.resource_id is None:
+        if self.item_id is None:
             raise ValidationError("Для операции требуется `item_id`.")
-        return str(self.resource_id)
+        return str(self.item_id)
 
 
 __all__ = (

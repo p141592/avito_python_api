@@ -46,7 +46,6 @@ class DomainObject:
 class CpaLead(DomainObject):
     """Доменный объект CPA-лида и связанных lead-операций."""
 
-    resource_id: int | str | None = None
     user_id: int | str | None = None
 
     def create_complaint_by_action_id(
@@ -64,12 +63,12 @@ class CpaLead(DomainObject):
 class CpaChat(DomainObject):
     """Доменный объект CPA-чата."""
 
-    resource_id: int | str | None = None
+    action_id: int | str | None = None
     user_id: int | str | None = None
 
     def get(self, *, action_id: int | str | None = None) -> CpaChatInfo:
         return CpaChatsClient(self.transport).get_by_action_id(
-            action_id=action_id or self._require_resource_id()
+            action_id=action_id or self._require_action_id()
         )
 
     def list(
@@ -90,17 +89,16 @@ class CpaChat(DomainObject):
     ) -> CpaPhonesResult:
         return CpaChatsClient(self.transport).get_phones_info(request)
 
-    def _require_resource_id(self) -> str:
-        if self.resource_id is None:
-            raise ValidationError("Для операции требуется `action_id` или `chat_id`.")
-        return str(self.resource_id)
+    def _require_action_id(self) -> str:
+        if self.action_id is None:
+            raise ValidationError("Для операции требуется `action_id`.")
+        return str(self.action_id)
 
 
 @dataclass(slots=True, frozen=True)
 class CpaCall(DomainObject):
     """Доменный объект CPA-звонка."""
 
-    resource_id: int | str | None = None
     user_id: int | str | None = None
 
     def list(self, *, request: CpaCallsByTimeRequest) -> CpaCallsResult:
@@ -114,12 +112,12 @@ class CpaCall(DomainObject):
 class CpaArchive(DomainObject):
     """Доменный объект архивных операций CPA."""
 
-    resource_id: int | str | None = None
+    call_id: int | str | None = None
     user_id: int | str | None = None
 
     def get_call(self, *, call_id: int | str | None = None) -> CpaAudioRecord:
         return CpaArchiveClient(self.transport).get_record(
-            call_id=call_id or self._require_resource_id()
+            call_id=call_id or self._require_call_id()
         )
 
     def get_balance_info(self) -> CpaBalanceInfo:
@@ -128,22 +126,22 @@ class CpaArchive(DomainObject):
     def get_call_by_id(self, *, request: CpaCallByIdRequest) -> CpaCallInfo:
         return CpaArchiveClient(self.transport).get_call_by_id(request)
 
-    def _require_resource_id(self) -> str:
-        if self.resource_id is None:
+    def _require_call_id(self) -> str:
+        if self.call_id is None:
             raise ValidationError("Для операции требуется `call_id`.")
-        return str(self.resource_id)
+        return str(self.call_id)
 
 
 @dataclass(slots=True, frozen=True)
 class CallTrackingCall(DomainObject):
     """Доменный объект CallTracking."""
 
-    resource_id: int | str | None = None
+    call_id: int | str | None = None
     user_id: int | str | None = None
 
     def get(self, *, call_id: int | None = None) -> CallTrackingCallResponse:
         resolved_call_id = call_id or (
-            int(self.resource_id) if self.resource_id is not None else None
+            int(self.call_id) if self.call_id is not None else None
         )
         if resolved_call_id is None:
             raise ValidationError("Для операции требуется `call_id`.")
@@ -156,13 +154,13 @@ class CallTrackingCall(DomainObject):
 
     def download(self, *, call_id: int | str | None = None) -> CallTrackingRecord:
         return CallTrackingClient(self.transport).get_record_by_call_id(
-            call_id=call_id or self._require_resource_id()
+            call_id=call_id or self._require_call_id()
         )
 
-    def _require_resource_id(self) -> str:
-        if self.resource_id is None:
+    def _require_call_id(self) -> str:
+        if self.call_id is None:
             raise ValidationError("Для операции требуется `call_id`.")
-        return str(self.resource_id)
+        return str(self.call_id)
 
 
 __all__ = ("CallTrackingCall", "CpaArchive", "CpaCall", "CpaChat", "CpaLead", "DomainObject")

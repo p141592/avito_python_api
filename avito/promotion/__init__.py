@@ -35,8 +35,8 @@ from avito.promotion.models import (
     CpaAuctionBidsResult,
     CreateItemBid,
     PromotionActionResult,
-    PromotionForecast,
     PromotionOrderError,
+    PromotionOrderInfo,
     PromotionOrdersResult,
     PromotionOrderStatusItem,
     PromotionOrderStatusResult,
@@ -55,9 +55,6 @@ from avito.promotion.models import (
     TargetActionPromotionsByItemIdsResult,
     TrxCommissionsResult,
     TrxPromotionApplyItem,
-)
-from avito.promotion.models import (
-    PromotionOrder as PromotionOrderModel,
 )
 
 __all__ = (
@@ -90,10 +87,9 @@ __all__ = (
     "CreateItemBid",
     "DomainObject",
     "PromotionActionResult",
-    "PromotionForecast",
     "PromotionOrder",
-    "PromotionOrderModel",
     "PromotionOrderError",
+    "PromotionOrderInfo",
     "PromotionOrderStatusItem",
     "PromotionOrderStatusResult",
     "PromotionOrdersResult",

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from avito.core.serialization import enable_module_serialization
+from avito.core.serialization import SerializableModel
 
 
 @dataclass(slots=True, frozen=True)
@@ -181,7 +181,7 @@ class VacancyAutoRenewalRequest:
 
 
 @dataclass(slots=True, frozen=True)
-class JobActionResult:
+class JobActionResult(SerializableModel):
     """Результат mutation-операции Jobs API."""
 
     success: bool
@@ -191,7 +191,7 @@ class JobActionResult:
 
 
 @dataclass(slots=True, frozen=True)
-class ApplicationInfo:
+class ApplicationInfo(SerializableModel):
     """Информация об отклике."""
 
     id: str | None
@@ -203,14 +203,14 @@ class ApplicationInfo:
 
 
 @dataclass(slots=True, frozen=True)
-class ApplicationsResult:
+class ApplicationsResult(SerializableModel):
     """Список откликов."""
 
     items: list[ApplicationInfo]
 
 
 @dataclass(slots=True, frozen=True)
-class ApplicationIdItem:
+class ApplicationIdItem(SerializableModel):
     """Идентификатор отклика."""
 
     id: str | None
@@ -218,7 +218,7 @@ class ApplicationIdItem:
 
 
 @dataclass(slots=True, frozen=True)
-class ApplicationIdsResult:
+class ApplicationIdsResult(SerializableModel):
     """Постраничный список идентификаторов откликов."""
 
     items: list[ApplicationIdItem]
@@ -226,7 +226,7 @@ class ApplicationIdsResult:
 
 
 @dataclass(slots=True, frozen=True)
-class ApplicationState:
+class ApplicationState(SerializableModel):
     """Статус отклика."""
 
     slug: str | None
@@ -234,14 +234,14 @@ class ApplicationState:
 
 
 @dataclass(slots=True, frozen=True)
-class ApplicationStatesResult:
+class ApplicationStatesResult(SerializableModel):
     """Список возможных статусов откликов."""
 
     items: list[ApplicationState]
 
 
 @dataclass(slots=True, frozen=True)
-class ResumeInfo:
+class ResumeInfo(SerializableModel):
     """Краткая или полная информация о резюме."""
 
     id: str | None
@@ -252,7 +252,7 @@ class ResumeInfo:
 
 
 @dataclass(slots=True, frozen=True)
-class ResumesResult:
+class ResumesResult(SerializableModel):
     """Результат поиска резюме."""
 
     items: list[ResumeInfo]
@@ -261,7 +261,7 @@ class ResumesResult:
 
 
 @dataclass(slots=True, frozen=True)
-class ResumeContactInfo:
+class ResumeContactInfo(SerializableModel):
     """Контакты соискателя."""
 
     name: str | None
@@ -270,7 +270,7 @@ class ResumeContactInfo:
 
 
 @dataclass(slots=True, frozen=True)
-class VacancyInfo:
+class VacancyInfo(SerializableModel):
     """Информация о вакансии."""
 
     id: str | None
@@ -281,7 +281,7 @@ class VacancyInfo:
 
 
 @dataclass(slots=True, frozen=True)
-class VacanciesResult:
+class VacanciesResult(SerializableModel):
     """Список вакансий."""
 
     items: list[VacancyInfo]
@@ -289,7 +289,7 @@ class VacanciesResult:
 
 
 @dataclass(slots=True, frozen=True)
-class VacancyStatusInfo:
+class VacancyStatusInfo(SerializableModel):
     """Статус публикации вакансии v2."""
 
     id: str | None
@@ -298,14 +298,14 @@ class VacancyStatusInfo:
 
 
 @dataclass(slots=True, frozen=True)
-class VacancyStatusesResult:
+class VacancyStatusesResult(SerializableModel):
     """Список статусов вакансий."""
 
     items: list[VacancyStatusInfo]
 
 
 @dataclass(slots=True, frozen=True)
-class JobWebhookInfo:
+class JobWebhookInfo(SerializableModel):
     """Подписка webhook раздела Работа."""
 
     url: str | None
@@ -314,14 +314,14 @@ class JobWebhookInfo:
 
 
 @dataclass(slots=True, frozen=True)
-class JobWebhooksResult:
+class JobWebhooksResult(SerializableModel):
     """Список webhook-подписок."""
 
     items: list[JobWebhookInfo]
 
 
 @dataclass(slots=True, frozen=True)
-class JobDictionaryInfo:
+class JobDictionaryInfo(SerializableModel):
     """Справочник вакансий."""
 
     id: str | None
@@ -329,14 +329,14 @@ class JobDictionaryInfo:
 
 
 @dataclass(slots=True, frozen=True)
-class JobDictionariesResult:
+class JobDictionariesResult(SerializableModel):
     """Список доступных словарей."""
 
     items: list[JobDictionaryInfo]
 
 
 @dataclass(slots=True, frozen=True)
-class JobDictionaryValue:
+class JobDictionaryValue(SerializableModel):
     """Значение словаря вакансий."""
 
     id: int | str | None
@@ -345,10 +345,7 @@ class JobDictionaryValue:
 
 
 @dataclass(slots=True, frozen=True)
-class JobDictionaryValuesResult:
+class JobDictionaryValuesResult(SerializableModel):
     """Список значений словаря."""
 
     items: list[JobDictionaryValue]
-
-
-enable_module_serialization(globals())

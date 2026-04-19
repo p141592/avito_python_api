@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 
-from avito.core.serialization import SerializableModel, enable_module_serialization
+from avito.core.serialization import SerializableModel
 
 
 @dataclass(slots=True, frozen=True)
@@ -155,7 +155,7 @@ class SpendingsResult(SerializableModel):
 
 
 @dataclass(slots=True, frozen=True)
-class VasPrice:
+class VasPrice(SerializableModel):
     """Цена и доступность услуги продвижения."""
 
     code: str | None
@@ -224,7 +224,7 @@ class ApplyVasPackageRequest:
 
 
 @dataclass(slots=True, frozen=True)
-class AutoloadProfileSettings:
+class AutoloadProfileSettings(SerializableModel):
     """Профиль пользователя автозагрузки."""
 
     user_id: int | None
@@ -275,7 +275,7 @@ class UploadResult(SerializableModel):
 
 
 @dataclass(slots=True, frozen=True)
-class AutoloadField:
+class AutoloadField(SerializableModel):
     """Поле категории автозагрузки."""
 
     slug: str | None
@@ -292,7 +292,7 @@ class AutoloadFieldsResult(SerializableModel):
 
 
 @dataclass(slots=True, frozen=True)
-class AutoloadTreeNode:
+class AutoloadTreeNode(SerializableModel):
     """Узел дерева категорий автозагрузки."""
 
     slug: str | None
@@ -315,7 +315,7 @@ class IdMappingResult(SerializableModel):
 
 
 @dataclass(slots=True, frozen=True)
-class AutoloadReportSummary:
+class AutoloadReportSummary(SerializableModel):
     """Краткая информация по отчету автозагрузки."""
 
     report_id: int | None
@@ -334,7 +334,7 @@ class AutoloadReportsResult(SerializableModel):
 
 
 @dataclass(slots=True, frozen=True)
-class AutoloadReportItem:
+class AutoloadReportItem(SerializableModel):
     """Объявление внутри отчета автозагрузки."""
 
     item_id: int | None
@@ -352,7 +352,7 @@ class AutoloadReportItemsResult(SerializableModel):
 
 
 @dataclass(slots=True, frozen=True)
-class AutoloadFee:
+class AutoloadFee(SerializableModel):
     """Списание по объявлению в отчете автозагрузки."""
 
     item_id: int | None
@@ -369,7 +369,7 @@ class AutoloadFeesResult(SerializableModel):
 
 
 @dataclass(slots=True, frozen=True)
-class AutoloadReportDetails:
+class AutoloadReportDetails(SerializableModel):
     """Детальная информация по отчету автозагрузки."""
 
     report_id: int | None
@@ -381,7 +381,7 @@ class AutoloadReportDetails:
 
 
 @dataclass(slots=True, frozen=True)
-class LegacyAutoloadReport:
+class LegacyAutoloadReport(SerializableModel):
     """Legacy-ответ автозагрузки."""
 
     report_id: int | None
@@ -396,14 +396,7 @@ class ActionResult(SerializableModel):
     message: str | None = None
 
 
-Listing = AdItem
-ListingStats = ItemStatsRecord
-CallStats = CallStat
-AccountSpendings = SpendingsResult
-
-
 __all__ = (
-    "AccountSpendings",
     "ActionResult",
     "AdItem",
     "AdsListResult",
@@ -422,7 +415,6 @@ __all__ = (
     "AutoloadReportsResult",
     "AutoloadTreeNode",
     "AutoloadTreeResult",
-    "CallStats",
     "CallStat",
     "CallsStatsRequest",
     "CallsStatsResult",
@@ -432,8 +424,6 @@ __all__ = (
     "ItemStatsRequest",
     "ItemStatsResult",
     "LegacyAutoloadReport",
-    "Listing",
-    "ListingStats",
     "SpendingRecord",
     "SpendingsResult",
     "UpdatePriceRequest",
@@ -445,5 +435,3 @@ __all__ = (
     "VasPricesRequest",
     "VasPricesResult",
 )
-
-enable_module_serialization(globals())

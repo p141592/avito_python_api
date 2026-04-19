@@ -56,7 +56,7 @@ class DomainObject:
 class AutotekaVehicle(DomainObject):
     """Доменный объект превью, спецификаций, тизеров и каталога."""
 
-    resource_id: int | str | None = None
+    vehicle_id: int | str | None = None
     user_id: int | str | None = None
 
     def resolve_catalog(self, *, request: CatalogResolveRequest) -> CatalogResolveResult:
@@ -72,7 +72,7 @@ class AutotekaVehicle(DomainObject):
 
     def get_preview(self, *, preview_id: int | str | None = None) -> AutotekaPreviewInfo:
         return PreviewClient(self.transport).get_preview(
-            preview_id=preview_id or self._require_resource_id("preview_id")
+            preview_id=preview_id or self._require_vehicle_id("preview_id")
         )
 
     def create_preview_by_external_item(
@@ -102,7 +102,7 @@ class AutotekaVehicle(DomainObject):
         specification_id: int | str | None = None,
     ) -> AutotekaSpecificationInfo:
         return SpecificationsClient(self.transport).get_by_id(
-            specification_id=specification_id or self._require_resource_id("specification_id")
+            specification_id=specification_id or self._require_vehicle_id("specification_id")
         )
 
     def create_teaser(self, *, request: TeaserCreateRequest) -> AutotekaTeaserInfo:
@@ -110,20 +110,20 @@ class AutotekaVehicle(DomainObject):
 
     def get_teaser(self, *, teaser_id: int | str | None = None) -> AutotekaTeaserInfo:
         return TeaserClient(self.transport).get(
-            teaser_id=teaser_id or self._require_resource_id("teaser_id")
+            teaser_id=teaser_id or self._require_vehicle_id("teaser_id")
         )
 
-    def _require_resource_id(self, field_name: str) -> str:
-        if self.resource_id is None:
+    def _require_vehicle_id(self, field_name: str) -> str:
+        if self.vehicle_id is None:
             raise ValidationError(f"Для операции требуется `{field_name}`.")
-        return str(self.resource_id)
+        return str(self.vehicle_id)
 
 
 @dataclass(slots=True, frozen=True)
 class AutotekaReport(DomainObject):
     """Доменный объект отчетов и пакетов Автотеки."""
 
-    resource_id: int | str | None = None
+    report_id: int | str | None = None
     user_id: int | str | None = None
 
     def get_active_package(self) -> AutotekaPackageInfo:
@@ -142,7 +142,7 @@ class AutotekaReport(DomainObject):
 
     def get_report(self, *, report_id: int | str | None = None) -> AutotekaReportInfo:
         return ReportClient(self.transport).get_report(
-            report_id=report_id or self._require_resource_id()
+            report_id=report_id or self._require_report_id()
         )
 
     def create_sync_report_by_reg_number(self, *, request: RegNumberRequest) -> AutotekaReportInfo:
@@ -151,17 +151,16 @@ class AutotekaReport(DomainObject):
     def create_sync_report_by_vin(self, *, request: VinRequest) -> AutotekaReportInfo:
         return ReportClient(self.transport).create_sync_report_by_vin(request)
 
-    def _require_resource_id(self) -> str:
-        if self.resource_id is None:
+    def _require_report_id(self) -> str:
+        if self.report_id is None:
             raise ValidationError("Для операции требуется `report_id`.")
-        return str(self.resource_id)
+        return str(self.report_id)
 
 
 @dataclass(slots=True, frozen=True)
 class AutotekaMonitoring(DomainObject):
     """Доменный объект мониторинга Автотеки."""
 
-    resource_id: int | str | None = None
     user_id: int | str | None = None
 
     def create_monitoring_bucket_add(
@@ -191,7 +190,7 @@ class AutotekaMonitoring(DomainObject):
 class AutotekaScoring(DomainObject):
     """Доменный объект скоринга рисков."""
 
-    resource_id: int | str | None = None
+    scoring_id: int | str | None = None
     user_id: int | str | None = None
 
     def create_scoring_by_vehicle_id(self, *, request: VehicleIdRequest) -> AutotekaScoringInfo:
@@ -199,20 +198,19 @@ class AutotekaScoring(DomainObject):
 
     def get_scoring_by_id(self, *, scoring_id: int | str | None = None) -> AutotekaScoringInfo:
         return ScoringClient(self.transport).get_by_id(
-            scoring_id=scoring_id or self._require_resource_id()
+            scoring_id=scoring_id or self._require_scoring_id()
         )
 
-    def _require_resource_id(self) -> str:
-        if self.resource_id is None:
+    def _require_scoring_id(self) -> str:
+        if self.scoring_id is None:
             raise ValidationError("Для операции требуется `scoring_id`.")
-        return str(self.resource_id)
+        return str(self.scoring_id)
 
 
 @dataclass(slots=True, frozen=True)
 class AutotekaValuation(DomainObject):
     """Доменный объект оценки автомобиля."""
 
-    resource_id: int | str | None = None
     user_id: int | str | None = None
 
     def get_valuation_by_specification(

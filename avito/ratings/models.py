@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from avito.core.serialization import enable_module_serialization
+from avito.core.serialization import SerializableModel
 
 
 @dataclass(slots=True, frozen=True)
@@ -36,7 +36,7 @@ class CreateReviewAnswerRequest:
 
 
 @dataclass(slots=True, frozen=True)
-class ReviewInfo:
+class ReviewInfo(SerializableModel):
     """Информация об отзыве пользователя."""
 
     review_id: str | None
@@ -49,7 +49,7 @@ class ReviewInfo:
 
 
 @dataclass(slots=True, frozen=True)
-class ReviewsResult:
+class ReviewsResult(SerializableModel):
     """Список отзывов пользователя."""
 
     items: list[ReviewInfo]
@@ -57,7 +57,7 @@ class ReviewsResult:
 
 
 @dataclass(slots=True, frozen=True)
-class ReviewAnswerInfo:
+class ReviewAnswerInfo(SerializableModel):
     """Информация об ответе на отзыв."""
 
     answer_id: str | None = None
@@ -66,13 +66,10 @@ class ReviewAnswerInfo:
 
 
 @dataclass(slots=True, frozen=True)
-class RatingProfileInfo:
+class RatingProfileInfo(SerializableModel):
     """Информация о рейтинговом профиле."""
 
     is_enabled: bool
     score: float | None = None
     reviews_count: int | None = None
     reviews_with_score_count: int | None = None
-
-
-enable_module_serialization(globals())

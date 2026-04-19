@@ -33,7 +33,6 @@ class DomainObject:
 class Account(DomainObject):
     """Доменный объект операций аккаунта."""
 
-    resource_id: int | str | None = None
     user_id: int | str | None = None
 
     def get_self(self) -> AccountProfile:
@@ -73,7 +72,6 @@ class Account(DomainObject):
 class AccountHierarchy(DomainObject):
     """Доменный объект иерархии аккаунтов."""
 
-    resource_id: int | str | None = None
     user_id: int | str | None = None
 
     def get_status(self) -> AhUserStatus:

@@ -47,12 +47,12 @@ from avito.promotion.models import PromotionActionResult
 
 def _validate_non_empty_items(name: str, items: Sequence[object]) -> None:
     if not items:
-        raise ValidationError(f"`{name}` must contain at least one item.")
+        raise ValidationError(f"`{name}` должен содержать хотя бы один элемент.")
 
 
 def _validate_non_empty_string(name: str, value: str) -> None:
     if not value.strip():
-        raise ValidationError(f"`{name}` must be a non-empty string.")
+        raise ValidationError(f"`{name}` не может быть пустой строкой.")
 
 
 def _validate_string_items(name: str, values: Sequence[str]) -> None:
@@ -88,7 +88,7 @@ class DomainObject:
 class Ad(DomainObject):
     """Доменный объект объявления."""
 
-    resource_id: int | str | None = None
+    item_id: int | str | None = None
     user_id: int | str | None = None
 
     def get(self) -> AdItem:
@@ -136,21 +136,21 @@ class Ad(DomainObject):
         )
 
     def _require_item_id(self) -> int:
-        if self.resource_id is None:
+        if self.item_id is None:
             raise ValidationError("Для операции требуется `item_id`.")
-        return int(self.resource_id)
+        return int(self.item_id)
 
     def _require_ids(self) -> tuple[int, int]:
-        if self.resource_id is None or self.user_id is None:
+        if self.item_id is None or self.user_id is None:
             raise ValidationError("Для операции требуются `item_id` и `user_id`.")
-        return int(self.resource_id), int(self.user_id)
+        return int(self.item_id), int(self.user_id)
 
 
 @dataclass(slots=True, frozen=True)
 class AdStats(DomainObject):
     """Доменный объект статистики объявлений."""
 
-    resource_id: int | str | None = None
+    item_id: int | str | None = None
     user_id: int | str | None = None
 
     def get_calls_stats(
@@ -164,7 +164,7 @@ class AdStats(DomainObject):
 
         user_id = self._require_user_id()
         resolved_item_ids = item_ids or (
-            [int(self.resource_id)] if self.resource_id is not None else []
+            [int(self.item_id)] if self.item_id is not None else []
         )
         return StatsClient(self.transport).get_calls_stats(
             user_id=user_id,
@@ -185,7 +185,7 @@ class AdStats(DomainObject):
 
         user_id = self._require_user_id()
         resolved_item_ids = item_ids or (
-            [int(self.resource_id)] if self.resource_id is not None else []
+            [int(self.item_id)] if self.item_id is not None else []
         )
         return StatsClient(self.transport).get_item_stats(
             user_id=user_id,
@@ -209,7 +209,7 @@ class AdStats(DomainObject):
 
         user_id = self._require_user_id()
         resolved_item_ids = item_ids or (
-            [int(self.resource_id)] if self.resource_id is not None else []
+            [int(self.item_id)] if self.item_id is not None else []
         )
         return StatsClient(self.transport).get_item_analytics(
             user_id=user_id,
@@ -233,7 +233,7 @@ class AdStats(DomainObject):
 
         user_id = self._require_user_id()
         resolved_item_ids = item_ids or (
-            [int(self.resource_id)] if self.resource_id is not None else []
+            [int(self.item_id)] if self.item_id is not None else []
         )
         return StatsClient(self.transport).get_account_spendings(
             user_id=user_id,
@@ -255,7 +255,7 @@ class AdStats(DomainObject):
 class AdPromotion(DomainObject):
     """Доменный объект продвижения объявления."""
 
-    resource_id: int | str | None = None
+    item_id: int | str | None = None
     user_id: int | str | None = None
 
     def get_vas_prices(
@@ -344,9 +344,9 @@ class AdPromotion(DomainObject):
         )
 
     def _require_item_id(self) -> int:
-        if self.resource_id is None:
+        if self.item_id is None:
             raise ValidationError("Для операции требуется `item_id`.")
-        return int(self.resource_id)
+        return int(self.item_id)
 
     def _require_user_id(self) -> int:
         if self.user_id is None:
@@ -361,7 +361,6 @@ class AdPromotion(DomainObject):
 class AutoloadProfile(DomainObject):
     """Доменный объект профиля автозагрузки."""
 
-    resource_id: int | str | None = None
     user_id: int | str | None = None
 
     def get(self) -> AutoloadProfileSettings:
@@ -404,7 +403,7 @@ class AutoloadProfile(DomainObject):
 class AutoloadReport(DomainObject):
     """Доменный объект отчета автозагрузки."""
 
-    resource_id: int | str | None = None
+    report_id: int | str | None = None
     user_id: int | str | None = None
 
     def get(self) -> AutoloadReportDetails:
@@ -451,16 +450,16 @@ class AutoloadReport(DomainObject):
         return AutoloadClient(self.transport).get_items_info(item_ids=list(item_ids))
 
     def _require_report_id(self) -> int:
-        if self.resource_id is None:
+        if self.report_id is None:
             raise ValidationError("Для операции требуется `report_id`.")
-        return int(self.resource_id)
+        return int(self.report_id)
 
 
 @dataclass(slots=True, frozen=True)
 class AutoloadArchive(DomainObject):
     """Доменный объект архивных операций автозагрузки."""
 
-    resource_id: int | str | None = None
+    report_id: int | str | None = None
     user_id: int | str | None = None
 
     def get_profile(self) -> AutoloadProfileSettings:
@@ -495,9 +494,9 @@ class AutoloadArchive(DomainObject):
         return AutoloadArchiveClient(self.transport).get_report(report_id=report_id)
 
     def _require_report_id(self) -> int:
-        if self.resource_id is None:
+        if self.report_id is None:
             raise ValidationError("Для операции требуется `report_id`.")
-        return int(self.resource_id)
+        return int(self.report_id)
 
 
 __all__ = (

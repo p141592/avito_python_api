@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 
-from avito.core.serialization import SerializableModel, enable_module_serialization
+from avito.core.serialization import SerializableModel
 
 
 @dataclass(slots=True, frozen=True)
@@ -897,7 +897,3 @@ class AutostrategyStatTotals(SerializableModel):
     views: int | None
 
 
-PromotionOrder = PromotionOrderInfo
-PromotionForecast = BbipForecast
-
-enable_module_serialization(globals())

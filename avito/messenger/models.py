@@ -5,11 +5,11 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import BinaryIO
 
-from avito.core.serialization import enable_module_serialization
+from avito.core.serialization import SerializableModel
 
 
 @dataclass(slots=True, frozen=True)
-class ChatInfo:
+class ChatInfo(SerializableModel):
     """Информация о чате."""
 
     id: str | None
@@ -20,7 +20,7 @@ class ChatInfo:
 
 
 @dataclass(slots=True, frozen=True)
-class ChatsResult:
+class ChatsResult(SerializableModel):
     """Список чатов."""
 
     items: list[ChatInfo]
@@ -62,7 +62,7 @@ class SendImageMessageRequest:
 
 
 @dataclass(slots=True, frozen=True)
-class MessageInfo:
+class MessageInfo(SerializableModel):
     """Информация о сообщении чата."""
 
     id: str | None
@@ -75,7 +75,7 @@ class MessageInfo:
 
 
 @dataclass(slots=True, frozen=True)
-class MessagesResult:
+class MessagesResult(SerializableModel):
     """Список сообщений чата."""
 
     items: list[MessageInfo]
@@ -83,7 +83,7 @@ class MessagesResult:
 
 
 @dataclass(slots=True, frozen=True)
-class MessageActionResult:
+class MessageActionResult(SerializableModel):
     """Результат операции с сообщением или чатом."""
 
     success: bool
@@ -92,7 +92,7 @@ class MessageActionResult:
 
 
 @dataclass(slots=True, frozen=True)
-class VoiceFile:
+class VoiceFile(SerializableModel):
     """Голосовое сообщение."""
 
     id: str | None
@@ -102,14 +102,14 @@ class VoiceFile:
 
 
 @dataclass(slots=True, frozen=True)
-class VoiceFilesResult:
+class VoiceFilesResult(SerializableModel):
     """Список голосовых сообщений."""
 
     items: list[VoiceFile]
 
 
 @dataclass(slots=True, frozen=True)
-class UploadImageResult:
+class UploadImageResult(SerializableModel):
     """Результат загрузки изображения."""
 
     image_id: str | None
@@ -117,7 +117,7 @@ class UploadImageResult:
 
 
 @dataclass(slots=True, frozen=True)
-class UploadImagesResult:
+class UploadImagesResult(SerializableModel):
     """Список загруженных изображений."""
 
     items: list[UploadImageResult]
@@ -148,7 +148,7 @@ class UploadImagesRequest:
 
 
 @dataclass(slots=True, frozen=True)
-class SubscriptionInfo:
+class SubscriptionInfo(SerializableModel):
     """Подписка webhook мессенджера."""
 
     url: str | None
@@ -157,7 +157,7 @@ class SubscriptionInfo:
 
 
 @dataclass(slots=True, frozen=True)
-class SubscriptionsResult:
+class SubscriptionsResult(SerializableModel):
     """Список webhook-подписок."""
 
     items: list[SubscriptionInfo]
@@ -193,7 +193,7 @@ class UpdateWebhookRequest:
 
 
 @dataclass(slots=True, frozen=True)
-class WebhookActionResult:
+class WebhookActionResult(SerializableModel):
     """Результат операции с webhook."""
 
     success: bool
@@ -225,7 +225,7 @@ class SpecialOfferAvailableRequest:
 
 
 @dataclass(slots=True, frozen=True)
-class SpecialOfferAvailableItem:
+class SpecialOfferAvailableItem(SerializableModel):
     """Доступное объявление для рассылки спецпредложений."""
 
     item_id: int | None
@@ -234,7 +234,7 @@ class SpecialOfferAvailableItem:
 
 
 @dataclass(slots=True, frozen=True)
-class SpecialOfferAvailableResult:
+class SpecialOfferAvailableResult(SerializableModel):
     """Результат получения доступных объявлений."""
 
     items: list[SpecialOfferAvailableItem]
@@ -263,7 +263,7 @@ class MultiCreateSpecialOfferRequest:
 
 
 @dataclass(slots=True, frozen=True)
-class MultiCreateSpecialOfferResult:
+class MultiCreateSpecialOfferResult(SerializableModel):
     """Результат создания рассылки."""
 
     campaign_id: str | None
@@ -295,7 +295,7 @@ class SpecialOfferStatsRequest:
 
 
 @dataclass(slots=True, frozen=True)
-class SpecialOfferStatsResult:
+class SpecialOfferStatsResult(SerializableModel):
     """Статистика рассылки."""
 
     campaign_id: str | None
@@ -305,7 +305,7 @@ class SpecialOfferStatsResult:
 
 
 @dataclass(slots=True, frozen=True)
-class TariffInfo:
+class TariffInfo(SerializableModel):
     """Информация о тарифе рассылок."""
 
     price: float | None
@@ -343,5 +343,3 @@ __all__ = (
     "VoiceFilesResult",
     "WebhookActionResult",
 )
-
-enable_module_serialization(globals())

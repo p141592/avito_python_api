@@ -3,12 +3,9 @@
 from __future__ import annotations
 
 from collections.abc import Callable, Mapping
-from typing import TypeVar
 
 from avito.core.transport import Transport
 from avito.core.types import HttpMethod, RequestContext
-
-ModelT = TypeVar("ModelT")
 
 
 def request_public_model[ModelT](

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from avito.core.serialization import enable_module_serialization
+from avito.core.serialization import SerializableModel
 
 
 @dataclass(slots=True, frozen=True)
@@ -169,7 +169,7 @@ class ValuationBySpecificationRequest:
 
 
 @dataclass(slots=True, frozen=True)
-class CatalogFieldValue:
+class CatalogFieldValue(SerializableModel):
     """Значение параметра автокаталога."""
 
     value_id: str | None
@@ -177,7 +177,7 @@ class CatalogFieldValue:
 
 
 @dataclass(slots=True, frozen=True)
-class CatalogField:
+class CatalogField(SerializableModel):
     """Параметр автокаталога."""
 
     field_id: str | None
@@ -187,14 +187,14 @@ class CatalogField:
 
 
 @dataclass(slots=True, frozen=True)
-class CatalogResolveResult:
+class CatalogResolveResult(SerializableModel):
     """Результат актуализации параметров автокаталога."""
 
     items: list[CatalogField]
 
 
 @dataclass(slots=True, frozen=True)
-class AutotekaLeadEvent:
+class AutotekaLeadEvent(SerializableModel):
     """Событие сервиса Сигнал."""
 
     event_id: str | None
@@ -209,7 +209,7 @@ class AutotekaLeadEvent:
 
 
 @dataclass(slots=True, frozen=True)
-class AutotekaLeadsResult:
+class AutotekaLeadsResult(SerializableModel):
     """Список событий сервиса Сигнал."""
 
     items: list[AutotekaLeadEvent]
@@ -217,7 +217,7 @@ class AutotekaLeadsResult:
 
 
 @dataclass(slots=True, frozen=True)
-class MonitoringInvalidVehicle:
+class MonitoringInvalidVehicle(SerializableModel):
     """Невалидный идентификатор авто в запросах мониторинга."""
 
     vehicle_id: str | None
@@ -225,7 +225,7 @@ class MonitoringInvalidVehicle:
 
 
 @dataclass(slots=True, frozen=True)
-class MonitoringBucketResult:
+class MonitoringBucketResult(SerializableModel):
     """Результат изменения списка мониторинга."""
 
     success: bool
@@ -233,7 +233,7 @@ class MonitoringBucketResult:
 
 
 @dataclass(slots=True, frozen=True)
-class MonitoringEvent:
+class MonitoringEvent(SerializableModel):
     """Событие мониторинга регистрационных действий."""
 
     vehicle_id: str | None
@@ -248,7 +248,7 @@ class MonitoringEvent:
 
 
 @dataclass(slots=True, frozen=True)
-class MonitoringEventsResult:
+class MonitoringEventsResult(SerializableModel):
     """Список событий мониторинга."""
 
     items: list[MonitoringEvent]
@@ -258,7 +258,7 @@ class MonitoringEventsResult:
 
 
 @dataclass(slots=True, frozen=True)
-class AutotekaPackageInfo:
+class AutotekaPackageInfo(SerializableModel):
     """Информация о текущем пакете отчетов Автотеки."""
 
     reports_total: int | None
@@ -268,7 +268,7 @@ class AutotekaPackageInfo:
 
 
 @dataclass(slots=True, frozen=True)
-class AutotekaPreviewInfo:
+class AutotekaPreviewInfo(SerializableModel):
     """Информация о превью автомобиля."""
 
     preview_id: str | None
@@ -278,7 +278,7 @@ class AutotekaPreviewInfo:
 
 
 @dataclass(slots=True, frozen=True)
-class AutotekaReportInfo:
+class AutotekaReportInfo(SerializableModel):
     """Информация об отчете Автотеки."""
 
     report_id: str | None
@@ -290,14 +290,14 @@ class AutotekaReportInfo:
 
 
 @dataclass(slots=True, frozen=True)
-class AutotekaReportsResult:
+class AutotekaReportsResult(SerializableModel):
     """Список отчетов Автотеки."""
 
     items: list[AutotekaReportInfo]
 
 
 @dataclass(slots=True, frozen=True)
-class AutotekaScoringInfo:
+class AutotekaScoringInfo(SerializableModel):
     """Информация о скоринге рисков."""
 
     scoring_id: str | None
@@ -306,7 +306,7 @@ class AutotekaScoringInfo:
 
 
 @dataclass(slots=True, frozen=True)
-class AutotekaSpecificationInfo:
+class AutotekaSpecificationInfo(SerializableModel):
     """Информация о запросе спецификации автомобиля."""
 
     specification_id: str | None
@@ -316,7 +316,7 @@ class AutotekaSpecificationInfo:
 
 
 @dataclass(slots=True, frozen=True)
-class AutotekaTeaserInfo:
+class AutotekaTeaserInfo(SerializableModel):
     """Информация о тизере Автотеки."""
 
     teaser_id: str | None
@@ -327,7 +327,7 @@ class AutotekaTeaserInfo:
 
 
 @dataclass(slots=True, frozen=True)
-class AutotekaValuationInfo:
+class AutotekaValuationInfo(SerializableModel):
     """Оценка стоимости автомобиля."""
 
     status: str | None
@@ -339,6 +339,3 @@ class AutotekaValuationInfo:
     mileage: int | None
     avg_price_with_condition: int | None
     avg_market_price: int | None
-
-
-enable_module_serialization(globals())

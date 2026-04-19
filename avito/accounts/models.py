@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from avito.core.serialization import SerializableModel, enable_module_serialization
+from avito.core.serialization import SerializableModel
 
 
 @dataclass(slots=True, frozen=True)
@@ -18,7 +18,7 @@ class AccountProfile(SerializableModel):
 
 
 @dataclass(slots=True, frozen=True)
-class AccountBalance:
+class AccountBalance(SerializableModel):
     """Баланс кошелька пользователя."""
 
     user_id: int | None
@@ -29,7 +29,7 @@ class AccountBalance:
 
 
 @dataclass(slots=True, frozen=True)
-class OperationRecord:
+class OperationRecord(SerializableModel):
     """Операция по аккаунту."""
 
     id: str | None
@@ -73,7 +73,7 @@ class OperationsHistoryResult(SerializableModel):
 
 
 @dataclass(slots=True, frozen=True)
-class AhUserStatus:
+class AhUserStatus(SerializableModel):
     """Статус пользователя в иерархии аккаунтов."""
 
     user_id: int | None
@@ -82,7 +82,7 @@ class AhUserStatus:
 
 
 @dataclass(slots=True, frozen=True)
-class Employee:
+class Employee(SerializableModel):
     """Сотрудник иерархии аккаунтов."""
 
     employee_id: int | None
@@ -93,7 +93,7 @@ class Employee:
 
 
 @dataclass(slots=True, frozen=True)
-class EmployeesResult:
+class EmployeesResult(SerializableModel):
     """Список сотрудников иерархии."""
 
     items: list[Employee]
@@ -101,7 +101,7 @@ class EmployeesResult:
 
 
 @dataclass(slots=True, frozen=True)
-class CompanyPhone:
+class CompanyPhone(SerializableModel):
     """Телефон компании."""
 
     id: int | None
@@ -110,7 +110,7 @@ class CompanyPhone:
 
 
 @dataclass(slots=True, frozen=True)
-class CompanyPhonesResult:
+class CompanyPhonesResult(SerializableModel):
     """Список телефонов компании."""
 
     items: list[CompanyPhone]
@@ -161,7 +161,7 @@ class EmployeeItemsRequest:
 
 
 @dataclass(slots=True, frozen=True)
-class EmployeeItem:
+class EmployeeItem(SerializableModel):
     """Объявление сотрудника в иерархии."""
 
     item_id: int | None
@@ -171,7 +171,7 @@ class EmployeeItem:
 
 
 @dataclass(slots=True, frozen=True)
-class EmployeeItemsResult:
+class EmployeeItemsResult(SerializableModel):
     """Список объявлений сотрудника."""
 
     items: list[EmployeeItem]
@@ -179,7 +179,7 @@ class EmployeeItemsResult:
 
 
 @dataclass(slots=True, frozen=True)
-class ActionResult:
+class ActionResult(SerializableModel):
     """Результат мутационной операции accounts."""
 
     success: bool
@@ -204,4 +204,3 @@ __all__ = (
     "OperationsHistoryResult",
 )
 
-enable_module_serialization(globals())

@@ -78,12 +78,12 @@ class TransportError(AvitoError):
     """Сбой HTTP-транспорта до получения корректного ответа API."""
 
 
+class AuthenticationError(AvitoError):
+    """Ошибка аутентификации: неверные credentials или истёкший токен (HTTP 401)."""
+
+
 class AuthorizationError(AvitoError):
-    """Ошибка авторизации или недостатка прав API."""
-
-
-class AuthenticationError(AuthorizationError):
-    """Совместимое имя ошибки аутентификации."""
+    """Ошибка авторизации: недостаточно прав для операции (HTTP 403)."""
 
 
 class PermissionDeniedError(AuthorizationError):

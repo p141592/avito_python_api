@@ -73,7 +73,6 @@ class DomainObject:
 class Order(DomainObject):
     """Доменный объект заказа."""
 
-    resource_id: int | str | None = None
     user_id: int | str | None = None
 
     def list(self) -> OrdersResult:
@@ -110,7 +109,7 @@ class Order(DomainObject):
 class OrderLabel(DomainObject):
     """Доменный объект генерации и загрузки этикеток."""
 
-    resource_id: int | str | None = None
+    task_id: int | str | None = None
     user_id: int | str | None = None
 
     def create(self, *, request: OrderLabelsRequest, extended: bool = False) -> LabelTaskResult:
@@ -124,16 +123,15 @@ class OrderLabel(DomainObject):
         return LabelsClient(self.transport).get_download_label(task_id=resolved_task_id)
 
     def _require_task_id(self) -> str:
-        if self.resource_id is None:
+        if self.task_id is None:
             raise ValidationError("Для операции требуется `task_id`.")
-        return str(self.resource_id)
+        return str(self.task_id)
 
 
 @dataclass(slots=True, frozen=True)
 class DeliveryOrder(DomainObject):
     """Доменный объект production API доставки."""
 
-    resource_id: int | str | None = None
     user_id: int | str | None = None
 
     def create_announcement(self, *, request: DeliveryAnnouncementRequest) -> DeliveryEntityResult:
@@ -158,7 +156,6 @@ class DeliveryOrder(DomainObject):
 class SandboxDelivery(DomainObject):
     """Доменный объект sandbox API доставки."""
 
-    resource_id: int | str | None = None
     user_id: int | str | None = None
 
     def create_announcement(self, *, request: DeliveryAnnouncementRequest) -> DeliveryEntityResult:
@@ -272,7 +269,7 @@ class SandboxDelivery(DomainObject):
 class DeliveryTask(DomainObject):
     """Доменный объект задачи доставки."""
 
-    resource_id: int | str | None = None
+    task_id: int | str | None = None
     user_id: int | str | None = None
 
     def get(self, *, task_id: str | None = None) -> DeliveryTaskInfo:
@@ -280,16 +277,15 @@ class DeliveryTask(DomainObject):
         return DeliveryTasksClient(self.transport).get_task(task_id=resolved_task_id)
 
     def _require_task_id(self) -> str:
-        if self.resource_id is None:
+        if self.task_id is None:
             raise ValidationError("Для операции требуется `task_id`.")
-        return str(self.resource_id)
+        return str(self.task_id)
 
 
 @dataclass(slots=True, frozen=True)
 class Stock(DomainObject):
     """Доменный объект управления остатками."""
 
-    resource_id: int | str | None = None
     user_id: int | str | None = None
 
     def get(self, *, request: StockInfoRequest) -> StockInfoResult:

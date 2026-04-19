@@ -7,7 +7,7 @@ from dataclasses import dataclass
 from typing import Any
 
 from avito.core import BinaryResponse
-from avito.core.serialization import SerializableModel, enable_module_serialization
+from avito.core.serialization import SerializableModel
 
 
 @dataclass(slots=True, frozen=True)
@@ -289,4 +289,3 @@ class CallTrackingRecord:
         return self.to_dict()
 
 
-enable_module_serialization(globals())

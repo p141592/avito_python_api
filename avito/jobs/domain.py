@@ -54,7 +54,7 @@ class DomainObject:
 class Vacancy(DomainObject):
     """Доменный объект вакансий."""
 
-    resource_id: int | str | None = None
+    vacancy_id: int | str | None = None
     user_id: int | str | None = None
 
     def create(self, *, request: VacancyCreateRequest, version: int = 2) -> JobActionResult:
@@ -74,17 +74,17 @@ class Vacancy(DomainObject):
         client = VacanciesClient(self.transport)
         if version == 1:
             return client.update_classic(
-                vacancy_id=vacancy_id or self._require_resource_id(), request=request
+                vacancy_id=vacancy_id or self._require_vacancy_id(), request=request
             )
         return client.update(
-            vacancy_uuid=vacancy_uuid or self._require_resource_id(), request=request
+            vacancy_uuid=vacancy_uuid or self._require_vacancy_id(), request=request
         )
 
     def delete(
         self, *, request: VacancyArchiveRequest, vacancy_id: int | str | None = None
     ) -> JobActionResult:
         return VacanciesClient(self.transport).archive(
-            vacancy_id=vacancy_id or self._require_resource_id(),
+            vacancy_id=vacancy_id or self._require_vacancy_id(),
             request=request,
         )
 
@@ -92,7 +92,7 @@ class Vacancy(DomainObject):
         self, *, request: VacancyProlongateRequest, vacancy_id: int | str | None = None
     ) -> JobActionResult:
         return VacanciesClient(self.transport).prolongate(
-            vacancy_id=vacancy_id or self._require_resource_id(),
+            vacancy_id=vacancy_id or self._require_vacancy_id(),
             request=request,
         )
 
@@ -103,7 +103,7 @@ class Vacancy(DomainObject):
         self, *, vacancy_id: int | str | None = None, query: VacanciesQuery | None = None
     ) -> VacancyInfo:
         return VacanciesClient(self.transport).get_item(
-            vacancy_id=vacancy_id or self._require_resource_id(),
+            vacancy_id=vacancy_id or self._require_vacancy_id(),
             query=query,
         )
 
@@ -117,21 +117,20 @@ class Vacancy(DomainObject):
         self, *, request: VacancyAutoRenewalRequest, vacancy_uuid: str | None = None
     ) -> JobActionResult:
         return VacanciesClient(self.transport).update_auto_renewal(
-            vacancy_uuid=vacancy_uuid or self._require_resource_id(),
+            vacancy_uuid=vacancy_uuid or self._require_vacancy_id(),
             request=request,
         )
 
-    def _require_resource_id(self) -> str:
-        if self.resource_id is None:
+    def _require_vacancy_id(self) -> str:
+        if self.vacancy_id is None:
             raise ValidationError("Для операции требуется идентификатор вакансии.")
-        return str(self.resource_id)
+        return str(self.vacancy_id)
 
 
 @dataclass(slots=True, frozen=True)
 class Application(DomainObject):
     """Доменный объект откликов."""
 
-    resource_id: int | str | None = None
     user_id: int | str | None = None
 
     def apply(self, *, request: ApplicationActionRequest) -> JobActionResult:
@@ -161,7 +160,7 @@ class Application(DomainObject):
 class Resume(DomainObject):
     """Доменный объект резюме."""
 
-    resource_id: int | str | None = None
+    resume_id: int | str | None = None
     user_id: int | str | None = None
 
     def list(self, *, query: ResumeSearchQuery | None = None) -> ResumesResult:
@@ -169,25 +168,24 @@ class Resume(DomainObject):
 
     def get(self, *, resume_id: int | str | None = None) -> ResumeInfo:
         return ResumeClient(self.transport).get_item(
-            resume_id=str(resume_id or self._require_resource_id())
+            resume_id=str(resume_id or self._require_resume_id())
         )
 
     def get_contacts(self, *, resume_id: int | str | None = None) -> ResumeContactInfo:
         return ResumeClient(self.transport).get_contacts(
-            resume_id=str(resume_id or self._require_resource_id())
+            resume_id=str(resume_id or self._require_resume_id())
         )
 
-    def _require_resource_id(self) -> str:
-        if self.resource_id is None:
+    def _require_resume_id(self) -> str:
+        if self.resume_id is None:
             raise ValidationError("Для операции требуется `resume_id`.")
-        return str(self.resource_id)
+        return str(self.resume_id)
 
 
 @dataclass(slots=True, frozen=True)
 class JobWebhook(DomainObject):
     """Доменный объект webhook откликов."""
 
-    resource_id: int | str | None = None
     user_id: int | str | None = None
 
     def get(self) -> JobWebhookInfo:
@@ -207,7 +205,7 @@ class JobWebhook(DomainObject):
 class JobDictionary(DomainObject):
     """Доменный объект словарей вакансий."""
 
-    resource_id: int | str | None = None
+    dictionary_id: int | str | None = None
     user_id: int | str | None = None
 
     def list(self) -> JobDictionariesResult:
@@ -215,13 +213,13 @@ class JobDictionary(DomainObject):
 
     def get(self, *, dictionary_id: str | None = None) -> JobDictionaryValuesResult:
         return DictionariesClient(self.transport).get_dict_by_id(
-            dictionary_id=dictionary_id or self._require_resource_id()
+            dictionary_id=dictionary_id or self._require_dictionary_id()
         )
 
-    def _require_resource_id(self) -> str:
-        if self.resource_id is None:
+    def _require_dictionary_id(self) -> str:
+        if self.dictionary_id is None:
             raise ValidationError("Для операции требуется `dictionary_id`.")
-        return str(self.resource_id)
+        return str(self.dictionary_id)
 
 
 __all__ = ("Application", "DomainObject", "JobDictionary", "JobWebhook", "Resume", "Vacancy")

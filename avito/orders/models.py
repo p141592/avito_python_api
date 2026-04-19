@@ -7,7 +7,7 @@ from dataclasses import dataclass
 from typing import Any
 
 from avito.core import BinaryResponse
-from avito.core.serialization import enable_module_serialization
+from avito.core.serialization import SerializableModel
 
 
 @dataclass(slots=True, frozen=True)
@@ -1017,7 +1017,7 @@ class StockUpdateRequest:
 
 
 @dataclass(slots=True, frozen=True)
-class OrderSummary:
+class OrderSummary(SerializableModel):
     """Краткая информация о заказе."""
 
     order_id: str | None
@@ -1028,7 +1028,7 @@ class OrderSummary:
 
 
 @dataclass(slots=True, frozen=True)
-class OrdersResult:
+class OrdersResult(SerializableModel):
     """Список заказов."""
 
     items: list[OrderSummary]
@@ -1036,7 +1036,7 @@ class OrdersResult:
 
 
 @dataclass(slots=True, frozen=True)
-class OrderActionResult:
+class OrderActionResult(SerializableModel):
     """Результат операции над заказом."""
 
     success: bool
@@ -1046,7 +1046,7 @@ class OrderActionResult:
 
 
 @dataclass(slots=True, frozen=True)
-class CourierRange:
+class CourierRange(SerializableModel):
     """Доступный интервал курьерской доставки."""
 
     interval_id: str | None
@@ -1056,7 +1056,7 @@ class CourierRange:
 
 
 @dataclass(slots=True, frozen=True)
-class CourierRangesResult:
+class CourierRangesResult(SerializableModel):
     """Список доступных интервалов курьерской доставки."""
 
     items: list[CourierRange]
@@ -1064,7 +1064,7 @@ class CourierRangesResult:
 
 
 @dataclass(slots=True, frozen=True)
-class LabelTaskResult:
+class LabelTaskResult(SerializableModel):
     """Результат генерации этикеток."""
 
     task_id: str | None
@@ -1097,7 +1097,7 @@ class LabelPdfResult:
 
 
 @dataclass(slots=True, frozen=True)
-class DeliveryEntityResult:
+class DeliveryEntityResult(SerializableModel):
     """Результат операции delivery API."""
 
     success: bool
@@ -1109,7 +1109,7 @@ class DeliveryEntityResult:
 
 
 @dataclass(slots=True, frozen=True)
-class DeliverySortingCenter:
+class DeliverySortingCenter(SerializableModel):
     """Сортировочный центр доставки."""
 
     sorting_center_id: str | None
@@ -1118,14 +1118,14 @@ class DeliverySortingCenter:
 
 
 @dataclass(slots=True, frozen=True)
-class DeliverySortingCentersResult:
+class DeliverySortingCentersResult(SerializableModel):
     """Список сортировочных центров доставки."""
 
     items: list[DeliverySortingCenter]
 
 
 @dataclass(slots=True, frozen=True)
-class DeliveryTaskInfo:
+class DeliveryTaskInfo(SerializableModel):
     """Информация о задаче доставки."""
 
     task_id: str | None
@@ -1134,7 +1134,7 @@ class DeliveryTaskInfo:
 
 
 @dataclass(slots=True, frozen=True)
-class StockInfo:
+class StockInfo(SerializableModel):
     """Информация по остаткам объявления."""
 
     item_id: int | None
@@ -1145,14 +1145,14 @@ class StockInfo:
 
 
 @dataclass(slots=True, frozen=True)
-class StockInfoResult:
+class StockInfoResult(SerializableModel):
     """Список текущих остатков."""
 
     items: list[StockInfo]
 
 
 @dataclass(slots=True, frozen=True)
-class StockUpdateItem:
+class StockUpdateItem(SerializableModel):
     """Результат обновления остатков объявления."""
 
     item_id: int | None
@@ -1162,10 +1162,7 @@ class StockUpdateItem:
 
 
 @dataclass(slots=True, frozen=True)
-class StockUpdateResult:
+class StockUpdateResult(SerializableModel):
     """Результат изменения остатков."""
 
     items: list[StockUpdateItem]
-
-
-enable_module_serialization(globals())

@@ -5,8 +5,7 @@ from __future__ import annotations
 from base64 import b64encode
 from collections.abc import Mapping, Sequence
 from dataclasses import fields, is_dataclass
-from inspect import isclass
-from typing import Any, cast
+from typing import Any
 
 
 def _is_public_field(name: str) -> bool:
@@ -49,18 +48,4 @@ class SerializableModel:
         return self.to_dict()
 
 
-def enable_module_serialization(namespace: Mapping[str, object]) -> None:
-    """Добавляет `to_dict()` / `model_dump()` всем dataclass-моделям модуля."""
-
-    module_name = namespace.get("__name__")
-    for value in namespace.values():
-        if not isclass(value) or getattr(value, "__module__", None) != module_name:
-            continue
-        if not is_dataclass(value) or hasattr(value, "to_dict"):
-            continue
-        dynamic_value = cast(Any, value)
-        dynamic_value.to_dict = SerializableModel.to_dict
-        dynamic_value.model_dump = SerializableModel.model_dump
-
-
-__all__ = ("SerializableModel", "enable_module_serialization")
+__all__ = ("SerializableModel",)
