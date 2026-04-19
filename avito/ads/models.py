@@ -41,7 +41,7 @@ class UpdatePriceRequest:
 
 
 @dataclass(slots=True, frozen=True)
-class UpdatePriceResult:
+class UpdatePriceResult(SerializableModel):
     """Результат обновления цены объявления."""
 
     item_id: int | None
@@ -130,7 +130,7 @@ class ItemStatsResult(SerializableModel):
 
 
 @dataclass(slots=True, frozen=True)
-class ItemAnalyticsResult:
+class ItemAnalyticsResult(SerializableModel):
     """Аналитика по профилю или объявлениям."""
 
     items: list[ItemStatsRecord]
@@ -185,14 +185,14 @@ class VasPricesRequest:
 
 
 @dataclass(slots=True, frozen=True)
-class VasPricesResult:
+class VasPricesResult(SerializableModel):
     """Список цен и доступных услуг продвижения."""
 
     items: list[VasPrice]
 
 
 @dataclass(slots=True, frozen=True)
-class VasApplyResult:
+class VasApplyResult(SerializableModel):
     """Результат применения услуг продвижения."""
 
     success: bool
@@ -267,7 +267,7 @@ class UploadByUrlRequest:
 
 
 @dataclass(slots=True, frozen=True)
-class UploadResult:
+class UploadResult(SerializableModel):
     """Результат запуска загрузки файла."""
 
     success: bool
@@ -285,7 +285,7 @@ class AutoloadField:
 
 
 @dataclass(slots=True, frozen=True)
-class AutoloadFieldsResult:
+class AutoloadFieldsResult(SerializableModel):
     """Список полей категории автозагрузки."""
 
     items: list[AutoloadField]
@@ -301,14 +301,14 @@ class AutoloadTreeNode:
 
 
 @dataclass(slots=True, frozen=True)
-class AutoloadTreeResult:
+class AutoloadTreeResult(SerializableModel):
     """Дерево категорий автозагрузки."""
 
     items: list[AutoloadTreeNode]
 
 
 @dataclass(slots=True, frozen=True)
-class IdMappingResult:
+class IdMappingResult(SerializableModel):
     """Сопоставление идентификаторов объявлений."""
 
     mappings: list[tuple[int | None, int | None]]
@@ -326,7 +326,7 @@ class AutoloadReportSummary:
 
 
 @dataclass(slots=True, frozen=True)
-class AutoloadReportsResult:
+class AutoloadReportsResult(SerializableModel):
     """Список отчетов автозагрузки."""
 
     items: list[AutoloadReportSummary]
@@ -344,7 +344,7 @@ class AutoloadReportItem:
 
 
 @dataclass(slots=True, frozen=True)
-class AutoloadReportItemsResult:
+class AutoloadReportItemsResult(SerializableModel):
     """Список объявлений из отчета автозагрузки."""
 
     items: list[AutoloadReportItem]
@@ -361,7 +361,7 @@ class AutoloadFee:
 
 
 @dataclass(slots=True, frozen=True)
-class AutoloadFeesResult:
+class AutoloadFeesResult(SerializableModel):
     """Списания по объявлениям отчета."""
 
     items: list[AutoloadFee]
@@ -389,7 +389,7 @@ class LegacyAutoloadReport:
 
 
 @dataclass(slots=True, frozen=True)
-class ActionResult:
+class ActionResult(SerializableModel):
     """Универсальный результат мутационной операции ads."""
 
     success: bool

@@ -563,7 +563,7 @@ class UpdateManualBidRequest:
 
 
 @dataclass(slots=True, frozen=True)
-class AutostrategyBudgetPoint:
+class AutostrategyBudgetPoint(SerializableModel):
     """Оценка бюджета автокампании."""
 
     total: int | None
@@ -576,7 +576,7 @@ class AutostrategyBudgetPoint:
 
 
 @dataclass(slots=True, frozen=True)
-class AutostrategyPriceRange:
+class AutostrategyPriceRange(SerializableModel):
     """Ценовой диапазон бюджета автокампании."""
 
     price_from: int | None
@@ -589,7 +589,7 @@ class AutostrategyPriceRange:
 
 
 @dataclass(slots=True, frozen=True)
-class AutostrategyBudget:
+class AutostrategyBudget(SerializableModel):
     """Расчет бюджета автокампании."""
 
     calc_id: int | None
@@ -622,14 +622,14 @@ class CreateAutostrategyBudgetRequest:
 
 
 @dataclass(slots=True, frozen=True)
-class CampaignActionResult:
+class CampaignActionResult(SerializableModel):
     """Результат операции с автокампанией."""
 
     campaign: CampaignInfo | None
 
 
 @dataclass(slots=True, frozen=True)
-class CampaignInfo:
+class CampaignInfo(SerializableModel):
     """Информация об автокампании."""
 
     campaign_id: int | None
@@ -682,7 +682,7 @@ class CampaignDetailsResult(SerializableModel):
 
 
 @dataclass(slots=True, frozen=True)
-class CampaignsResult:
+class CampaignsResult(SerializableModel):
     """Список автокампаний."""
 
     items: list[CampaignInfo]
@@ -690,7 +690,7 @@ class CampaignsResult:
 
 
 @dataclass(slots=True, frozen=True)
-class AutostrategyStat:
+class AutostrategyStat(SerializableModel):
     """Статистика автокампании."""
 
     items: list[AutostrategyStatItem]

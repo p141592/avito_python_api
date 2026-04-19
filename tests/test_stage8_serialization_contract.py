@@ -111,6 +111,54 @@ def test_recursive_serialization_is_json_compatible_and_hides_transport_fields()
     json.dumps(request.to_dict())
 
 
+def test_ads_result_models_serialize_correctly() -> None:
+    from avito.ads.models import IdMappingResult, UpdatePriceResult
+
+    r = UpdatePriceResult(item_id=42, price=999.0, status="active")
+    assert r.to_dict() == {"item_id": 42, "price": 999.0, "status": "active"}
+    json.dumps(r.to_dict())
+
+    m = IdMappingResult(mappings=[])
+    assert m.to_dict() == {"mappings": []}
+
+
+def test_autostrategy_models_serialize_correctly() -> None:
+    from avito.promotion.models import (
+        AutostrategyBudget,
+        AutostrategyStat,
+        AutostrategyStatItem,
+        AutostrategyStatTotals,
+        CampaignActionResult,
+        CampaignsResult,
+    )
+
+    budget = AutostrategyBudget(
+        calc_id=1, recommended=None, minimal=None, maximal=None, price_ranges=[]
+    )
+    assert budget.to_dict() == {
+        "calc_id": 1,
+        "recommended": None,
+        "minimal": None,
+        "maximal": None,
+        "price_ranges": [],
+    }
+    json.dumps(budget.to_dict())
+
+    result = CampaignActionResult(campaign=None)
+    assert result.to_dict() == {"campaign": None}
+
+    campaigns = CampaignsResult(items=[], total_count=0)
+    assert campaigns.to_dict() == {"items": [], "total_count": 0}
+
+    stat = AutostrategyStat(
+        items=[AutostrategyStatItem(date="2026-01-01", calls=5, views=10)],
+        totals=AutostrategyStatTotals(calls=5, views=10),
+    )
+    dumped = stat.to_dict()
+    assert dumped["totals"] == {"calls": 5, "views": 10}
+    json.dumps(dumped)
+
+
 def test_binary_result_models_serialize_without_transport_objects() -> None:
     response = BinaryResponse(
         content=b"\x00\x01payload",

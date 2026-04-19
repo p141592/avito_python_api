@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python3 *)",
+      "Bash(find *)",
+      "Bash(make typecheck *)",
+      "Bash(make test *)",
+      "Bash(make check *)"
+    ]
+  }
+}

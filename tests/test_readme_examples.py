@@ -54,6 +54,11 @@ def test_readme_uses_current_autostrategy_request_models() -> None:
 
 
 def test_readme_references_current_public_method_names() -> None:
+    from avito.ads.domain import AdPromotion
+
+    assert hasattr(AdPromotion, "apply_vas_direct")
+    assert not hasattr(AdPromotion, "apply_vas_v2")
+
     assert hasattr(AvitoClient, "autoload_archive")
     assert hasattr(AvitoClient, "cpa_archive")
     assert hasattr(Review, "list")
@@ -71,6 +76,20 @@ def test_readme_references_current_public_method_names() -> None:
 
     review_signature = str(inspect.signature(Review.list))
     assert "query" in review_signature
+
+
+def test_auth_settings_env_var_names_match_readme() -> None:
+    from avito.auth.settings import AuthSettings
+
+    supported = AuthSettings.supported_env_vars()
+    alternate_aliases = supported.get("alternate_token_url", ())
+
+    assert "AVITO_AUTH__ALTERNATE_TOKEN_URL" in alternate_aliases
+    assert "AVITO_ALTERNATE_TOKEN_URL" in alternate_aliases
+    assert "ALTERNATE_TOKEN_URL" in alternate_aliases
+
+    all_aliases = {alias for aliases in supported.values() for alias in aliases}
+    assert not any("LEGACY" in a for a in all_aliases)
 
 
 def test_readme_uses_current_autoteka_request_models() -> None:

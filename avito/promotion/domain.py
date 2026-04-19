@@ -2,9 +2,8 @@
 
 from __future__ import annotations
 
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
-from typing import Any
 
 from avito.core import Transport, ValidationError
 from avito.promotion.client import (
@@ -59,7 +58,7 @@ from avito.promotion.models import (
 )
 
 
-def _validate_non_empty_items(name: str, items: Sequence[Any]) -> None:
+def _validate_non_empty_items(name: str, items: Sequence[object]) -> None:
     if not items:
         raise ValidationError(f"`{name}` must contain at least one item.")
 
@@ -83,8 +82,8 @@ def _validate_string_items(name: str, values: Sequence[str]) -> None:
 def _preview_result(
     *,
     action: str,
-    target: dict[str, Any],
-    request_payload: dict[str, Any],
+    target: Mapping[str, object],
+    request_payload: Mapping[str, object],
 ) -> PromotionActionResult:
     return PromotionActionResult(
         action=action,
