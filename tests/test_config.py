@@ -106,6 +106,27 @@ def test_avito_settings_from_env_requires_client_secret(
         AvitoSettings.from_env(env_file=env_file)
 
 
+def test_avito_settings_from_env_ignores_unsupported_generic_aliases(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    clear_avito_env(monkeypatch)
+    env_file = write_env_file(
+        tmp_path / ".env",
+        "\n".join(
+            (
+                "BASE_URL=https://generic.avito.ru",
+                "USER_ID=77",
+                "CLIENT_ID=generic-client-id",
+                "SECRET=generic-client-secret",
+                "AVITO_SECRET=legacy-secret",
+            )
+        ),
+    )
+
+    with pytest.raises(ConfigurationError, match="client_id"):
+        AvitoSettings.from_env(env_file=env_file)
+
+
 def test_avito_client_from_env_initializes_client(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:

@@ -1,11 +1,14 @@
 from __future__ import annotations
 
+from dataclasses import FrozenInstanceError
+
 import httpx
 import pytest
 
 from avito.auth import AuthSettings
 from avito.config import AvitoSettings
 from avito.core import (
+    AvitoError,
     AuthorizationError,
     ConflictError,
     RateLimitError,
@@ -118,3 +121,17 @@ def test_authorization_error_is_raised_for_auth_failures() -> None:
         transport.request_json("GET", "/secure", context=RequestContext("accounts.get_self"))
 
     assert error.value.operation == "accounts.get_self"
+
+
+def test_avito_error_is_frozen_dataclass() -> None:
+    error = AvitoError(
+        "boom",
+        payload={"access_token": "secret-token"},
+        headers={"Authorization": "Bearer secret-token"},
+    )
+
+    with pytest.raises(FrozenInstanceError):
+        error.message = "updated"
+
+    assert error.payload == {"access_token": "***"}
+    assert error.headers == {"Authorization": "***"}
