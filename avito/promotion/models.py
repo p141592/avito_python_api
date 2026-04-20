@@ -5,6 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from datetime import datetime
 from typing import TypeAlias, TypedDict
+import warnings
 
 from avito.core.serialization import SerializableModel
 
@@ -142,12 +143,17 @@ class BbipItemInput(TypedDict):
     old_price: int
 
 
-class TrxItemInput(TypedDict, total=False):
-    """Входные параметры одного объявления для TrxPromo-методов."""
+class _TrxItemInputRequired(TypedDict):
+    """Обязательные поля входных параметров TrxPromo."""
 
     item_id: int
     commission: int
     date_from: datetime
+
+
+class TrxItemInput(_TrxItemInputRequired, total=False):
+    """Входные параметры одного объявления для TrxPromo-методов."""
+
     date_to: datetime | None
 
 
@@ -208,6 +214,11 @@ class BbipForecastsResult(SerializableModel):
     items: list[BbipForecast]
 
 
+warnings.warn(
+    "PromotionForecast устарел и будет удалён. Используйте BbipForecast.",
+    DeprecationWarning,
+    stacklevel=2,
+)
 PromotionForecast: TypeAlias = BbipForecast
 
 
@@ -827,6 +838,8 @@ class CampaignUpdateTimeFilter:
     to_time: datetime | None = None
 
     def to_payload(self) -> dict[str, object]:
+        """Сериализует фильтр по времени обновления."""
+
         payload: dict[str, object] = {}
         if self.from_time is not None:
             payload["from"] = self.from_time.isoformat()
@@ -842,6 +855,8 @@ class CampaignListFilter:
     by_update_time: CampaignUpdateTimeFilter | None = None
 
     def to_payload(self) -> dict[str, object]:
+        """Сериализует фильтр списка кампаний."""
+
         payload: dict[str, object] = {}
         if self.by_update_time is not None:
             payload["byUpdateTime"] = self.by_update_time.to_payload()
@@ -856,6 +871,8 @@ class CampaignOrderBy:
     direction: str
 
     def to_payload(self) -> dict[str, object]:
+        """Сериализует сортировку списка кампаний."""
+
         return {"column": self.column, "direction": self.direction}
 
 
@@ -913,5 +930,4 @@ class AutostrategyStatTotals(SerializableModel):
 
     calls: int | None
     views: int | None
-
 

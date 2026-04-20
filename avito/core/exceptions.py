@@ -40,7 +40,7 @@ def sanitize_metadata(value: object) -> object:
     return value
 
 
-@dataclass(slots=True)
+@dataclass(slots=True, frozen=True)
 class AvitoError(Exception):
     """Базовое исключение SDK с безопасными диагностическими метаданными."""
 

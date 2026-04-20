@@ -5,6 +5,8 @@ from __future__ import annotations
 from base64 import b64encode
 from collections.abc import Mapping, Sequence
 from dataclasses import fields, is_dataclass
+
+
 def _is_public_field(name: str) -> bool:
     return not name.startswith("_") and name != "raw_payload"
 

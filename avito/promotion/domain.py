@@ -91,7 +91,6 @@ class PromotionOrder(DomainObject):
     """Доменный объект заявок и словарей promotion API."""
 
     order_id: int | str | None = None
-    user_id: int | str | None = None
 
     def get_service_dictionary(self) -> PromotionServiceDictionary:
         """Получает словарь услуг продвижения."""
@@ -271,7 +270,6 @@ class CpaAuction(DomainObject):
     """Доменный объект CPA-аукциона."""
 
     item_id: int | str | None = None
-    user_id: int | str | None = None
 
     def get_user_bids(
         self,

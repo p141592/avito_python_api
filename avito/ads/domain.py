@@ -366,7 +366,6 @@ class AutoloadReport(DomainObject):
     """Доменный объект отчета автозагрузки."""
 
     report_id: int | str | None = None
-    user_id: int | str | None = None
 
     def get(self) -> AutoloadReportDetails:
         """Получает конкретный отчет v3."""
@@ -424,7 +423,6 @@ class AutoloadArchive(DomainObject):
     """Доменный объект архивных операций автозагрузки."""
 
     report_id: int | str | None = None
-    user_id: int | str | None = None
 
     def get_profile(self) -> AutoloadProfileSettings:
         """Получает архивный профиль автозагрузки."""

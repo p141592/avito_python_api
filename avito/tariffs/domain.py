@@ -14,9 +14,10 @@ class Tariff(DomainObject):
     """Доменный объект тарифа."""
 
     tariff_id: int | str | None = None
-    user_id: int | str | None = None
 
     def get_tariff_info(self) -> TariffInfo:
+        """Получает информацию о тарифе аккаунта."""
+
         return TariffsClient(self.transport).get_tariff_info()
 
 

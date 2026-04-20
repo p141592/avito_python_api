@@ -11,18 +11,12 @@ from avito.core.exceptions import ConfigurationError
 
 ENV_KEYS = (
     "AVITO_BASE_URL",
-    "BASE_URL",
     "AVITO_USER_ID",
-    "USER_ID",
     "AVITO_AUTH__CLIENT_ID",
     "AVITO_AUTH__CLIENT_SECRET",
     "AVITO_AUTH__REFRESH_TOKEN",
     "AVITO_CLIENT_ID",
     "AVITO_CLIENT_SECRET",
-    "AVITO_SECRET",
-    "CLIENT_ID",
-    "CLIENT_SECRET",
-    "SECRET",
 )
 
 
@@ -70,10 +64,10 @@ def test_avito_settings_from_env_supports_alias_variables(
         tmp_path / ".env",
         "\n".join(
             (
-                "BASE_URL=https://file.avito.ru",
-                "USER_ID=77",
-                "CLIENT_ID=file-client-id",
-                "SECRET=file-client-secret",
+                "AVITO_BASE_URL=https://file.avito.ru",
+                "AVITO_USER_ID=77",
+                "AVITO_CLIENT_ID=file-client-id",
+                "AVITO_CLIENT_SECRET=file-client-secret",
             )
         ),
     )
@@ -197,7 +191,7 @@ def test_process_environment_overrides_dotenv_deterministically(
     )
     monkeypatch.setenv("AVITO_BASE_URL", "https://from-env.avito.ru")
     monkeypatch.setenv("AVITO_CLIENT_ID", "env-client-id")
-    monkeypatch.setenv("AVITO_SECRET", "env-client-secret")
+    monkeypatch.setenv("AVITO_CLIENT_SECRET", "env-client-secret")
 
     settings = AvitoSettings.from_env(env_file=env_file)
 
