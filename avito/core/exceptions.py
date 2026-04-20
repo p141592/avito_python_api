@@ -4,7 +4,6 @@ from __future__ import annotations
 
 from collections.abc import Mapping
 from dataclasses import dataclass, field
-from typing import Any
 
 _SECRET_KEYS = (
     "authorization",
@@ -49,7 +48,7 @@ class AvitoError(Exception):
     status_code: int | None = None
     error_code: str | None = None
     operation: str | None = None
-    metadata: Mapping[str, Any] = field(default_factory=dict)
+    metadata: Mapping[str, object] = field(default_factory=dict)
     payload: object | None = None
     headers: Mapping[str, str] | None = None
 
@@ -87,43 +86,53 @@ class AuthorizationError(AvitoError):
 
 
 class PermissionDeniedError(AuthorizationError):
-    """Совместимое имя ошибки недостатка прав."""
+    """Устаревший псевдоним `AuthorizationError`. Используйте `AuthorizationError` напрямую."""
+
+    def __init__(self, *args: object, **kwargs: object) -> None:
+        import warnings
+
+        warnings.warn(
+            "PermissionDeniedError устарел и будет удалён. Используйте AuthorizationError.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+        super().__init__(*args, **kwargs)
 
 
 class ValidationError(AvitoError):
-    """API отклонил запрос из-за некорректных параметров."""
+    """API отклонил запрос из-за некорректных параметров (HTTP 400, 422)."""
 
 
-class ConfigurationError(ValidationError):
-    """SDK сконфигурирован некорректно до выполнения HTTP-запроса."""
+class ConfigurationError(AvitoError):
+    """SDK сконфигурирован некорректно — ошибка обнаружена до выполнения HTTP-запроса."""
 
 
 class RateLimitError(AvitoError):
-    """Превышен лимит запросов API."""
+    """Превышен лимит запросов API (HTTP 429)."""
 
 
 class ConflictError(AvitoError):
-    """Операция конфликтует с текущим состоянием upstream-ресурса."""
+    """Операция конфликтует с текущим состоянием upstream-ресурса (HTTP 409)."""
 
 
 class UnsupportedOperationError(AvitoError):
-    """Операция не поддерживается публичным Avito API или данным endpoint."""
+    """Операция не поддерживается публичным Avito API или данным endpoint (HTTP 405, 501)."""
 
 
 class UpstreamApiError(AvitoError):
     """Неизвестная ошибка upstream API вне специализированных типов SDK."""
 
 
+class NotFoundError(UpstreamApiError):
+    """Запрошенный ресурс не найден (HTTP 404)."""
+
+
 class ClientError(UpstreamApiError):
-    """Совместимое имя прочей клиентской ошибки диапазона `4xx`."""
+    """Прочая клиентская ошибка диапазона 4xx без более конкретного типа."""
 
 
 class ServerError(UpstreamApiError):
-    """Совместимое имя серверной ошибки диапазона `5xx`."""
-
-
-class NotFoundError(UpstreamApiError):
-    """Запрошенный ресурс не найден."""
+    """Серверная ошибка диапазона 5xx."""
 
 
 class ResponseMappingError(AvitoError):

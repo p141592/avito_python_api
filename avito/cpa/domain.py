@@ -4,7 +4,8 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from avito.core import Transport, ValidationError
+from avito.core import ValidationError
+from avito.core.domain import DomainObject
 from avito.cpa.client import (
     CallTrackingClient,
     CpaArchiveClient,
@@ -33,13 +34,6 @@ from avito.cpa.models import (
     CpaPhonesFromChatsRequest,
     CpaPhonesResult,
 )
-
-
-@dataclass(slots=True, frozen=True)
-class DomainObject:
-    """Базовый доменный объект раздела cpa."""
-
-    transport: Transport
 
 
 @dataclass(slots=True, frozen=True)
@@ -163,4 +157,4 @@ class CallTrackingCall(DomainObject):
         return str(self.call_id)
 
 
-__all__ = ("CallTrackingCall", "CpaArchive", "CpaCall", "CpaChat", "CpaLead", "DomainObject")
+__all__ = ("CallTrackingCall", "CpaArchive", "CpaCall", "CpaChat", "CpaLead")

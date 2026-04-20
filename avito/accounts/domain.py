@@ -7,26 +7,20 @@ from dataclasses import dataclass
 
 from avito.accounts.client import AccountsClient, HierarchyClient
 from avito.accounts.models import (
+    AccountActionResult,
     AccountBalance,
     AccountProfile,
-    ActionResult,
     AhUserStatus,
     CompanyPhonesResult,
+    EmployeeItem,
     EmployeeItemLinkRequest,
     EmployeeItemsRequest,
-    EmployeeItemsResult,
     EmployeesResult,
+    OperationRecord,
     OperationsHistoryRequest,
-    OperationsHistoryResult,
 )
-from avito.core import Transport, ValidationError
-
-
-@dataclass(slots=True, frozen=True)
-class DomainObject:
-    """Базовый доменный объект раздела accounts."""
-
-    transport: Transport
+from avito.core import PaginatedList, ValidationError
+from avito.core.domain import DomainObject
 
 
 @dataclass(slots=True, frozen=True)
@@ -55,7 +49,7 @@ class Account(DomainObject):
         date_to: str | None = None,
         limit: int | None = None,
         offset: int | None = None,
-    ) -> OperationsHistoryResult:
+    ) -> PaginatedList[OperationRecord]:
         """Получает историю операций пользователя."""
 
         return AccountsClient(self.transport).get_operations_history(
@@ -95,7 +89,7 @@ class AccountHierarchy(DomainObject):
         employee_id: int,
         item_ids: Sequence[int],
         source_employee_id: int | None = None,
-    ) -> ActionResult:
+    ) -> AccountActionResult:
         """Прикрепляет объявления к сотруднику."""
 
         return HierarchyClient(self.transport).link_items(
@@ -112,7 +106,7 @@ class AccountHierarchy(DomainObject):
         employee_id: int,
         limit: int | None = None,
         offset: int | None = None,
-    ) -> EmployeeItemsResult:
+    ) -> PaginatedList[EmployeeItem]:
         """Получает список объявлений сотрудника."""
 
         return HierarchyClient(self.transport).list_items_by_employee(
@@ -120,4 +114,4 @@ class AccountHierarchy(DomainObject):
         )
 
 
-__all__ = ("DomainObject", "Account", "AccountHierarchy")
+__all__ = ("Account", "AccountHierarchy")

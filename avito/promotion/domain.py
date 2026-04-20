@@ -2,10 +2,16 @@
 
 from __future__ import annotations
 
-from collections.abc import Mapping, Sequence
+from collections.abc import Mapping
 from dataclasses import dataclass
 
-from avito.core import Transport, ValidationError
+from avito.core import ValidationError
+from avito.core.domain import DomainObject
+from avito.core.validation import (
+    validate_non_empty,
+    validate_non_empty_string,
+    validate_positive_int,
+)
 from avito.promotion.client import (
     AutostrategyClient,
     BbipClient,
@@ -17,9 +23,8 @@ from avito.promotion.client import (
 from avito.promotion.models import (
     AutostrategyBudget,
     AutostrategyStat,
-    BbipForecastRequestItem,
     BbipForecastsResult,
-    BbipOrderItem,
+    BbipItem,
     BbipSuggestsResult,
     CampaignActionResult,
     CampaignDetailsResult,
@@ -53,32 +58,11 @@ from avito.promotion.models import (
     TargetActionGetBidsResult,
     TargetActionPromotionsByItemIdsResult,
     TrxCommissionsResult,
-    TrxPromotionApplyItem,
+    TrxItem,
     UpdateAutoBidRequest,
     UpdateAutostrategyCampaignRequest,
     UpdateManualBidRequest,
 )
-
-
-def _validate_non_empty_items(name: str, items: Sequence[object]) -> None:
-    if not items:
-        raise ValidationError(f"`{name}` должен содержать хотя бы один элемент.")
-
-
-def _validate_positive_int(name: str, value: int) -> None:
-    if value <= 0:
-        raise ValidationError(f"`{name}` должен быть положительным целым числом.")
-
-
-def _validate_non_empty_string(name: str, value: str) -> None:
-    if not value.strip():
-        raise ValidationError(f"`{name}` не может быть пустой строкой.")
-
-
-def _validate_string_items(name: str, values: Sequence[str]) -> None:
-    _validate_non_empty_items(name, values)
-    for index, value in enumerate(values):
-        _validate_non_empty_string(f"{name}[{index}]", value)
 
 
 def _preview_result(
@@ -95,13 +79,6 @@ def _preview_result(
         request_payload=dict(request_payload),
         details={"validated": True},
     )
-
-
-@dataclass(slots=True, frozen=True)
-class DomainObject:
-    """Базовый доменный объект раздела promotion."""
-
-    transport: Transport
 
 
 @dataclass(slots=True, frozen=True)
@@ -155,7 +132,7 @@ class BbipPromotion(DomainObject):
     item_id: int | str | None = None
     user_id: int | str | None = None
 
-    def get_forecasts(self, *, items: list[BbipForecastRequestItem]) -> BbipForecastsResult:
+    def get_forecasts(self, *, items: list[BbipItem]) -> BbipForecastsResult:
         """Получает прогнозы BBIP."""
 
         return BbipClient(self.transport).get_forecasts(CreateBbipForecastsRequest(items=items))
@@ -163,17 +140,17 @@ class BbipPromotion(DomainObject):
     def create_order(
         self,
         *,
-        items: list[BbipOrderItem],
+        items: list[BbipItem],
         dry_run: bool = False,
     ) -> PromotionActionResult:
         """Подключает BBIP-продвижение."""
 
-        _validate_non_empty_items("items", items)
+        validate_non_empty("items", items)
         for index, item in enumerate(items):
-            _validate_positive_int(f"items[{index}].item_id", item.item_id)
-            _validate_positive_int(f"items[{index}].duration", item.duration)
-            _validate_positive_int(f"items[{index}].price", item.price)
-            _validate_positive_int(f"items[{index}].old_price", item.old_price)
+            validate_positive_int(f"items[{index}].item_id", item.item_id)
+            validate_positive_int(f"items[{index}].duration", item.duration)
+            validate_positive_int(f"items[{index}].price", item.price)
+            validate_positive_int(f"items[{index}].old_price", item.old_price)
         request = CreateBbipOrderRequest(items=items)
         request_payload = request.to_payload()
         target = {"item_ids": [item.item_id for item in items]}
@@ -209,18 +186,18 @@ class TrxPromotion(DomainObject):
     def apply(
         self,
         *,
-        items: list[TrxPromotionApplyItem],
+        items: list[TrxItem],
         dry_run: bool = False,
     ) -> PromotionActionResult:
         """Запускает TrxPromo."""
 
-        _validate_non_empty_items("items", items)
+        validate_non_empty("items", items)
         for index, item in enumerate(items):
-            _validate_positive_int(f"items[{index}].item_id", item.item_id)
-            _validate_positive_int(f"items[{index}].commission", item.commission)
-            _validate_non_empty_string(f"items[{index}].date_from", item.date_from)
+            validate_positive_int(f"items[{index}].item_id", item.item_id)
+            validate_positive_int(f"items[{index}].commission", item.commission)
+            validate_non_empty_string(f"items[{index}].date_from", item.date_from)
             if item.date_to is not None:
-                _validate_non_empty_string(f"items[{index}].date_to", item.date_to)
+                validate_non_empty_string(f"items[{index}].date_to", item.date_to)
         request = CreateTrxPromotionApplyRequest(items=items)
         request_payload = request.to_payload()
         target = {"item_ids": [item.item_id for item in items]}
@@ -237,7 +214,7 @@ class TrxPromotion(DomainObject):
         """Останавливает TrxPromo."""
 
         resolved_item_ids = item_ids or self._resource_item_ids()
-        _validate_non_empty_items("item_ids", resolved_item_ids)
+        validate_non_empty("item_ids", resolved_item_ids)
         request = CancelTrxPromotionRequest(item_ids=resolved_item_ids)
         request_payload = request.to_payload()
         target = {"item_ids": list(resolved_item_ids)}
@@ -317,7 +294,7 @@ class TargetActionPricing(DomainObject):
         """Останавливает продвижение."""
 
         resolved_item_id = item_id or self._require_item_id()
-        _validate_positive_int("item_id", resolved_item_id)
+        validate_positive_int("item_id", resolved_item_id)
         request = DeletePromotionRequest(item_id=resolved_item_id)
         request_payload = request.to_payload()
         target = {"item_id": resolved_item_id}
@@ -337,10 +314,10 @@ class TargetActionPricing(DomainObject):
         """Применяет автоматическую настройку."""
 
         resolved_item_id = item_id or self._require_item_id()
-        _validate_positive_int("item_id", resolved_item_id)
-        _validate_positive_int("action_type_id", action_type_id)
-        _validate_positive_int("budget_penny", budget_penny)
-        _validate_non_empty_string("budget_type", budget_type)
+        validate_positive_int("item_id", resolved_item_id)
+        validate_positive_int("action_type_id", action_type_id)
+        validate_positive_int("budget_penny", budget_penny)
+        validate_non_empty_string("budget_type", budget_type)
         request = UpdateAutoBidRequest(
             item_id=resolved_item_id,
             action_type_id=action_type_id,
@@ -369,11 +346,11 @@ class TargetActionPricing(DomainObject):
         """Применяет ручную настройку."""
 
         resolved_item_id = item_id or self._require_item_id()
-        _validate_positive_int("item_id", resolved_item_id)
-        _validate_positive_int("action_type_id", action_type_id)
-        _validate_positive_int("bid_penny", bid_penny)
+        validate_positive_int("item_id", resolved_item_id)
+        validate_positive_int("action_type_id", action_type_id)
+        validate_positive_int("bid_penny", bid_penny)
         if limit_penny is not None:
-            _validate_positive_int("limit_penny", limit_penny)
+            validate_positive_int("limit_penny", limit_penny)
         request = UpdateManualBidRequest(
             item_id=resolved_item_id,
             action_type_id=action_type_id,
@@ -539,7 +516,6 @@ __all__ = (
     "AutostrategyCampaign",
     "BbipPromotion",
     "CpaAuction",
-    "DomainObject",
     "PromotionOrder",
     "TargetActionPricing",
     "TrxPromotion",

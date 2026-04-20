@@ -12,7 +12,7 @@ from avito.core.serialization import SerializableModel
 class ChatInfo(SerializableModel):
     """Информация о чате."""
 
-    id: str | None
+    chat_id: str | None
     user_id: int | None
     title: str | None
     unread_count: int | None
@@ -65,7 +65,7 @@ class SendImageMessageRequest:
 class MessageInfo(SerializableModel):
     """Информация о сообщении чата."""
 
-    id: str | None
+    message_id: str | None
     chat_id: str | None
     author_id: int | None
     text: str | None

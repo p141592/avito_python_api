@@ -86,7 +86,7 @@ def map_chat(payload: object) -> ChatInfo:
     last_message = data.get("last_message")
     last_message_data = cast(Payload, last_message) if isinstance(last_message, Mapping) else {}
     return ChatInfo(
-        id=_str(data, "id", "chat_id", "chatId"),
+        chat_id=_str(data, "id", "chat_id", "chatId"),
         user_id=_int(data, "user_id", "userId"),
         title=_str(data, "title", "name"),
         unread_count=_int(data, "unread_count", "unreadCount"),
@@ -109,7 +109,7 @@ def map_message(payload: object) -> MessageInfo:
 
     data = _expect_mapping(payload)
     return MessageInfo(
-        id=_str(data, "id", "message_id", "messageId"),
+        message_id=_str(data, "id", "message_id", "messageId"),
         chat_id=_str(data, "chat_id", "chatId"),
         author_id=_int(data, "author_id", "authorId", "user_id", "userId"),
         text=_str(data, "text", "message"),

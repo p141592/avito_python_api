@@ -4,7 +4,8 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from avito.core import Transport, ValidationError
+from avito.core import ValidationError
+from avito.core.domain import DomainObject
 from avito.jobs.client import (
     ApplicationsClient,
     DictionariesClient,
@@ -41,13 +42,6 @@ from avito.jobs.models import (
     VacancyStatusesResult,
     VacancyUpdateRequest,
 )
-
-
-@dataclass(slots=True, frozen=True)
-class DomainObject:
-    """Базовый доменный объект раздела jobs."""
-
-    transport: Transport
 
 
 @dataclass(slots=True, frozen=True)
@@ -222,4 +216,4 @@ class JobDictionary(DomainObject):
         return str(self.dictionary_id)
 
 
-__all__ = ("Application", "DomainObject", "JobDictionary", "JobWebhook", "Resume", "Vacancy")
+__all__ = ("Application", "JobDictionary", "JobWebhook", "Resume", "Vacancy")

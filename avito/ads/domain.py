@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from collections.abc import Mapping, Sequence
+from collections.abc import Sequence
 from dataclasses import dataclass
 
 from avito.ads.client import (
@@ -13,9 +13,8 @@ from avito.ads.client import (
     VasClient,
 )
 from avito.ads.models import (
-    ActionResult,
-    AdItem,
-    AdsListResult,
+    AccountSpendings,
+    AdsActionResult,
     ApplyVasPackageRequest,
     ApplyVasRequest,
     AutoloadFeesResult,
@@ -24,7 +23,7 @@ from avito.ads.models import (
     AutoloadProfileUpdateRequest,
     AutoloadReportDetails,
     AutoloadReportItemsResult,
-    AutoloadReportsResult,
+    AutoloadReportSummary,
     AutoloadTreeResult,
     CallsStatsRequest,
     CallsStatsResult,
@@ -33,7 +32,7 @@ from avito.ads.models import (
     ItemStatsRequest,
     ItemStatsResult,
     LegacyAutoloadReport,
-    SpendingsResult,
+    Listing,
     UpdatePriceRequest,
     UpdatePriceResult,
     UploadByUrlRequest,
@@ -41,47 +40,30 @@ from avito.ads.models import (
     VasPricesRequest,
     VasPricesResult,
 )
-from avito.core import Transport, ValidationError
+from avito.core import PaginatedList, Transport, ValidationError
+from avito.core.domain import DomainObject
+from avito.core.validation import (
+    validate_non_empty,
+    validate_non_empty_string,
+    validate_string_items,
+)
 from avito.promotion.models import PromotionActionResult
-
-
-def _validate_non_empty_items(name: str, items: Sequence[object]) -> None:
-    if not items:
-        raise ValidationError(f"`{name}` должен содержать хотя бы один элемент.")
-
-
-def _validate_non_empty_string(name: str, value: str) -> None:
-    if not value.strip():
-        raise ValidationError(f"`{name}` не может быть пустой строкой.")
-
-
-def _validate_string_items(name: str, values: Sequence[str]) -> None:
-    _validate_non_empty_items(name, values)
-    for index, value in enumerate(values):
-        _validate_non_empty_string(f"{name}[{index}]", value)
 
 
 def _preview_result(
     *,
     action: str,
-    target: Mapping[str, object],
-    request_payload: Mapping[str, object],
+    target: dict[str, object],
+    request_payload: dict[str, object],
 ) -> PromotionActionResult:
     return PromotionActionResult(
         action=action,
-        target=dict(target),
+        target=target,
         status="preview",
         applied=False,
-        request_payload=dict(request_payload),
+        request_payload=request_payload,
         details={"validated": True},
     )
-
-
-@dataclass(slots=True, frozen=True)
-class DomainObject:
-    """Базовый доменный объект раздела ads."""
-
-    transport: Transport
 
 
 @dataclass(slots=True, frozen=True)
@@ -91,7 +73,7 @@ class Ad(DomainObject):
     item_id: int | str | None = None
     user_id: int | str | None = None
 
-    def get(self) -> AdItem:
+    def get(self) -> Listing:
         """Получает объявление по `item_id`."""
 
         item_id, user_id = self._require_ids()
@@ -99,7 +81,7 @@ class Ad(DomainObject):
 
     def list(
         self, *, status: str | None = None, limit: int | None = None, offset: int | None = None
-    ) -> AdsListResult:
+    ) -> PaginatedList[Listing]:
         """Получает список объявлений."""
 
         user_id = int(self.user_id) if self.user_id is not None else None
@@ -113,26 +95,6 @@ class Ad(DomainObject):
         item_id = self._require_item_id()
         return AdsClient(self.transport).update_price(
             item_id=item_id, price=UpdatePriceRequest(price=price)
-        )
-
-    def get_stats(
-        self,
-        *,
-        date_from: str | None = None,
-        date_to: str | None = None,
-        fields: Sequence[str] | None = None,
-    ) -> ItemStatsResult:
-        """Получает статистику текущего объявления."""
-
-        item_id, user_id = self._require_ids()
-        return StatsClient(self.transport).get_item_stats(
-            user_id=user_id,
-            request=ItemStatsRequest(
-                item_ids=[item_id],
-                date_from=date_from,
-                date_to=date_to,
-                fields=list(fields or []),
-            ),
         )
 
     def _require_item_id(self) -> int:
@@ -228,7 +190,7 @@ class AdStats(DomainObject):
         date_from: str | None = None,
         date_to: str | None = None,
         fields: list[str] | None = None,
-    ) -> SpendingsResult:
+    ) -> AccountSpendings:
         """Получает статистику расходов профиля."""
 
         user_id = self._require_user_id()
@@ -278,7 +240,7 @@ class AdPromotion(DomainObject):
         """Применяет дополнительные услуги к объявлению."""
 
         item_id, user_id = self._require_ids()
-        _validate_string_items("codes", codes)
+        validate_string_items("codes", codes)
         request = ApplyVasRequest(codes=codes)
         request_payload = request.to_payload()
         target = {"item_id": item_id, "user_id": user_id}
@@ -303,7 +265,7 @@ class AdPromotion(DomainObject):
         """Применяет пакет дополнительных услуг."""
 
         item_id, user_id = self._require_ids()
-        _validate_non_empty_string("package_code", package_code)
+        validate_non_empty_string("package_code", package_code)
         request = ApplyVasPackageRequest(package_code=package_code)
         request_payload = request.to_payload()
         target = {"item_id": item_id, "user_id": user_id}
@@ -328,7 +290,7 @@ class AdPromotion(DomainObject):
         """Применяет услуги продвижения через прямой v2 endpoint."""
 
         item_id = self._require_item_id()
-        _validate_string_items("codes", codes)
+        validate_string_items("codes", codes)
         request = ApplyVasRequest(codes=codes)
         request_payload = request.to_payload()
         target = {"item_id": item_id}
@@ -374,7 +336,7 @@ class AutoloadProfile(DomainObject):
         is_enabled: bool | None = None,
         email: str | None = None,
         callback_url: str | None = None,
-    ) -> ActionResult:
+    ) -> AdsActionResult:
         """Сохраняет профиль автозагрузки."""
 
         return AutoloadClient(self.transport).save_profile(
@@ -412,7 +374,9 @@ class AutoloadReport(DomainObject):
         report_id = self._require_report_id()
         return AutoloadClient(self.transport).get_report(report_id=report_id)
 
-    def list(self, *, limit: int | None = None, offset: int | None = None) -> AutoloadReportsResult:
+    def list(
+        self, *, limit: int | None = None, offset: int | None = None
+    ) -> PaginatedList[AutoloadReportSummary]:
         """Получает список отчетов автозагрузки."""
 
         return AutoloadClient(self.transport).list_reports(limit=limit, offset=offset)
@@ -473,7 +437,7 @@ class AutoloadArchive(DomainObject):
         is_enabled: bool | None = None,
         email: str | None = None,
         callback_url: str | None = None,
-    ) -> ActionResult:
+    ) -> AdsActionResult:
         """Сохраняет архивный профиль автозагрузки."""
 
         return AutoloadArchiveClient(self.transport).save_profile(
@@ -500,11 +464,10 @@ class AutoloadArchive(DomainObject):
 
 
 __all__ = (
-    "DomainObject",
     "Ad",
-    "AdStats",
     "AdPromotion",
+    "AdStats",
+    "AutoloadArchive",
     "AutoloadProfile",
     "AutoloadReport",
-    "AutoloadArchive",
 )

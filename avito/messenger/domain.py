@@ -4,7 +4,8 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from avito.core import Transport, ValidationError
+from avito.core import ValidationError
+from avito.core.domain import DomainObject
 from avito.messenger.client import MediaClient, MessengerClient, SpecialOffersClient, WebhookClient
 from avito.messenger.models import (
     BlacklistRequest,
@@ -31,13 +32,6 @@ from avito.messenger.models import (
     VoiceFilesResult,
     WebhookActionResult,
 )
-
-
-@dataclass(slots=True, frozen=True)
-class DomainObject:
-    """Базовый доменный объект раздела messenger."""
-
-    transport: Transport
 
 
 @dataclass(slots=True, frozen=True)
@@ -255,6 +249,5 @@ __all__ = (
     "ChatMedia",
     "ChatMessage",
     "ChatWebhook",
-    "DomainObject",
     "SpecialOfferCampaign",
 )

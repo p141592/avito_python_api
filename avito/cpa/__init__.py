@@ -1,6 +1,6 @@
 """Пакет cpa."""
 
-from avito.cpa.domain import CallTrackingCall, CpaArchive, CpaCall, CpaChat, CpaLead, DomainObject
+from avito.cpa.domain import CallTrackingCall, CpaArchive, CpaCall, CpaChat, CpaLead
 from avito.cpa.models import (
     CallTrackingCallInfo,
     CallTrackingCallResponse,
@@ -54,5 +54,4 @@ __all__ = (
     "CpaPhoneInfo",
     "CpaPhonesFromChatsRequest",
     "CpaPhonesResult",
-    "DomainObject",
 )

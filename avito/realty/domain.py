@@ -4,7 +4,8 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from avito.core import Transport, ValidationError
+from avito.core import ValidationError
+from avito.core.domain import DomainObject
 from avito.realty.client import RealtyAnalyticsClient, ShortTermRentClient
 from avito.realty.models import (
     RealtyActionResult,
@@ -17,13 +18,6 @@ from avito.realty.models import (
     RealtyMarketPriceInfo,
     RealtyPricesUpdateRequest,
 )
-
-
-@dataclass(slots=True, frozen=True)
-class DomainObject:
-    """Базовый доменный объект раздела realty."""
-
-    transport: Transport
 
 
 @dataclass(slots=True, frozen=True)
@@ -161,7 +155,6 @@ class RealtyAnalyticsReport(DomainObject):
 
 
 __all__ = (
-    "DomainObject",
     "RealtyAnalyticsReport",
     "RealtyBooking",
     "RealtyListing",

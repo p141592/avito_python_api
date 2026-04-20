@@ -5,7 +5,6 @@ from avito.messenger.domain import (
     ChatMedia,
     ChatMessage,
     ChatWebhook,
-    DomainObject,
     SpecialOfferCampaign,
 )
 from avito.messenger.models import (
@@ -33,7 +32,6 @@ __all__ = (
     "ChatMessage",
     "ChatWebhook",
     "ChatsResult",
-    "DomainObject",
     "MessageActionResult",
     "MessageInfo",
     "MessagesResult",

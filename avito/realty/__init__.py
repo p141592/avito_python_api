@@ -1,7 +1,6 @@
 """Пакет realty."""
 
 from avito.realty.domain import (
-    DomainObject,
     RealtyAnalyticsReport,
     RealtyBooking,
     RealtyListing,
@@ -23,7 +22,6 @@ from avito.realty.models import (
 )
 
 __all__ = (
-    "DomainObject",
     "RealtyActionResult",
     "RealtyAnalyticsInfo",
     "RealtyAnalyticsReport",

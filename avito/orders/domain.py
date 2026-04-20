@@ -4,7 +4,8 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from avito.core import Transport, ValidationError
+from avito.core import ValidationError
+from avito.core.domain import DomainObject
 from avito.orders.client import (
     DeliveryClient,
     DeliveryTasksClient,
@@ -60,13 +61,6 @@ from avito.orders.models import (
     TaggedSortingCentersRequest,
     UpdateTermsRequest,
 )
-
-
-@dataclass(slots=True, frozen=True)
-class DomainObject:
-    """Базовый доменный объект раздела orders."""
-
-    transport: Transport
 
 
 @dataclass(slots=True, frozen=True)
@@ -298,7 +292,6 @@ class Stock(DomainObject):
 __all__ = (
     "DeliveryOrder",
     "DeliveryTask",
-    "DomainObject",
     "Order",
     "OrderLabel",
     "SandboxDelivery",

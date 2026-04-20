@@ -25,8 +25,8 @@ class AvitoSettings(BaseModel):
     """Единственный публичный контракт конфигурации SDK."""
 
     ENV_ALIASES: ClassVar[dict[str, tuple[str, ...]]] = {
-        "base_url": ("AVITO_BASE_URL", "BASE_URL"),
-        "user_id": ("AVITO_USER_ID", "USER_ID"),
+        "base_url": ("AVITO_BASE_URL",),
+        "user_id": ("AVITO_USER_ID",),
     }
 
     model_config = ConfigDict(
@@ -36,11 +36,11 @@ class AvitoSettings(BaseModel):
 
     base_url: str = Field(
         default="https://api.avito.ru",
-        validation_alias=AliasChoices("BASE_URL", "AVITO_BASE_URL"),
+        validation_alias=AliasChoices("AVITO_BASE_URL"),
     )
     user_id: int | None = Field(
         default=None,
-        validation_alias=AliasChoices("USER_ID", "AVITO_USER_ID"),
+        validation_alias=AliasChoices("AVITO_USER_ID"),
     )
     auth: AuthSettings = Field(default_factory=AuthSettings)
     timeouts: ApiTimeouts = Field(default_factory=_default_timeouts)

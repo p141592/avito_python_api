@@ -26,8 +26,8 @@ from avito.ads.mappers import (
     map_vas_prices,
 )
 from avito.ads.models import (
-    ActionResult,
-    AdItem,
+    AccountSpendings,
+    AdsActionResult,
     AdsListResult,
     ApplyVasPackageRequest,
     ApplyVasRequest,
@@ -38,6 +38,7 @@ from avito.ads.models import (
     AutoloadReportDetails,
     AutoloadReportItemsResult,
     AutoloadReportsResult,
+    AutoloadReportSummary,
     AutoloadTreeResult,
     CallsStatsRequest,
     CallsStatsResult,
@@ -46,7 +47,7 @@ from avito.ads.models import (
     ItemStatsRequest,
     ItemStatsResult,
     LegacyAutoloadReport,
-    SpendingsResult,
+    Listing,
     UpdatePriceRequest,
     UpdatePriceResult,
     UploadByUrlRequest,
@@ -54,7 +55,7 @@ from avito.ads.models import (
     VasPricesRequest,
     VasPricesResult,
 )
-from avito.core import JsonPage, Paginator, RequestContext, Transport, ValidationError
+from avito.core import JsonPage, PaginatedList, Paginator, RequestContext, Transport, ValidationError
 from avito.core.mapping import request_public_model
 from avito.promotion.mappers import map_promotion_action
 from avito.promotion.models import PromotionActionResult
@@ -66,7 +67,7 @@ class AdsClient:
 
     transport: Transport
 
-    def get_item(self, *, user_id: int, item_id: int) -> AdItem:
+    def get_item(self, *, user_id: int, item_id: int) -> Listing:
         """Получает одно объявление."""
 
         return request_public_model(
@@ -84,7 +85,7 @@ class AdsClient:
         status: str | None = None,
         limit: int | None = None,
         offset: int | None = None,
-    ) -> AdsListResult:
+    ) -> PaginatedList[Listing]:
         """Получает список объявлений пользователя."""
 
         start_offset = offset if offset is not None else 0 if limit is not None else None
@@ -103,33 +104,21 @@ class AdsClient:
         )
         page_size = limit if limit and limit > 0 else len(result.items)
         resolved_offset = start_offset or 0
-
-        if (
-            result.total is None
-            or page_size <= 0
-            or resolved_offset + len(result.items) >= result.total
-        ):
-            return result
-
-        start_page = resolved_offset // page_size + 1
-        paginator = Paginator(
+        start_page = resolved_offset // page_size + 1 if page_size > 0 else 1
+        first_page = JsonPage(
+            items=list(result.items),
+            total=result.total,
+            page=start_page,
+            per_page=page_size if page_size > 0 else None,
+        )
+        return Paginator(
             lambda page, cursor: self._fetch_ads_page(
                 page=page,
                 user_id=user_id,
                 status=status,
                 page_size=page_size,
             )
-        )
-        paginated_items = paginator.as_list(
-            start_page=start_page,
-            first_page=JsonPage(
-                items=list(result.items),
-                total=result.total,
-                page=start_page,
-                per_page=page_size,
-            ),
-        )
-        return AdsListResult(items=paginated_items, total=result.total)
+        ).as_list(start_page=start_page, first_page=first_page)
 
     def _fetch_ads_page(
         self,
@@ -138,7 +127,7 @@ class AdsClient:
         user_id: int | None,
         status: str | None,
         page_size: int,
-    ) -> JsonPage[AdItem]:
+    ) -> JsonPage[Listing]:
         if page is None:
             raise ValidationError("Для операции требуется `page`.")
 
@@ -218,7 +207,7 @@ class StatsClient:
             json_body=request.to_payload(),
         )
 
-    def get_account_spendings(self, *, user_id: int, request: ItemStatsRequest) -> SpendingsResult:
+    def get_account_spendings(self, *, user_id: int, request: ItemStatsRequest) -> AccountSpendings:
         """Получает статистику расходов профиля."""
 
         return request_public_model(
@@ -335,7 +324,7 @@ class AutoloadClient:
             mapper=map_autoload_profile,
         )
 
-    def save_profile(self, request: AutoloadProfileUpdateRequest) -> ActionResult:
+    def save_profile(self, request: AutoloadProfileUpdateRequest) -> AdsActionResult:
         """Создает или редактирует профиль автозагрузки."""
 
         return request_public_model(
@@ -407,17 +396,31 @@ class AutoloadClient:
 
     def list_reports(
         self, *, limit: int | None = None, offset: int | None = None
-    ) -> AutoloadReportsResult:
+    ) -> PaginatedList[AutoloadReportSummary]:
         """Получает список отчетов автозагрузки."""
 
-        return request_public_model(
-            self.transport,
-            "GET",
-            "/autoload/v2/reports",
-            context=RequestContext("ads.autoload.list_reports"),
-            mapper=map_autoload_reports,
-            params={"limit": limit, "offset": offset},
-        )
+        page_size = limit or 25
+        base_offset = offset or 0
+
+        def fetch_page(page: int | None, _cursor: str | None) -> JsonPage[AutoloadReportSummary]:
+            current_page = page or 1
+            current_offset = base_offset + (current_page - 1) * page_size
+            result = request_public_model(
+                self.transport,
+                "GET",
+                "/autoload/v2/reports",
+                context=RequestContext("ads.autoload.list_reports"),
+                mapper=map_autoload_reports,
+                params={"limit": page_size, "offset": current_offset},
+            )
+            return JsonPage(
+                items=result.items,
+                total=result.total,
+                page=current_page,
+                per_page=page_size,
+            )
+
+        return Paginator(fetch_page).as_list(first_page=fetch_page(1, None))
 
     def get_items_info(self, *, item_ids: list[int]) -> AutoloadReportItemsResult:
         """Получает объявления автозагрузки по ID."""
@@ -493,7 +496,7 @@ class AutoloadArchiveClient:
             mapper=map_autoload_profile,
         )
 
-    def save_profile(self, request: AutoloadProfileUpdateRequest) -> ActionResult:
+    def save_profile(self, request: AutoloadProfileUpdateRequest) -> AdsActionResult:
         """Создает или редактирует архивный профиль автозагрузки."""
 
         return request_public_model(

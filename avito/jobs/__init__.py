@@ -1,6 +1,6 @@
 """Пакет jobs."""
 
-from avito.jobs.domain import Application, DomainObject, JobDictionary, JobWebhook, Resume, Vacancy
+from avito.jobs.domain import Application, JobDictionary, JobWebhook, Resume, Vacancy
 from avito.jobs.models import (
     ApplicationActionRequest,
     ApplicationIdsQuery,
@@ -42,7 +42,6 @@ __all__ = (
     "ApplicationStatesResult",
     "ApplicationViewedItem",
     "ApplicationViewedRequest",
-    "DomainObject",
     "JobActionResult",
     "JobDictionariesResult",
     "JobDictionary",

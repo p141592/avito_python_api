@@ -132,35 +132,35 @@ class PromotionOrderStatusResult(SerializableModel):
 
 
 @dataclass(slots=True, frozen=True)
-class BbipForecastRequestItem:
-    """Параметры прогноза BBIP по объявлению."""
+class BbipItem(SerializableModel):
+    """Параметры BBIP по объявлению (прогноз или заявка)."""
 
     item_id: int
     duration: int
     price: int
     old_price: int
 
-    def to_payload(self) -> dict[str, object]:
-        """Сериализует один BBIP-элемент прогноза."""
-
-        return {
-            "itemId": self.item_id,
-            "duration": self.duration,
-            "price": self.price,
-            "oldPrice": self.old_price,
-        }
-
 
 @dataclass(slots=True, frozen=True)
 class CreateBbipForecastsRequest:
     """Запрос прогноза BBIP."""
 
-    items: list[BbipForecastRequestItem]
+    items: list[BbipItem]
 
     def to_payload(self) -> dict[str, object]:
         """Сериализует запрос прогноза BBIP."""
 
-        return {"items": [item.to_payload() for item in self.items]}
+        return {
+            "items": [
+                {
+                    "itemId": item.item_id,
+                    "duration": item.duration,
+                    "price": item.price,
+                    "oldPrice": item.old_price,
+                }
+                for item in self.items
+            ]
+        }
 
 
 @dataclass(slots=True, frozen=True)
@@ -182,35 +182,25 @@ class BbipForecastsResult(SerializableModel):
 
 
 @dataclass(slots=True, frozen=True)
-class BbipOrderItem:
-    """Параметры подключения BBIP по объявлению."""
-
-    item_id: int
-    duration: int
-    price: int
-    old_price: int
-
-    def to_payload(self) -> dict[str, object]:
-        """Сериализует одну заявку BBIP."""
-
-        return {
-            "itemId": self.item_id,
-            "duration": self.duration,
-            "price": self.price,
-            "oldPrice": self.old_price,
-        }
-
-
-@dataclass(slots=True, frozen=True)
 class CreateBbipOrderRequest:
     """Запрос подключения BBIP."""
 
-    items: list[BbipOrderItem]
+    items: list[BbipItem]
 
     def to_payload(self) -> dict[str, object]:
         """Сериализует запрос подключения BBIP."""
 
-        return {"items": [item.to_payload() for item in self.items]}
+        return {
+            "items": [
+                {
+                    "itemId": item.item_id,
+                    "duration": item.duration,
+                    "price": item.price,
+                    "oldPrice": item.old_price,
+                }
+                for item in self.items
+            ]
+        }
 
 
 @dataclass(slots=True, frozen=True)
@@ -285,37 +275,35 @@ class BbipSuggestsResult(SerializableModel):
 
 
 @dataclass(slots=True, frozen=True)
-class TrxPromotionApplyItem:
-    """Параметры запуска TrxPromo по объявлению."""
+class TrxItem(SerializableModel):
+    """Параметры TrxPromo по объявлению."""
 
     item_id: int
     commission: int
     date_from: str
     date_to: str | None = None
 
-    def to_payload(self) -> dict[str, object]:
-        """Сериализует один элемент запуска TrxPromo."""
-
-        payload: dict[str, object] = {
-            "itemID": self.item_id,
-            "commission": self.commission,
-            "dateFrom": self.date_from,
-        }
-        if self.date_to is not None:
-            payload["dateTo"] = self.date_to
-        return payload
-
 
 @dataclass(slots=True, frozen=True)
 class CreateTrxPromotionApplyRequest:
     """Запрос запуска TrxPromo."""
 
-    items: list[TrxPromotionApplyItem]
+    items: list[TrxItem]
 
     def to_payload(self) -> dict[str, object]:
         """Сериализует запрос запуска TrxPromo."""
 
-        return {"items": [item.to_payload() for item in self.items]}
+        items_payload: list[dict[str, object]] = []
+        for item in self.items:
+            entry: dict[str, object] = {
+                "itemID": item.item_id,
+                "commission": item.commission,
+                "dateFrom": item.date_from,
+            }
+            if item.date_to is not None:
+                entry["dateTo"] = item.date_to
+            items_payload.append(entry)
+        return {"items": items_payload}
 
 
 @dataclass(slots=True, frozen=True)

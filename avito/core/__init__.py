@@ -1,5 +1,6 @@
 """Пакет общей инфраструктуры SDK."""
 
+from avito.core.domain import DomainObject
 from avito.core.exceptions import (
     AuthenticationError,
     AuthorizationError,
@@ -38,6 +39,7 @@ __all__ = (
     "ClientError",
     "ConfigurationError",
     "ConflictError",
+    "DomainObject",
     "JsonPage",
     "NotFoundError",
     "PaginatedList",

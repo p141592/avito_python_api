@@ -6,8 +6,8 @@ from collections.abc import Mapping
 from typing import cast
 
 from avito.ads.models import (
-    ActionResult,
-    AdItem,
+    AccountSpendings,
+    AdsActionResult,
     AdsListResult,
     AutoloadFee,
     AutoloadFeesResult,
@@ -21,15 +21,15 @@ from avito.ads.models import (
     AutoloadReportSummary,
     AutoloadTreeNode,
     AutoloadTreeResult,
+    CallStats,
     CallsStatsResult,
-    CallStat,
     IdMappingResult,
     ItemAnalyticsResult,
-    ItemStatsRecord,
     ItemStatsResult,
     LegacyAutoloadReport,
+    Listing,
+    ListingStats,
     SpendingRecord,
-    SpendingsResult,
     UpdatePriceResult,
     UploadResult,
     VasApplyResult,
@@ -91,12 +91,12 @@ def _bool(payload: Payload, *keys: str) -> bool | None:
     return None
 
 
-def map_ad_item(payload: object) -> AdItem:
+def map_ad_item(payload: object) -> Listing:
     """Преобразует объявление в dataclass."""
 
     data = _expect_mapping(payload)
-    return AdItem(
-        id=_int(data, "id", "item_id", "itemId"),
+    return Listing(
+        item_id=_int(data, "id", "item_id", "itemId"),
         user_id=_int(data, "user_id", "userId"),
         title=_str(data, "title"),
         description=_str(data, "description"),
@@ -130,7 +130,7 @@ def map_calls_stats(payload: object) -> CallsStatsResult:
 
     data = _expect_mapping(payload)
     items = [
-        CallStat(
+        CallStats(
             item_id=_int(item, "item_id", "itemId", "id"),
             calls=_int(item, "calls", "total"),
             answered_calls=_int(item, "answered_calls", "answeredCalls"),
@@ -141,8 +141,8 @@ def map_calls_stats(payload: object) -> CallsStatsResult:
     return CallsStatsResult(items=items)
 
 
-def _map_item_stat(item: Payload) -> ItemStatsRecord:
-    return ItemStatsRecord(
+def _map_item_stat(item: Payload) -> ListingStats:
+    return ListingStats(
         item_id=_int(item, "item_id", "itemId", "id"),
         views=_int(item, "views", "impressions"),
         contacts=_int(item, "contacts", "contacts_total", "contactsTotal"),
@@ -169,7 +169,7 @@ def map_item_analytics(payload: object) -> ItemAnalyticsResult:
     )
 
 
-def map_spendings(payload: object) -> SpendingsResult:
+def map_spendings(payload: object) -> AccountSpendings:
     """Преобразует статистику расходов."""
 
     data = _expect_mapping(payload)
@@ -184,7 +184,7 @@ def map_spendings(payload: object) -> SpendingsResult:
     total = _float(data, "total")
     if total is None:
         total = sum(item.amount for item in items if item.amount is not None) or None
-    return SpendingsResult(items=items, total=total)
+    return AccountSpendings(items=items, total=total)
 
 
 def map_vas_prices(payload: object) -> VasPricesResult:
@@ -354,16 +354,16 @@ def map_autoload_fees(payload: object) -> AutoloadFeesResult:
     return AutoloadFeesResult(items=items, total=total)
 
 
-def map_action_result(payload: object) -> ActionResult:
-    """Преобразует ответ мутационной операции."""
+def map_action_result(payload: object) -> AdsActionResult:
+    """Преобразует ответ мутационной операции ads."""
 
     if isinstance(payload, Mapping):
         data = cast(Payload, payload)
-        return ActionResult(
+        return AdsActionResult(
             success=bool(data.get("success", True)),
             message=_str(data, "message", "status"),
         )
-    return ActionResult(success=True)
+    return AdsActionResult(success=True)
 
 
 __all__ = (

@@ -6,7 +6,6 @@ from avito.autoteka.domain import (
     AutotekaScoring,
     AutotekaValuation,
     AutotekaVehicle,
-    DomainObject,
 )
 from avito.autoteka.models import (
     AutotekaLeadEvent,
@@ -61,7 +60,6 @@ __all__ = (
     "CatalogFieldValue",
     "CatalogResolveResult",
     "CatalogResolveRequest",
-    "DomainObject",
     "ExternalItemPreviewRequest",
     "ItemIdRequest",
     "LeadsRequest",

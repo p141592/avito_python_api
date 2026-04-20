@@ -11,7 +11,7 @@ from avito.core.serialization import SerializableModel
 class AccountProfile(SerializableModel):
     """Профиль авторизованного пользователя."""
 
-    id: int | None
+    user_id: int | None
     name: str | None
     email: str | None
     phone: str | None
@@ -104,7 +104,7 @@ class EmployeesResult(SerializableModel):
 class CompanyPhone(SerializableModel):
     """Телефон компании."""
 
-    id: int | None
+    phone_id: int | None
     phone: str | None
     comment: str | None
 
@@ -179,7 +179,7 @@ class EmployeeItemsResult(SerializableModel):
 
 
 @dataclass(slots=True, frozen=True)
-class ActionResult(SerializableModel):
+class AccountActionResult(SerializableModel):
     """Результат мутационной операции accounts."""
 
     success: bool
@@ -187,9 +187,9 @@ class ActionResult(SerializableModel):
 
 
 __all__ = (
+    "AccountActionResult",
     "AccountBalance",
     "AccountProfile",
-    "ActionResult",
     "AhUserStatus",
     "CompanyPhone",
     "CompanyPhonesResult",

@@ -4,7 +4,8 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from avito.core import Transport, ValidationError
+from avito.core import ValidationError
+from avito.core.domain import DomainObject
 from avito.ratings.client import RatingsClient
 from avito.ratings.models import (
     CreateReviewAnswerRequest,
@@ -13,13 +14,6 @@ from avito.ratings.models import (
     ReviewsQuery,
     ReviewsResult,
 )
-
-
-@dataclass(slots=True, frozen=True)
-class DomainObject:
-    """Базовый доменный объект раздела ratings."""
-
-    transport: Transport
 
 
 @dataclass(slots=True, frozen=True)
@@ -65,4 +59,4 @@ class RatingProfile(DomainObject):
         return RatingsClient(self.transport).get_ratings_info()
 
 
-__all__ = ("DomainObject", "RatingProfile", "Review", "ReviewAnswer")
+__all__ = ("RatingProfile", "Review", "ReviewAnswer")

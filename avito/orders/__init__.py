@@ -3,7 +3,6 @@
 from avito.orders.domain import (
     DeliveryOrder,
     DeliveryTask,
-    DomainObject,
     Order,
     OrderLabel,
     SandboxDelivery,
@@ -101,7 +100,6 @@ __all__ = (
     "DeliveryTaskInfo",
     "DeliveryDirection",
     "DeliveryDirectionZone",
-    "DomainObject",
     "LabelPdfResult",
     "LabelTaskResult",
     "Order",

@@ -5,9 +5,6 @@ from __future__ import annotations
 from base64 import b64encode
 from collections.abc import Mapping, Sequence
 from dataclasses import fields, is_dataclass
-from typing import Any
-
-
 def _is_public_field(name: str) -> bool:
     return not name.startswith("_") and name != "raw_payload"
 
@@ -33,7 +30,7 @@ def _serialize_value(value: object) -> object:
 class SerializableModel:
     """Mixin для стабильной JSON-compatible сериализации публичных моделей."""
 
-    def to_dict(self) -> dict[str, Any]:
+    def to_dict(self) -> dict[str, object]:
         if not is_dataclass(self):
             raise TypeError("SerializableModel supports dataclass instances only.")
         return {
@@ -42,7 +39,7 @@ class SerializableModel:
             if _is_public_field(field.name)
         }
 
-    def model_dump(self) -> dict[str, Any]:
+    def model_dump(self) -> dict[str, object]:
         """Совместимый alias для pydantic-подобного публичного контракта."""
 
         return self.to_dict()

@@ -42,14 +42,8 @@ from avito.autoteka.models import (
     VehicleIdRequest,
     VinRequest,
 )
-from avito.core import Transport, ValidationError
-
-
-@dataclass(slots=True, frozen=True)
-class DomainObject:
-    """Базовый доменный объект раздела autoteka."""
-
-    transport: Transport
+from avito.core import ValidationError
+from avito.core.domain import DomainObject
 
 
 @dataclass(slots=True, frozen=True)
@@ -225,5 +219,4 @@ __all__ = (
     "AutotekaScoring",
     "AutotekaValuation",
     "AutotekaVehicle",
-    "DomainObject",
 )

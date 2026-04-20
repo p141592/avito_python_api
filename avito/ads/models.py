@@ -8,10 +8,10 @@ from avito.core.serialization import SerializableModel
 
 
 @dataclass(slots=True, frozen=True)
-class AdItem(SerializableModel):
+class Listing(SerializableModel):
     """Объявление пользователя."""
 
-    id: int | None
+    item_id: int | None
     user_id: int | None
     title: str | None
     description: str | None
@@ -24,7 +24,7 @@ class AdItem(SerializableModel):
 class AdsListResult(SerializableModel):
     """Результат списка объявлений."""
 
-    items: list[AdItem]
+    items: list[Listing]
     total: int | None = None
 
 
@@ -72,7 +72,7 @@ class CallsStatsRequest:
 
 
 @dataclass(slots=True, frozen=True)
-class CallStat(SerializableModel):
+class CallStats(SerializableModel):
     """Статистика звонков по объявлению."""
 
     item_id: int | None
@@ -85,7 +85,7 @@ class CallStat(SerializableModel):
 class CallsStatsResult(SerializableModel):
     """Статистика звонков по набору объявлений."""
 
-    items: list[CallStat]
+    items: list[CallStats]
 
 
 @dataclass(slots=True, frozen=True)
@@ -113,7 +113,7 @@ class ItemStatsRequest:
 
 
 @dataclass(slots=True, frozen=True)
-class ItemStatsRecord(SerializableModel):
+class ListingStats(SerializableModel):
     """Статистические показатели объявления."""
 
     item_id: int | None
@@ -126,20 +126,20 @@ class ItemStatsRecord(SerializableModel):
 class ItemStatsResult(SerializableModel):
     """Статистика по списку объявлений."""
 
-    items: list[ItemStatsRecord]
+    items: list[ListingStats]
 
 
 @dataclass(slots=True, frozen=True)
 class ItemAnalyticsResult(SerializableModel):
     """Аналитика по профилю или объявлениям."""
 
-    items: list[ItemStatsRecord]
+    items: list[ListingStats]
     period: str | None = None
 
 
 @dataclass(slots=True, frozen=True)
 class SpendingRecord(SerializableModel):
-    """Запись статистики расходов."""
+    """Запись статистики расходов по объявлению."""
 
     item_id: int | None
     amount: float | None
@@ -147,7 +147,7 @@ class SpendingRecord(SerializableModel):
 
 
 @dataclass(slots=True, frozen=True)
-class SpendingsResult(SerializableModel):
+class AccountSpendings(SerializableModel):
     """Статистика расходов профиля."""
 
     items: list[SpendingRecord]
@@ -389,16 +389,16 @@ class LegacyAutoloadReport(SerializableModel):
 
 
 @dataclass(slots=True, frozen=True)
-class ActionResult(SerializableModel):
-    """Универсальный результат мутационной операции ads."""
+class AdsActionResult(SerializableModel):
+    """Результат мутационной операции ads."""
 
     success: bool
     message: str | None = None
 
 
 __all__ = (
-    "ActionResult",
-    "AdItem",
+    "AccountSpendings",
+    "AdsActionResult",
     "AdsListResult",
     "ApplyVasPackageRequest",
     "ApplyVasRequest",
@@ -415,17 +415,17 @@ __all__ = (
     "AutoloadReportsResult",
     "AutoloadTreeNode",
     "AutoloadTreeResult",
-    "CallStat",
+    "CallStats",
     "CallsStatsRequest",
     "CallsStatsResult",
     "IdMappingResult",
     "ItemAnalyticsResult",
-    "ItemStatsRecord",
     "ItemStatsRequest",
     "ItemStatsResult",
     "LegacyAutoloadReport",
+    "Listing",
+    "ListingStats",
     "SpendingRecord",
-    "SpendingsResult",
     "UpdatePriceRequest",
     "UpdatePriceResult",
     "UploadByUrlRequest",

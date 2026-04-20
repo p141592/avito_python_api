@@ -8,7 +8,7 @@ from typing import cast
 from avito.accounts.models import (
     AccountBalance,
     AccountProfile,
-    ActionResult,
+    AccountActionResult,
     AhUserStatus,
     CompanyPhone,
     CompanyPhonesResult,
@@ -79,7 +79,7 @@ def map_account_profile(payload: object) -> AccountProfile:
 
     data = _expect_mapping(payload)
     return AccountProfile(
-        id=_as_int(data, "id", "user_id"),
+        user_id=_as_int(data, "id", "user_id"),
         name=_as_str(data, "name", "title"),
         email=_as_str(data, "email"),
         phone=_as_str(data, "phone"),
@@ -162,7 +162,7 @@ def map_company_phones(payload: object) -> CompanyPhonesResult:
     data = _expect_mapping(payload)
     items = [
         CompanyPhone(
-            id=_as_int(item, "id", "phone_id", "phoneId"),
+            phone_id=_as_int(item, "id", "phone_id", "phoneId"),
             phone=_as_str(item, "phone", "value"),
             comment=_as_str(item, "comment", "description"),
         )
@@ -187,15 +187,15 @@ def map_employee_items(payload: object) -> EmployeeItemsResult:
     return EmployeeItemsResult(items=items, total=_as_int(data, "total", "count"))
 
 
-def map_action_result(payload: object) -> ActionResult:
+def map_action_result(payload: object) -> AccountActionResult:
     """Преобразует ответ мутационной операции в dataclass."""
 
     if isinstance(payload, Mapping):
         data = cast(Payload, payload)
         success = bool(data.get("success", True))
         message = _as_str(data, "message", "status")
-        return ActionResult(success=success, message=message)
-    return ActionResult(success=True)
+        return AccountActionResult(success=success, message=message)
+    return AccountActionResult(success=True)
 
 
 __all__ = (
