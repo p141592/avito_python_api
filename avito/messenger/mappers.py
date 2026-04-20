@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Mapping
+from datetime import datetime
 from typing import cast
 
 from avito.core.exceptions import ResponseMappingError
@@ -48,6 +49,18 @@ def _str(payload: Payload, *keys: str) -> str | None:
         value = payload.get(key)
         if isinstance(value, str):
             return value
+    return None
+
+
+def _datetime(payload: Payload, *keys: str) -> datetime | None:
+    for key in keys:
+        value = payload.get(key)
+        if isinstance(value, str):
+            normalized = value.replace("Z", "+00:00")
+            try:
+                return datetime.fromisoformat(normalized)
+            except ValueError:
+                continue
     return None
 
 
@@ -113,7 +126,7 @@ def map_message(payload: object) -> MessageInfo:
         chat_id=_str(data, "chat_id", "chatId"),
         author_id=_int(data, "author_id", "authorId", "user_id", "userId"),
         text=_str(data, "text", "message"),
-        created_at=_str(data, "created_at", "createdAt"),
+        created_at=_datetime(data, "created_at", "createdAt"),
         direction=_str(data, "direction"),
         type=_str(data, "type"),
     )

@@ -140,13 +140,9 @@ with AvitoClient() as avito:
 
 ```python
 from avito import AvitoClient
-from avito.promotion.models import (
-    CampaignListFilter,
-    CampaignOrderBy,
-    CampaignUpdateTimeFilter,
-    CreateAutostrategyBudgetRequest,
-    ListAutostrategyCampaignsRequest,
-)
+from datetime import datetime
+
+from avito.promotion.models import CreateAutostrategyBudgetRequest
 
 with AvitoClient() as avito:
     services = avito.promotion_order().list_orders()
@@ -161,17 +157,11 @@ with AvitoClient() as avito:
     )
     campaign = avito.autostrategy_campaign(campaign_id=15).get()
     campaigns = avito.autostrategy_campaign().list(
-        request=ListAutostrategyCampaignsRequest(
-            limit=50,
-            status_id=[1, 2],
-            order_by=[CampaignOrderBy(column="startTime", direction="asc")],
-            filter=CampaignListFilter(
-                by_update_time=CampaignUpdateTimeFilter(
-                    from_time="2026-04-01T00:00:00Z",
-                    to_time="2026-04-30T00:00:00Z",
-                )
-            ),
-        )
+        limit=50,
+        status_id=[1, 2],
+        order_by=[("startTime", "asc")],
+        updated_from=datetime(2026, 4, 1),
+        updated_to=datetime(2026, 4, 30),
     )
 
 print(budget.calc_id)

@@ -2,26 +2,18 @@
 
 from __future__ import annotations
 
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import ClassVar
 
-from pydantic import AliasChoices, BaseModel, ConfigDict, Field
-
-from avito._env import resolve_env_aliases
+from avito._env import parse_env_int, resolve_env_aliases
 from avito.auth.settings import AuthSettings
 from avito.core.retries import RetryPolicy
 from avito.core.types import ApiTimeouts
 
 
-def _default_timeouts() -> ApiTimeouts:
-    return ApiTimeouts(_env_file=None)  # type: ignore[call-arg]
-
-
-def _default_retry_policy() -> RetryPolicy:
-    return RetryPolicy(_env_file=None)  # type: ignore[call-arg]
-
-
-class AvitoSettings(BaseModel):
+@dataclass(slots=True, frozen=True)
+class AvitoSettings:
     """Единственный публичный контракт конфигурации SDK."""
 
     ENV_ALIASES: ClassVar[dict[str, tuple[str, ...]]] = {
@@ -29,22 +21,11 @@ class AvitoSettings(BaseModel):
         "user_id": ("AVITO_USER_ID",),
     }
 
-    model_config = ConfigDict(
-        extra="ignore",
-        populate_by_name=True,
-    )
-
-    base_url: str = Field(
-        default="https://api.avito.ru",
-        validation_alias=AliasChoices("AVITO_BASE_URL"),
-    )
-    user_id: int | None = Field(
-        default=None,
-        validation_alias=AliasChoices("AVITO_USER_ID"),
-    )
-    auth: AuthSettings = Field(default_factory=AuthSettings)
-    timeouts: ApiTimeouts = Field(default_factory=_default_timeouts)
-    retry_policy: RetryPolicy = Field(default_factory=_default_retry_policy)
+    base_url: str = "https://api.avito.ru"
+    user_id: int | None = None
+    auth: AuthSettings = field(default_factory=AuthSettings)
+    timeouts: ApiTimeouts = field(default_factory=ApiTimeouts)
+    retry_policy: RetryPolicy = field(default_factory=RetryPolicy)
 
     @property
     def client_id(self) -> str | None:
@@ -63,14 +44,14 @@ class AvitoSettings(BaseModel):
         """Загружает конфигурацию из окружения и optional `.env` файла."""
 
         resolved_values = resolve_env_aliases(cls.ENV_ALIASES, env_file=env_file)
+        user_id = resolved_values.get("user_id")
         auth_settings = AuthSettings.from_env(env_file=env_file)
-        return cls.model_validate(
-            {
-                **resolved_values,
-                "auth": auth_settings,
-                "timeouts": ApiTimeouts(_env_file=env_file),  # type: ignore[call-arg]
-                "retry_policy": RetryPolicy(_env_file=env_file),  # type: ignore[call-arg]
-            }
+        return cls(
+            base_url=resolved_values.get("base_url", "https://api.avito.ru"),
+            user_id=parse_env_int(user_id, field_name="user_id") if user_id is not None else None,
+            auth=auth_settings,
+            timeouts=ApiTimeouts.from_env(env_file=env_file),
+            retry_policy=RetryPolicy.from_env(env_file=env_file),
         ).validate_required()
 
     @classmethod

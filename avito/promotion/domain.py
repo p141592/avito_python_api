@@ -514,18 +514,34 @@ class AutostrategyCampaign(DomainObject):
         limit: int = 100,
         offset: int | None = None,
         status_id: list[int] | None = None,
-        order_by: list[CampaignOrderBy] | None = None,
-        filter: CampaignListFilter | None = None,
+        order_by: list[tuple[str, str]] | None = None,
+        updated_from: datetime | None = None,
+        updated_to: datetime | None = None,
     ) -> CampaignsResult:
         """Получает список кампаний."""
 
+        filter_payload = (
+            CampaignListFilter(
+                by_update_time=CampaignUpdateTimeFilter(
+                    from_time=updated_from,
+                    to_time=updated_to,
+                )
+            )
+            if updated_from is not None or updated_to is not None
+            else None
+        )
+        order_by_payload = (
+            [CampaignOrderBy(column=column, direction=direction) for column, direction in order_by]
+            if order_by is not None
+            else None
+        )
         return AutostrategyClient(self.transport).list_campaigns(
             ListAutostrategyCampaignsRequest(
                 limit=limit,
                 offset=offset,
                 status_id=status_id,
-                order_by=order_by,
-                filter=filter,
+                order_by=order_by_payload,
+                filter=filter_payload,
             )
         )
 

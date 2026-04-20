@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from datetime import datetime
 from typing import BinaryIO
 
 from avito.core.serialization import SerializableModel
@@ -69,7 +70,7 @@ class MessageInfo(SerializableModel):
     chat_id: str | None
     author_id: int | None
     text: str | None
-    created_at: str | None
+    created_at: datetime | None
     direction: str | None
     type: str | None
 

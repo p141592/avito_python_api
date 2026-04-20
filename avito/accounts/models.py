@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from datetime import datetime
 
 from avito.core.serialization import SerializableModel
 
@@ -33,7 +34,7 @@ class OperationRecord(SerializableModel):
     """Операция по аккаунту."""
 
     id: str | None
-    created_at: str | None
+    created_at: datetime | None
     amount: float | None
     operation_type: str | None
     status: str | None
@@ -203,4 +204,3 @@ __all__ = (
     "OperationsHistoryRequest",
     "OperationsHistoryResult",
 )
-

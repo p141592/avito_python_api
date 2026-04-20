@@ -5,6 +5,7 @@ from __future__ import annotations
 from base64 import b64encode
 from collections.abc import Mapping, Sequence
 from dataclasses import fields, is_dataclass
+from datetime import date, datetime
 
 
 def _is_public_field(name: str) -> bool:
@@ -14,6 +15,8 @@ def _is_public_field(name: str) -> bool:
 def _serialize_value(value: object) -> object:
     if isinstance(value, SerializableModel):
         return value.to_dict()
+    if isinstance(value, datetime | date):
+        return value.isoformat()
     if isinstance(value, bytes | bytearray):
         return b64encode(bytes(value)).decode("ascii")
     if is_dataclass(value):

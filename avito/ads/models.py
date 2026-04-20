@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from datetime import datetime
 
 from avito.core.serialization import SerializableModel
 
@@ -320,8 +321,8 @@ class AutoloadReportSummary(SerializableModel):
 
     report_id: int | None
     status: str | None
-    created_at: str | None
-    finished_at: str | None
+    created_at: datetime | None
+    finished_at: datetime | None
     processed_items: int | None
 
 
@@ -374,8 +375,8 @@ class AutoloadReportDetails(SerializableModel):
 
     report_id: int | None
     status: str | None
-    created_at: str | None
-    finished_at: str | None
+    created_at: datetime | None
+    finished_at: datetime | None
     errors_count: int | None
     warnings_count: int | None
 

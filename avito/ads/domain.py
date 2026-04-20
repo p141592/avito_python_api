@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from collections.abc import Sequence
 from dataclasses import dataclass
+from datetime import datetime
 
 from avito.ads.client import (
     AdsClient,
@@ -66,6 +67,10 @@ def _preview_result(
     )
 
 
+def _serialize_datetime(value: datetime | None) -> str | None:
+    return value.isoformat() if value is not None else None
+
+
 @dataclass(slots=True, frozen=True)
 class Ad(DomainObject):
     """Доменный объект объявления."""
@@ -119,8 +124,8 @@ class AdStats(DomainObject):
         self,
         *,
         item_ids: list[int] | None = None,
-        date_from: str | None = None,
-        date_to: str | None = None,
+        date_from: datetime | None = None,
+        date_to: datetime | None = None,
     ) -> CallsStatsResult:
         """Получает статистику звонков."""
 
@@ -131,7 +136,9 @@ class AdStats(DomainObject):
         return StatsClient(self.transport).get_calls_stats(
             user_id=user_id,
             request=CallsStatsRequest(
-                item_ids=resolved_item_ids, date_from=date_from, date_to=date_to
+                item_ids=resolved_item_ids,
+                date_from=_serialize_datetime(date_from),
+                date_to=_serialize_datetime(date_to),
             ),
         )
 
@@ -139,8 +146,8 @@ class AdStats(DomainObject):
         self,
         *,
         item_ids: list[int] | None = None,
-        date_from: str | None = None,
-        date_to: str | None = None,
+        date_from: datetime | None = None,
+        date_to: datetime | None = None,
         fields: list[str] | None = None,
     ) -> ItemStatsResult:
         """Получает статистику по списку объявлений."""
@@ -153,8 +160,8 @@ class AdStats(DomainObject):
             user_id=user_id,
             request=ItemStatsRequest(
                 item_ids=resolved_item_ids,
-                date_from=date_from,
-                date_to=date_to,
+                date_from=_serialize_datetime(date_from),
+                date_to=_serialize_datetime(date_to),
                 fields=fields or [],
             ),
         )
@@ -163,8 +170,8 @@ class AdStats(DomainObject):
         self,
         *,
         item_ids: list[int] | None = None,
-        date_from: str | None = None,
-        date_to: str | None = None,
+        date_from: datetime | None = None,
+        date_to: datetime | None = None,
         fields: list[str] | None = None,
     ) -> ItemAnalyticsResult:
         """Получает аналитику по профилю."""
@@ -177,8 +184,8 @@ class AdStats(DomainObject):
             user_id=user_id,
             request=ItemStatsRequest(
                 item_ids=resolved_item_ids,
-                date_from=date_from,
-                date_to=date_to,
+                date_from=_serialize_datetime(date_from),
+                date_to=_serialize_datetime(date_to),
                 fields=fields or [],
             ),
         )
@@ -187,8 +194,8 @@ class AdStats(DomainObject):
         self,
         *,
         item_ids: list[int] | None = None,
-        date_from: str | None = None,
-        date_to: str | None = None,
+        date_from: datetime | None = None,
+        date_to: datetime | None = None,
         fields: list[str] | None = None,
     ) -> AccountSpendings:
         """Получает статистику расходов профиля."""
@@ -201,8 +208,8 @@ class AdStats(DomainObject):
             user_id=user_id,
             request=ItemStatsRequest(
                 item_ids=resolved_item_ids,
-                date_from=date_from,
-                date_to=date_to,
+                date_from=_serialize_datetime(date_from),
+                date_to=_serialize_datetime(date_to),
                 fields=fields or [],
             ),
         )

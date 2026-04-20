@@ -399,7 +399,7 @@ class CpaAuctionItemBid(SerializableModel):
 
     item_id: int | None
     price_penny: int | None
-    expiration_time: str | None
+    expiration_time: datetime | None
     available_prices: list[CpaAuctionBidOption]
 
 
@@ -930,4 +930,3 @@ class AutostrategyStatTotals(SerializableModel):
 
     calls: int | None
     views: int | None
-

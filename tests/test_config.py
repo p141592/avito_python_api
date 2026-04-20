@@ -198,3 +198,35 @@ def test_process_environment_overrides_dotenv_deterministically(
     assert settings.base_url == "https://from-env.avito.ru"
     assert settings.auth.client_id == "env-client-id"
     assert settings.auth.client_secret == "env-client-secret"
+
+
+def test_avito_settings_from_env_parses_timeout_and_retry_values(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    clear_avito_env(monkeypatch)
+    env_file = write_env_file(
+        tmp_path / ".env",
+        "\n".join(
+            (
+                "AVITO_AUTH__CLIENT_ID=client-id",
+                "AVITO_AUTH__CLIENT_SECRET=client-secret",
+                "AVITO_TIMEOUT_CONNECT=2.5",
+                "AVITO_TIMEOUT_READ=11",
+                "AVITO_RETRY_MAX_ATTEMPTS=4",
+                "AVITO_RETRY_BACKOFF_FACTOR=0.75",
+                "AVITO_RETRY_RETRYABLE_METHODS=GET,POST,PATCH",
+                "AVITO_RETRY_RETRY_ON_RATE_LIMIT=false",
+                "AVITO_RETRY_MAX_RATE_LIMIT_WAIT_SECONDS=12.5",
+            )
+        ),
+    )
+
+    settings = AvitoSettings.from_env(env_file=env_file)
+
+    assert settings.timeouts.connect == 2.5
+    assert settings.timeouts.read == 11.0
+    assert settings.retry_policy.max_attempts == 4
+    assert settings.retry_policy.backoff_factor == 0.75
+    assert settings.retry_policy.retryable_methods == ("GET", "POST", "PATCH")
+    assert settings.retry_policy.retry_on_rate_limit is False
+    assert settings.retry_policy.max_rate_limit_wait_seconds == 12.5

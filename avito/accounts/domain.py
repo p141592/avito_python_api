@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from collections.abc import Sequence
 from dataclasses import dataclass
+from datetime import datetime
 
 from avito.accounts.client import AccountsClient, HierarchyClient
 from avito.accounts.models import (
@@ -21,6 +22,10 @@ from avito.accounts.models import (
 )
 from avito.core import PaginatedList, ValidationError
 from avito.core.domain import DomainObject
+
+
+def _serialize_datetime(value: datetime | None) -> str | None:
+    return value.isoformat() if value is not None else None
 
 
 @dataclass(slots=True, frozen=True)
@@ -45,8 +50,8 @@ class Account(DomainObject):
     def get_operations_history(
         self,
         *,
-        date_from: str | None = None,
-        date_to: str | None = None,
+        date_from: datetime | None = None,
+        date_to: datetime | None = None,
         limit: int | None = None,
         offset: int | None = None,
     ) -> PaginatedList[OperationRecord]:
@@ -54,8 +59,8 @@ class Account(DomainObject):
 
         return AccountsClient(self.transport).get_operations_history(
             OperationsHistoryRequest(
-                date_from=date_from,
-                date_to=date_to,
+                date_from=_serialize_datetime(date_from),
+                date_to=_serialize_datetime(date_to),
                 limit=limit,
                 offset=offset,
             )

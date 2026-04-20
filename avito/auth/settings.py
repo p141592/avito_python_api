@@ -2,16 +2,16 @@
 
 from __future__ import annotations
 
+from dataclasses import dataclass
 from pathlib import Path
 from typing import ClassVar
-
-from pydantic import AliasChoices, BaseModel, ConfigDict, Field
 
 from avito._env import resolve_env_aliases
 from avito.core.exceptions import ConfigurationError
 
 
-class AuthSettings(BaseModel):
+@dataclass(slots=True, frozen=True)
+class AuthSettings:
     """Единственный публичный контракт OAuth-конфигурации SDK."""
 
     ENV_ALIASES: ClassVar[dict[str, tuple[str, ...]]] = {
@@ -48,71 +48,16 @@ class AuthSettings(BaseModel):
         ),
     }
 
-    model_config = ConfigDict(
-        extra="ignore",
-        populate_by_name=True,
-    )
-
-    client_id: str | None = Field(
-        default=None,
-        validation_alias=AliasChoices("AVITO_AUTH__CLIENT_ID", "AVITO_CLIENT_ID"),
-    )
-    client_secret: str | None = Field(
-        default=None,
-        validation_alias=AliasChoices(
-            "AVITO_AUTH__CLIENT_SECRET",
-            "AVITO_CLIENT_SECRET",
-        ),
-    )
-    scope: str | None = Field(
-        default=None,
-        validation_alias=AliasChoices("AVITO_AUTH__SCOPE", "AVITO_SCOPE"),
-    )
-    refresh_token: str | None = Field(
-        default=None,
-        validation_alias=AliasChoices(
-            "AVITO_AUTH__REFRESH_TOKEN", "AVITO_REFRESH_TOKEN"
-        ),
-    )
-    token_url: str = Field(
-        default="/token",
-        validation_alias=AliasChoices("AVITO_AUTH__TOKEN_URL", "AVITO_TOKEN_URL"),
-    )
-    alternate_token_url: str = Field(
-        default="/token",
-        validation_alias=AliasChoices(
-            "AVITO_AUTH__ALTERNATE_TOKEN_URL",
-            "AVITO_ALTERNATE_TOKEN_URL",
-        ),
-    )
-    autoteka_token_url: str = Field(
-        default="/autoteka/token",
-        validation_alias=AliasChoices(
-            "AVITO_AUTH__AUTOTEKA_TOKEN_URL",
-            "AVITO_AUTOTEKA_TOKEN_URL",
-        ),
-    )
-    autoteka_client_id: str | None = Field(
-        default=None,
-        validation_alias=AliasChoices(
-            "AVITO_AUTH__AUTOTEKA_CLIENT_ID",
-            "AVITO_AUTOTEKA_CLIENT_ID",
-        ),
-    )
-    autoteka_client_secret: str | None = Field(
-        default=None,
-        validation_alias=AliasChoices(
-            "AVITO_AUTH__AUTOTEKA_CLIENT_SECRET",
-            "AVITO_AUTOTEKA_CLIENT_SECRET",
-        ),
-    )
-    autoteka_scope: str | None = Field(
-        default=None,
-        validation_alias=AliasChoices(
-            "AVITO_AUTH__AUTOTEKA_SCOPE",
-            "AVITO_AUTOTEKA_SCOPE",
-        ),
-    )
+    client_id: str | None = None
+    client_secret: str | None = None
+    scope: str | None = None
+    refresh_token: str | None = None
+    token_url: str = "/token"
+    alternate_token_url: str = "/token"
+    autoteka_token_url: str = "/autoteka/token"
+    autoteka_client_id: str | None = None
+    autoteka_client_secret: str | None = None
+    autoteka_scope: str | None = None
 
     @classmethod
     def from_env(cls, *, env_file: str | Path | None = ".env") -> AuthSettings:

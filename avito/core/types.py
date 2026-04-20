@@ -4,26 +4,41 @@ from __future__ import annotations
 
 from collections.abc import Mapping
 from dataclasses import dataclass, field
+from pathlib import Path
+from typing import ClassVar
 from typing import Literal
 
-from pydantic_settings import BaseSettings, SettingsConfigDict
+from avito._env import parse_env_float, resolve_env_aliases
 
 HttpMethod = Literal["GET", "POST", "PUT", "PATCH", "DELETE", "HEAD", "OPTIONS"]
 
 
-class ApiTimeouts(BaseSettings):
+@dataclass(slots=True, frozen=True)
+class ApiTimeouts:
     """Явные таймауты для HTTP-запросов SDK."""
 
-    model_config = SettingsConfigDict(
-        env_prefix="AVITO_TIMEOUT_",
-        env_file=".env",
-        extra="ignore",
-    )
+    ENV_ALIASES: ClassVar[dict[str, tuple[str, ...]]] = {
+        "connect": ("AVITO_TIMEOUT_CONNECT",),
+        "read": ("AVITO_TIMEOUT_READ",),
+        "write": ("AVITO_TIMEOUT_WRITE",),
+        "pool": ("AVITO_TIMEOUT_POOL",),
+    }
 
     connect: float = 5.0
     read: float = 15.0
     write: float = 15.0
     pool: float = 5.0
+
+    @classmethod
+    def from_env(cls, *, env_file: str | Path | None = ".env") -> ApiTimeouts:
+        """Загружает таймауты из process environment и optional `.env` файла."""
+
+        resolved_values = resolve_env_aliases(cls.ENV_ALIASES, env_file=env_file)
+        parsed_values: dict[str, float] = {
+            field_name: parse_env_float(value, field_name=field_name)
+            for field_name, value in resolved_values.items()
+        }
+        return cls(**parsed_values)
 
 
 @dataclass(slots=True, frozen=True)

@@ -111,9 +111,9 @@ def _datetime(payload: Payload, *keys: str) -> datetime | None:
         value = payload.get(key)
         if isinstance(value, str):
             try:
-                return datetime.fromisoformat(value)
+                return datetime.fromisoformat(value.replace("Z", "+00:00"))
             except ValueError:
-                return None
+                continue
     return None
 
 
@@ -382,7 +382,7 @@ def map_cpa_auction_bids(payload: object) -> CpaAuctionBidsResult:
             CpaAuctionItemBid(
                 item_id=_int(item, "itemId", "itemID"),
                 price_penny=_int(item, "pricePenny"),
-                expiration_time=_str(item, "expirationTime"),
+                expiration_time=_datetime(item, "expirationTime"),
                 available_prices=[
                     CpaAuctionBidOption(
                         price_penny=_int(option, "pricePenny"),

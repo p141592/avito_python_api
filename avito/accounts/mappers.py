@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Mapping
+from datetime import datetime
 from typing import cast
 
 from avito.accounts.models import (
@@ -43,6 +44,18 @@ def _as_str(payload: Payload, *keys: str) -> str | None:
         value = payload.get(key)
         if isinstance(value, str):
             return value
+    return None
+
+
+def _as_datetime(payload: Payload, *keys: str) -> datetime | None:
+    for key in keys:
+        value = payload.get(key)
+        if isinstance(value, str):
+            normalized = value.replace("Z", "+00:00")
+            try:
+                return datetime.fromisoformat(normalized)
+            except ValueError:
+                continue
     return None
 
 
@@ -114,7 +127,7 @@ def map_operations_history(payload: object) -> OperationsHistoryResult:
     operations = [
         OperationRecord(
             id=_as_str(item, "id", "operation_id"),
-            created_at=_as_str(item, "created_at", "createdAt", "date"),
+            created_at=_as_datetime(item, "created_at", "createdAt", "date"),
             amount=_as_float(item, "amount", "price", "sum"),
             operation_type=_as_str(item, "type", "operation_type", "operationType"),
             status=_as_str(item, "status"),

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Mapping
+from datetime import datetime
 from typing import cast
 
 from avito.ads.models import (
@@ -60,6 +61,18 @@ def _str(payload: Payload, *keys: str) -> str | None:
         value = payload.get(key)
         if isinstance(value, str):
             return value
+    return None
+
+
+def _datetime(payload: Payload, *keys: str) -> datetime | None:
+    for key in keys:
+        value = payload.get(key)
+        if isinstance(value, str):
+            normalized = value.replace("Z", "+00:00")
+            try:
+                return datetime.fromisoformat(normalized)
+            except ValueError:
+                continue
     return None
 
 
@@ -280,8 +293,8 @@ def _map_report_summary(item: Payload) -> AutoloadReportSummary:
     return AutoloadReportSummary(
         report_id=_int(item, "report_id", "reportId", "id"),
         status=_str(item, "status"),
-        created_at=_str(item, "created_at", "createdAt"),
-        finished_at=_str(item, "finished_at", "finishedAt"),
+        created_at=_datetime(item, "created_at", "createdAt"),
+        finished_at=_datetime(item, "finished_at", "finishedAt"),
         processed_items=_int(item, "processed_items", "processedItems", "items"),
     )
 
@@ -303,8 +316,8 @@ def map_autoload_report_details(payload: object) -> AutoloadReportDetails:
     return AutoloadReportDetails(
         report_id=_int(data, "report_id", "reportId", "id"),
         status=_str(data, "status"),
-        created_at=_str(data, "created_at", "createdAt"),
-        finished_at=_str(data, "finished_at", "finishedAt"),
+        created_at=_datetime(data, "created_at", "createdAt"),
+        finished_at=_datetime(data, "finished_at", "finishedAt"),
         errors_count=_int(data, "errors_count", "errorsCount"),
         warnings_count=_int(data, "warnings_count", "warningsCount"),
     )
