@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from collections.abc import Mapping
 from dataclasses import dataclass
+from datetime import datetime
 
 from avito.core import ValidationError
 from avito.core.domain import DomainObject
@@ -25,12 +26,15 @@ from avito.promotion.models import (
     AutostrategyStat,
     BbipForecastsResult,
     BbipItem,
+    BbipItemInput,
     BbipSuggestsResult,
+    BidItemInput,
     CampaignActionResult,
     CampaignDetailsResult,
     CampaignListFilter,
     CampaignOrderBy,
     CampaignsResult,
+    CampaignUpdateTimeFilter,
     CancelTrxPromotionRequest,
     CpaAuctionBidsResult,
     CreateAutostrategyBudgetRequest,
@@ -59,6 +63,7 @@ from avito.promotion.models import (
     TargetActionPromotionsByItemIdsResult,
     TrxCommissionsResult,
     TrxItem,
+    TrxItemInput,
     UpdateAutoBidRequest,
     UpdateAutostrategyCampaignRequest,
     UpdateManualBidRequest,
@@ -132,28 +137,46 @@ class BbipPromotion(DomainObject):
     item_id: int | str | None = None
     user_id: int | str | None = None
 
-    def get_forecasts(self, *, items: list[BbipItem]) -> BbipForecastsResult:
+    def get_forecasts(self, *, items: list[BbipItemInput]) -> BbipForecastsResult:
         """Получает прогнозы BBIP."""
 
-        return BbipClient(self.transport).get_forecasts(CreateBbipForecastsRequest(items=items))
+        bbip_items = [
+            BbipItem(
+                item_id=item["item_id"],
+                duration=item["duration"],
+                price=item["price"],
+                old_price=item["old_price"],
+            )
+            for item in items
+        ]
+        return BbipClient(self.transport).get_forecasts(CreateBbipForecastsRequest(items=bbip_items))
 
     def create_order(
         self,
         *,
-        items: list[BbipItem],
+        items: list[BbipItemInput],
         dry_run: bool = False,
     ) -> PromotionActionResult:
         """Подключает BBIP-продвижение."""
 
         validate_non_empty("items", items)
         for index, item in enumerate(items):
-            validate_positive_int(f"items[{index}].item_id", item.item_id)
-            validate_positive_int(f"items[{index}].duration", item.duration)
-            validate_positive_int(f"items[{index}].price", item.price)
-            validate_positive_int(f"items[{index}].old_price", item.old_price)
-        request = CreateBbipOrderRequest(items=items)
+            validate_positive_int(f"items[{index}].item_id", item["item_id"])
+            validate_positive_int(f"items[{index}].duration", item["duration"])
+            validate_positive_int(f"items[{index}].price", item["price"])
+            validate_positive_int(f"items[{index}].old_price", item["old_price"])
+        bbip_items = [
+            BbipItem(
+                item_id=item["item_id"],
+                duration=item["duration"],
+                price=item["price"],
+                old_price=item["old_price"],
+            )
+            for item in items
+        ]
+        request = CreateBbipOrderRequest(items=bbip_items)
         request_payload = request.to_payload()
-        target = {"item_ids": [item.item_id for item in items]}
+        target: dict[str, object] = {"item_ids": [item["item_id"] for item in items]}
         if dry_run:
             return _preview_result(
                 action="create_order",
@@ -186,21 +209,29 @@ class TrxPromotion(DomainObject):
     def apply(
         self,
         *,
-        items: list[TrxItem],
+        items: list[TrxItemInput],
         dry_run: bool = False,
     ) -> PromotionActionResult:
         """Запускает TrxPromo."""
 
         validate_non_empty("items", items)
         for index, item in enumerate(items):
-            validate_positive_int(f"items[{index}].item_id", item.item_id)
-            validate_positive_int(f"items[{index}].commission", item.commission)
-            validate_non_empty_string(f"items[{index}].date_from", item.date_from)
-            if item.date_to is not None:
-                validate_non_empty_string(f"items[{index}].date_to", item.date_to)
-        request = CreateTrxPromotionApplyRequest(items=items)
+            validate_positive_int(f"items[{index}].item_id", item["item_id"])
+            validate_positive_int(f"items[{index}].commission", item["commission"])
+            if not isinstance(item.get("date_from"), datetime):
+                raise ValidationError(f"items[{index}].date_from должен быть datetime.")
+        trx_items = [
+            TrxItem(
+                item_id=item["item_id"],
+                commission=item["commission"],
+                date_from=item["date_from"],
+                date_to=item.get("date_to"),
+            )
+            for item in items
+        ]
+        request = CreateTrxPromotionApplyRequest(items=trx_items)
         request_payload = request.to_payload()
-        target = {"item_ids": [item.item_id for item in items]}
+        target: dict[str, object] = {"item_ids": [item["item_id"] for item in items]}
         if dry_run:
             return _preview_result(action="apply", target=target, request_payload=request_payload)
         return TrxPromoClient(self.transport).apply(request)
@@ -255,10 +286,11 @@ class CpaAuction(DomainObject):
             batch_size=batch_size,
         )
 
-    def create_item_bids(self, *, items: list[CreateItemBid]) -> PromotionActionResult:
+    def create_item_bids(self, *, items: list[BidItemInput]) -> PromotionActionResult:
         """Сохраняет новые ставки по объявлениям."""
 
-        return CpaAuctionClient(self.transport).create_item_bids(CreateItemBidsRequest(items=items))
+        bids = [CreateItemBid(item_id=item["item_id"], price_penny=item["price_penny"]) for item in items]
+        return CpaAuctionClient(self.transport).create_item_bids(CreateItemBidsRequest(items=bids))
 
 
 @dataclass(slots=True, frozen=True)

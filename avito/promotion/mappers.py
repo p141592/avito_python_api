@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Mapping
+from datetime import datetime
 from typing import cast
 
 from avito.core.exceptions import ResponseMappingError
@@ -105,6 +106,17 @@ def _bool(payload: Payload, *keys: str) -> bool | None:
     return None
 
 
+def _datetime(payload: Payload, *keys: str) -> datetime | None:
+    for key in keys:
+        value = payload.get(key)
+        if isinstance(value, str):
+            try:
+                return datetime.fromisoformat(value)
+            except ValueError:
+                return None
+    return None
+
+
 def _items_payload(payload: Payload) -> list[Payload]:
     return _list(payload, "items", "result", "services", "orders", "campaigns")
 
@@ -153,7 +165,7 @@ def map_promotion_orders(payload: object) -> PromotionOrdersResult:
                 item_id=_int(item, "itemId", "itemID"),
                 service_code=_str(item, "serviceCode", "code"),
                 status=_str(item, "status"),
-                created_at=_str(item, "createdAt", "created_at"),
+                created_at=_datetime(item, "createdAt", "created_at"),
             )
             for item in _items_payload(data)
         ],
@@ -575,14 +587,14 @@ def _map_campaign(payload: Payload) -> CampaignInfo | None:
         campaign_type=_str(payload, "campaignType"),
         budget=_int(payload, "budget"),
         balance=_int(payload, "balance"),
-        create_time=_str(payload, "createTime"),
+        create_time=_datetime(payload, "createTime"),
         description=_str(payload, "description"),
-        finish_time=_str(payload, "finishTime"),
+        finish_time=_datetime(payload, "finishTime"),
         items_count=_int(payload, "itemsCount"),
-        start_time=_str(payload, "startTime"),
+        start_time=_datetime(payload, "startTime"),
         status_id=_int(payload, "statusId"),
         title=_str(payload, "title"),
-        update_time=_str(payload, "updateTime"),
+        update_time=_datetime(payload, "updateTime"),
         user_id=_int(payload, "userId"),
         version=_int(payload, "version"),
     )
@@ -656,7 +668,7 @@ def map_autostrategy_stat(payload: object) -> AutostrategyStat:
 
 def _map_autostrategy_stat_item(payload: Payload) -> AutostrategyStatItem:
     return AutostrategyStatItem(
-        date=_str(payload, "date"),
+        date=_datetime(payload, "date"),
         calls=_int(payload, "calls"),
         views=_int(payload, "views"),
         calls_forecast=_map_campaign_forecast_range(_mapping(payload, "callsForecast")),

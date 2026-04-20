@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from datetime import datetime
+from typing import TypeAlias, TypedDict
 
 from avito.core.serialization import SerializableModel
 
@@ -78,7 +80,7 @@ class PromotionOrderInfo(SerializableModel):
     item_id: int | None
     service_code: str | None
     status: str | None
-    created_at: str | None
+    created_at: datetime | None
 
 
 @dataclass(slots=True, frozen=True)
@@ -131,6 +133,31 @@ class PromotionOrderStatusResult(SerializableModel):
     errors: list[PromotionOrderError]
 
 
+class BbipItemInput(TypedDict):
+    """Входные параметры одного объявления для BBIP-методов."""
+
+    item_id: int
+    duration: int
+    price: int
+    old_price: int
+
+
+class TrxItemInput(TypedDict, total=False):
+    """Входные параметры одного объявления для TrxPromo-методов."""
+
+    item_id: int
+    commission: int
+    date_from: datetime
+    date_to: datetime | None
+
+
+class BidItemInput(TypedDict):
+    """Входные параметры одной ставки CPA-аукциона."""
+
+    item_id: int
+    price_penny: int
+
+
 @dataclass(slots=True, frozen=True)
 class BbipItem(SerializableModel):
     """Параметры BBIP по объявлению (прогноз или заявка)."""
@@ -179,6 +206,9 @@ class BbipForecastsResult(SerializableModel):
     """Результат прогноза BBIP."""
 
     items: list[BbipForecast]
+
+
+PromotionForecast: TypeAlias = BbipForecast
 
 
 @dataclass(slots=True, frozen=True)
@@ -280,8 +310,8 @@ class TrxItem(SerializableModel):
 
     item_id: int
     commission: int
-    date_from: str
-    date_to: str | None = None
+    date_from: datetime
+    date_to: datetime | None = None
 
 
 @dataclass(slots=True, frozen=True)
@@ -298,10 +328,10 @@ class CreateTrxPromotionApplyRequest:
             entry: dict[str, object] = {
                 "itemID": item.item_id,
                 "commission": item.commission,
-                "dateFrom": item.date_from,
+                "dateFrom": item.date_from.isoformat(),
             }
             if item.date_to is not None:
-                entry["dateTo"] = item.date_to
+                entry["dateTo"] = item.date_to.isoformat()
             items_payload.append(entry)
         return {"items": items_payload}
 
@@ -592,8 +622,8 @@ class CreateAutostrategyBudgetRequest:
     """Запрос расчета бюджета кампании."""
 
     campaign_type: str
-    start_time: str | None = None
-    finish_time: str | None = None
+    start_time: datetime | None = None
+    finish_time: datetime | None = None
     items: list[int] | None = None
 
     def to_payload(self) -> dict[str, object]:
@@ -601,9 +631,9 @@ class CreateAutostrategyBudgetRequest:
 
         payload: dict[str, object] = {"campaignType": self.campaign_type}
         if self.start_time is not None:
-            payload["startTime"] = self.start_time
+            payload["startTime"] = self.start_time.isoformat()
         if self.finish_time is not None:
-            payload["finishTime"] = self.finish_time
+            payload["finishTime"] = self.finish_time.isoformat()
         if self.items is not None:
             payload["items"] = list(self.items)
         return payload
@@ -624,14 +654,14 @@ class CampaignInfo(SerializableModel):
     campaign_type: str | None
     budget: int | None
     balance: int | None
-    create_time: str | None
+    create_time: datetime | None
     description: str | None
-    finish_time: str | None
+    finish_time: datetime | None
     items_count: int | None
-    start_time: str | None
+    start_time: datetime | None
     status_id: int | None
     title: str | None
-    update_time: str | None
+    update_time: datetime | None
     user_id: int | None
     version: int | None
 
@@ -696,9 +726,9 @@ class CreateAutostrategyCampaignRequest:
     budget_real: int | None = None
     calc_id: int | None = None
     description: str | None = None
-    finish_time: str | None = None
+    finish_time: datetime | None = None
     items: list[int] | None = None
-    start_time: str | None = None
+    start_time: datetime | None = None
 
     def to_payload(self) -> dict[str, object]:
         """Сериализует запрос создания кампании."""
@@ -718,11 +748,11 @@ class CreateAutostrategyCampaignRequest:
         if self.description is not None:
             payload["description"] = self.description
         if self.finish_time is not None:
-            payload["finishTime"] = self.finish_time
+            payload["finishTime"] = self.finish_time.isoformat()
         if self.items is not None:
             payload["items"] = list(self.items)
         if self.start_time is not None:
-            payload["startTime"] = self.start_time
+            payload["startTime"] = self.start_time.isoformat()
         return payload
 
 
@@ -735,9 +765,9 @@ class UpdateAutostrategyCampaignRequest:
     budget: int | None = None
     calc_id: int | None = None
     description: str | None = None
-    finish_time: str | None = None
+    finish_time: datetime | None = None
     items: list[int] | None = None
-    start_time: str | None = None
+    start_time: datetime | None = None
     title: str | None = None
 
     def to_payload(self) -> dict[str, object]:
@@ -754,11 +784,11 @@ class UpdateAutostrategyCampaignRequest:
         if self.description is not None:
             payload["description"] = self.description
         if self.finish_time is not None:
-            payload["finishTime"] = self.finish_time
+            payload["finishTime"] = self.finish_time.isoformat()
         if self.items is not None:
             payload["items"] = list(self.items)
         if self.start_time is not None:
-            payload["startTime"] = self.start_time
+            payload["startTime"] = self.start_time.isoformat()
         if self.title is not None:
             payload["title"] = self.title
         return payload
@@ -793,15 +823,15 @@ class StopAutostrategyCampaignRequest:
 class CampaignUpdateTimeFilter:
     """Фильтр кампаний по времени обновления."""
 
-    from_time: str | None = None
-    to_time: str | None = None
+    from_time: datetime | None = None
+    to_time: datetime | None = None
 
     def to_payload(self) -> dict[str, object]:
         payload: dict[str, object] = {}
         if self.from_time is not None:
-            payload["from"] = self.from_time
+            payload["from"] = self.from_time.isoformat()
         if self.to_time is not None:
-            payload["to"] = self.to_time
+            payload["to"] = self.to_time.isoformat()
         return payload
 
 
@@ -870,7 +900,7 @@ class GetAutostrategyStatRequest:
 class AutostrategyStatItem(SerializableModel):
     """Статистика кампании за день."""
 
-    date: str | None
+    date: datetime | None
     calls: int | None
     views: int | None
     calls_forecast: CampaignForecastRange | None = None
