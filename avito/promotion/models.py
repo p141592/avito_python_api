@@ -5,7 +5,6 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from datetime import datetime
 from typing import TypeAlias, TypedDict
-import warnings
 
 from avito.core.serialization import SerializableModel
 
@@ -214,11 +213,7 @@ class BbipForecastsResult(SerializableModel):
     items: list[BbipForecast]
 
 
-warnings.warn(
-    "PromotionForecast устарел и будет удалён. Используйте BbipForecast.",
-    DeprecationWarning,
-    stacklevel=2,
-)
+# deprecated: используйте BbipForecast напрямую
 PromotionForecast: TypeAlias = BbipForecast
 
 

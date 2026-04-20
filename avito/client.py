@@ -184,15 +184,9 @@ class AvitoClient:
 
         return ChatWebhook(self.transport)
 
-    def chat_media(
-        self,
-        media_id: int | str | None = None,
-        *,
-        user_id: int | str | None = None,
-    ) -> ChatMedia:
+    def chat_media(self, *, user_id: int | str | None = None) -> ChatMedia:
         """Создает доменный объект медиа мессенджера."""
 
-        _ = media_id
         return ChatMedia(self.transport, user_id=user_id)
 
     def special_offer_campaign(self, campaign_id: int | str | None = None) -> SpecialOfferCampaign:
@@ -230,10 +224,9 @@ class AvitoClient:
 
         return AutostrategyCampaign(self.transport, campaign_id=campaign_id)
 
-    def order(self, order_id: int | str | None = None) -> Order:
+    def order(self) -> Order:
         """Создает доменный объект заказа."""
 
-        _ = order_id
         return Order(self.transport)
 
     def order_label(self, task_id: int | str | None = None) -> OrderLabel:
@@ -241,16 +234,14 @@ class AvitoClient:
 
         return OrderLabel(self.transport, task_id=task_id)
 
-    def delivery_order(self, order_id: int | str | None = None) -> DeliveryOrder:
+    def delivery_order(self) -> DeliveryOrder:
         """Создает доменный объект доставки."""
 
-        _ = order_id
         return DeliveryOrder(self.transport)
 
-    def sandbox_delivery(self, sandbox_id: int | str | None = None) -> SandboxDelivery:
+    def sandbox_delivery(self) -> SandboxDelivery:
         """Создает доменный объект песочницы доставки."""
 
-        _ = sandbox_id
         return SandboxDelivery(self.transport)
 
     def delivery_task(self, task_id: int | str | None = None) -> DeliveryTask:
@@ -258,10 +249,9 @@ class AvitoClient:
 
         return DeliveryTask(self.transport, task_id=task_id)
 
-    def stock(self, stock_id: int | str | None = None) -> Stock:
+    def stock(self) -> Stock:
         """Создает доменный объект остатков."""
 
-        _ = stock_id
         return Stock(self.transport)
 
     def vacancy(self, vacancy_id: int | str | None = None) -> Vacancy:
@@ -269,10 +259,9 @@ class AvitoClient:
 
         return Vacancy(self.transport, vacancy_id=vacancy_id)
 
-    def application(self, application_id: int | str | None = None) -> Application:
+    def application(self) -> Application:
         """Создает доменный объект отклика."""
 
-        _ = application_id
         return Application(self.transport)
 
     def resume(self, resume_id: int | str | None = None) -> Resume:
@@ -290,10 +279,9 @@ class AvitoClient:
 
         return JobDictionary(self.transport, dictionary_id=dictionary_id)
 
-    def cpa_lead(self, lead_id: int | str | None = None) -> CpaLead:
+    def cpa_lead(self) -> CpaLead:
         """Создает доменный объект CPA-лида."""
 
-        _ = lead_id
         return CpaLead(self.transport)
 
     def cpa_chat(self, chat_id: int | str | None = None) -> CpaChat:
@@ -301,10 +289,9 @@ class AvitoClient:
 
         return CpaChat(self.transport, action_id=chat_id)
 
-    def cpa_call(self, call_id: int | str | None = None) -> CpaCall:
+    def cpa_call(self) -> CpaCall:
         """Создает доменный объект CPA-звонка."""
 
-        _ = call_id
         return CpaCall(self.transport)
 
     def cpa_archive(self, call_id: int | str | None = None) -> CpaArchive:
@@ -327,10 +314,9 @@ class AvitoClient:
 
         return AutotekaReport(self.transport, report_id=report_id)
 
-    def autoteka_monitoring(self, monitoring_id: int | str | None = None) -> AutotekaMonitoring:
+    def autoteka_monitoring(self) -> AutotekaMonitoring:
         """Создает доменный объект мониторинга Автотеки."""
 
-        _ = monitoring_id
         return AutotekaMonitoring(self.transport)
 
     def autoteka_scoring(self, scoring_id: int | str | None = None) -> AutotekaScoring:
@@ -338,10 +324,9 @@ class AvitoClient:
 
         return AutotekaScoring(self.transport, scoring_id=scoring_id)
 
-    def autoteka_valuation(self, valuation_id: int | str | None = None) -> AutotekaValuation:
+    def autoteka_valuation(self) -> AutotekaValuation:
         """Создает доменный объект оценки Автотеки."""
 
-        _ = valuation_id
         return AutotekaValuation(self.transport)
 
     def realty_listing(
@@ -384,10 +369,9 @@ class AvitoClient:
 
         return RealtyAnalyticsReport(self.transport, item_id=item_id, user_id=user_id)
 
-    def review(self, review_id: int | str | None = None) -> Review:
+    def review(self) -> Review:
         """Создает доменный объект отзыва."""
 
-        _ = review_id
         return Review(self.transport)
 
     def review_answer(self, answer_id: int | str | None = None) -> ReviewAnswer:
@@ -395,10 +379,9 @@ class AvitoClient:
 
         return ReviewAnswer(self.transport, answer_id=answer_id)
 
-    def rating_profile(self, profile_id: int | str | None = None) -> RatingProfile:
+    def rating_profile(self) -> RatingProfile:
         """Создает доменный объект рейтингового профиля."""
 
-        _ = profile_id
         return RatingProfile(self.transport)
 
     def tariff(self, tariff_id: int | str | None = None) -> Tariff:

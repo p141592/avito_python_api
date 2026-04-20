@@ -63,7 +63,7 @@ class AvitoError(Exception):
             return
 
         if name in self.__dataclass_fields__:
-            raise FrozenInstanceError(f"cannot assign to field {name!r}")
+            raise FrozenInstanceError(f"нельзя присвоить значение полю {name!r}")
 
         object.__setattr__(self, name, value)
 

@@ -4,7 +4,6 @@ from __future__ import annotations
 
 from base64 import b64encode
 from dataclasses import dataclass
-from typing import Any
 
 from avito.core import BinaryResponse
 from avito.core.serialization import SerializableModel
@@ -209,7 +208,7 @@ class CpaAudioRecord:
 
         return self.binary.filename
 
-    def to_dict(self) -> dict[str, Any]:
+    def to_dict(self) -> dict[str, object]:
         """Сериализует бинарную запись без transport-объекта."""
 
         return {
@@ -218,7 +217,7 @@ class CpaAudioRecord:
             "content_base64": b64encode(self.binary.content).decode("ascii"),
         }
 
-    def model_dump(self) -> dict[str, Any]:
+    def model_dump(self) -> dict[str, object]:
         return self.to_dict()
 
 
@@ -276,7 +275,7 @@ class CallTrackingRecord:
 
         return self.binary.filename
 
-    def to_dict(self) -> dict[str, Any]:
+    def to_dict(self) -> dict[str, object]:
         """Сериализует бинарную запись без transport-объекта."""
 
         return {
@@ -285,7 +284,7 @@ class CallTrackingRecord:
             "content_base64": b64encode(self.binary.content).decode("ascii"),
         }
 
-    def model_dump(self) -> dict[str, Any]:
+    def model_dump(self) -> dict[str, object]:
         return self.to_dict()
 
 
