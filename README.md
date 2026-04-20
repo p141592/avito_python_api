@@ -75,14 +75,14 @@ client = AvitoClient.from_env()
 - `AVITO_USER_ID`
 - `AVITO_AUTH__CLIENT_ID`, alias: `AVITO_CLIENT_ID`
 - `AVITO_AUTH__CLIENT_SECRET`, alias: `AVITO_CLIENT_SECRET`
-- `AVITO_AUTH__REFRESH_TOKEN`, alias: `AVITO_REFRESH_TOKEN`, `REFRESH_TOKEN`
-- `AVITO_AUTH__SCOPE`, alias: `AVITO_SCOPE`, `SCOPE`
-- `AVITO_AUTH__TOKEN_URL`, alias: `AVITO_TOKEN_URL`, `TOKEN_URL`
-- `AVITO_AUTH__ALTERNATE_TOKEN_URL`, alias: `AVITO_ALTERNATE_TOKEN_URL`, `ALTERNATE_TOKEN_URL`
-- `AVITO_AUTH__AUTOTEKA_TOKEN_URL`, alias: `AVITO_AUTOTEKA_TOKEN_URL`, `AUTOTEKA_TOKEN_URL`
-- `AVITO_AUTH__AUTOTEKA_CLIENT_ID`, alias: `AVITO_AUTOTEKA_CLIENT_ID`, `AUTOTEKA_CLIENT_ID`
-- `AVITO_AUTH__AUTOTEKA_CLIENT_SECRET`, alias: `AVITO_AUTOTEKA_CLIENT_SECRET`, `AUTOTEKA_CLIENT_SECRET`
-- `AVITO_AUTH__AUTOTEKA_SCOPE`, alias: `AVITO_AUTOTEKA_SCOPE`, `AUTOTEKA_SCOPE`
+- `AVITO_AUTH__REFRESH_TOKEN`, alias: `AVITO_REFRESH_TOKEN`
+- `AVITO_AUTH__SCOPE`, alias: `AVITO_SCOPE`
+- `AVITO_AUTH__TOKEN_URL`, alias: `AVITO_TOKEN_URL`
+- `AVITO_AUTH__ALTERNATE_TOKEN_URL`, alias: `AVITO_ALTERNATE_TOKEN_URL`
+- `AVITO_AUTH__AUTOTEKA_TOKEN_URL`, alias: `AVITO_AUTOTEKA_TOKEN_URL`
+- `AVITO_AUTH__AUTOTEKA_CLIENT_ID`, alias: `AVITO_AUTOTEKA_CLIENT_ID`
+- `AVITO_AUTH__AUTOTEKA_CLIENT_SECRET`, alias: `AVITO_AUTOTEKA_CLIENT_SECRET`
+- `AVITO_AUTH__AUTOTEKA_SCOPE`, alias: `AVITO_AUTOTEKA_SCOPE`
 
 Правила resolution:
 
@@ -122,7 +122,9 @@ from avito.messenger import UploadImageFile
 
 with AvitoClient() as avito:
     chats = avito.chat(user_id=123).list()
-    message = avito.chat(chat_id="chat-1", user_id=123).send_message(message="Здравствуйте")
+    message = avito.chat_message(chat_id="chat-1", user_id=123).send_message(
+        message="Здравствуйте"
+    )
     uploaded = avito.chat_media(user_id=123).upload_images(
         files=[
             UploadImageFile(
@@ -142,18 +144,14 @@ with AvitoClient() as avito:
 from avito import AvitoClient
 from datetime import datetime
 
-from avito.promotion.models import CreateAutostrategyBudgetRequest
-
 with AvitoClient() as avito:
     services = avito.promotion_order().list_orders()
     forecast = avito.bbip_promotion(item_id=42).get_forecasts(items=[])
     budget = avito.autostrategy_campaign().create_budget(
-        request=CreateAutostrategyBudgetRequest(
-            campaign_type="AS",
-            start_time="2026-04-20T00:00:00Z",
-            finish_time="2026-04-27T00:00:00Z",
-            items=[42, 43],
-        )
+        campaign_type="AS",
+        start_time="2026-04-20T00:00:00Z",
+        finish_time="2026-04-27T00:00:00Z",
+        items=[42, 43],
     )
     campaign = avito.autostrategy_campaign(campaign_id=15).get()
     campaigns = avito.autostrategy_campaign().list(
