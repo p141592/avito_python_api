@@ -38,8 +38,8 @@ jobs:
           poetry run coverage report
           poetry run coverage xml
 
-      - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v5
+      - name: Upload coverage to Coveralls
+        uses: coverallsapp/github-action@v2
         with:
-          files: ./coverage.xml
-          fail_ci_if_error: false
+          file: ./coverage.xml
+          github-token: ${{ secrets.GITHUB_TOKEN }}
