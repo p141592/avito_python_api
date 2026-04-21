@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Sequence
 from dataclasses import dataclass
 
 from avito.core import ValidationError
@@ -20,6 +21,7 @@ from avito.jobs.models import (
     ApplicationIdsResult,
     ApplicationsResult,
     ApplicationStatesResult,
+    ApplicationViewedItem,
     ApplicationViewedRequest,
     JobActionResult,
     JobDictionariesResult,
@@ -51,8 +53,9 @@ class Vacancy(DomainObject):
     vacancy_id: int | str | None = None
     user_id: int | str | None = None
 
-    def create(self, *, request: VacancyCreateRequest, version: int = 2) -> JobActionResult:
+    def create(self, *, title: str, version: int = 2) -> JobActionResult:
         client = VacanciesClient(self.transport)
+        request = VacancyCreateRequest(title=title)
         if version == 1:
             return client.create_classic(request)
         return client.create(request)
@@ -101,11 +104,11 @@ class Vacancy(DomainObject):
             query=query,
         )
 
-    def get_by_ids(self, *, request: VacancyIdsRequest) -> VacanciesResult:
-        return VacanciesClient(self.transport).get_by_ids(request)
+    def get_by_ids(self, *, ids: Sequence[int]) -> VacanciesResult:
+        return VacanciesClient(self.transport).get_by_ids(VacancyIdsRequest(ids=list(ids)))
 
-    def get_statuses(self, *, request: VacancyIdsRequest) -> VacancyStatusesResult:
-        return VacanciesClient(self.transport).get_statuses(request)
+    def get_statuses(self, *, ids: Sequence[int]) -> VacancyStatusesResult:
+        return VacanciesClient(self.transport).get_statuses(VacancyIdsRequest(ids=list(ids)))
 
     def update_auto_renewal(
         self, *, request: VacancyAutoRenewalRequest, vacancy_uuid: str | None = None
@@ -127,8 +130,10 @@ class Application(DomainObject):
 
     user_id: int | str | None = None
 
-    def apply(self, *, request: ApplicationActionRequest) -> JobActionResult:
-        return ApplicationsClient(self.transport).apply_actions(request)
+    def apply(self, *, ids: Sequence[str], action: str) -> JobActionResult:
+        return ApplicationsClient(self.transport).apply_actions(
+            ApplicationActionRequest(ids=list(ids), action=action)
+        )
 
     def list(
         self,
@@ -146,8 +151,10 @@ class Application(DomainObject):
     def get_states(self) -> ApplicationStatesResult:
         return ApplicationsClient(self.transport).get_states()
 
-    def update(self, *, request: ApplicationViewedRequest) -> JobActionResult:
-        return ApplicationsClient(self.transport).set_is_viewed(request)
+    def update(self, *, applies: Sequence[ApplicationViewedItem]) -> JobActionResult:
+        return ApplicationsClient(self.transport).set_is_viewed(
+            ApplicationViewedRequest(applies=list(applies))
+        )
 
 
 @dataclass(slots=True, frozen=True)
@@ -188,8 +195,8 @@ class JobWebhook(DomainObject):
     def list(self) -> JobWebhooksResult:
         return WebhookClient(self.transport).list_webhooks()
 
-    def update(self, *, request: JobWebhookUpdateRequest) -> JobWebhookInfo:
-        return WebhookClient(self.transport).put_webhook(request)
+    def update(self, *, url: str) -> JobWebhookInfo:
+        return WebhookClient(self.transport).put_webhook(JobWebhookUpdateRequest(url=url))
 
     def delete(self, *, url: str | None = None) -> JobActionResult:
         return WebhookClient(self.transport).delete_webhook(url=url)

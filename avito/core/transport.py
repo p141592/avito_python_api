@@ -52,6 +52,17 @@ FileValue = (
 RequestFiles = Mapping[str, FileValue]
 
 
+def build_httpx_timeout(timeouts: ApiTimeouts) -> httpx.Timeout:
+    """Преобразует SDK-конфигурацию таймаутов в `httpx.Timeout`."""
+
+    return httpx.Timeout(
+        connect=timeouts.connect,
+        read=timeouts.read,
+        write=timeouts.write,
+        pool=timeouts.pool,
+    )
+
+
 class Transport:
     """Выполняет HTTP-запросы, применяет retry и маппит ошибки API."""
 
@@ -68,7 +79,7 @@ class Transport:
         self._retry_policy = settings.retry_policy
         self._client = client or httpx.Client(
             base_url=settings.base_url.rstrip("/"),
-            timeout=self._build_timeout(settings.timeouts),
+            timeout=build_httpx_timeout(settings.timeouts),
         )
         self._sleep = sleep
 
@@ -109,7 +120,7 @@ class Transport:
 
         normalized_path = self._normalize_path(path)
         request_headers = self._merge_headers(context=context, headers=headers)
-        timeout = self._build_timeout(context.timeout or self._settings.timeouts)
+        timeout = build_httpx_timeout(context.timeout or self._settings.timeouts)
         attempt = 0
         unauthorized_refresh_used = False
 
@@ -502,13 +513,4 @@ class Transport:
             return decoded_value
         return filename
 
-    def _build_timeout(self, timeouts: ApiTimeouts) -> httpx.Timeout:
-        return httpx.Timeout(
-            connect=timeouts.connect,
-            read=timeouts.read,
-            write=timeouts.write,
-            pool=timeouts.pool,
-        )
-
-
-__all__ = ("Transport",)
+__all__ = ("Transport", "build_httpx_timeout")

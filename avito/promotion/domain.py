@@ -86,6 +86,11 @@ def _preview_result(
     )
 
 
+def _validate_optional_datetime(name: str, value: datetime | None) -> None:
+    if value is not None and not isinstance(value, datetime):
+        raise ValidationError(f"`{name}` должен быть datetime.")
+
+
 @dataclass(slots=True, frozen=True)
 class PromotionOrder(DomainObject):
     """Доменный объект заявок и словарей promotion API."""
@@ -414,12 +419,14 @@ class AutostrategyCampaign(DomainObject):
         self,
         *,
         campaign_type: str,
-        start_time: str | None = None,
-        finish_time: str | None = None,
+        start_time: datetime | None = None,
+        finish_time: datetime | None = None,
         items: list[int] | None = None,
     ) -> AutostrategyBudget:
         """Рассчитывает бюджет кампании."""
 
+        _validate_optional_datetime("start_time", start_time)
+        _validate_optional_datetime("finish_time", finish_time)
         return AutostrategyClient(self.transport).create_budget(
             CreateAutostrategyBudgetRequest(
                 campaign_type=campaign_type,
@@ -439,12 +446,14 @@ class AutostrategyCampaign(DomainObject):
         budget_real: int | None = None,
         calc_id: int | None = None,
         description: str | None = None,
-        finish_time: str | None = None,
+        finish_time: datetime | None = None,
         items: list[int] | None = None,
-        start_time: str | None = None,
+        start_time: datetime | None = None,
     ) -> CampaignActionResult:
         """Создает новую кампанию."""
 
+        _validate_optional_datetime("start_time", start_time)
+        _validate_optional_datetime("finish_time", finish_time)
         return AutostrategyClient(self.transport).create_campaign(
             CreateAutostrategyCampaignRequest(
                 campaign_type=campaign_type,
@@ -468,13 +477,15 @@ class AutostrategyCampaign(DomainObject):
         budget: int | None = None,
         calc_id: int | None = None,
         description: str | None = None,
-        finish_time: str | None = None,
+        finish_time: datetime | None = None,
         items: list[int] | None = None,
-        start_time: str | None = None,
+        start_time: datetime | None = None,
         title: str | None = None,
     ) -> CampaignActionResult:
         """Редактирует кампанию."""
 
+        _validate_optional_datetime("start_time", start_time)
+        _validate_optional_datetime("finish_time", finish_time)
         return AutostrategyClient(self.transport).edit_campaign(
             UpdateAutostrategyCampaignRequest(
                 campaign_id=campaign_id or self._require_campaign_id(),

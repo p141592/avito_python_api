@@ -14,6 +14,8 @@ from avito.autoteka import (
     AutotekaValuation,
     AutotekaVehicle,
 )
+from avito.core import Transport
+from avito.core.types import ApiTimeouts
 from avito.cpa import CallTrackingCall, CpaArchive, CpaCall, CpaChat, CpaLead
 from avito.jobs import Application, JobDictionary, JobWebhook, Resume, Vacancy
 from avito.messenger import Chat, ChatMedia, ChatMessage, ChatWebhook, SpecialOfferCampaign
@@ -26,10 +28,9 @@ from avito.promotion import (
     TargetActionPricing,
     TrxPromotion,
 )
-from avito.realty import RealtyAnalyticsReport, RealtyBooking, RealtyListing, RealtyPricing
 from avito.ratings import RatingProfile, Review, ReviewAnswer
+from avito.realty import RealtyAnalyticsReport, RealtyBooking, RealtyListing, RealtyPricing
 from avito.tariffs import Tariff
-from avito.core import Transport
 
 
 def test_single_client_exposes_domain_factories() -> None:
@@ -135,3 +136,31 @@ def test_debug_info_and_context_manager_do_not_leak_secrets() -> None:
     assert token_http_client.is_closed is True
     assert alternate_http_client.is_closed is True
     assert autoteka_http_client.is_closed is True
+
+
+def test_auth_token_clients_use_explicit_sdk_timeouts() -> None:
+    settings = AvitoSettings(
+        base_url="https://api.avito.ru",
+        timeouts=ApiTimeouts(connect=2.5, read=11.0, write=13.0, pool=3.0),
+        auth=AuthSettings(client_id="client-id", client_secret="super-secret"),
+    )
+
+    client = AvitoClient(settings)
+    token_timeout = client.auth_provider.token_flow().client.timeout
+    alternate_timeout = client.auth_provider.alternate_token_flow().client.timeout
+    autoteka_timeout = client.auth_provider.autoteka_token_client.client.timeout
+
+    assert token_timeout.connect == 2.5
+    assert token_timeout.read == 11.0
+    assert token_timeout.write == 13.0
+    assert token_timeout.pool == 3.0
+    assert alternate_timeout.connect == 2.5
+    assert alternate_timeout.read == 11.0
+    assert alternate_timeout.write == 13.0
+    assert alternate_timeout.pool == 3.0
+    assert autoteka_timeout.connect == 2.5
+    assert autoteka_timeout.read == 11.0
+    assert autoteka_timeout.write == 13.0
+    assert autoteka_timeout.pool == 3.0
+
+    client.close()

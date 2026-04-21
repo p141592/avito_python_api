@@ -14,6 +14,7 @@ from avito.realty.models import (
     RealtyBookingsQuery,
     RealtyBookingsResult,
     RealtyBookingsUpdateRequest,
+    RealtyInterval,
     RealtyIntervalsRequest,
     RealtyMarketPriceInfo,
     RealtyPricesUpdateRequest,
@@ -27,8 +28,18 @@ class RealtyListing(DomainObject):
     item_id: int | str | None = None
     user_id: int | str | None = None
 
-    def get_intervals(self, *, request: RealtyIntervalsRequest) -> RealtyActionResult:
-        return ShortTermRentClient(self.transport).get_intervals(request)
+    def get_intervals(
+        self,
+        *,
+        intervals: list[RealtyInterval],
+        item_id: int | None = None,
+    ) -> RealtyActionResult:
+        return ShortTermRentClient(self.transport).get_intervals(
+            RealtyIntervalsRequest(
+                item_id=item_id or int(self._require_item_id()),
+                intervals=intervals,
+            )
+        )
 
     def update_base_params(
         self, *, request: RealtyBaseParamsUpdateRequest, item_id: int | str | None = None

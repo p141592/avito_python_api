@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from datetime import datetime
-from typing import TypeAlias, TypedDict
+from typing import TypedDict
 
 from avito.core.serialization import SerializableModel
 
@@ -196,7 +196,7 @@ class CreateBbipForecastsRequest:
 
 
 @dataclass(slots=True, frozen=True)
-class BbipForecast(SerializableModel):
+class PromotionForecast(SerializableModel):
     """Прогноз BBIP по объявлению."""
 
     item_id: int | None
@@ -210,11 +210,7 @@ class BbipForecast(SerializableModel):
 class BbipForecastsResult(SerializableModel):
     """Результат прогноза BBIP."""
 
-    items: list[BbipForecast]
-
-
-# deprecated: используйте BbipForecast напрямую
-PromotionForecast: TypeAlias = BbipForecast
+    items: list[PromotionForecast]
 
 
 @dataclass(slots=True, frozen=True)

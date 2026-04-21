@@ -7,11 +7,17 @@ import httpx
 import pytest
 
 from avito.ads import AdPromotion
-from avito.core import ResponseMappingError
-from avito.promotion import AutostrategyCampaign, BbipPromotion, CpaAuction, PromotionOrder, TargetActionPricing, TrxPromotion
+from avito.core import ResponseMappingError, ValidationError
+from avito.promotion import (
+    AutostrategyCampaign,
+    BbipPromotion,
+    CpaAuction,
+    PromotionOrder,
+    TargetActionPricing,
+    TrxPromotion,
+)
 from avito.promotion.models import (
     BbipItem,
-    CreateItemBid,
 )
 from tests.helpers.transport import make_transport
 
@@ -131,6 +137,29 @@ def test_autostrategy_flows() -> None:
         updated_to=datetime.fromisoformat("2026-04-30T00:00:00+00:00"),
     ).total_count == 1
     assert campaign.get_stat().totals is not None
+
+
+def test_autostrategy_datetime_parameters_fail_fast_on_invalid_type() -> None:
+    campaign = AutostrategyCampaign(
+        make_transport(httpx.MockTransport(lambda request: httpx.Response(500))),
+        campaign_id=77,
+    )
+
+    with pytest.raises(ValidationError, match="`start_time` должен быть datetime."):
+        campaign.create_budget(campaign_type="AS", start_time="2026-04-20T00:00:00+00:00")  # type: ignore[arg-type]
+
+    with pytest.raises(ValidationError, match="`finish_time` должен быть datetime."):
+        campaign.create(
+            campaign_type="AS",
+            title="Весенняя кампания",
+            finish_time="2026-04-27T00:00:00+00:00",  # type: ignore[arg-type]
+        )
+
+    with pytest.raises(ValidationError, match="`start_time` должен быть datetime."):
+        campaign.update(
+            version=3,
+            start_time="2026-04-20T00:00:00+00:00",  # type: ignore[arg-type]
+        )
 
 
 def test_promotion_write_methods_keep_same_payload_in_dry_run_mode() -> None:

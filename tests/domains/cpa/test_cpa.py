@@ -6,10 +6,6 @@ import httpx
 
 from avito.cpa import CallTrackingCall, CpaArchive, CpaCall, CpaChat, CpaLead
 from avito.cpa.models import (
-    CallTrackingCallsRequest,
-    CpaCallByIdRequest,
-    CpaCallComplaintRequest,
-    CpaCallsByTimeRequest,
     CpaChatsByTimeRequest,
     CpaLeadComplaintRequest,
     CpaPhonesFromChatsRequest,
@@ -61,12 +57,12 @@ def test_cpa_calls_archive_and_balance_flows() -> None:
     cpa_lead = CpaLead(transport)
     archive = CpaArchive(transport, call_id="2001")
 
-    assert cpa_call.list(request=CpaCallsByTimeRequest(date_time_from="2026-04-18T00:00:00+03:00", date_time_to="2026-04-18T23:59:59+03:00")).items[0].record_url == "https://example.com/record-2001.mp3"
-    assert cpa_call.create_complaint(request=CpaCallComplaintRequest(call_id=2001, reason="spam")).success is True
+    assert cpa_call.list(date_time_from="2026-04-18T00:00:00+03:00", date_time_to="2026-04-18T23:59:59+03:00").items[0].record_url == "https://example.com/record-2001.mp3"
+    assert cpa_call.create_complaint(call_id=2001, reason="spam").success is True
     assert cpa_lead.create_complaint_by_action_id(request=CpaLeadComplaintRequest(action_id="act-1", reason="duplicate")).success is True
     assert cpa_lead.get_balance_info().balance == -5000
     assert archive.get_balance_info().advance == 1000
-    assert archive.get_call_by_id(request=CpaCallByIdRequest(call_id=2001)).call_id == "2001"
+    assert archive.get_call_by_id(call_id=2001).call_id == "2001"
     assert archive.get_call().binary.content == audio_bytes
 
 
@@ -82,5 +78,5 @@ def test_calltracking_flows() -> None:
 
     call = CallTrackingCall(make_transport(httpx.MockTransport(handler)), call_id="7001")
     assert call.get().call.call_id == "7001"
-    assert call.list(request=CallTrackingCallsRequest(date_time_from="2026-04-01T00:00:00Z", date_time_to="2026-04-18T23:59:59Z", limit=100, offset=0)).items[0].buyer_phone == "+79990000100"
+    assert call.list(date_time_from="2026-04-01T00:00:00Z", date_time_to="2026-04-18T23:59:59Z", limit=100, offset=0).items[0].buyer_phone == "+79990000100"
     assert call.download().binary.content == audio_bytes

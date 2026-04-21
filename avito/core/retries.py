@@ -4,8 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from pathlib import Path
-from typing import ClassVar
-from typing import Literal
+from typing import ClassVar, Literal
 
 from avito._env import (
     parse_env_bool,
@@ -47,17 +46,42 @@ class RetryPolicy:
         """Загружает retry-политику из process environment и optional `.env` файла."""
 
         resolved_values = resolve_env_aliases(cls.ENV_ALIASES, env_file=env_file)
-        parsed_values: dict[str, object] = {}
+        defaults = cls()
+        max_attempts = defaults.max_attempts
+        backoff_factor = defaults.backoff_factor
+        retryable_methods = defaults.retryable_methods
+        retry_on_rate_limit = defaults.retry_on_rate_limit
+        retry_on_server_error = defaults.retry_on_server_error
+        retry_on_transport_error = defaults.retry_on_transport_error
+        max_rate_limit_wait_seconds = defaults.max_rate_limit_wait_seconds
         for field_name, value in resolved_values.items():
             if field_name == "max_attempts":
-                parsed_values[field_name] = parse_env_int(value, field_name=field_name)
+                max_attempts = parse_env_int(value, field_name=field_name)
             elif field_name in {"backoff_factor", "max_rate_limit_wait_seconds"}:
-                parsed_values[field_name] = parse_env_float(value, field_name=field_name)
+                parsed_float = parse_env_float(value, field_name=field_name)
+                if field_name == "backoff_factor":
+                    backoff_factor = parsed_float
+                else:
+                    max_rate_limit_wait_seconds = parsed_float
             elif field_name == "retryable_methods":
-                parsed_values[field_name] = parse_env_str_tuple(value, field_name=field_name)
+                retryable_methods = parse_env_str_tuple(value, field_name=field_name)
             else:
-                parsed_values[field_name] = parse_env_bool(value, field_name=field_name)
-        return cls(**parsed_values)
+                parsed_bool = parse_env_bool(value, field_name=field_name)
+                if field_name == "retry_on_rate_limit":
+                    retry_on_rate_limit = parsed_bool
+                elif field_name == "retry_on_server_error":
+                    retry_on_server_error = parsed_bool
+                else:
+                    retry_on_transport_error = parsed_bool
+        return cls(
+            max_attempts=max_attempts,
+            backoff_factor=backoff_factor,
+            retryable_methods=retryable_methods,
+            retry_on_rate_limit=retry_on_rate_limit,
+            retry_on_server_error=retry_on_server_error,
+            retry_on_transport_error=retry_on_transport_error,
+            max_rate_limit_wait_seconds=max_rate_limit_wait_seconds,
+        )
 
     def is_retryable_method(self, method: str, *, explicit_retry: bool = False) -> bool:
         """Определяет, можно ли повторять запрос указанного HTTP-метода."""

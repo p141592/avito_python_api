@@ -4,21 +4,15 @@ import json
 
 import httpx
 
-from avito.autoteka import AutotekaMonitoring, AutotekaReport, AutotekaScoring, AutotekaValuation, AutotekaVehicle
+from avito.autoteka import (
+    AutotekaMonitoring,
+    AutotekaReport,
+    AutotekaScoring,
+    AutotekaValuation,
+    AutotekaVehicle,
+)
 from avito.autoteka.models import (
-    CatalogResolveRequest,
-    ExternalItemPreviewRequest,
-    ItemIdRequest,
-    LeadsRequest,
-    MonitoringBucketRequest,
     MonitoringEventsQuery,
-    PlateNumberRequest,
-    PreviewReportRequest,
-    RegNumberRequest,
-    TeaserCreateRequest,
-    ValuationBySpecificationRequest,
-    VehicleIdRequest,
-    VinRequest,
 )
 from tests.helpers.transport import make_transport
 
@@ -54,17 +48,17 @@ def test_autoteka_vehicle_flows() -> None:
 
     vehicle = AutotekaVehicle(make_transport(httpx.MockTransport(handler)), vehicle_id="77")
 
-    assert vehicle.resolve_catalog(request=CatalogResolveRequest(brand_id=1)).items[0].values[0].label == "Audi"
-    assert vehicle.get_leads(request=LeadsRequest(limit=1)).last_id == 321
-    assert vehicle.create_preview_by_vin(request=VinRequest(vin="VIN-1")).preview_id == "77"
-    assert vehicle.create_preview_by_item_id(request=ItemIdRequest(item_id=901)).preview_id == "78"
-    assert vehicle.create_preview_by_reg_number(request=RegNumberRequest(reg_number="A123AA77")).preview_id == "79"
-    assert vehicle.create_preview_by_external_item(request=ExternalItemPreviewRequest(item_id="ext-1", site="cars.example")).preview_id == "80"
+    assert vehicle.resolve_catalog(brand_id=1).items[0].values[0].label == "Audi"
+    assert vehicle.get_leads(limit=1).last_id == 321
+    assert vehicle.create_preview_by_vin(vin="VIN-1").preview_id == "77"
+    assert vehicle.create_preview_by_item_id(item_id=901).preview_id == "78"
+    assert vehicle.create_preview_by_reg_number(reg_number="A123AA77").preview_id == "79"
+    assert vehicle.create_preview_by_external_item(item_id="ext-1", site="cars.example").preview_id == "80"
     assert vehicle.get_preview().vehicle_id == "VIN-1"
-    assert vehicle.create_specification_by_plate_number(request=PlateNumberRequest(plate_number="A123AA77")).specification_id == "501"
-    assert vehicle.create_specification_by_vehicle_id(request=VehicleIdRequest(vehicle_id="VIN-1")).specification_id == "502"
+    assert vehicle.create_specification_by_plate_number(plate_number="A123AA77").specification_id == "501"
+    assert vehicle.create_specification_by_vehicle_id(vehicle_id="VIN-1").specification_id == "502"
     assert vehicle.get_specification_by_id(specification_id="501").status == "success"
-    assert vehicle.create_teaser(request=TeaserCreateRequest(vehicle_id="VIN-1")).teaser_id == "601"
+    assert vehicle.create_teaser(vehicle_id="VIN-1").teaser_id == "601"
     assert vehicle.get_teaser(teaser_id="601").brand == "Audi"
 
 
@@ -106,16 +100,16 @@ def test_autoteka_report_monitoring_scoring_and_valuation_flows() -> None:
     valuation = AutotekaValuation(transport)
 
     assert report.get_active_package().reports_remaining == 77
-    assert report.create_report(request=PreviewReportRequest(preview_id=77)).report_id == "701"
-    assert report.create_report_by_vehicle_id(request=VehicleIdRequest(vehicle_id="VIN-1")).report_id == "702"
+    assert report.create_report(preview_id=77).report_id == "701"
+    assert report.create_report_by_vehicle_id(vehicle_id="VIN-1").report_id == "702"
     assert report.list_reports().items[0].vehicle_id == "VIN-1"
     assert report.get_report().web_link == "https://autoteka/web/701"
-    assert report.create_sync_report_by_reg_number(request=RegNumberRequest(reg_number="A123AA77")).status == "success"
-    assert report.create_sync_report_by_vin(request=VinRequest(vin="VIN-1")).report_id == "704"
-    assert monitoring.create_monitoring_bucket_add(request=MonitoringBucketRequest(vehicles=["VIN-1", "bad-vin"])).invalid_vehicles[0].vehicle_id == "bad-vin"
+    assert report.create_sync_report_by_reg_number(reg_number="A123AA77").status == "success"
+    assert report.create_sync_report_by_vin(vin="VIN-1").report_id == "704"
+    assert monitoring.create_monitoring_bucket_add(vehicles=["VIN-1", "bad-vin"]).invalid_vehicles[0].vehicle_id == "bad-vin"
     assert monitoring.delete_bucket().success is True
-    assert monitoring.remove_bucket(request=MonitoringBucketRequest(vehicles=["VIN-1"])).success is True
+    assert monitoring.remove_bucket(vehicles=["VIN-1"]).success is True
     assert monitoring.get_monitoring_reg_actions(query=MonitoringEventsQuery(limit=10)).items[0].operation_code == 11
-    assert scoring.create_scoring_by_vehicle_id(request=VehicleIdRequest(vehicle_id="VIN-1")).scoring_id == "801"
+    assert scoring.create_scoring_by_vehicle_id(vehicle_id="VIN-1").scoring_id == "801"
     assert scoring.get_scoring_by_id().is_completed is True
-    assert valuation.get_valuation_by_specification(request=ValuationBySpecificationRequest(specification_id=501, mileage=30000)).avg_price_with_condition == 2100000
+    assert valuation.get_valuation_by_specification(specification_id=501, mileage=30000).avg_price_with_condition == 2100000

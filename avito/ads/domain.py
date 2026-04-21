@@ -41,10 +41,9 @@ from avito.ads.models import (
     VasPricesRequest,
     VasPricesResult,
 )
-from avito.core import PaginatedList, Transport, ValidationError
+from avito.core import PaginatedList, ValidationError
 from avito.core.domain import DomainObject
 from avito.core.validation import (
-    validate_non_empty,
     validate_non_empty_string,
     validate_string_items,
 )
@@ -250,7 +249,7 @@ class AdPromotion(DomainObject):
         validate_string_items("codes", codes)
         request = ApplyVasRequest(codes=codes)
         request_payload = request.to_payload()
-        target = {"item_id": item_id, "user_id": user_id}
+        target: dict[str, object] = {"item_id": item_id, "user_id": user_id}
         if dry_run:
             return _preview_result(
                 action="apply_vas",
@@ -275,7 +274,7 @@ class AdPromotion(DomainObject):
         validate_non_empty_string("package_code", package_code)
         request = ApplyVasPackageRequest(package_code=package_code)
         request_payload = request.to_payload()
-        target = {"item_id": item_id, "user_id": user_id}
+        target: dict[str, object] = {"item_id": item_id, "user_id": user_id}
         if dry_run:
             return _preview_result(
                 action="apply_vas_package",
@@ -300,7 +299,7 @@ class AdPromotion(DomainObject):
         validate_string_items("codes", codes)
         request = ApplyVasRequest(codes=codes)
         request_payload = request.to_payload()
-        target = {"item_id": item_id}
+        target: dict[str, object] = {"item_id": item_id}
         if dry_run:
             return _preview_result(
                 action="apply_vas_direct",

@@ -4,22 +4,9 @@ import json
 
 import httpx
 
-from avito.orders import DeliveryOrder, DeliveryTask, Order, OrderLabel, SandboxDelivery, Stock
+from avito.orders import DeliveryOrder, DeliveryTask, Order, OrderLabel, Stock
 from avito.orders.models import (
-    DeliveryAnnouncementRequest,
-    DeliveryParcelRequest,
-    DeliveryParcelResultRequest,
-    DeliveryParcelIdsRequest,
-    OrderAcceptReturnRequest,
-    OrderApplyTransitionRequest,
-    OrderConfirmationCodeRequest,
-    OrderCourierRangeRequest,
-    OrderLabelsRequest,
-    OrderMarkingsRequest,
-    OrderTrackingNumberRequest,
-    StockInfoRequest,
     StockUpdateEntry,
-    StockUpdateRequest,
 )
 from tests.helpers.transport import make_transport
 
@@ -47,13 +34,13 @@ def test_order_management_flows() -> None:
 
     order = Order(make_transport(httpx.MockTransport(handler)))
     assert order.list().items[0].buyer_name == "Иван"
-    assert order.update_markings(request=OrderMarkingsRequest(order_id="ord-1", codes=["abc"])).status == "marked"
-    assert order.apply(request=OrderApplyTransitionRequest(order_id="ord-1", transition="confirm")).status == "confirmed"
-    assert order.check_confirmation_code(request=OrderConfirmationCodeRequest(order_id="ord-1", code="1234")).status == "code-valid"
+    assert order.update_markings(order_id="ord-1", codes=["abc"]).status == "marked"
+    assert order.apply(order_id="ord-1", transition="confirm").status == "confirmed"
+    assert order.check_confirmation_code(order_id="ord-1", code="1234").status == "code-valid"
     assert order.get_courier_delivery_range().items[0].interval_id == "int-1"
-    assert order.set_courier_delivery_range(request=OrderCourierRangeRequest(order_id="ord-1", interval_id="int-1")).status == "range-set"
-    assert order.update_tracking_number(request=OrderTrackingNumberRequest(order_id="ord-1", tracking_number="TRK-1")).status == "tracking-set"
-    assert order.accept_return_order(request=OrderAcceptReturnRequest(order_id="ord-1", postal_office_id="ops-1")).status == "return-accepted"
+    assert order.set_courier_delivery_range(order_id="ord-1", interval_id="int-1").status == "range-set"
+    assert order.update_tracking_number(order_id="ord-1", tracking_number="TRK-1").status == "tracking-set"
+    assert order.accept_return_order(order_id="ord-1", postal_office_id="ops-1").status == "return-accepted"
 
 
 def test_labels_delivery_and_stock_flows() -> None:
@@ -88,17 +75,16 @@ def test_labels_delivery_and_stock_flows() -> None:
     transport = make_transport(httpx.MockTransport(handler))
     label = OrderLabel(transport, task_id="42")
     delivery = DeliveryOrder(transport)
-    sandbox = SandboxDelivery(transport)
     task = DeliveryTask(transport, task_id="51")
     stock = Stock(transport)
 
-    assert label.create(request=OrderLabelsRequest(order_ids=["ord-1"])).task_id == "42"
+    assert label.create(order_ids=["ord-1"]).task_id == "42"
     assert label.download().binary.content == pdf_bytes
-    assert delivery.create_announcement(request=DeliveryAnnouncementRequest(order_id="ord-1")).task_id == "11"
-    assert delivery.create(request=DeliveryParcelRequest(order_id="ord-1", parcel_id="par-1")).parcel_id == "par-1"
-    assert delivery.delete(request=DeliveryAnnouncementRequest(order_id="ord-1")).status == "announcement-cancelled"
-    assert delivery.create_change_parcel_result(request=DeliveryParcelResultRequest(parcel_id="par-1", result="ok")).status == "callback-accepted"
-    assert delivery.update_change_parcels(request=DeliveryParcelIdsRequest(parcel_ids=["par-1"])).status == "parcels-updated"
+    assert delivery.create_announcement(order_id="ord-1").task_id == "11"
+    assert delivery.create(order_id="ord-1", parcel_id="par-1").parcel_id == "par-1"
+    assert delivery.delete(order_id="ord-1").status == "announcement-cancelled"
+    assert delivery.create_change_parcel_result(parcel_id="par-1", result="ok").status == "callback-accepted"
+    assert delivery.update_change_parcels(parcel_ids=["par-1"]).status == "parcels-updated"
     assert task.get().status == "done"
-    assert stock.get(request=StockInfoRequest(item_ids=[123321])).items[0].quantity == 5
-    assert stock.update(request=StockUpdateRequest(stocks=[StockUpdateEntry(item_id=123321, quantity=7)])).items[0].success is True
+    assert stock.get(item_ids=[123321]).items[0].quantity == 5
+    assert stock.update(stocks=[StockUpdateEntry(item_id=123321, quantity=7)]).items[0].success is True

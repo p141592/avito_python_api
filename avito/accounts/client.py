@@ -15,9 +15,9 @@ from avito.accounts.mappers import (
     map_operations_history,
 )
 from avito.accounts.models import (
+    AccountActionResult,
     AccountBalance,
     AccountProfile,
-    AccountActionResult,
     AhUserStatus,
     CompanyPhonesResult,
     EmployeeItem,
@@ -26,7 +26,6 @@ from avito.accounts.models import (
     EmployeesResult,
     OperationRecord,
     OperationsHistoryRequest,
-    OperationsHistoryResult,
 )
 from avito.core import JsonPage, PaginatedList, Paginator, RequestContext, Transport
 from avito.core.mapping import request_public_model

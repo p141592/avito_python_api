@@ -27,18 +27,6 @@ class AvitoSettings:
     timeouts: ApiTimeouts = field(default_factory=ApiTimeouts)
     retry_policy: RetryPolicy = field(default_factory=RetryPolicy)
 
-    @property
-    def client_id(self) -> str | None:
-        """Возвращает `client_id` для совместимости со старым API."""
-
-        return self.auth.client_id
-
-    @property
-    def client_secret(self) -> str | None:
-        """Возвращает `client_secret` для совместимости со старым API."""
-
-        return self.auth.client_secret
-
     @classmethod
     def from_env(cls, *, env_file: str | Path | None = ".env") -> AvitoSettings:
         """Загружает конфигурацию из окружения и optional `.env` файла."""

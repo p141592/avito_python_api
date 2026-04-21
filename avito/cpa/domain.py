@@ -95,11 +95,18 @@ class CpaCall(DomainObject):
 
     user_id: int | str | None = None
 
-    def list(self, *, request: CpaCallsByTimeRequest) -> CpaCallsResult:
-        return CpaCallsClient(self.transport).list_by_time(request)
+    def list(self, *, date_time_from: str, date_time_to: str) -> CpaCallsResult:
+        return CpaCallsClient(self.transport).list_by_time(
+            CpaCallsByTimeRequest(
+                date_time_from=date_time_from,
+                date_time_to=date_time_to,
+            )
+        )
 
-    def create_complaint(self, *, request: CpaCallComplaintRequest) -> CpaActionResult:
-        return CpaCallsClient(self.transport).create_complaint(request)
+    def create_complaint(self, *, call_id: int, reason: str) -> CpaActionResult:
+        return CpaCallsClient(self.transport).create_complaint(
+            CpaCallComplaintRequest(call_id=call_id, reason=reason)
+        )
 
 
 @dataclass(slots=True, frozen=True)
@@ -117,8 +124,10 @@ class CpaArchive(DomainObject):
     def get_balance_info(self) -> CpaBalanceInfo:
         return CpaArchiveClient(self.transport).get_balance_info()
 
-    def get_call_by_id(self, *, request: CpaCallByIdRequest) -> CpaCallInfo:
-        return CpaArchiveClient(self.transport).get_call_by_id(request)
+    def get_call_by_id(self, *, call_id: int) -> CpaCallInfo:
+        return CpaArchiveClient(self.transport).get_call_by_id(
+            CpaCallByIdRequest(call_id=call_id)
+        )
 
     def _require_call_id(self) -> str:
         if self.call_id is None:
@@ -143,8 +152,22 @@ class CallTrackingCall(DomainObject):
             CallTrackingGetCallByIdRequest(call_id=resolved_call_id)
         )
 
-    def list(self, *, request: CallTrackingCallsRequest) -> CallTrackingCallsResult:
-        return CallTrackingClient(self.transport).get_calls(request)
+    def list(
+        self,
+        *,
+        date_time_from: str,
+        date_time_to: str,
+        limit: int | None = None,
+        offset: int | None = None,
+    ) -> CallTrackingCallsResult:
+        return CallTrackingClient(self.transport).get_calls(
+            CallTrackingCallsRequest(
+                date_time_from=date_time_from,
+                date_time_to=date_time_to,
+                limit=limit,
+                offset=offset,
+            )
+        )
 
     def download(self, *, call_id: int | str | None = None) -> CallTrackingRecord:
         return CallTrackingClient(self.transport).get_record_by_call_id(

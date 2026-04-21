@@ -16,7 +16,6 @@ from avito.promotion.models import (
     AutostrategyStatTotals,
     BbipBudgetOption,
     BbipDurationRange,
-    BbipForecast,
     BbipForecastsResult,
     BbipSuggest,
     BbipSuggestsResult,
@@ -32,6 +31,7 @@ from avito.promotion.models import (
     CpaAuctionItemBid,
     PromotionActionItem,
     PromotionActionResult,
+    PromotionForecast,
     PromotionOrderError,
     PromotionOrderInfo,
     PromotionOrdersResult,
@@ -218,7 +218,7 @@ def map_bbip_forecasts(payload: object) -> BbipForecastsResult:
     data = _expect_mapping(payload)
     return BbipForecastsResult(
         items=[
-            BbipForecast(
+            PromotionForecast(
                 item_id=_int(item, "itemId", "itemID"),
                 min_views=_int(item, "min"),
                 max_views=_int(item, "max"),

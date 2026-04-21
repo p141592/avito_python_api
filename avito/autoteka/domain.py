@@ -53,42 +53,48 @@ class AutotekaVehicle(DomainObject):
     vehicle_id: int | str | None = None
     user_id: int | str | None = None
 
-    def resolve_catalog(self, *, request: CatalogResolveRequest) -> CatalogResolveResult:
+    def resolve_catalog(self, *, brand_id: int) -> CatalogResolveResult:
         """Актуализирует параметры автокаталога."""
 
-        return CatalogClient(self.transport).resolve_catalog(request)
+        return CatalogClient(self.transport).resolve_catalog(CatalogResolveRequest(brand_id=brand_id))
 
-    def get_leads(self, *, request: LeadsRequest) -> AutotekaLeadsResult:
-        return LeadsClient(self.transport).get_leads(request)
+    def get_leads(self, *, limit: int) -> AutotekaLeadsResult:
+        return LeadsClient(self.transport).get_leads(LeadsRequest(limit=limit))
 
-    def create_preview_by_vin(self, *, request: VinRequest) -> AutotekaPreviewInfo:
-        return PreviewClient(self.transport).create_by_vin(request)
+    def create_preview_by_vin(self, *, vin: str) -> AutotekaPreviewInfo:
+        return PreviewClient(self.transport).create_by_vin(VinRequest(vin=vin))
 
     def get_preview(self, *, preview_id: int | str | None = None) -> AutotekaPreviewInfo:
         return PreviewClient(self.transport).get_preview(
             preview_id=preview_id or self._require_vehicle_id("preview_id")
         )
 
-    def create_preview_by_external_item(
-        self, *, request: ExternalItemPreviewRequest
-    ) -> AutotekaPreviewInfo:
-        return PreviewClient(self.transport).create_by_external_item(request)
+    def create_preview_by_external_item(self, *, item_id: str, site: str) -> AutotekaPreviewInfo:
+        return PreviewClient(self.transport).create_by_external_item(
+            ExternalItemPreviewRequest(item_id=item_id, site=site)
+        )
 
-    def create_preview_by_item_id(self, *, request: ItemIdRequest) -> AutotekaPreviewInfo:
-        return PreviewClient(self.transport).create_by_item_id(request)
+    def create_preview_by_item_id(self, *, item_id: int) -> AutotekaPreviewInfo:
+        return PreviewClient(self.transport).create_by_item_id(ItemIdRequest(item_id=item_id))
 
-    def create_preview_by_reg_number(self, *, request: RegNumberRequest) -> AutotekaPreviewInfo:
-        return PreviewClient(self.transport).create_by_reg_number(request)
+    def create_preview_by_reg_number(self, *, reg_number: str) -> AutotekaPreviewInfo:
+        return PreviewClient(self.transport).create_by_reg_number(
+            RegNumberRequest(reg_number=reg_number)
+        )
 
     def create_specification_by_plate_number(
-        self, *, request: PlateNumberRequest
+        self, *, plate_number: str
     ) -> AutotekaSpecificationInfo:
-        return SpecificationsClient(self.transport).create_by_plate_number(request)
+        return SpecificationsClient(self.transport).create_by_plate_number(
+            PlateNumberRequest(plate_number=plate_number)
+        )
 
     def create_specification_by_vehicle_id(
-        self, *, request: VehicleIdRequest
+        self, *, vehicle_id: str
     ) -> AutotekaSpecificationInfo:
-        return SpecificationsClient(self.transport).create_by_vehicle_id(request)
+        return SpecificationsClient(self.transport).create_by_vehicle_id(
+            VehicleIdRequest(vehicle_id=vehicle_id)
+        )
 
     def get_specification_by_id(
         self,
@@ -99,8 +105,8 @@ class AutotekaVehicle(DomainObject):
             specification_id=specification_id or self._require_vehicle_id("specification_id")
         )
 
-    def create_teaser(self, *, request: TeaserCreateRequest) -> AutotekaTeaserInfo:
-        return TeaserClient(self.transport).create(request)
+    def create_teaser(self, *, vehicle_id: str) -> AutotekaTeaserInfo:
+        return TeaserClient(self.transport).create(TeaserCreateRequest(vehicle_id=vehicle_id))
 
     def get_teaser(self, *, teaser_id: int | str | None = None) -> AutotekaTeaserInfo:
         return TeaserClient(self.transport).get(
@@ -123,11 +129,13 @@ class AutotekaReport(DomainObject):
     def get_active_package(self) -> AutotekaPackageInfo:
         return ReportClient(self.transport).get_active_package()
 
-    def create_report(self, *, request: PreviewReportRequest) -> AutotekaReportInfo:
-        return ReportClient(self.transport).create_report(request)
+    def create_report(self, *, preview_id: int) -> AutotekaReportInfo:
+        return ReportClient(self.transport).create_report(PreviewReportRequest(preview_id=preview_id))
 
-    def create_report_by_vehicle_id(self, *, request: VehicleIdRequest) -> AutotekaReportInfo:
-        return ReportClient(self.transport).create_report_by_vehicle_id(request)
+    def create_report_by_vehicle_id(self, *, vehicle_id: str) -> AutotekaReportInfo:
+        return ReportClient(self.transport).create_report_by_vehicle_id(
+            VehicleIdRequest(vehicle_id=vehicle_id)
+        )
 
     def list_reports(self) -> AutotekaReportsResult:
         """Получает список отчетов Автотеки."""
@@ -139,11 +147,13 @@ class AutotekaReport(DomainObject):
             report_id=report_id or self._require_report_id()
         )
 
-    def create_sync_report_by_reg_number(self, *, request: RegNumberRequest) -> AutotekaReportInfo:
-        return ReportClient(self.transport).create_sync_report_by_reg_number(request)
+    def create_sync_report_by_reg_number(self, *, reg_number: str) -> AutotekaReportInfo:
+        return ReportClient(self.transport).create_sync_report_by_reg_number(
+            RegNumberRequest(reg_number=reg_number)
+        )
 
-    def create_sync_report_by_vin(self, *, request: VinRequest) -> AutotekaReportInfo:
-        return ReportClient(self.transport).create_sync_report_by_vin(request)
+    def create_sync_report_by_vin(self, *, vin: str) -> AutotekaReportInfo:
+        return ReportClient(self.transport).create_sync_report_by_vin(VinRequest(vin=vin))
 
     def _require_report_id(self) -> str:
         if self.report_id is None:
@@ -157,20 +167,22 @@ class AutotekaMonitoring(DomainObject):
 
     user_id: int | str | None = None
 
-    def create_monitoring_bucket_add(
-        self, *, request: MonitoringBucketRequest
-    ) -> MonitoringBucketResult:
-        return MonitoringClient(self.transport).add_bucket(request)
+    def create_monitoring_bucket_add(self, *, vehicles: list[str]) -> MonitoringBucketResult:
+        return MonitoringClient(self.transport).add_bucket(
+            MonitoringBucketRequest(vehicles=vehicles)
+        )
 
     def delete_bucket(self) -> MonitoringBucketResult:
         """Очищает bucket мониторинга."""
 
         return MonitoringClient(self.transport).delete_bucket()
 
-    def remove_bucket(self, *, request: MonitoringBucketRequest) -> MonitoringBucketResult:
+    def remove_bucket(self, *, vehicles: list[str]) -> MonitoringBucketResult:
         """Удаляет автомобили из bucket мониторинга."""
 
-        return MonitoringClient(self.transport).remove_bucket(request)
+        return MonitoringClient(self.transport).remove_bucket(
+            MonitoringBucketRequest(vehicles=vehicles)
+        )
 
     def get_monitoring_reg_actions(
         self,
@@ -187,8 +199,10 @@ class AutotekaScoring(DomainObject):
     scoring_id: int | str | None = None
     user_id: int | str | None = None
 
-    def create_scoring_by_vehicle_id(self, *, request: VehicleIdRequest) -> AutotekaScoringInfo:
-        return ScoringClient(self.transport).create_by_vehicle_id(request)
+    def create_scoring_by_vehicle_id(self, *, vehicle_id: str) -> AutotekaScoringInfo:
+        return ScoringClient(self.transport).create_by_vehicle_id(
+            VehicleIdRequest(vehicle_id=vehicle_id)
+        )
 
     def get_scoring_by_id(self, *, scoring_id: int | str | None = None) -> AutotekaScoringInfo:
         return ScoringClient(self.transport).get_by_id(
@@ -208,9 +222,11 @@ class AutotekaValuation(DomainObject):
     user_id: int | str | None = None
 
     def get_valuation_by_specification(
-        self, *, request: ValuationBySpecificationRequest
+        self, *, specification_id: int, mileage: int
     ) -> AutotekaValuationInfo:
-        return ValuationClient(self.transport).get_by_specification(request)
+        return ValuationClient(self.transport).get_by_specification(
+            ValuationBySpecificationRequest(specification_id=specification_id, mileage=mileage)
+        )
 
 
 __all__ = (

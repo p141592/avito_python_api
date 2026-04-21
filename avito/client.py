@@ -19,6 +19,7 @@ from avito.autoteka import (
 )
 from avito.config import AvitoSettings
 from avito.core import Transport, TransportDebugInfo
+from avito.core.transport import build_httpx_timeout
 from avito.cpa import CallTrackingCall, CpaArchive, CpaCall, CpaChat, CpaLead
 from avito.jobs import Application, JobDictionary, JobWebhook, Resume, Vacancy
 from avito.messenger import Chat, ChatMedia, ChatMessage, ChatWebhook, SpecialOfferCampaign
@@ -103,9 +104,19 @@ class AvitoClient:
         self.close()
 
     def _build_auth_provider(self) -> AuthProvider:
-        token_http_client = httpx.Client(base_url=self.settings.base_url.rstrip("/"))
-        alternate_http_client = httpx.Client(base_url=self.settings.base_url.rstrip("/"))
-        autoteka_http_client = httpx.Client(base_url=self.settings.base_url.rstrip("/"))
+        timeout = build_httpx_timeout(self.settings.timeouts)
+        token_http_client = httpx.Client(
+            base_url=self.settings.base_url.rstrip("/"),
+            timeout=timeout,
+        )
+        alternate_http_client = httpx.Client(
+            base_url=self.settings.base_url.rstrip("/"),
+            timeout=timeout,
+        )
+        autoteka_http_client = httpx.Client(
+            base_url=self.settings.base_url.rstrip("/"),
+            timeout=timeout,
+        )
         return AuthProvider(
             self.settings.auth,
             token_client=TokenClient(self.settings.auth, client=token_http_client),

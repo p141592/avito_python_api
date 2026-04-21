@@ -101,20 +101,6 @@ class AuthorizationError(AvitoError):
     """Ошибка авторизации: недостаточно прав для операции (HTTP 403)."""
 
 
-class PermissionDeniedError(AuthorizationError):
-    """Устаревший псевдоним `AuthorizationError`. Используйте `AuthorizationError` напрямую."""
-
-    def __init__(self, *args: object, **kwargs: object) -> None:
-        import warnings
-
-        warnings.warn(
-            "PermissionDeniedError устарел и будет удалён. Используйте AuthorizationError.",
-            DeprecationWarning,
-            stacklevel=2,
-        )
-        super().__init__(*args, **kwargs)
-
-
 class ValidationError(AvitoError):
     """API отклонил запрос из-за некорректных параметров (HTTP 400, 422)."""
 
@@ -163,7 +149,6 @@ __all__ = (
     "ConfigurationError",
     "ConflictError",
     "NotFoundError",
-    "PermissionDeniedError",
     "RateLimitError",
     "ResponseMappingError",
     "ServerError",

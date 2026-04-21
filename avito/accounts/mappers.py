@@ -7,9 +7,9 @@ from datetime import datetime
 from typing import cast
 
 from avito.accounts.models import (
+    AccountActionResult,
     AccountBalance,
     AccountProfile,
-    AccountActionResult,
     AhUserStatus,
     CompanyPhone,
     CompanyPhonesResult,
