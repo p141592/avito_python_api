@@ -4,36 +4,34 @@ from __future__ import annotations
 
 from collections.abc import Sequence
 from dataclasses import dataclass
+from datetime import datetime
 
 from avito.accounts.client import AccountsClient, HierarchyClient
 from avito.accounts.models import (
+    AccountActionResult,
     AccountBalance,
     AccountProfile,
-    ActionResult,
     AhUserStatus,
     CompanyPhonesResult,
+    EmployeeItem,
     EmployeeItemLinkRequest,
     EmployeeItemsRequest,
-    EmployeeItemsResult,
     EmployeesResult,
+    OperationRecord,
     OperationsHistoryRequest,
-    OperationsHistoryResult,
 )
-from avito.core import Transport
+from avito.core import PaginatedList, ValidationError
+from avito.core.domain import DomainObject
 
 
-@dataclass(slots=True, frozen=True)
-class DomainObject:
-    """Базовый доменный объект раздела accounts."""
-
-    transport: Transport
+def _serialize_datetime(value: datetime | None) -> str | None:
+    return value.isoformat() if value is not None else None
 
 
 @dataclass(slots=True, frozen=True)
 class Account(DomainObject):
     """Доменный объект операций аккаунта."""
 
-    resource_id: int | str | None = None
     user_id: int | str | None = None
 
     def get_self(self) -> AccountProfile:
@@ -46,23 +44,23 @@ class Account(DomainObject):
 
         resolved_user_id = user_id or (int(self.user_id) if self.user_id is not None else None)
         if resolved_user_id is None:
-            raise ValueError("Для получения баланса требуется `user_id`.")
+            raise ValidationError("Для операции требуется `user_id`.")
         return AccountsClient(self.transport).get_balance(user_id=resolved_user_id)
 
     def get_operations_history(
         self,
         *,
-        date_from: str | None = None,
-        date_to: str | None = None,
+        date_from: datetime | None = None,
+        date_to: datetime | None = None,
         limit: int | None = None,
         offset: int | None = None,
-    ) -> OperationsHistoryResult:
+    ) -> PaginatedList[OperationRecord]:
         """Получает историю операций пользователя."""
 
         return AccountsClient(self.transport).get_operations_history(
             OperationsHistoryRequest(
-                date_from=date_from,
-                date_to=date_to,
+                date_from=_serialize_datetime(date_from),
+                date_to=_serialize_datetime(date_to),
                 limit=limit,
                 offset=offset,
             )
@@ -73,7 +71,6 @@ class Account(DomainObject):
 class AccountHierarchy(DomainObject):
     """Доменный объект иерархии аккаунтов."""
 
-    resource_id: int | str | None = None
     user_id: int | str | None = None
 
     def get_status(self) -> AhUserStatus:
@@ -97,7 +94,7 @@ class AccountHierarchy(DomainObject):
         employee_id: int,
         item_ids: Sequence[int],
         source_employee_id: int | None = None,
-    ) -> ActionResult:
+    ) -> AccountActionResult:
         """Прикрепляет объявления к сотруднику."""
 
         return HierarchyClient(self.transport).link_items(
@@ -114,7 +111,7 @@ class AccountHierarchy(DomainObject):
         employee_id: int,
         limit: int | None = None,
         offset: int | None = None,
-    ) -> EmployeeItemsResult:
+    ) -> PaginatedList[EmployeeItem]:
         """Получает список объявлений сотрудника."""
 
         return HierarchyClient(self.transport).list_items_by_employee(
@@ -122,4 +119,4 @@ class AccountHierarchy(DomainObject):
         )
 
 
-__all__ = ("DomainObject", "Account", "AccountHierarchy")
+__all__ = ("Account", "AccountHierarchy")

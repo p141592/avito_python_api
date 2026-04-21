@@ -15,13 +15,15 @@ import httpx
 from avito.auth.provider import AuthProvider
 from avito.core.exceptions import (
     AuthenticationError,
-    ClientError,
+    AuthorizationError,
+    ConflictError,
     NotFoundError,
-    PermissionDeniedError,
     RateLimitError,
     ResponseMappingError,
     ServerError,
     TransportError,
+    UnsupportedOperationError,
+    UpstreamApiError,
     ValidationError,
 )
 from avito.core.retries import RetryDecision
@@ -50,6 +52,17 @@ FileValue = (
 RequestFiles = Mapping[str, FileValue]
 
 
+def build_httpx_timeout(timeouts: ApiTimeouts) -> httpx.Timeout:
+    """Преобразует SDK-конфигурацию таймаутов в `httpx.Timeout`."""
+
+    return httpx.Timeout(
+        connect=timeouts.connect,
+        read=timeouts.read,
+        write=timeouts.write,
+        pool=timeouts.pool,
+    )
+
+
 class Transport:
     """Выполняет HTTP-запросы, применяет retry и маппит ошибки API."""
 
@@ -66,7 +79,7 @@ class Transport:
         self._retry_policy = settings.retry_policy
         self._client = client or httpx.Client(
             base_url=settings.base_url.rstrip("/"),
-            timeout=self._build_timeout(settings.timeouts),
+            timeout=build_httpx_timeout(settings.timeouts),
         )
         self._sleep = sleep
 
@@ -75,6 +88,7 @@ class Transport:
 
         return TransportDebugInfo(
             base_url=str(self._client.base_url),
+            user_id=self._settings.user_id,
             requires_auth=self._auth_provider is not None,
             timeout_connect=self._settings.timeouts.connect,
             timeout_read=self._settings.timeouts.read,
@@ -106,7 +120,7 @@ class Transport:
 
         normalized_path = self._normalize_path(path)
         request_headers = self._merge_headers(context=context, headers=headers)
-        timeout = self._build_timeout(context.timeout or self._settings.timeouts)
+        timeout = build_httpx_timeout(context.timeout or self._settings.timeouts)
         attempt = 0
         unauthorized_refresh_used = False
 
@@ -134,7 +148,11 @@ class Transport:
                 if decision.should_retry:
                     self._sleep(decision.delay_seconds)
                     continue
-                raise TransportError(str(exc)) from exc
+                raise TransportError(
+                    str(exc),
+                    operation=context.operation_name,
+                    metadata={"timeout": isinstance(exc, httpx.TimeoutException)},
+                ) from exc
 
             if (
                 response.status_code == 401
@@ -142,7 +160,7 @@ class Transport:
                 and self._auth_provider is not None
             ):
                 if unauthorized_refresh_used:
-                    raise self._map_http_error(response)
+                    raise self._map_http_error(response, operation=context.operation_name)
                 unauthorized_refresh_used = True
                 self._auth_provider.invalidate_token()
                 refreshed_headers = dict(request_headers)
@@ -162,7 +180,7 @@ class Transport:
                 if decision.should_retry:
                     self._sleep(decision.delay_seconds)
                     continue
-                raise self._map_http_error(response)
+                raise self._map_http_error(response, operation=context.operation_name)
 
             if 500 <= response.status_code < 600:
                 decision = self._decide_http_retry(
@@ -174,10 +192,10 @@ class Transport:
                 if decision.should_retry:
                     self._sleep(decision.delay_seconds)
                     continue
-                raise self._map_http_error(response)
+                raise self._map_http_error(response, operation=context.operation_name)
 
             if response.is_error:
-                raise self._map_http_error(response)
+                raise self._map_http_error(response, operation=context.operation_name)
 
             return response
 
@@ -211,6 +229,8 @@ class Transport:
             raise ResponseMappingError(
                 "Ответ API не является корректным JSON.",
                 status_code=response.status_code,
+                operation=context.operation_name,
+                metadata={"content_type": response.headers.get("content-type")},
                 payload=response.text,
                 headers=dict(response.headers),
             ) from exc
@@ -346,44 +366,104 @@ class Transport:
             )
         return RetryDecision(False)
 
-    def _map_http_error(self, response: httpx.Response) -> Exception:
+    def _map_http_error(
+        self, response: httpx.Response, *, operation: str | None = None
+    ) -> Exception:
         payload = self._safe_payload(response)
         message = self._extract_message(payload) or f"HTTP {response.status_code}"
         error_code = self._extract_error_code(payload)
         headers = dict(response.headers)
+        metadata = {
+            "method": response.request.method,
+            "path": response.request.url.path,
+        }
 
         if response.status_code == 401:
             return AuthenticationError(
-                message, status_code=401, error_code=error_code, payload=payload, headers=headers
-            )
-        if response.status_code == 403:
-            return PermissionDeniedError(
-                message, status_code=403, error_code=error_code, payload=payload, headers=headers
-            )
-        if response.status_code == 404:
-            return NotFoundError(
-                message, status_code=404, error_code=error_code, payload=payload, headers=headers
-            )
-        if response.status_code == 422:
-            return ValidationError(
-                message, status_code=422, error_code=error_code, payload=payload, headers=headers
-            )
-        if response.status_code == 429:
-            return RateLimitError(
-                message, status_code=429, error_code=error_code, payload=payload, headers=headers
-            )
-        if 400 <= response.status_code < 500:
-            return ClientError(
                 message,
-                status_code=response.status_code,
+                status_code=401,
                 error_code=error_code,
+                operation=operation,
+                metadata=metadata,
                 payload=payload,
                 headers=headers,
             )
-        return ServerError(
+        if response.status_code == 403:
+            return AuthorizationError(
+                message,
+                status_code=403,
+                error_code=error_code,
+                operation=operation,
+                metadata=metadata,
+                payload=payload,
+                headers=headers,
+            )
+        if response.status_code == 404:
+            return NotFoundError(
+                message,
+                status_code=404,
+                error_code=error_code,
+                operation=operation,
+                metadata=metadata,
+                payload=payload,
+                headers=headers,
+            )
+        if response.status_code in {400, 422}:
+            return ValidationError(
+                message,
+                status_code=response.status_code,
+                error_code=error_code,
+                operation=operation,
+                metadata=metadata,
+                payload=payload,
+                headers=headers,
+            )
+        if response.status_code == 409:
+            return ConflictError(
+                message,
+                status_code=409,
+                error_code=error_code,
+                operation=operation,
+                metadata=metadata,
+                payload=payload,
+                headers=headers,
+            )
+        if response.status_code == 429:
+            return RateLimitError(
+                message,
+                status_code=429,
+                error_code=error_code,
+                operation=operation,
+                metadata=metadata,
+                payload=payload,
+                headers=headers,
+            )
+        if response.status_code in {405, 501}:
+            return UnsupportedOperationError(
+                message,
+                status_code=response.status_code,
+                error_code=error_code,
+                operation=operation,
+                metadata=metadata,
+                payload=payload,
+                headers=headers,
+            )
+        if response.status_code >= 500:
+            return ServerError(
+                message,
+                status_code=response.status_code,
+                error_code=error_code,
+                operation=operation,
+                metadata=metadata,
+                payload=payload,
+                headers=headers,
+            )
+        return UpstreamApiError(
             message,
             status_code=response.status_code,
             error_code=error_code,
+            operation=operation,
+            metadata=metadata,
             payload=payload,
             headers=headers,
         )
@@ -433,13 +513,4 @@ class Transport:
             return decoded_value
         return filename
 
-    def _build_timeout(self, timeouts: ApiTimeouts) -> httpx.Timeout:
-        return httpx.Timeout(
-            connect=timeouts.connect,
-            read=timeouts.read,
-            write=timeouts.write,
-            pool=timeouts.pool,
-        )
-
-
-__all__ = ("Transport",)
+__all__ = ("Transport", "build_httpx_timeout")

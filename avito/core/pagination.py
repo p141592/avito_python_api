@@ -11,7 +11,14 @@ type PageFetcher[ItemT] = Callable[[int | None, str | None], JsonPage[ItemT]]
 
 
 class PaginatedList[ItemT](list[ItemT]):
-    """Ленивый list-like контейнер для элементов из последовательности страниц."""
+    """Ленивый list-like контейнер для элементов из последовательности страниц.
+
+    Контракт:
+
+    - уже загруженные элементы читаются без повторных запросов;
+    - чтение по индексу, slice и частичная итерация подгружают только нужные страницы;
+    - `materialize()` выполняет явную полную загрузку всех оставшихся страниц.
+    """
 
     def __init__(
         self,
@@ -78,6 +85,24 @@ class PaginatedList[ItemT](list[ItemT]):
         if isinstance(other, list):
             self._ensure_all_loaded()
         return super().__eq__(other)
+
+    @property
+    def loaded_count(self) -> int:
+        """Количество элементов, уже загруженных локально."""
+
+        return super().__len__()
+
+    @property
+    def is_materialized(self) -> bool:
+        """Показывает, загружены ли все страницы коллекции."""
+
+        return self._exhausted
+
+    def materialize(self) -> list[ItemT]:
+        """Явно загружает все страницы и возвращает snapshot-список."""
+
+        self._ensure_all_loaded()
+        return list(super().__iter__())
 
     def _ensure_slice_loaded(self, slice_index: slice) -> None:
         if (

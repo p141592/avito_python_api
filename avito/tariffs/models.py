@@ -2,12 +2,13 @@
 
 from __future__ import annotations
 
-from collections.abc import Mapping
-from dataclasses import dataclass, field
+from dataclasses import dataclass
+
+from avito.core.serialization import SerializableModel
 
 
 @dataclass(slots=True, frozen=True)
-class TariffContractInfo:
+class TariffContractInfo(SerializableModel):
     """Информация о текущем или запланированном тарифном контракте."""
 
     level: str | None
@@ -18,13 +19,11 @@ class TariffContractInfo:
     price: float | None
     original_price: float | None
     packages_count: int | None
-    raw_payload: Mapping[str, object] = field(default_factory=dict)
 
 
 @dataclass(slots=True, frozen=True)
-class TariffInfo:
+class TariffInfo(SerializableModel):
     """Информация по текущему и запланированному тарифу."""
 
     current: TariffContractInfo | None = None
     scheduled: TariffContractInfo | None = None
-    raw_payload: Mapping[str, object] = field(default_factory=dict)

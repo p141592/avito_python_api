@@ -15,19 +15,20 @@ from avito.accounts.mappers import (
     map_operations_history,
 )
 from avito.accounts.models import (
+    AccountActionResult,
     AccountBalance,
     AccountProfile,
-    ActionResult,
     AhUserStatus,
     CompanyPhonesResult,
+    EmployeeItem,
     EmployeeItemLinkRequest,
     EmployeeItemsRequest,
-    EmployeeItemsResult,
     EmployeesResult,
+    OperationRecord,
     OperationsHistoryRequest,
-    OperationsHistoryResult,
 )
-from avito.core import RequestContext, Transport
+from avito.core import JsonPage, PaginatedList, Paginator, RequestContext, Transport
+from avito.core.mapping import request_public_model
 
 
 @dataclass(slots=True)
@@ -39,33 +40,56 @@ class AccountsClient:
     def get_self(self) -> AccountProfile:
         """Получает профиль авторизованного пользователя."""
 
-        payload = self.transport.request_json(
+        return request_public_model(
+            self.transport,
             "GET",
             "/core/v1/accounts/self",
             context=RequestContext("accounts.get_self"),
+            mapper=map_account_profile,
         )
-        return map_account_profile(payload)
 
     def get_balance(self, *, user_id: int) -> AccountBalance:
         """Получает баланс аккаунта."""
 
-        payload = self.transport.request_json(
+        return request_public_model(
+            self.transport,
             "GET",
             f"/core/v1/accounts/{user_id}/balance/",
             context=RequestContext("accounts.get_balance"),
+            mapper=map_account_balance,
         )
-        return map_account_balance(payload)
 
-    def get_operations_history(self, request: OperationsHistoryRequest) -> OperationsHistoryResult:
+    def get_operations_history(self, request: OperationsHistoryRequest) -> PaginatedList[OperationRecord]:
         """Получает историю операций пользователя."""
 
-        payload = self.transport.request_json(
-            "POST",
-            "/core/v1/accounts/operations_history/",
-            context=RequestContext("accounts.get_operations_history", allow_retry=True),
-            json_body=request.to_payload(),
-        )
-        return map_operations_history(payload)
+        page_size = request.limit or 25
+        base_offset = request.offset or 0
+
+        def fetch_page(page: int | None, _cursor: str | None) -> JsonPage[OperationRecord]:
+            current_page = page or 1
+            current_offset = base_offset + (current_page - 1) * page_size
+            paged_request = OperationsHistoryRequest(
+                date_from=request.date_from,
+                date_to=request.date_to,
+                limit=page_size,
+                offset=current_offset,
+            )
+            result = request_public_model(
+                self.transport,
+                "POST",
+                "/core/v1/accounts/operations_history/",
+                context=RequestContext("accounts.get_operations_history", allow_retry=True),
+                mapper=map_operations_history,
+                json_body=paged_request.to_payload(),
+            )
+            return JsonPage(
+                items=result.operations,
+                total=result.total,
+                page=current_page,
+                per_page=page_size,
+            )
+
+        return Paginator(fetch_page).as_list(first_page=fetch_page(1, None))
 
 
 @dataclass(slots=True)
@@ -77,54 +101,79 @@ class HierarchyClient:
     def get_status(self) -> AhUserStatus:
         """Получает статус пользователя в ИА."""
 
-        payload = self.transport.request_json(
+        return request_public_model(
+            self.transport,
             "GET",
             "/checkAhUserV1",
             context=RequestContext("accounts.hierarchy.get_status"),
+            mapper=map_ah_user_status,
         )
-        return map_ah_user_status(payload)
 
     def list_employees(self) -> EmployeesResult:
         """Получает список сотрудников иерархии."""
 
-        payload = self.transport.request_json(
+        return request_public_model(
+            self.transport,
             "GET",
             "/getEmployeesV1",
             context=RequestContext("accounts.hierarchy.list_employees"),
+            mapper=map_employees,
         )
-        return map_employees(payload)
 
     def list_company_phones(self) -> CompanyPhonesResult:
         """Получает список телефонов компании."""
 
-        payload = self.transport.request_json(
+        return request_public_model(
+            self.transport,
             "GET",
             "/listCompanyPhonesV1",
             context=RequestContext("accounts.hierarchy.list_company_phones"),
+            mapper=map_company_phones,
         )
-        return map_company_phones(payload)
 
-    def link_items(self, request: EmployeeItemLinkRequest) -> ActionResult:
+    def link_items(self, request: EmployeeItemLinkRequest) -> AccountActionResult:
         """Прикрепляет объявления к сотруднику."""
 
-        payload = self.transport.request_json(
+        return request_public_model(
+            self.transport,
             "POST",
             "/linkItemsV1",
             context=RequestContext("accounts.hierarchy.link_items", allow_retry=True),
+            mapper=map_action_result,
             json_body=request.to_payload(),
         )
-        return map_action_result(payload)
 
-    def list_items_by_employee(self, request: EmployeeItemsRequest) -> EmployeeItemsResult:
+    def list_items_by_employee(self, request: EmployeeItemsRequest) -> PaginatedList[EmployeeItem]:
         """Получает список объявлений по сотруднику."""
 
-        payload = self.transport.request_json(
-            "POST",
-            "/listItemsByEmployeeIdV1",
-            context=RequestContext("accounts.hierarchy.list_items_by_employee", allow_retry=True),
-            json_body=request.to_payload(),
-        )
-        return map_employee_items(payload)
+        page_size = request.limit or 25
+
+        def fetch_page(page: int | None, _cursor: str | None) -> JsonPage[EmployeeItem]:
+            current_page = page or 1
+            current_offset = (request.offset or 0) + (current_page - 1) * page_size
+            paged_request = EmployeeItemsRequest(
+                employee_id=request.employee_id,
+                limit=page_size,
+                offset=current_offset,
+            )
+            result = request_public_model(
+                self.transport,
+                "POST",
+                "/listItemsByEmployeeIdV1",
+                context=RequestContext(
+                    "accounts.hierarchy.list_items_by_employee", allow_retry=True
+                ),
+                mapper=map_employee_items,
+                json_body=paged_request.to_payload(),
+            )
+            return JsonPage(
+                items=result.items,
+                total=result.total,
+                page=current_page,
+                per_page=page_size,
+            )
+
+        return Paginator(fetch_page).as_list(first_page=fetch_page(1, None))
 
 
 __all__ = ("AccountsClient", "HierarchyClient")

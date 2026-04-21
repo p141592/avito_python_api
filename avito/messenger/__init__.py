@@ -5,7 +5,6 @@ from avito.messenger.domain import (
     ChatMedia,
     ChatMessage,
     ChatWebhook,
-    DomainObject,
     SpecialOfferCampaign,
 )
 from avito.messenger.models import (
@@ -19,6 +18,8 @@ from avito.messenger.models import (
     SpecialOfferStatsResult,
     SubscriptionsResult,
     TariffInfo,
+    UploadImageFile,
+    UploadImagesRequest,
     UploadImagesResult,
     VoiceFilesResult,
     WebhookActionResult,
@@ -31,7 +32,6 @@ __all__ = (
     "ChatMessage",
     "ChatWebhook",
     "ChatsResult",
-    "DomainObject",
     "MessageActionResult",
     "MessageInfo",
     "MessagesResult",
@@ -41,6 +41,8 @@ __all__ = (
     "SpecialOfferStatsResult",
     "SubscriptionsResult",
     "TariffInfo",
+    "UploadImageFile",
+    "UploadImagesRequest",
     "UploadImagesResult",
     "VoiceFilesResult",
     "WebhookActionResult",

@@ -3,32 +3,85 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Literal
+from pathlib import Path
+from typing import ClassVar, Literal
 
-from pydantic import Field
-from pydantic_settings import BaseSettings, SettingsConfigDict
+from avito._env import (
+    parse_env_bool,
+    parse_env_float,
+    parse_env_int,
+    parse_env_str_tuple,
+    resolve_env_aliases,
+)
 
 RetryReason = Literal[
     "transport_error", "timeout", "rate_limit", "server_error", "unauthorized_refresh"
 ]
 
 
-class RetryPolicy(BaseSettings):
+@dataclass(slots=True, frozen=True)
+class RetryPolicy:
     """Конфигурация повторных попыток для transport-слоя."""
 
-    model_config = SettingsConfigDict(
-        env_prefix="AVITO_RETRY_",
-        env_file=".env",
-        extra="ignore",
-    )
+    ENV_ALIASES: ClassVar[dict[str, tuple[str, ...]]] = {
+        "max_attempts": ("AVITO_RETRY_MAX_ATTEMPTS",),
+        "backoff_factor": ("AVITO_RETRY_BACKOFF_FACTOR",),
+        "retryable_methods": ("AVITO_RETRY_RETRYABLE_METHODS",),
+        "retry_on_rate_limit": ("AVITO_RETRY_RETRY_ON_RATE_LIMIT",),
+        "retry_on_server_error": ("AVITO_RETRY_RETRY_ON_SERVER_ERROR",),
+        "retry_on_transport_error": ("AVITO_RETRY_RETRY_ON_TRANSPORT_ERROR",),
+        "max_rate_limit_wait_seconds": ("AVITO_RETRY_MAX_RATE_LIMIT_WAIT_SECONDS",),
+    }
 
     max_attempts: int = 3
     backoff_factor: float = 0.5
-    retryable_methods: tuple[str, ...] = Field(default=("GET", "HEAD", "OPTIONS", "PUT", "DELETE"))
+    retryable_methods: tuple[str, ...] = ("GET", "HEAD", "OPTIONS", "PUT", "DELETE")
     retry_on_rate_limit: bool = True
     retry_on_server_error: bool = True
     retry_on_transport_error: bool = True
     max_rate_limit_wait_seconds: float = 30.0
+
+    @classmethod
+    def from_env(cls, *, env_file: str | Path | None = ".env") -> RetryPolicy:
+        """Загружает retry-политику из process environment и optional `.env` файла."""
+
+        resolved_values = resolve_env_aliases(cls.ENV_ALIASES, env_file=env_file)
+        defaults = cls()
+        max_attempts = defaults.max_attempts
+        backoff_factor = defaults.backoff_factor
+        retryable_methods = defaults.retryable_methods
+        retry_on_rate_limit = defaults.retry_on_rate_limit
+        retry_on_server_error = defaults.retry_on_server_error
+        retry_on_transport_error = defaults.retry_on_transport_error
+        max_rate_limit_wait_seconds = defaults.max_rate_limit_wait_seconds
+        for field_name, value in resolved_values.items():
+            if field_name == "max_attempts":
+                max_attempts = parse_env_int(value, field_name=field_name)
+            elif field_name in {"backoff_factor", "max_rate_limit_wait_seconds"}:
+                parsed_float = parse_env_float(value, field_name=field_name)
+                if field_name == "backoff_factor":
+                    backoff_factor = parsed_float
+                else:
+                    max_rate_limit_wait_seconds = parsed_float
+            elif field_name == "retryable_methods":
+                retryable_methods = parse_env_str_tuple(value, field_name=field_name)
+            else:
+                parsed_bool = parse_env_bool(value, field_name=field_name)
+                if field_name == "retry_on_rate_limit":
+                    retry_on_rate_limit = parsed_bool
+                elif field_name == "retry_on_server_error":
+                    retry_on_server_error = parsed_bool
+                else:
+                    retry_on_transport_error = parsed_bool
+        return cls(
+            max_attempts=max_attempts,
+            backoff_factor=backoff_factor,
+            retryable_methods=retryable_methods,
+            retry_on_rate_limit=retry_on_rate_limit,
+            retry_on_server_error=retry_on_server_error,
+            retry_on_transport_error=retry_on_transport_error,
+            max_rate_limit_wait_seconds=max_rate_limit_wait_seconds,
+        )
 
     def is_retryable_method(self, method: str, *, explicit_retry: bool = False) -> bool:
         """Определяет, можно ли повторять запрос указанного HTTP-метода."""

@@ -2,23 +2,24 @@
 
 from __future__ import annotations
 
-from collections.abc import Mapping
-from dataclasses import dataclass, field
+from dataclasses import dataclass
+from datetime import datetime
+
+from avito.core.serialization import SerializableModel
 
 
 @dataclass(slots=True, frozen=True)
-class AccountProfile:
+class AccountProfile(SerializableModel):
     """Профиль авторизованного пользователя."""
 
-    id: int | None
+    user_id: int | None
     name: str | None
     email: str | None
     phone: str | None
-    raw_payload: Mapping[str, object] = field(default_factory=dict)
 
 
 @dataclass(slots=True, frozen=True)
-class AccountBalance:
+class AccountBalance(SerializableModel):
     """Баланс кошелька пользователя."""
 
     user_id: int | None
@@ -26,20 +27,18 @@ class AccountBalance:
     bonus: float | None
     total: float | None
     currency: str | None
-    raw_payload: Mapping[str, object] = field(default_factory=dict)
 
 
 @dataclass(slots=True, frozen=True)
-class OperationRecord:
+class OperationRecord(SerializableModel):
     """Операция по аккаунту."""
 
     id: str | None
-    created_at: str | None
+    created_at: datetime | None
     amount: float | None
     operation_type: str | None
     status: str | None
     description: str | None
-    raw_payload: Mapping[str, object] = field(default_factory=dict)
 
 
 @dataclass(slots=True, frozen=True)
@@ -67,26 +66,24 @@ class OperationsHistoryRequest:
 
 
 @dataclass(slots=True, frozen=True)
-class OperationsHistoryResult:
+class OperationsHistoryResult(SerializableModel):
     """История операций пользователя."""
 
     operations: list[OperationRecord]
     total: int | None = None
-    raw_payload: Mapping[str, object] = field(default_factory=dict)
 
 
 @dataclass(slots=True, frozen=True)
-class AhUserStatus:
+class AhUserStatus(SerializableModel):
     """Статус пользователя в иерархии аккаунтов."""
 
     user_id: int | None
     is_active: bool | None
     role: str | None
-    raw_payload: Mapping[str, object] = field(default_factory=dict)
 
 
 @dataclass(slots=True, frozen=True)
-class Employee:
+class Employee(SerializableModel):
     """Сотрудник иерархии аккаунтов."""
 
     employee_id: int | None
@@ -94,34 +91,30 @@ class Employee:
     name: str | None
     phone: str | None
     email: str | None
-    raw_payload: Mapping[str, object] = field(default_factory=dict)
 
 
 @dataclass(slots=True, frozen=True)
-class EmployeesResult:
+class EmployeesResult(SerializableModel):
     """Список сотрудников иерархии."""
 
     items: list[Employee]
     total: int | None = None
-    raw_payload: Mapping[str, object] = field(default_factory=dict)
 
 
 @dataclass(slots=True, frozen=True)
-class CompanyPhone:
+class CompanyPhone(SerializableModel):
     """Телефон компании."""
 
-    id: int | None
+    phone_id: int | None
     phone: str | None
     comment: str | None
-    raw_payload: Mapping[str, object] = field(default_factory=dict)
 
 
 @dataclass(slots=True, frozen=True)
-class CompanyPhonesResult:
+class CompanyPhonesResult(SerializableModel):
     """Список телефонов компании."""
 
     items: list[CompanyPhone]
-    raw_payload: Mapping[str, object] = field(default_factory=dict)
 
 
 @dataclass(slots=True, frozen=True)
@@ -169,38 +162,35 @@ class EmployeeItemsRequest:
 
 
 @dataclass(slots=True, frozen=True)
-class EmployeeItem:
+class EmployeeItem(SerializableModel):
     """Объявление сотрудника в иерархии."""
 
     item_id: int | None
     title: str | None
     status: str | None
     price: float | None
-    raw_payload: Mapping[str, object] = field(default_factory=dict)
 
 
 @dataclass(slots=True, frozen=True)
-class EmployeeItemsResult:
+class EmployeeItemsResult(SerializableModel):
     """Список объявлений сотрудника."""
 
     items: list[EmployeeItem]
     total: int | None = None
-    raw_payload: Mapping[str, object] = field(default_factory=dict)
 
 
 @dataclass(slots=True, frozen=True)
-class ActionResult:
+class AccountActionResult(SerializableModel):
     """Результат мутационной операции accounts."""
 
     success: bool
     message: str | None = None
-    raw_payload: Mapping[str, object] = field(default_factory=dict)
 
 
 __all__ = (
+    "AccountActionResult",
     "AccountBalance",
     "AccountProfile",
-    "ActionResult",
     "AhUserStatus",
     "CompanyPhone",
     "CompanyPhonesResult",

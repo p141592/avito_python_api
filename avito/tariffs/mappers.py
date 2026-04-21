@@ -76,7 +76,6 @@ def _map_contract(payload: Payload) -> TariffContractInfo | None:
         price=_float(price, "price"),
         original_price=_float(price, "originalPrice"),
         packages_count=packages_count,
-        raw_payload=payload,
     )
 
 
@@ -87,5 +86,4 @@ def map_tariff_info(payload: object) -> TariffInfo:
     return TariffInfo(
         current=_map_contract(_mapping(data, "current")),
         scheduled=_map_contract(_mapping(data, "scheduled")),
-        raw_payload=data,
     )

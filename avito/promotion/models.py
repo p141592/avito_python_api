@@ -2,25 +2,26 @@
 
 from __future__ import annotations
 
-from collections.abc import Mapping
 from dataclasses import dataclass, field
+from datetime import datetime
+from typing import TypedDict
+
+from avito.core.serialization import SerializableModel
 
 
 @dataclass(slots=True, frozen=True)
-class PromotionServiceType:
+class PromotionServiceType(SerializableModel):
     """Тип услуги продвижения."""
 
     code: str | None
     title: str | None
-    raw_payload: Mapping[str, object] = field(default_factory=dict)
 
 
 @dataclass(slots=True, frozen=True)
-class PromotionServiceDictionary:
+class PromotionServiceDictionary(SerializableModel):
     """Словарь услуг продвижения."""
 
     items: list[PromotionServiceType]
-    raw_payload: Mapping[str, object] = field(default_factory=dict)
 
 
 @dataclass(slots=True, frozen=True)
@@ -36,7 +37,7 @@ class ListPromotionServicesRequest:
 
 
 @dataclass(slots=True, frozen=True)
-class PromotionService:
+class PromotionService(SerializableModel):
     """Услуга продвижения по объявлению."""
 
     item_id: int | None
@@ -44,15 +45,13 @@ class PromotionService:
     service_name: str | None
     price: int | None
     status: str | None
-    raw_payload: Mapping[str, object] = field(default_factory=dict)
 
 
 @dataclass(slots=True, frozen=True)
-class PromotionServicesResult:
+class PromotionServicesResult(SerializableModel):
     """Список услуг продвижения."""
 
     items: list[PromotionService]
-    raw_payload: Mapping[str, object] = field(default_factory=dict)
 
 
 @dataclass(slots=True, frozen=True)
@@ -74,23 +73,21 @@ class ListPromotionOrdersRequest:
 
 
 @dataclass(slots=True, frozen=True)
-class PromotionOrderInfo:
+class PromotionOrderInfo(SerializableModel):
     """Заявка на продвижение."""
 
     order_id: str | None
     item_id: int | None
     service_code: str | None
     status: str | None
-    created_at: str | None
-    raw_payload: Mapping[str, object] = field(default_factory=dict)
+    created_at: datetime | None
 
 
 @dataclass(slots=True, frozen=True)
-class PromotionOrdersResult:
+class PromotionOrdersResult(SerializableModel):
     """Список заявок на продвижение."""
 
     items: list[PromotionOrderInfo]
-    raw_payload: Mapping[str, object] = field(default_factory=dict)
 
 
 @dataclass(slots=True, frozen=True)
@@ -106,57 +103,100 @@ class GetPromotionOrderStatusRequest:
 
 
 @dataclass(slots=True, frozen=True)
-class PromotionOrderStatus:
+class PromotionOrderError(SerializableModel):
+    """Ошибка по объявлению в ответе promotion API."""
+
+    item_id: int | None
+    error_code: int | None
+    error_text: str | None
+
+
+@dataclass(slots=True, frozen=True)
+class PromotionOrderStatusItem(SerializableModel):
+    """Статус услуги внутри заявки на продвижение."""
+
+    item_id: int | None
+    price: int | None
+    slug: str | None
+    status: str | None
+    error_reason: str | None
+
+
+@dataclass(slots=True, frozen=True)
+class PromotionOrderStatusResult(SerializableModel):
     """Статус заявки на продвижение."""
 
     order_id: str | None
     status: str | None
-    message: str | None
-    raw_payload: Mapping[str, object] = field(default_factory=dict)
+    total_price: int | None
+    items: list[PromotionOrderStatusItem]
+    errors: list[PromotionOrderError]
 
 
-@dataclass(slots=True, frozen=True)
-class PromotionOrderStatusesResult:
-    """Набор статусов заявок."""
-
-    items: list[PromotionOrderStatus]
-    raw_payload: Mapping[str, object] = field(default_factory=dict)
-
-
-@dataclass(slots=True, frozen=True)
-class BbipForecastRequestItem:
-    """Параметры прогноза BBIP по объявлению."""
+class BbipItemInput(TypedDict):
+    """Входные параметры одного объявления для BBIP-методов."""
 
     item_id: int
     duration: int
     price: int
     old_price: int
 
-    def to_payload(self) -> dict[str, object]:
-        """Сериализует один BBIP-элемент прогноза."""
 
-        return {
-            "itemId": self.item_id,
-            "duration": self.duration,
-            "price": self.price,
-            "oldPrice": self.old_price,
-        }
+class _TrxItemInputRequired(TypedDict):
+    """Обязательные поля входных параметров TrxPromo."""
+
+    item_id: int
+    commission: int
+    date_from: datetime
+
+
+class TrxItemInput(_TrxItemInputRequired, total=False):
+    """Входные параметры одного объявления для TrxPromo-методов."""
+
+    date_to: datetime | None
+
+
+class BidItemInput(TypedDict):
+    """Входные параметры одной ставки CPA-аукциона."""
+
+    item_id: int
+    price_penny: int
+
+
+@dataclass(slots=True, frozen=True)
+class BbipItem(SerializableModel):
+    """Параметры BBIP по объявлению (прогноз или заявка)."""
+
+    item_id: int
+    duration: int
+    price: int
+    old_price: int
 
 
 @dataclass(slots=True, frozen=True)
 class CreateBbipForecastsRequest:
     """Запрос прогноза BBIP."""
 
-    items: list[BbipForecastRequestItem]
+    items: list[BbipItem]
 
     def to_payload(self) -> dict[str, object]:
         """Сериализует запрос прогноза BBIP."""
 
-        return {"items": [item.to_payload() for item in self.items]}
+        return {
+            "items": [
+                {
+                    "itemId": item.item_id,
+                    "duration": item.duration,
+                    "price": item.price,
+                    "oldPrice": item.old_price,
+                }
+                for item in self.items
+            ]
+        }
 
 
 @dataclass(slots=True, frozen=True)
-class BbipForecast:
+class PromotionForecast(SerializableModel):
     """Прогноз BBIP по объявлению."""
 
     item_id: int | None
@@ -164,66 +204,60 @@ class BbipForecast:
     max_views: int | None
     total_price: int | None
     total_old_price: int | None
-    raw_payload: Mapping[str, object] = field(default_factory=dict)
 
 
 @dataclass(slots=True, frozen=True)
-class BbipForecastsResult:
+class BbipForecastsResult(SerializableModel):
     """Результат прогноза BBIP."""
 
-    items: list[BbipForecast]
-    raw_payload: Mapping[str, object] = field(default_factory=dict)
-
-
-@dataclass(slots=True, frozen=True)
-class BbipOrderItem:
-    """Параметры подключения BBIP по объявлению."""
-
-    item_id: int
-    duration: int
-    price: int
-    old_price: int
-
-    def to_payload(self) -> dict[str, object]:
-        """Сериализует одну заявку BBIP."""
-
-        return {
-            "itemId": self.item_id,
-            "duration": self.duration,
-            "price": self.price,
-            "oldPrice": self.old_price,
-        }
+    items: list[PromotionForecast]
 
 
 @dataclass(slots=True, frozen=True)
 class CreateBbipOrderRequest:
     """Запрос подключения BBIP."""
 
-    items: list[BbipOrderItem]
+    items: list[BbipItem]
 
     def to_payload(self) -> dict[str, object]:
         """Сериализует запрос подключения BBIP."""
 
-        return {"items": [item.to_payload() for item in self.items]}
+        return {
+            "items": [
+                {
+                    "itemId": item.item_id,
+                    "duration": item.duration,
+                    "price": item.price,
+                    "oldPrice": item.old_price,
+                }
+                for item in self.items
+            ]
+        }
 
 
 @dataclass(slots=True, frozen=True)
-class PromotionActionItem:
+class PromotionActionItem(SerializableModel):
     """Результат действия по одному объявлению."""
 
     item_id: int | None
     success: bool
     status: str | None = None
     message: str | None = None
-    raw_payload: Mapping[str, object] = field(default_factory=dict)
+    upstream_reference: str | None = None
 
 
 @dataclass(slots=True, frozen=True)
-class PromotionActionResult:
-    """Результат операции продвижения."""
+class PromotionActionResult(SerializableModel):
+    """Стабильный результат write-операции продвижения."""
 
-    items: list[PromotionActionItem]
-    raw_payload: Mapping[str, object] = field(default_factory=dict)
+    action: str
+    target: dict[str, object] | None
+    status: str
+    applied: bool
+    request_payload: dict[str, object] | None = None
+    warnings: list[str] = field(default_factory=list)
+    upstream_reference: str | None = None
+    details: dict[str, object] = field(default_factory=dict)
 
 
 @dataclass(slots=True, frozen=True)
@@ -239,75 +273,69 @@ class CreateBbipSuggestsRequest:
 
 
 @dataclass(slots=True, frozen=True)
-class BbipBudgetOption:
+class BbipBudgetOption(SerializableModel):
     """Вариант бюджета BBIP."""
 
     price: int | None
     old_price: int | None
     is_recommended: bool | None
-    raw_payload: Mapping[str, object] = field(default_factory=dict)
 
 
 @dataclass(slots=True, frozen=True)
-class BbipDurationRange:
+class BbipDurationRange(SerializableModel):
     """Доступный диапазон длительности BBIP."""
 
     start: int | None
     stop: int | None
     recommended: int | None
-    raw_payload: Mapping[str, object] = field(default_factory=dict)
 
 
 @dataclass(slots=True, frozen=True)
-class BbipSuggest:
+class BbipSuggest(SerializableModel):
     """Варианты бюджета BBIP по объявлению."""
 
     item_id: int | None
     duration: BbipDurationRange | None
     budgets: list[BbipBudgetOption]
-    raw_payload: Mapping[str, object] = field(default_factory=dict)
 
 
 @dataclass(slots=True, frozen=True)
-class BbipSuggestsResult:
+class BbipSuggestsResult(SerializableModel):
     """Результат вариантов бюджета BBIP."""
 
     items: list[BbipSuggest]
-    raw_payload: Mapping[str, object] = field(default_factory=dict)
 
 
 @dataclass(slots=True, frozen=True)
-class TrxPromotionApplyItem:
-    """Параметры запуска TrxPromo по объявлению."""
+class TrxItem(SerializableModel):
+    """Параметры TrxPromo по объявлению."""
 
     item_id: int
     commission: int
-    date_from: str
-    date_to: str | None = None
-
-    def to_payload(self) -> dict[str, object]:
-        """Сериализует один элемент запуска TrxPromo."""
-
-        payload: dict[str, object] = {
-            "itemID": self.item_id,
-            "commission": self.commission,
-            "dateFrom": self.date_from,
-        }
-        if self.date_to is not None:
-            payload["dateTo"] = self.date_to
-        return payload
+    date_from: datetime
+    date_to: datetime | None = None
 
 
 @dataclass(slots=True, frozen=True)
 class CreateTrxPromotionApplyRequest:
     """Запрос запуска TrxPromo."""
 
-    items: list[TrxPromotionApplyItem]
+    items: list[TrxItem]
 
     def to_payload(self) -> dict[str, object]:
         """Сериализует запрос запуска TrxPromo."""
 
-        return {"items": [item.to_payload() for item in self.items]}
+        items_payload: list[dict[str, object]] = []
+        for item in self.items:
+            entry: dict[str, object] = {
+                "itemID": item.item_id,
+                "commission": item.commission,
+                "dateFrom": item.date_from.isoformat(),
+            }
+            if item.date_to is not None:
+                entry["dateTo"] = item.date_to.isoformat()
+            items_payload.append(entry)
+        return {"items": items_payload}
 
 
 @dataclass(slots=True, frozen=True)
@@ -323,60 +351,54 @@ class CancelTrxPromotionRequest:
 
 
 @dataclass(slots=True, frozen=True)
-class TrxCommissionRange:
+class TrxCommissionRange(SerializableModel):
     """Диапазон комиссии TrxPromo."""
 
     value_min: int | None
     value_max: int | None
     step: int | None
-    raw_payload: Mapping[str, object] = field(default_factory=dict)
 
 
 @dataclass(slots=True, frozen=True)
-class TrxCommissionInfo:
+class TrxCommissionInfo(SerializableModel):
     """Доступность и комиссия TrxPromo по объявлению."""
 
     item_id: int | None
     commission: int | None
     is_active: bool | None
     valid_commission_range: TrxCommissionRange | None
-    raw_payload: Mapping[str, object] = field(default_factory=dict)
 
 
 @dataclass(slots=True, frozen=True)
-class TrxCommissionsResult:
+class TrxCommissionsResult(SerializableModel):
     """Список комиссий TrxPromo."""
 
     items: list[TrxCommissionInfo]
-    raw_payload: Mapping[str, object] = field(default_factory=dict)
 
 
 @dataclass(slots=True, frozen=True)
-class CpaAuctionBidOption:
+class CpaAuctionBidOption(SerializableModel):
     """Доступная ставка CPA-аукциона."""
 
     price_penny: int | None
     goodness: int | None
-    raw_payload: Mapping[str, object] = field(default_factory=dict)
 
 
 @dataclass(slots=True, frozen=True)
-class CpaAuctionItemBid:
+class CpaAuctionItemBid(SerializableModel):
     """Текущая и доступные ставки CPA-аукциона по объявлению."""
 
     item_id: int | None
     price_penny: int | None
-    expiration_time: str | None
+    expiration_time: datetime | None
     available_prices: list[CpaAuctionBidOption]
-    raw_payload: Mapping[str, object] = field(default_factory=dict)
 
 
 @dataclass(slots=True, frozen=True)
-class CpaAuctionBidsResult:
+class CpaAuctionBidsResult(SerializableModel):
     """Список ставок CPA-аукциона."""
 
     items: list[CpaAuctionItemBid]
-    raw_payload: Mapping[str, object] = field(default_factory=dict)
 
 
 @dataclass(slots=True, frozen=True)
@@ -405,45 +427,93 @@ class CreateItemBidsRequest:
 
 
 @dataclass(slots=True, frozen=True)
-class TargetActionBid:
+class TargetActionBid(SerializableModel):
     """Доступная цена целевого действия."""
 
     value_penny: int | None
     min_forecast: int | None
     max_forecast: int | None
     compare: int | None
-    raw_payload: Mapping[str, object] = field(default_factory=dict)
 
 
 @dataclass(slots=True, frozen=True)
-class TargetActionBudget:
-    """Бюджет целевого действия."""
+class TargetActionManualBids(SerializableModel):
+    """Детали ручной ставки цены целевого действия."""
 
-    budget_penny: int | None
-    budget_type: str | None
-    raw_payload: Mapping[str, object] = field(default_factory=dict)
-
-
-@dataclass(slots=True, frozen=True)
-class TargetActionPromotion:
-    """Текущая настройка цены целевого действия."""
-
-    item_id: int | None
-    action_type_id: int | None
-    is_auto: bool | None
     bid_penny: int | None
-    budget_penny: int | None
-    budget_type: str | None
-    available_bids: list[TargetActionBid]
-    raw_payload: Mapping[str, object] = field(default_factory=dict)
+    limit_penny: int | None
+    rec_bid_penny: int | None
+    min_bid_penny: int | None
+    max_bid_penny: int | None
+    min_limit_penny: int | None
+    max_limit_penny: int | None
+    bids: list[TargetActionBid]
 
 
 @dataclass(slots=True, frozen=True)
-class TargetActionPromotionsResult:
-    """Набор текущих настроек цены целевого действия."""
+class TargetActionBudget(SerializableModel):
+    """Диапазон доступных бюджетов цены целевого действия."""
+
+    budget_penny: int | None
+    min_forecast: int | None
+    max_forecast: int | None
+    compare: int | None
+
+
+@dataclass(slots=True, frozen=True)
+class TargetActionAutoBids(SerializableModel):
+    """Детали автоматического продвижения цены целевого действия."""
+
+    budget_penny: int | None
+    budget_type: str | None
+    min_budget_penny: int | None
+    max_budget_penny: int | None
+    daily_budget: list[TargetActionBudget]
+    weekly_budget: list[TargetActionBudget]
+    monthly_budget: list[TargetActionBudget]
+
+
+@dataclass(slots=True, frozen=True)
+class TargetActionGetBidsResult(SerializableModel):
+    """Ответ GET /cpxpromo/1/getBids/{itemId}."""
+
+    action_type_id: int
+    selected_type: str
+    auto: TargetActionAutoBids | None = None
+    manual: TargetActionManualBids | None = None
+
+
+@dataclass(slots=True, frozen=True)
+class TargetActionPromotion(SerializableModel):
+    """Текущая настройка цены целевого действия по объявлению."""
+
+    item_id: int
+    action_type_id: int
+    auto: TargetActionAutoPromotion | None = None
+    manual: TargetActionManualPromotion | None = None
+
+
+@dataclass(slots=True, frozen=True)
+class TargetActionAutoPromotion(SerializableModel):
+    """Текущий auto-budget по объявлению."""
+
+    budget_penny: int | None
+    budget_type: str | None
+
+
+@dataclass(slots=True, frozen=True)
+class TargetActionManualPromotion(SerializableModel):
+    """Текущая manual-настройка по объявлению."""
+
+    bid_penny: int | None
+    limit_penny: int | None
+
+
+@dataclass(slots=True, frozen=True)
+class TargetActionPromotionsByItemIdsResult(SerializableModel):
+    """Ответ POST /cpxpromo/1/getPromotionsByItemIds."""
 
     items: list[TargetActionPromotion]
-    raw_payload: Mapping[str, object] = field(default_factory=dict)
 
 
 @dataclass(slots=True, frozen=True)
@@ -513,7 +583,7 @@ class UpdateManualBidRequest:
 
 
 @dataclass(slots=True, frozen=True)
-class AutostrategyBudgetPoint:
+class AutostrategyBudgetPoint(SerializableModel):
     """Оценка бюджета автокампании."""
 
     total: int | None
@@ -523,11 +593,10 @@ class AutostrategyBudgetPoint:
     calls_to: int | None
     views_from: int | None
     views_to: int | None
-    raw_payload: Mapping[str, object] = field(default_factory=dict)
 
 
 @dataclass(slots=True, frozen=True)
-class AutostrategyPriceRange:
+class AutostrategyPriceRange(SerializableModel):
     """Ценовой диапазон бюджета автокампании."""
 
     price_from: int | None
@@ -537,96 +606,194 @@ class AutostrategyPriceRange:
     calls_to: int | None
     views_from: int | None
     views_to: int | None
-    raw_payload: Mapping[str, object] = field(default_factory=dict)
 
 
 @dataclass(slots=True, frozen=True)
-class AutostrategyBudget:
+class AutostrategyBudget(SerializableModel):
     """Расчет бюджета автокампании."""
 
-    budget_id: str | None
+    calc_id: int | None
     recommended: AutostrategyBudgetPoint | None
     minimal: AutostrategyBudgetPoint | None
     maximal: AutostrategyBudgetPoint | None
     price_ranges: list[AutostrategyPriceRange]
-    raw_payload: Mapping[str, object] = field(default_factory=dict)
 
 
 @dataclass(slots=True, frozen=True)
 class CreateAutostrategyBudgetRequest:
     """Запрос расчета бюджета кампании."""
 
-    payload: Mapping[str, object]
+    campaign_type: str
+    start_time: datetime | None = None
+    finish_time: datetime | None = None
+    items: list[int] | None = None
 
     def to_payload(self) -> dict[str, object]:
         """Сериализует запрос расчета бюджета."""
 
-        return dict(self.payload)
+        payload: dict[str, object] = {"campaignType": self.campaign_type}
+        if self.start_time is not None:
+            payload["startTime"] = self.start_time.isoformat()
+        if self.finish_time is not None:
+            payload["finishTime"] = self.finish_time.isoformat()
+        if self.items is not None:
+            payload["items"] = list(self.items)
+        return payload
 
 
 @dataclass(slots=True, frozen=True)
-class CampaignActionResult:
+class CampaignActionResult(SerializableModel):
     """Результат операции с автокампанией."""
 
-    campaign_id: int | None
-    status: str | None
-    raw_payload: Mapping[str, object] = field(default_factory=dict)
+    campaign: CampaignInfo | None
 
 
 @dataclass(slots=True, frozen=True)
-class CampaignInfo:
+class CampaignInfo(SerializableModel):
     """Информация об автокампании."""
 
     campaign_id: int | None
     campaign_type: str | None
-    status: str | None
     budget: int | None
     balance: int | None
+    create_time: datetime | None
+    description: str | None
+    finish_time: datetime | None
+    items_count: int | None
+    start_time: datetime | None
+    status_id: int | None
     title: str | None
-    raw_payload: Mapping[str, object] = field(default_factory=dict)
+    update_time: datetime | None
+    user_id: int | None
+    version: int | None
 
 
 @dataclass(slots=True, frozen=True)
-class CampaignsResult:
+class CampaignForecastRange(SerializableModel):
+    """Диапазон прогноза кампании."""
+
+    from_value: int | None
+    to_value: int | None
+
+
+@dataclass(slots=True, frozen=True)
+class CampaignForecast(SerializableModel):
+    """Прогноз кампании автостратегии."""
+
+    calls: CampaignForecastRange | None
+    views: CampaignForecastRange | None
+
+
+@dataclass(slots=True, frozen=True)
+class CampaignItem(SerializableModel):
+    """Объявление внутри автокампании."""
+
+    item_id: int | None
+    is_active: bool | None
+
+
+@dataclass(slots=True, frozen=True)
+class CampaignDetailsResult(SerializableModel):
+    """Полный ответ ручки информации о кампании."""
+
+    campaign: CampaignInfo | None
+    forecast: CampaignForecast | None
+    items: list[CampaignItem]
+
+
+@dataclass(slots=True, frozen=True)
+class CampaignsResult(SerializableModel):
     """Список автокампаний."""
 
     items: list[CampaignInfo]
-    raw_payload: Mapping[str, object] = field(default_factory=dict)
+    total_count: int | None = None
 
 
 @dataclass(slots=True, frozen=True)
-class AutostrategyStat:
+class AutostrategyStat(SerializableModel):
     """Статистика автокампании."""
 
-    campaign_id: int | None
-    views: int | None
-    contacts: int | None
-    spend: int | None
-    raw_payload: Mapping[str, object] = field(default_factory=dict)
+    items: list[AutostrategyStatItem]
+    totals: AutostrategyStatTotals | None
 
 
 @dataclass(slots=True, frozen=True)
 class CreateAutostrategyCampaignRequest:
     """Запрос создания автокампании."""
 
-    payload: Mapping[str, object]
+    campaign_type: str
+    title: str
+    budget: int | None = None
+    budget_bonus: int | None = None
+    budget_real: int | None = None
+    calc_id: int | None = None
+    description: str | None = None
+    finish_time: datetime | None = None
+    items: list[int] | None = None
+    start_time: datetime | None = None
 
     def to_payload(self) -> dict[str, object]:
         """Сериализует запрос создания кампании."""
 
-        return dict(self.payload)
+        payload: dict[str, object] = {
+            "campaignType": self.campaign_type,
+            "title": self.title,
+        }
+        if self.budget is not None:
+            payload["budget"] = self.budget
+        if self.budget_bonus is not None:
+            payload["budgetBonus"] = self.budget_bonus
+        if self.budget_real is not None:
+            payload["budgetReal"] = self.budget_real
+        if self.calc_id is not None:
+            payload["calcId"] = self.calc_id
+        if self.description is not None:
+            payload["description"] = self.description
+        if self.finish_time is not None:
+            payload["finishTime"] = self.finish_time.isoformat()
+        if self.items is not None:
+            payload["items"] = list(self.items)
+        if self.start_time is not None:
+            payload["startTime"] = self.start_time.isoformat()
+        return payload
 
 
 @dataclass(slots=True, frozen=True)
 class UpdateAutostrategyCampaignRequest:
     """Запрос редактирования автокампании."""
 
-    payload: Mapping[str, object]
+    campaign_id: int
+    version: int
+    budget: int | None = None
+    calc_id: int | None = None
+    description: str | None = None
+    finish_time: datetime | None = None
+    items: list[int] | None = None
+    start_time: datetime | None = None
+    title: str | None = None
 
     def to_payload(self) -> dict[str, object]:
         """Сериализует запрос редактирования кампании."""
 
-        return dict(self.payload)
+        payload: dict[str, object] = {
+            "campaignId": self.campaign_id,
+            "version": self.version,
+        }
+        if self.budget is not None:
+            payload["budget"] = self.budget
+        if self.calc_id is not None:
+            payload["calcId"] = self.calc_id
+        if self.description is not None:
+            payload["description"] = self.description
+        if self.finish_time is not None:
+            payload["finishTime"] = self.finish_time.isoformat()
+        if self.items is not None:
+            payload["items"] = list(self.items)
+        if self.start_time is not None:
+            payload["startTime"] = self.start_time.isoformat()
+        if self.title is not None:
+            payload["title"] = self.title
+        return payload
 
 
 @dataclass(slots=True, frozen=True)
@@ -646,23 +813,83 @@ class StopAutostrategyCampaignRequest:
     """Запрос остановки автокампании."""
 
     campaign_id: int
+    version: int
 
     def to_payload(self) -> dict[str, object]:
         """Сериализует запрос остановки кампании."""
 
-        return {"campaignId": self.campaign_id}
+        return {"campaignId": self.campaign_id, "version": self.version}
+
+
+@dataclass(slots=True, frozen=True)
+class CampaignUpdateTimeFilter:
+    """Фильтр кампаний по времени обновления."""
+
+    from_time: datetime | None = None
+    to_time: datetime | None = None
+
+    def to_payload(self) -> dict[str, object]:
+        """Сериализует фильтр по времени обновления."""
+
+        payload: dict[str, object] = {}
+        if self.from_time is not None:
+            payload["from"] = self.from_time.isoformat()
+        if self.to_time is not None:
+            payload["to"] = self.to_time.isoformat()
+        return payload
+
+
+@dataclass(slots=True, frozen=True)
+class CampaignListFilter:
+    """Фильтр списка кампаний."""
+
+    by_update_time: CampaignUpdateTimeFilter | None = None
+
+    def to_payload(self) -> dict[str, object]:
+        """Сериализует фильтр списка кампаний."""
+
+        payload: dict[str, object] = {}
+        if self.by_update_time is not None:
+            payload["byUpdateTime"] = self.by_update_time.to_payload()
+        return payload
+
+
+@dataclass(slots=True, frozen=True)
+class CampaignOrderBy:
+    """Параметры сортировки списка кампаний."""
+
+    column: str
+    direction: str
+
+    def to_payload(self) -> dict[str, object]:
+        """Сериализует сортировку списка кампаний."""
+
+        return {"column": self.column, "direction": self.direction}
 
 
 @dataclass(slots=True, frozen=True)
 class ListAutostrategyCampaignsRequest:
     """Запрос списка автокампаний."""
 
-    payload: Mapping[str, object] = field(default_factory=dict)
+    limit: int
+    offset: int | None = None
+    status_id: list[int] | None = None
+    order_by: list[CampaignOrderBy] | None = None
+    filter: CampaignListFilter | None = None
 
     def to_payload(self) -> dict[str, object]:
         """Сериализует запрос списка кампаний."""
 
-        return dict(self.payload)
+        payload: dict[str, object] = {"limit": self.limit}
+        if self.offset is not None:
+            payload["offset"] = self.offset
+        if self.status_id is not None:
+            payload["statusId"] = list(self.status_id)
+        if self.order_by is not None:
+            payload["orderBy"] = [item.to_payload() for item in self.order_by]
+        if self.filter is not None:
+            payload["filter"] = self.filter.to_payload()
+        return payload
 
 
 @dataclass(slots=True, frozen=True)
@@ -675,3 +902,22 @@ class GetAutostrategyStatRequest:
         """Сериализует запрос статистики кампании."""
 
         return {"campaignId": self.campaign_id}
+
+
+@dataclass(slots=True, frozen=True)
+class AutostrategyStatItem(SerializableModel):
+    """Статистика кампании за день."""
+
+    date: datetime | None
+    calls: int | None
+    views: int | None
+    calls_forecast: CampaignForecastRange | None = None
+    views_forecast: CampaignForecastRange | None = None
+
+
+@dataclass(slots=True, frozen=True)
+class AutostrategyStatTotals(SerializableModel):
+    """Суммарная статистика кампании."""
+
+    calls: int | None
+    views: int | None

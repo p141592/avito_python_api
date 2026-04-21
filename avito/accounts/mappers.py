@@ -3,12 +3,13 @@
 from __future__ import annotations
 
 from collections.abc import Mapping
+from datetime import datetime
 from typing import cast
 
 from avito.accounts.models import (
+    AccountActionResult,
     AccountBalance,
     AccountProfile,
-    ActionResult,
     AhUserStatus,
     CompanyPhone,
     CompanyPhonesResult,
@@ -46,6 +47,18 @@ def _as_str(payload: Payload, *keys: str) -> str | None:
     return None
 
 
+def _as_datetime(payload: Payload, *keys: str) -> datetime | None:
+    for key in keys:
+        value = payload.get(key)
+        if isinstance(value, str):
+            normalized = value.replace("Z", "+00:00")
+            try:
+                return datetime.fromisoformat(normalized)
+            except ValueError:
+                continue
+    return None
+
+
 def _as_int(payload: Payload, *keys: str) -> int | None:
     for key in keys:
         value = payload.get(key)
@@ -79,11 +92,10 @@ def map_account_profile(payload: object) -> AccountProfile:
 
     data = _expect_mapping(payload)
     return AccountProfile(
-        id=_as_int(data, "id", "user_id"),
+        user_id=_as_int(data, "id", "user_id"),
         name=_as_str(data, "name", "title"),
         email=_as_str(data, "email"),
         phone=_as_str(data, "phone"),
-        raw_payload=data,
     )
 
 
@@ -105,7 +117,6 @@ def map_account_balance(payload: object) -> AccountBalance:
         bonus=bonus,
         total=total,
         currency=_as_str(wallet_data, "currency"),
-        raw_payload=data,
     )
 
 
@@ -116,19 +127,17 @@ def map_operations_history(payload: object) -> OperationsHistoryResult:
     operations = [
         OperationRecord(
             id=_as_str(item, "id", "operation_id"),
-            created_at=_as_str(item, "created_at", "createdAt", "date"),
+            created_at=_as_datetime(item, "created_at", "createdAt", "date"),
             amount=_as_float(item, "amount", "price", "sum"),
             operation_type=_as_str(item, "type", "operation_type", "operationType"),
             status=_as_str(item, "status"),
             description=_as_str(item, "description", "title"),
-            raw_payload=item,
         )
         for item in _as_list(data, "operations", "items", "result")
     ]
     return OperationsHistoryResult(
         operations=operations,
         total=_as_int(data, "total", "count"),
-        raw_payload=data,
     )
 
 
@@ -140,7 +149,6 @@ def map_ah_user_status(payload: object) -> AhUserStatus:
         user_id=_as_int(data, "user_id", "userId", "id"),
         is_active=_as_bool(data, "is_active", "isActive", "active"),
         role=_as_str(data, "role", "status"),
-        raw_payload=data,
     )
 
 
@@ -155,11 +163,10 @@ def map_employees(payload: object) -> EmployeesResult:
             name=_as_str(item, "name", "title"),
             phone=_as_str(item, "phone"),
             email=_as_str(item, "email"),
-            raw_payload=item,
         )
         for item in _as_list(data, "employees", "items", "result")
     ]
-    return EmployeesResult(items=items, total=_as_int(data, "total", "count"), raw_payload=data)
+    return EmployeesResult(items=items, total=_as_int(data, "total", "count"))
 
 
 def map_company_phones(payload: object) -> CompanyPhonesResult:
@@ -168,14 +175,13 @@ def map_company_phones(payload: object) -> CompanyPhonesResult:
     data = _expect_mapping(payload)
     items = [
         CompanyPhone(
-            id=_as_int(item, "id", "phone_id", "phoneId"),
+            phone_id=_as_int(item, "id", "phone_id", "phoneId"),
             phone=_as_str(item, "phone", "value"),
             comment=_as_str(item, "comment", "description"),
-            raw_payload=item,
         )
         for item in _as_list(data, "phones", "items", "result")
     ]
-    return CompanyPhonesResult(items=items, raw_payload=data)
+    return CompanyPhonesResult(items=items)
 
 
 def map_employee_items(payload: object) -> EmployeeItemsResult:
@@ -188,22 +194,21 @@ def map_employee_items(payload: object) -> EmployeeItemsResult:
             title=_as_str(item, "title"),
             status=_as_str(item, "status"),
             price=_as_float(item, "price"),
-            raw_payload=item,
         )
         for item in _as_list(data, "items", "result")
     ]
-    return EmployeeItemsResult(items=items, total=_as_int(data, "total", "count"), raw_payload=data)
+    return EmployeeItemsResult(items=items, total=_as_int(data, "total", "count"))
 
 
-def map_action_result(payload: object) -> ActionResult:
+def map_action_result(payload: object) -> AccountActionResult:
     """Преобразует ответ мутационной операции в dataclass."""
 
     if isinstance(payload, Mapping):
         data = cast(Payload, payload)
         success = bool(data.get("success", True))
         message = _as_str(data, "message", "status")
-        return ActionResult(success=success, message=message, raw_payload=data)
-    return ActionResult(success=True, raw_payload={})
+        return AccountActionResult(success=success, message=message)
+    return AccountActionResult(success=True)
 
 
 __all__ = (

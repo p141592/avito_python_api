@@ -2,29 +2,30 @@
 
 from __future__ import annotations
 
-from collections.abc import Mapping
-from dataclasses import dataclass, field
+from dataclasses import dataclass
+from datetime import datetime
+from typing import BinaryIO
+
+from avito.core.serialization import SerializableModel
 
 
 @dataclass(slots=True, frozen=True)
-class ChatInfo:
+class ChatInfo(SerializableModel):
     """Информация о чате."""
 
-    id: str | None
+    chat_id: str | None
     user_id: int | None
     title: str | None
     unread_count: int | None
     last_message_text: str | None
-    raw_payload: Mapping[str, object] = field(default_factory=dict)
 
 
 @dataclass(slots=True, frozen=True)
-class ChatsResult:
+class ChatsResult(SerializableModel):
     """Список чатов."""
 
     items: list[ChatInfo]
     total: int | None = None
-    raw_payload: Mapping[str, object] = field(default_factory=dict)
 
 
 @dataclass(slots=True, frozen=True)
@@ -62,90 +63,105 @@ class SendImageMessageRequest:
 
 
 @dataclass(slots=True, frozen=True)
-class MessageInfo:
+class MessageInfo(SerializableModel):
     """Информация о сообщении чата."""
 
-    id: str | None
+    message_id: str | None
     chat_id: str | None
     author_id: int | None
     text: str | None
-    created_at: str | None
+    created_at: datetime | None
     direction: str | None
     type: str | None
-    raw_payload: Mapping[str, object] = field(default_factory=dict)
 
 
 @dataclass(slots=True, frozen=True)
-class MessagesResult:
+class MessagesResult(SerializableModel):
     """Список сообщений чата."""
 
     items: list[MessageInfo]
     total: int | None = None
-    raw_payload: Mapping[str, object] = field(default_factory=dict)
 
 
 @dataclass(slots=True, frozen=True)
-class MessageActionResult:
+class MessageActionResult(SerializableModel):
     """Результат операции с сообщением или чатом."""
 
     success: bool
     message_id: str | None = None
     status: str | None = None
-    raw_payload: Mapping[str, object] = field(default_factory=dict)
 
 
 @dataclass(slots=True, frozen=True)
-class VoiceFile:
+class VoiceFile(SerializableModel):
     """Голосовое сообщение."""
 
     id: str | None
     url: str | None
     duration: int | None
     transcript: str | None
-    raw_payload: Mapping[str, object] = field(default_factory=dict)
 
 
 @dataclass(slots=True, frozen=True)
-class VoiceFilesResult:
+class VoiceFilesResult(SerializableModel):
     """Список голосовых сообщений."""
 
     items: list[VoiceFile]
-    raw_payload: Mapping[str, object] = field(default_factory=dict)
 
 
 @dataclass(slots=True, frozen=True)
-class UploadImageResult:
+class UploadImageResult(SerializableModel):
     """Результат загрузки изображения."""
 
     image_id: str | None
     url: str | None
-    raw_payload: Mapping[str, object] = field(default_factory=dict)
 
 
 @dataclass(slots=True, frozen=True)
-class UploadImagesResult:
+class UploadImagesResult(SerializableModel):
     """Список загруженных изображений."""
 
     items: list[UploadImageResult]
-    raw_payload: Mapping[str, object] = field(default_factory=dict)
 
 
 @dataclass(slots=True, frozen=True)
-class SubscriptionInfo:
+class UploadImageFile:
+    """Файл изображения для загрузки в мессенджер."""
+
+    field_name: str
+    filename: str
+    content: bytes | BinaryIO
+    content_type: str
+
+
+@dataclass(slots=True, frozen=True)
+class UploadImagesRequest:
+    """Запрос загрузки изображений для сообщений."""
+
+    files: list[UploadImageFile]
+
+    def to_files(self) -> dict[str, object]:
+        """Сериализует multipart-структуру для transport."""
+
+        return {
+            file.field_name: (file.filename, file.content, file.content_type) for file in self.files
+        }
+
+
+@dataclass(slots=True, frozen=True)
+class SubscriptionInfo(SerializableModel):
     """Подписка webhook мессенджера."""
 
     url: str | None
     version: str | None
     status: str | None
-    raw_payload: Mapping[str, object] = field(default_factory=dict)
 
 
 @dataclass(slots=True, frozen=True)
-class SubscriptionsResult:
+class SubscriptionsResult(SerializableModel):
     """Список webhook-подписок."""
 
     items: list[SubscriptionInfo]
-    raw_payload: Mapping[str, object] = field(default_factory=dict)
 
 
 @dataclass(slots=True, frozen=True)
@@ -178,12 +194,11 @@ class UpdateWebhookRequest:
 
 
 @dataclass(slots=True, frozen=True)
-class WebhookActionResult:
+class WebhookActionResult(SerializableModel):
     """Результат операции с webhook."""
 
     success: bool
     status: str | None = None
-    raw_payload: Mapping[str, object] = field(default_factory=dict)
 
 
 @dataclass(slots=True, frozen=True)
@@ -211,21 +226,19 @@ class SpecialOfferAvailableRequest:
 
 
 @dataclass(slots=True, frozen=True)
-class SpecialOfferAvailableItem:
+class SpecialOfferAvailableItem(SerializableModel):
     """Доступное объявление для рассылки спецпредложений."""
 
     item_id: int | None
     title: str | None
     is_available: bool | None
-    raw_payload: Mapping[str, object] = field(default_factory=dict)
 
 
 @dataclass(slots=True, frozen=True)
-class SpecialOfferAvailableResult:
+class SpecialOfferAvailableResult(SerializableModel):
     """Результат получения доступных объявлений."""
 
     items: list[SpecialOfferAvailableItem]
-    raw_payload: Mapping[str, object] = field(default_factory=dict)
 
 
 @dataclass(slots=True, frozen=True)
@@ -251,12 +264,11 @@ class MultiCreateSpecialOfferRequest:
 
 
 @dataclass(slots=True, frozen=True)
-class MultiCreateSpecialOfferResult:
+class MultiCreateSpecialOfferResult(SerializableModel):
     """Результат создания рассылки."""
 
     campaign_id: str | None
     status: str | None
-    raw_payload: Mapping[str, object] = field(default_factory=dict)
 
 
 @dataclass(slots=True, frozen=True)
@@ -284,24 +296,22 @@ class SpecialOfferStatsRequest:
 
 
 @dataclass(slots=True, frozen=True)
-class SpecialOfferStatsResult:
+class SpecialOfferStatsResult(SerializableModel):
     """Статистика рассылки."""
 
     campaign_id: str | None
     sent_count: int | None
     delivered_count: int | None
     read_count: int | None
-    raw_payload: Mapping[str, object] = field(default_factory=dict)
 
 
 @dataclass(slots=True, frozen=True)
-class TariffInfo:
+class TariffInfo(SerializableModel):
     """Информация о тарифе рассылок."""
 
     price: float | None
     currency: str | None
     daily_limit: int | None
-    raw_payload: Mapping[str, object] = field(default_factory=dict)
 
 
 __all__ = (
@@ -326,6 +336,8 @@ __all__ = (
     "TariffInfo",
     "UnsubscribeWebhookRequest",
     "UpdateWebhookRequest",
+    "UploadImageFile",
+    "UploadImagesRequest",
     "UploadImageResult",
     "UploadImagesResult",
     "VoiceFile",

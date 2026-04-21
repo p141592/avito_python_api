@@ -2,156 +2,182 @@
 
 from __future__ import annotations
 
-from collections.abc import Mapping
 from dataclasses import dataclass
 
-from avito.core import Transport
+from avito.core import ValidationError
+from avito.core.domain import DomainObject
 from avito.cpa.client import (
     CallTrackingClient,
+    CpaArchiveClient,
     CpaCallsClient,
     CpaChatsClient,
     CpaLeadsClient,
-    CpaLegacyClient,
 )
 from avito.cpa.models import (
-    CallTrackingCallInfo,
+    CallTrackingCallResponse,
+    CallTrackingCallsRequest,
     CallTrackingCallsResult,
+    CallTrackingGetCallByIdRequest,
     CallTrackingRecord,
     CpaActionResult,
     CpaAudioRecord,
     CpaBalanceInfo,
+    CpaCallByIdRequest,
+    CpaCallComplaintRequest,
     CpaCallInfo,
+    CpaCallsByTimeRequest,
     CpaCallsResult,
     CpaChatInfo,
+    CpaChatsByTimeRequest,
     CpaChatsResult,
+    CpaLeadComplaintRequest,
+    CpaPhonesFromChatsRequest,
     CpaPhonesResult,
-    JsonRequest,
 )
-
-
-@dataclass(slots=True, frozen=True)
-class DomainObject:
-    """Базовый доменный объект раздела cpa."""
-
-    transport: Transport
 
 
 @dataclass(slots=True, frozen=True)
 class CpaLead(DomainObject):
     """Доменный объект CPA-лида и связанных lead-операций."""
 
-    resource_id: int | str | None = None
     user_id: int | str | None = None
 
-    def create_complaint_by_action_id(self, *, payload: Mapping[str, object]) -> CpaActionResult:
-        return CpaLeadsClient(self.transport).create_complaint_by_action_id(JsonRequest(payload))
+    def create_complaint_by_action_id(
+        self,
+        *,
+        request: CpaLeadComplaintRequest,
+    ) -> CpaActionResult:
+        return CpaLeadsClient(self.transport).create_complaint_by_action_id(request)
 
-    def create_balance_info_v3(
-        self, *, payload: Mapping[str, object] | None = None
-    ) -> CpaBalanceInfo:
-        return CpaLeadsClient(self.transport).get_balance_info_v3(JsonRequest(payload or {}))
+    def get_balance_info(self) -> CpaBalanceInfo:
+        return CpaLeadsClient(self.transport).get_balance_info()
 
 
 @dataclass(slots=True, frozen=True)
 class CpaChat(DomainObject):
     """Доменный объект CPA-чата."""
 
-    resource_id: int | str | None = None
+    action_id: int | str | None = None
     user_id: int | str | None = None
 
     def get(self, *, action_id: int | str | None = None) -> CpaChatInfo:
         return CpaChatsClient(self.transport).get_by_action_id(
-            action_id=action_id or self._require_resource_id()
+            action_id=action_id or self._require_action_id()
         )
 
     def list(
         self,
         *,
-        payload: Mapping[str, object],
+        request: CpaChatsByTimeRequest,
         version: int = 2,
     ) -> CpaChatsResult:
         client = CpaChatsClient(self.transport)
-        request = JsonRequest(payload)
         if version == 1:
-            return client.list_by_time_v1(request)
-        return client.list_by_time_v2(request)
+            return client.list_by_time_classic(request)
+        return client.list_by_time(request)
 
-    def get_phones_info_from_chats(self, *, payload: Mapping[str, object]) -> CpaPhonesResult:
-        return CpaChatsClient(self.transport).get_phones_info(JsonRequest(payload))
+    def get_phones_info_from_chats(
+        self,
+        *,
+        request: CpaPhonesFromChatsRequest,
+    ) -> CpaPhonesResult:
+        return CpaChatsClient(self.transport).get_phones_info(request)
 
-    def _require_resource_id(self) -> str:
-        if self.resource_id is None:
-            raise ValueError("Для операции требуется `action_id` или `chat_id`.")
-        return str(self.resource_id)
+    def _require_action_id(self) -> str:
+        if self.action_id is None:
+            raise ValidationError("Для операции требуется `action_id`.")
+        return str(self.action_id)
 
 
 @dataclass(slots=True, frozen=True)
 class CpaCall(DomainObject):
     """Доменный объект CPA-звонка."""
 
-    resource_id: int | str | None = None
     user_id: int | str | None = None
 
-    def list(self, *, payload: Mapping[str, object]) -> CpaCallsResult:
-        return CpaCallsClient(self.transport).list_by_time_v2(JsonRequest(payload))
+    def list(self, *, date_time_from: str, date_time_to: str) -> CpaCallsResult:
+        return CpaCallsClient(self.transport).list_by_time(
+            CpaCallsByTimeRequest(
+                date_time_from=date_time_from,
+                date_time_to=date_time_to,
+            )
+        )
 
-    def create_create_complaint(self, *, payload: Mapping[str, object]) -> CpaActionResult:
-        return CpaCallsClient(self.transport).create_complaint(JsonRequest(payload))
+    def create_complaint(self, *, call_id: int, reason: str) -> CpaActionResult:
+        return CpaCallsClient(self.transport).create_complaint(
+            CpaCallComplaintRequest(call_id=call_id, reason=reason)
+        )
 
 
 @dataclass(slots=True, frozen=True)
-class CpaLegacy(DomainObject):
-    """Доменный объект legacy-операций CPA."""
+class CpaArchive(DomainObject):
+    """Доменный объект архивных операций CPA."""
 
-    resource_id: int | str | None = None
+    call_id: int | str | None = None
     user_id: int | str | None = None
 
-    def legacy_get_call(self, *, call_id: int | str | None = None) -> CpaAudioRecord:
-        return CpaLegacyClient(self.transport).get_record(
-            call_id=call_id or self._require_resource_id()
+    def get_call(self, *, call_id: int | str | None = None) -> CpaAudioRecord:
+        return CpaArchiveClient(self.transport).get_record(
+            call_id=call_id or self._require_call_id()
         )
 
-    def legacy_create_balance_info_v2(
-        self,
-        *,
-        payload: Mapping[str, object] | None = None,
-    ) -> CpaBalanceInfo:
-        return CpaLegacyClient(self.transport).get_balance_info_v2(JsonRequest(payload or {}))
+    def get_balance_info(self) -> CpaBalanceInfo:
+        return CpaArchiveClient(self.transport).get_balance_info()
 
-    def legacy_create_call_by_id_v2(self, *, payload: Mapping[str, object]) -> CpaCallInfo:
-        return CpaLegacyClient(self.transport).get_call_by_id_v2(JsonRequest(payload))
+    def get_call_by_id(self, *, call_id: int) -> CpaCallInfo:
+        return CpaArchiveClient(self.transport).get_call_by_id(
+            CpaCallByIdRequest(call_id=call_id)
+        )
 
-    def _require_resource_id(self) -> str:
-        if self.resource_id is None:
-            raise ValueError("Для операции требуется `call_id`.")
-        return str(self.resource_id)
+    def _require_call_id(self) -> str:
+        if self.call_id is None:
+            raise ValidationError("Для операции требуется `call_id`.")
+        return str(self.call_id)
 
 
 @dataclass(slots=True, frozen=True)
 class CallTrackingCall(DomainObject):
     """Доменный объект CallTracking."""
 
-    resource_id: int | str | None = None
+    call_id: int | str | None = None
     user_id: int | str | None = None
 
-    def get(self, *, payload: Mapping[str, object] | None = None) -> CallTrackingCallInfo:
-        request_payload = dict(payload or {})
-        if "callId" not in request_payload and self.resource_id is not None:
-            request_payload["callId"] = self.resource_id
-        return CallTrackingClient(self.transport).get_call_by_id(JsonRequest(request_payload))
+    def get(self, *, call_id: int | None = None) -> CallTrackingCallResponse:
+        resolved_call_id = call_id or (
+            int(self.call_id) if self.call_id is not None else None
+        )
+        if resolved_call_id is None:
+            raise ValidationError("Для операции требуется `call_id`.")
+        return CallTrackingClient(self.transport).get_call_by_id(
+            CallTrackingGetCallByIdRequest(call_id=resolved_call_id)
+        )
 
-    def list(self, *, payload: Mapping[str, object]) -> CallTrackingCallsResult:
-        return CallTrackingClient(self.transport).get_calls(JsonRequest(payload))
+    def list(
+        self,
+        *,
+        date_time_from: str,
+        date_time_to: str,
+        limit: int | None = None,
+        offset: int | None = None,
+    ) -> CallTrackingCallsResult:
+        return CallTrackingClient(self.transport).get_calls(
+            CallTrackingCallsRequest(
+                date_time_from=date_time_from,
+                date_time_to=date_time_to,
+                limit=limit,
+                offset=offset,
+            )
+        )
 
     def download(self, *, call_id: int | str | None = None) -> CallTrackingRecord:
         return CallTrackingClient(self.transport).get_record_by_call_id(
-            call_id=call_id or self._require_resource_id()
+            call_id=call_id or self._require_call_id()
         )
 
-    def _require_resource_id(self) -> str:
-        if self.resource_id is None:
-            raise ValueError("Для операции требуется `call_id`.")
-        return str(self.resource_id)
+    def _require_call_id(self) -> str:
+        if self.call_id is None:
+            raise ValidationError("Для операции требуется `call_id`.")
+        return str(self.call_id)
 
 
-__all__ = ("CallTrackingCall", "CpaCall", "CpaChat", "CpaLead", "CpaLegacy", "DomainObject")
+__all__ = ("CallTrackingCall", "CpaArchive", "CpaCall", "CpaChat", "CpaLead")

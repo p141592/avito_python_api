@@ -99,7 +99,6 @@ def map_job_action(payload: object) -> JobActionResult:
         id=identifier or (str(numeric_id) if numeric_id is not None else None),
         status=_str(source, "status", "state"),
         message=_str(source, "message"),
-        raw_payload=data,
     )
 
 
@@ -111,7 +110,6 @@ def map_application(payload: Payload) -> ApplicationInfo:
         state=_str(payload, "state", "status"),
         is_viewed=_bool(payload, "is_viewed", "isViewed"),
         applicant_name=_str(_mapping(payload, "applicant"), "name", "fullName"),
-        raw_payload=payload,
     )
 
 
@@ -124,7 +122,6 @@ def map_applications(payload: object) -> ApplicationsResult:
             map_application(item)
             for item in _list(data, "applies", "applications", "items", "result")
         ],
-        raw_payload=data,
     )
 
 
@@ -137,12 +134,10 @@ def map_application_ids(payload: object) -> ApplicationIdsResult:
             ApplicationIdItem(
                 id=_str(item, "id"),
                 updated_at=_str(item, "updatedAt", "updated_at"),
-                raw_payload=item,
             )
             for item in _list(data, "items", "applies", "result")
         ],
         cursor=_str(_mapping(data, "meta"), "cursor") or _str(data, "cursor"),
-        raw_payload=data,
     )
 
 
@@ -155,11 +150,9 @@ def map_application_states(payload: object) -> ApplicationStatesResult:
             ApplicationState(
                 slug=_str(item, "slug", "id"),
                 description=_str(item, "description", "name"),
-                raw_payload=item,
             )
             for item in _list(data, "states", "items", "result")
         ],
-        raw_payload=data,
     )
 
 
@@ -172,7 +165,6 @@ def map_resume(payload: Payload) -> ResumeInfo:
         location=_str(payload, "location")
         or _str(_mapping(payload, "address_details"), "location"),
         salary=_int(payload, "salary") or _int(salary_payload, "value", "from"),
-        raw_payload=payload,
     )
 
 
@@ -185,7 +177,6 @@ def map_resumes(payload: object) -> ResumesResult:
         items=[map_resume(item) for item in _list(data, "resumes", "items", "result")],
         cursor=_str(meta, "cursor"),
         total=_int(meta, "total"),
-        raw_payload=data,
     )
 
 
@@ -204,7 +195,6 @@ def map_resume_contacts(payload: object) -> ResumeContactInfo:
         name=_str(data, "name", "fullName"),
         phone=_str(data, "phone", "phoneNumber"),
         email=_str(data, "email"),
-        raw_payload=data,
     )
 
 
@@ -220,7 +210,6 @@ def map_vacancy(payload: Payload) -> VacancyInfo:
         title=_str(payload, "title", "name"),
         status=_str(payload, "status", "state"),
         url=_str(payload, "url"),
-        raw_payload=payload,
     )
 
 
@@ -242,7 +231,6 @@ def map_vacancies(payload: object) -> VacanciesResult:
     return VacanciesResult(
         items=[map_vacancy(item) for item in items],
         total=_int(meta, "total") or _int(data, "total"),
-        raw_payload=data,
     )
 
 
@@ -261,11 +249,9 @@ def map_vacancy_statuses(payload: object) -> VacancyStatusesResult:
                 ),
                 uuid=_str(item, "uuid", "vacancy_uuid"),
                 status=_str(item, "status", "state"),
-                raw_payload=item,
             )
             for item in _list(data, "items", "statuses", "vacancies", "result")
         ],
-        raw_payload=data,
     )
 
 
@@ -277,7 +263,6 @@ def map_job_webhook(payload: object) -> JobWebhookInfo:
         url=_str(data, "url"),
         is_active=_bool(data, "is_active", "isActive", "active"),
         version=_str(data, "version"),
-        raw_payload=data,
     )
 
 
@@ -286,14 +271,11 @@ def map_job_webhooks(payload: object) -> JobWebhooksResult:
 
     if isinstance(payload, list):
         items_payload = _expect_list(payload)
-        return JobWebhooksResult(
-            items=[map_job_webhook(item) for item in items_payload], raw_payload={}
-        )
+        return JobWebhooksResult(items=[map_job_webhook(item) for item in items_payload])
 
     data = _expect_mapping(payload)
     return JobWebhooksResult(
         items=[map_job_webhook(item) for item in _list(data, "items", "webhooks", "result")],
-        raw_payload=data,
     )
 
 
@@ -310,11 +292,9 @@ def map_job_dictionaries(payload: object) -> JobDictionariesResult:
             JobDictionaryInfo(
                 id=_str(item, "id"),
                 description=_str(item, "description"),
-                raw_payload=item,
             )
             for item in items_payload
         ],
-        raw_payload={} if isinstance(payload, list) else _expect_mapping(payload),
     )
 
 
@@ -332,9 +312,7 @@ def map_job_dictionary_values(payload: object) -> JobDictionaryValuesResult:
                 id=_int(item, "id") if _int(item, "id") is not None else _str(item, "id"),
                 name=_str(item, "name", "description"),
                 deprecated=_bool(item, "deprecated"),
-                raw_payload=item,
             )
             for item in items_payload
         ],
-        raw_payload={} if isinstance(payload, list) else _expect_mapping(payload),
     )

@@ -39,7 +39,6 @@ def map_token_response(payload: object, *, now: datetime | None = None) -> Token
         ),
         refresh_token=refresh_token,
         scope=payload.get("scope") if isinstance(payload.get("scope"), str) else None,
-        raw_payload=payload,
     )
 
 

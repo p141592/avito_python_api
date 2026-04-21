@@ -9,7 +9,9 @@ from avito.core.exceptions import ResponseMappingError
 from avito.realty.models import (
     RealtyActionResult,
     RealtyAnalyticsInfo,
+    RealtyBookingContact,
     RealtyBookingInfo,
+    RealtyBookingSafeDeposit,
     RealtyBookingsResult,
     RealtyMarketPriceInfo,
 )
@@ -66,7 +68,6 @@ def map_action(payload: object) -> RealtyActionResult:
     return RealtyActionResult(
         success=_str(data, "result") == "success" or bool(data.get("success", False)),
         status=_str(data, "result", "status"),
-        raw_payload=data,
     )
 
 
@@ -77,19 +78,34 @@ def map_bookings(payload: object) -> RealtyBookingsResult:
     return RealtyBookingsResult(
         items=[
             RealtyBookingInfo(
-                booking_id=_str(item, "avito_booking_id", "id"),
-                status=_str(item, "status"),
+                booking_id=_int(item, "avito_booking_id", "id"),
+                base_price=_int(item, "base_price"),
                 check_in=_str(item, "check_in"),
                 check_out=_str(item, "check_out"),
+                contact=(
+                    RealtyBookingContact(
+                        name=_str(_mapping(item, "contact"), "name"),
+                        email=_str(_mapping(item, "contact"), "email"),
+                        phone=_str(_mapping(item, "contact"), "phone"),
+                    )
+                    if isinstance(item.get("contact"), Mapping)
+                    else None
+                ),
                 guest_count=_int(item, "guest_count"),
-                base_price=_int(item, "base_price"),
-                guest_name=_str(_mapping(item, "contact"), "name"),
-                guest_email=_str(_mapping(item, "contact"), "email"),
-                raw_payload=item,
+                nights=_int(item, "nights"),
+                safe_deposit=(
+                    RealtyBookingSafeDeposit(
+                        owner_amount=_int(_mapping(item, "safe_deposit"), "owner_amount"),
+                        tax=_int(_mapping(item, "safe_deposit"), "tax"),
+                        total_amount=_int(_mapping(item, "safe_deposit"), "total_amount"),
+                    )
+                    if isinstance(item.get("safe_deposit"), Mapping)
+                    else None
+                ),
+                status=_str(item, "status"),
             )
             for item in _list(data, "bookings", "items")
         ],
-        raw_payload=data,
     )
 
 
@@ -100,7 +116,6 @@ def map_market_price(payload: object) -> RealtyMarketPriceInfo:
     return RealtyMarketPriceInfo(
         correspondence=_str(data, "correspondence"),
         error_message=_str(_mapping(data, "error"), "message"),
-        raw_payload=data,
     )
 
 
@@ -115,5 +130,4 @@ def map_analytics_report(payload: object) -> RealtyAnalyticsInfo:
         success=bool(success_data) or _str(_mapping(data, "result"), "result") == "success",
         report_link=_str(success_data, "reportLink"),
         error_message=_str(errors, "message"),
-        raw_payload=data,
     )

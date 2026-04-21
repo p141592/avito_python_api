@@ -2,90 +2,106 @@
 
 from __future__ import annotations
 
-from collections.abc import Mapping
 from dataclasses import dataclass
 
-from avito.core import Transport
+from avito.core import ValidationError
+from avito.core.domain import DomainObject
 from avito.realty.client import RealtyAnalyticsClient, ShortTermRentClient
 from avito.realty.models import (
-    JsonRequest,
     RealtyActionResult,
     RealtyAnalyticsInfo,
+    RealtyBaseParamsUpdateRequest,
+    RealtyBookingsQuery,
     RealtyBookingsResult,
+    RealtyBookingsUpdateRequest,
+    RealtyInterval,
+    RealtyIntervalsRequest,
     RealtyMarketPriceInfo,
+    RealtyPricesUpdateRequest,
 )
-
-
-@dataclass(slots=True, frozen=True)
-class DomainObject:
-    """Базовый доменный объект раздела realty."""
-
-    transport: Transport
 
 
 @dataclass(slots=True, frozen=True)
 class RealtyListing(DomainObject):
     """Доменный объект объявления краткосрочной аренды."""
 
-    resource_id: int | str | None = None
+    item_id: int | str | None = None
     user_id: int | str | None = None
 
-    def get_intervals(self, *, payload: Mapping[str, object]) -> RealtyActionResult:
-        return ShortTermRentClient(self.transport).get_intervals(JsonRequest(payload))
+    def get_intervals(
+        self,
+        *,
+        intervals: list[RealtyInterval],
+        item_id: int | None = None,
+    ) -> RealtyActionResult:
+        return ShortTermRentClient(self.transport).get_intervals(
+            RealtyIntervalsRequest(
+                item_id=item_id or int(self._require_item_id()),
+                intervals=intervals,
+            )
+        )
 
     def update_base_params(
-        self, *, payload: Mapping[str, object], item_id: int | str | None = None
+        self, *, request: RealtyBaseParamsUpdateRequest, item_id: int | str | None = None
     ) -> RealtyActionResult:
         return ShortTermRentClient(self.transport).update_base_params(
             item_id=item_id or self._require_item_id(),
-            request=JsonRequest(payload),
+            request=request,
         )
 
     def _require_item_id(self) -> str:
-        if self.resource_id is None:
-            raise ValueError("Для операции требуется `item_id`.")
-        return str(self.resource_id)
+        if self.item_id is None:
+            raise ValidationError("Для операции требуется `item_id`.")
+        return str(self.item_id)
 
 
 @dataclass(slots=True, frozen=True)
 class RealtyBooking(DomainObject):
     """Доменный объект бронирований недвижимости."""
 
-    resource_id: int | str | None = None
+    item_id: int | str | None = None
     user_id: int | str | None = None
 
     def update_bookings_info(
         self,
         *,
-        payload: Mapping[str, object],
+        request: RealtyBookingsUpdateRequest,
         user_id: int | str | None = None,
         item_id: int | str | None = None,
     ) -> RealtyActionResult:
         return ShortTermRentClient(self.transport).update_bookings_info(
             user_id=user_id or self._require_user_id(),
             item_id=item_id or self._require_item_id(),
-            request=JsonRequest(payload),
+            request=request,
         )
 
     def list_realty_bookings(
         self,
         *,
+        date_start: str,
+        date_end: str,
+        with_unpaid: bool | None = None,
         user_id: int | str | None = None,
         item_id: int | str | None = None,
     ) -> RealtyBookingsResult:
         return ShortTermRentClient(self.transport).list_realty_bookings(
             user_id=user_id or self._require_user_id(),
             item_id=item_id or self._require_item_id(),
+            query=RealtyBookingsQuery(
+                date_start=date_start,
+                date_end=date_end,
+                with_unpaid=with_unpaid,
+            ),
         )
 
     def _require_item_id(self) -> str:
-        if self.resource_id is None:
-            raise ValueError("Для операции требуется `item_id`.")
-        return str(self.resource_id)
+        if self.item_id is None:
+            raise ValidationError("Для операции требуется `item_id`.")
+        return str(self.item_id)
 
     def _require_user_id(self) -> str:
         if self.user_id is None:
-            raise ValueError("Для операции требуется `user_id`.")
+            raise ValidationError("Для операции требуется `user_id`.")
         return str(self.user_id)
 
 
@@ -93,30 +109,30 @@ class RealtyBooking(DomainObject):
 class RealtyPricing(DomainObject):
     """Доменный объект цен краткосрочной аренды."""
 
-    resource_id: int | str | None = None
+    item_id: int | str | None = None
     user_id: int | str | None = None
 
     def update_realty_prices(
         self,
         *,
-        payload: Mapping[str, object],
+        request: RealtyPricesUpdateRequest,
         user_id: int | str | None = None,
         item_id: int | str | None = None,
     ) -> RealtyActionResult:
         return ShortTermRentClient(self.transport).update_realty_prices(
             user_id=user_id or self._require_user_id(),
             item_id=item_id or self._require_item_id(),
-            request=JsonRequest(payload),
+            request=request,
         )
 
     def _require_item_id(self) -> str:
-        if self.resource_id is None:
-            raise ValueError("Для операции требуется `item_id`.")
-        return str(self.resource_id)
+        if self.item_id is None:
+            raise ValidationError("Для операции требуется `item_id`.")
+        return str(self.item_id)
 
     def _require_user_id(self) -> str:
         if self.user_id is None:
-            raise ValueError("Для операции требуется `user_id`.")
+            raise ValidationError("Для операции требуется `user_id`.")
         return str(self.user_id)
 
 
@@ -124,16 +140,16 @@ class RealtyPricing(DomainObject):
 class RealtyAnalyticsReport(DomainObject):
     """Доменный объект аналитики по недвижимости."""
 
-    resource_id: int | str | None = None
+    item_id: int | str | None = None
     user_id: int | str | None = None
 
-    def get_market_price_correspondence_v1(
+    def get_market_price_correspondence(
         self,
         *,
         item_id: int | str | None = None,
         price: int | str,
     ) -> RealtyMarketPriceInfo:
-        return RealtyAnalyticsClient(self.transport).get_market_price_correspondence_v1(
+        return RealtyAnalyticsClient(self.transport).get_market_price_correspondence(
             item_id=item_id or self._require_item_id(),
             price=price,
         )
@@ -144,13 +160,12 @@ class RealtyAnalyticsReport(DomainObject):
         )
 
     def _require_item_id(self) -> str:
-        if self.resource_id is None:
-            raise ValueError("Для операции требуется `item_id`.")
-        return str(self.resource_id)
+        if self.item_id is None:
+            raise ValidationError("Для операции требуется `item_id`.")
+        return str(self.item_id)
 
 
 __all__ = (
-    "DomainObject",
     "RealtyAnalyticsReport",
     "RealtyBooking",
     "RealtyListing",

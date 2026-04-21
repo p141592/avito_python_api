@@ -8,6 +8,7 @@ from typing import cast
 from avito.core.exceptions import ResponseMappingError
 from avito.cpa.models import (
     CallTrackingCallInfo,
+    CallTrackingCallResponse,
     CallTrackingCallsResult,
     CpaActionResult,
     CpaBalanceInfo,
@@ -94,7 +95,6 @@ def map_cpa_error(payload: object | None) -> CpaErrorInfo | None:
     return CpaErrorInfo(
         code=_int(data, "code"),
         message=_str(data, "message", "error"),
-        raw_payload=data,
     )
 
 
@@ -105,7 +105,6 @@ def map_cpa_action(payload: object) -> CpaActionResult:
     return CpaActionResult(
         success=bool(data.get("success", False)),
         error=map_cpa_error(data.get("error")),
-        raw_payload=data,
     )
 
 
@@ -118,7 +117,6 @@ def map_balance(payload: object) -> CpaBalanceInfo:
         advance=_int(data, "advance"),
         debt=_int(data, "debt"),
         error=map_cpa_error(data.get("error")),
-        raw_payload=data,
     )
 
 
@@ -138,7 +136,6 @@ def _map_cpa_call(item: Payload) -> CpaCallInfo:
         group_title=_str(item, "groupTitle"),
         record_url=_str(item, "recordUrl"),
         is_arbitrage_available=_bool(item, "isArbitrageAvailable"),
-        raw_payload=item,
     )
 
 
@@ -158,7 +155,6 @@ def map_calls(payload: object) -> CpaCallsResult:
     return CpaCallsResult(
         items=[_map_cpa_call(item) for item in _list(data, "calls", "items", "results")],
         error=map_cpa_error(data.get("error")),
-        raw_payload=data,
     )
 
 
@@ -177,7 +173,6 @@ def _map_cpa_chat(item: Payload) -> CpaChatInfo:
         created_at=_str(source, "createdAt", "created_at"),
         updated_at=_str(source, "updatedAt", "updated_at"),
         is_arbitrage_available=_bool(item, "isArbitrageAvailable"),
-        raw_payload=item,
     )
 
 
@@ -197,7 +192,6 @@ def map_chats(payload: object) -> CpaChatsResult:
     data = _expect_mapping(payload)
     return CpaChatsResult(
         items=[_map_cpa_chat(item) for item in _list(data, "chats", "items", "results")],
-        raw_payload=data,
     )
 
 
@@ -214,12 +208,10 @@ def map_phones(payload: object) -> CpaPhonesResult:
                 price=_int(item, "pricePenny", "price"),
                 group=_str(item, "group"),
                 preview_url=_str(item, "url", "previewUrl"),
-                raw_payload=item,
             )
             for item in _list(data, "results", "items")
         ],
         total=_int(data, "total"),
-        raw_payload=data,
     )
 
 
@@ -233,17 +225,21 @@ def _map_call_tracking_call(item: Payload) -> CallTrackingCallInfo:
         call_time=_str(item, "callTime", "createTime"),
         talk_duration=_int(item, "talkDuration", "duration"),
         waiting_duration=_float(item, "waitingDuration"),
-        raw_payload=item,
     )
 
 
-def map_call_tracking_call_item(payload: object) -> CallTrackingCallInfo:
+def map_call_tracking_call_item(payload: object) -> CallTrackingCallResponse:
     """Преобразует один звонок CallTracking."""
 
     data = _expect_mapping(payload)
     call = _mapping(data, "call")
-    source = call or data
-    return _map_call_tracking_call(source)
+    error = map_cpa_error(data.get("error"))
+    if not call or error is None:
+        raise ResponseMappingError(
+            "Ответ CallTracking getCallById должен содержать `call` и `error`.",
+            payload=payload,
+        )
+    return CallTrackingCallResponse(call=_map_call_tracking_call(call), error=error)
 
 
 def map_call_tracking_calls(payload: object) -> CallTrackingCallsResult:
@@ -253,5 +249,4 @@ def map_call_tracking_calls(payload: object) -> CallTrackingCallsResult:
     return CallTrackingCallsResult(
         items=[_map_call_tracking_call(item) for item in _list(data, "calls", "items", "results")],
         error=map_cpa_error(data.get("error")),
-        raw_payload=data,
     )

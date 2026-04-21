@@ -94,15 +94,12 @@ def map_catalogs_resolve(payload: object) -> CatalogResolveResult:
                     CatalogFieldValue(
                         value_id=_str(value, "valueId", "id"),
                         label=_str(value, "label", "value"),
-                        raw_payload=value,
                     )
                     for value in _list(item, "values", "items")
                 ],
-                raw_payload=item,
             )
             for item in _list(result, "fields", "items")
         ],
-        raw_payload=data,
     )
 
 
@@ -125,10 +122,9 @@ def map_leads(payload: object) -> AutotekaLeadsResult:
                 price=_int(event_payload, "price"),
                 created_at=_str(event_payload, "itemCreatedAt"),
                 url=_str(event_payload, "url"),
-                raw_payload=item,
             )
         )
-    return AutotekaLeadsResult(items=items, last_id=_int(pagination, "lastId"), raw_payload=data)
+    return AutotekaLeadsResult(items=items, last_id=_int(pagination, "lastId"))
 
 
 def map_monitoring_bucket(payload: object) -> MonitoringBucketResult:
@@ -142,11 +138,9 @@ def map_monitoring_bucket(payload: object) -> MonitoringBucketResult:
             MonitoringInvalidVehicle(
                 vehicle_id=_str(item, "vehicleID", "vehicleId"),
                 description=_str(item, "description"),
-                raw_payload=item,
             )
             for item in _list(result, "invalidVehicles", "items")
         ],
-        raw_payload=data,
     )
 
 
@@ -167,14 +161,12 @@ def map_monitoring_events(payload: object) -> MonitoringEventsResult:
                 operation_date_to=_str(item, "operationDateTo"),
                 owner_code=_int(item, "ownerCode"),
                 actual_at=_int(item, "actualAt"),
-                raw_payload=item,
             )
             for item in _list(data, "data", "items")
         ],
         has_next=_bool(pagination, "hasNext"),
         next_cursor=_str(pagination, "nextCursor"),
         next_link=_str(pagination, "nextLink"),
-        raw_payload=data,
     )
 
 
@@ -189,7 +181,6 @@ def map_package(payload: object) -> AutotekaPackageInfo:
         reports_remaining=_int(package, "reportsCntRemain"),
         created_at=_str(package, "createdTime"),
         expires_at=_str(package, "expireTime"),
-        raw_payload=data,
     )
 
 
@@ -199,7 +190,6 @@ def _map_preview_source(source: Payload) -> AutotekaPreviewInfo:
         status=_str(source, "status"),
         vehicle_id=_str(source, "vin", "vehicleId"),
         reg_number=_str(source, "regNumber", "plateNumber"),
-        raw_payload=source,
     )
 
 
@@ -222,7 +212,6 @@ def _map_report_source(source: Payload) -> AutotekaReportInfo:
         created_at=_str(source, "createdAt") or _str(data, "createdAt"),
         web_link=_str(source, "webLink"),
         pdf_link=_str(source, "pdfLink"),
-        raw_payload=source,
     )
 
 
@@ -242,7 +231,6 @@ def map_reports(payload: object) -> AutotekaReportsResult:
     data = _expect_mapping(payload)
     return AutotekaReportsResult(
         items=[_map_report_source(item) for item in _list(data, "result", "items")],
-        raw_payload=data,
     )
 
 
@@ -257,7 +245,6 @@ def map_scoring(payload: object) -> AutotekaScoringInfo:
         scoring_id=_str(source, "scoringId"),
         is_completed=_bool(source, "isCompleted"),
         created_at=_int(source, "createdAt"),
-        raw_payload=source,
     )
 
 
@@ -273,7 +260,6 @@ def map_specification(payload: object) -> AutotekaSpecificationInfo:
         status=_str(source, "status"),
         vehicle_id=_str(source, "vehicleId"),
         plate_number=_str(source, "plateNumber"),
-        raw_payload=source,
     )
 
 
@@ -291,7 +277,6 @@ def map_teaser(payload: object) -> AutotekaTeaserInfo:
         brand=_str(teaser_data, "brand") if teaser_data else _str(source, "brand"),
         model=_str(teaser_data, "model") if teaser_data else _str(source, "model"),
         year=_int(teaser_data, "year") if teaser_data else _int(source, "year"),
-        raw_payload=data,
     )
 
 
@@ -312,5 +297,4 @@ def map_valuation(payload: object) -> AutotekaValuationInfo:
         mileage=_int(source, "mileage"),
         avg_price_with_condition=_int(valuation, "avgPriceWithCondition"),
         avg_market_price=_int(valuation, "avgMarketPrice"),
-        raw_payload=data,
     )

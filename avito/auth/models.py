@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-from collections.abc import Mapping
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 
@@ -28,7 +27,6 @@ class TokenResponse:
     access_token: AccessToken
     refresh_token: str | None = None
     scope: str | None = None
-    raw_payload: Mapping[str, object] | None = None
 
 
 @dataclass(slots=True, frozen=True)

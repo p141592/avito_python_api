@@ -7,11 +7,15 @@ from dataclasses import dataclass
 from avito.core import RequestContext, Transport
 from avito.realty.mappers import map_action, map_analytics_report, map_bookings, map_market_price
 from avito.realty.models import (
-    JsonRequest,
     RealtyActionResult,
     RealtyAnalyticsInfo,
+    RealtyBaseParamsUpdateRequest,
+    RealtyBookingsQuery,
     RealtyBookingsResult,
+    RealtyBookingsUpdateRequest,
+    RealtyIntervalsRequest,
     RealtyMarketPriceInfo,
+    RealtyPricesUpdateRequest,
 )
 
 
@@ -22,7 +26,7 @@ class ShortTermRentClient:
     transport: Transport
 
     def update_bookings_info(
-        self, *, user_id: int | str, item_id: int | str, request: JsonRequest
+        self, *, user_id: int | str, item_id: int | str, request: RealtyBookingsUpdateRequest
     ) -> RealtyActionResult:
         payload = self.transport.request_json(
             "POST",
@@ -33,17 +37,18 @@ class ShortTermRentClient:
         return map_action(payload)
 
     def list_realty_bookings(
-        self, *, user_id: int | str, item_id: int | str
+        self, *, user_id: int | str, item_id: int | str, query: RealtyBookingsQuery
     ) -> RealtyBookingsResult:
         payload = self.transport.request_json(
             "GET",
             f"/realty/v1/accounts/{user_id}/items/{item_id}/bookings",
             context=RequestContext("realty.bookings.list"),
+            params=query.to_params(),
         )
         return map_bookings(payload)
 
     def update_realty_prices(
-        self, *, user_id: int | str, item_id: int | str, request: JsonRequest
+        self, *, user_id: int | str, item_id: int | str, request: RealtyPricesUpdateRequest
     ) -> RealtyActionResult:
         payload = self.transport.request_json(
             "POST",
@@ -53,7 +58,7 @@ class ShortTermRentClient:
         )
         return map_action(payload)
 
-    def get_intervals(self, request: JsonRequest) -> RealtyActionResult:
+    def get_intervals(self, request: RealtyIntervalsRequest) -> RealtyActionResult:
         payload = self.transport.request_json(
             "POST",
             "/realty/v1/items/intervals",
@@ -62,7 +67,9 @@ class ShortTermRentClient:
         )
         return map_action(payload)
 
-    def update_base_params(self, *, item_id: int | str, request: JsonRequest) -> RealtyActionResult:
+    def update_base_params(
+        self, *, item_id: int | str, request: RealtyBaseParamsUpdateRequest
+    ) -> RealtyActionResult:
         payload = self.transport.request_json(
             "POST",
             f"/realty/v1/items/{item_id}/base",
@@ -78,7 +85,7 @@ class RealtyAnalyticsClient:
 
     transport: Transport
 
-    def get_market_price_correspondence_v1(
+    def get_market_price_correspondence(
         self, *, item_id: int | str, price: int | str
     ) -> RealtyMarketPriceInfo:
         payload = self.transport.request_json(
