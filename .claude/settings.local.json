@@ -16,7 +16,9 @@
       "WebSearch",
       "WebFetch(domain:azure.github.io)",
       "WebFetch(domain:medium.com)",
-      "WebFetch(domain:newsletter.pragmaticengineer.com)"
+      "WebFetch(domain:newsletter.pragmaticengineer.com)",
+      "Bash(awk '{print $NF}')",
+      "Bash(grep \"| $\" /Users/n.baryshnikov/Projects/avito_python_api/docs/inventory.md)"
     ]
   }
 }
