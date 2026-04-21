@@ -28,6 +28,9 @@ Principles are listed in descending priority order when they conflict.
 - Exceptions must be explicit and domain-specific; no `assert False` for flow control.
 - All network interaction is considered potentially unstable.
 - Public SDK contracts are fixed explicitly and changed only deliberately.
+- **Progressive disclosure**: the simple case must be expressible in three to five lines; advanced configuration must remain expressible but never be required for the default path.
+- **IDE-first design**: autocomplete, go-to-definition, and type inference are the primary discovery surfaces. The public API must be useful without reading the source code.
+- **Backward compatibility is a feature**: breaking changes are deliberate, preceded by a deprecation period, and documented in `CHANGELOG.md`. Users must not be forced to change working code to upgrade a minor version.
 
 ## Target Package Architecture
 
@@ -161,6 +164,9 @@ Rules:
 - `AvitoClient` must accept `client_id` and `client_secret` directly without requiring an intermediate `AuthSettings` object.
 - `AvitoClient.from_env()` is the official factory method for initializing from the environment.
 - The nested `AvitoSettings → AuthSettings` path is acceptable as an explicit option but must not be the only one.
+- All optional constructor parameters must be keyword-only. Positional arguments are reserved for the most common required inputs (`client_id`, `client_secret`).
+- The client must be immutable after construction. Changing `base_url`, `timeouts`, `auth` or transport state of a live `AvitoClient` is forbidden — create a new client instead.
+- The client must support the context-manager protocol (`with AvitoClient(...) as avito:`) and release the underlying `httpx.Client` on exit. Calls on a closed client must raise a domain error, not a silent `httpx` exception.
 
 ## Classes and Responsibilities
 
@@ -245,6 +251,10 @@ Rules:
 - Public method arguments must be primitive types (`int`, `str`, `bool`, `float`) or well-known domain result models (not request objects).
 - Request-DTOs used inside section clients must not appear in public domain method signatures.
 - If a method requires a complex input object, it must accept its fields directly as keyword-only arguments.
+- All optional arguments on public methods must be keyword-only. Positional slots are reserved for the primary domain inputs of the operation.
+- Public methods must accept per-operation overrides for `timeout` and retry behavior as keyword-only arguments. These overrides take precedence over the client-level configuration for the single call and must not mutate client state.
+- `**kwargs` is forbidden on public methods. Every accepted parameter must be declared explicitly so that IDE autocomplete exposes the full contract.
+- Boolean-returning probes like `exists(...)` must not raise on "not found" outcomes. An exception is reserved for transport, auth, or mapping failures. The `404 Not Found` contract for a probe-style method is `False`, not `UpstreamApiError`.
 
 ```python
 # Correct: primitives and keyword-only
@@ -266,6 +276,18 @@ Rules:
 - A factory method that creates an object in a knowingly incomplete state must return an object with a restricted interface (only the methods available without the ID), not an object with methods that fail at runtime.
 - A configuration error (`ConfigurationError`) must be raised before the first HTTP request.
 - Dates passed as parameters must accept `datetime` or a validated string format — a bare `str` without validation is not acceptable when the format matters.
+
+## Enums and Closed Value Sets
+
+Fields with a fixed set of allowed values from the upstream specification must be typed as enums, not as open `str`.
+
+Rules:
+
+- Every field whose set of allowed values is defined by the API specification in `docs/` must be represented by a public `Enum` from `avito/<domain>/enums.py`.
+- Enums are declared with string values matching the wire format exactly, so serialization is a direct dump without extra conversion.
+- Enums must be forward-compatible: an unknown upstream value must not crash mapping. Map unknown values to a designated `UNKNOWN` member or a typed fallback and log at `warning` level once per process.
+- Public method arguments that accept an enum may also accept the corresponding `str` literal for ergonomics, but the public method signature type annotation must be the enum type (optionally unioned with `Literal[...]`).
+- Arbitrary extension of enum values (adding a member that is not present in `docs/`) is forbidden. New members are added only after the upstream contract is updated.
 
 ## Pydantic and Validation
 
@@ -329,6 +351,31 @@ Recommendation:
 - The SDK is synchronous — this must be explicitly documented in the README and public API.
 - An async version should be added as a separate layer, not mixed with sync in the same classes.
 
+### User-Agent and Client Identification
+
+- The transport layer must set a stable, identifiable `User-Agent` header on every request, at minimum: `avito-py/<version> python/<py-version> httpx/<httpx-version>`.
+- Users must be able to append an application identifier via a dedicated configuration field (e.g. `AvitoSettings.user_agent_suffix`), not by rewriting the full header.
+- Secrets must never appear in the `User-Agent`.
+
+### Per-Operation Overrides
+
+- Client-level configuration (`timeouts`, `retries`) is the default. Per-operation overrides are accepted as keyword-only arguments on public methods and are scoped to the single call.
+- Overrides must not mutate the client or shared state. The transport layer resolves the effective policy as `override or client_default` without writing back.
+- The list of supported per-operation overrides is part of the public contract and must be documented on each public method.
+
+## Async and Sync Parity
+
+When an async surface is added it must be a separate, parallel layer, not a retrofit of sync classes.
+
+Rules:
+
+- The async namespace is `avito.aio` with mirrored module paths: `avito.aio.client`, `avito.aio.<domain>.client`.
+- Async client classes have the same names as their sync counterparts (`AvitoClient`, `AdClient`, ...) but live in the `aio` namespace.
+- Public method names and parameter lists must be identical between sync and async. Only the call-site keyword (`await`) and the context-manager form (`async with`) differ.
+- Mixing `async def` and `def` on the same class is forbidden.
+- Return types are the same public dataclasses in both layers. `PaginatedList[T]` has an `AsyncPaginatedList[T]` sibling with matching semantics and matching `materialize()`.
+- Feature parity between sync and async is part of the public contract: a method that exists in sync must exist in async within the same release, or be explicitly marked sync-only in the documentation.
+
 ## Authorization
 
 Authorization must be fully abstracted away from API methods.
@@ -352,6 +399,22 @@ Rules:
 - Reasonable timeouts for connect/read/write are set on all requests.
 - Errors after retry exhaustion are not suppressed; they are raised as domain exceptions.
 - Retry logging must be informative but must not leak secrets.
+- The backoff strategy is exponential with jitter. The minimum expected profile: base delay, max delay, full jitter. Deterministic "every N seconds" retries are forbidden.
+- On `429 Too Many Requests`, the transport must honor the `Retry-After` header when present and fall back to the exponential strategy only in its absence.
+- Non-idempotent HTTP methods (`POST`, `PATCH`, `DELETE` without an explicit safe marker) are not retried by default. Opting in requires either the write method to pass an idempotency key, or an explicit per-operation override documented on the public method.
+- Retry attempts must be visible through structured logging: `operation`, `attempt`, `status`, `delay_ms`, `reason` — without secrets.
+
+### Idempotency Keys for Write Operations
+
+Write operations that the upstream API supports with an idempotency key must expose it as a public contract so that a safe retry after a network failure does not cause a duplicate side effect.
+
+Rules:
+
+- Public write methods on supported endpoints accept an optional `idempotency_key: str | None` keyword-only argument.
+- If the caller does not provide a key, the SDK must not generate one silently. Absence of a key means "no idempotency guarantee" and must be documented on the method.
+- When a key is provided, the transport layer forwards it to the upstream via the header contract defined in `docs/`, once per retry chain (the same key across all retry attempts of the same logical call).
+- The idempotency key is part of the safe-retry decision: POST with a key is retryable on transport errors; POST without a key is not.
+- Idempotency keys must never be logged at `info` level or above; they may appear redacted in `debug`.
 
 Minimum expected entities:
 
@@ -370,12 +433,14 @@ Rules:
 
 - A hierarchy of custom exceptions is created in `core/exceptions.py` for SDK errors.
 - An error must contain at minimum: `operation`, HTTP status, Avito error code if present, a human-readable message, and safe metadata.
+- Errors must additionally expose, when available: the upstream `request_id` (or equivalent correlation header), the retry `attempt` on which the failure occurred, and the `method`/`endpoint` of the failed call. These fields enable support tickets without the user needing raw logs.
 - `4xx` and `5xx` errors must be distinguished by type.
 - Parsing errors and transport errors must be distinguished.
 - Mapping of transport/HTTP/API errors to public SDK errors must be centralized.
 - Secrets, tokens, and sensitive headers must be automatically sanitized in the message and metadata.
 - An unknown upstream error must not leak out as a raw transport exception.
 - All error messages are written in a single language — Russian. Mixing languages in error messages is forbidden.
+- Actionability is mandatory: a message must describe what happened, which operation failed, and when possible, hint at a recovery action. Stack-trace-only messages are forbidden on the public surface.
 
 Example hierarchy:
 
@@ -592,9 +657,12 @@ Rules:
 Rules:
 
 - Logging must be structured and useful for diagnostics.
-- `client_secret`, access token, refresh token, the full authorization header, and other secrets must not be logged.
+- The SDK uses the standard `logging` module under a dedicated namespace (`avito` and its child loggers such as `avito.transport`, `avito.auth`). No custom logger classes or global singletons.
+- `client_secret`, access token, refresh token, the full authorization header, idempotency keys, and other secrets must not be logged at `info` or higher. At `debug` they may appear only in redacted form.
 - At info/debug level it is acceptable to log endpoint, attempt number, latency, status code, and operation name.
-- SDK users must be able to disable or redirect logging.
+- Log records must use consistent structured fields (via `extra=...` or a structured formatter): `operation`, `endpoint`, `method`, `attempt`, `status`, `latency_ms`, `request_id`.
+- Network side effects must be discoverable through logs: every real HTTP request emits at least one log record at `debug`, so a user can tell from logs where the network boundary is without reading the source.
+- SDK users must be able to disable or redirect logging by configuring the `avito` logger — the SDK must never call `logging.basicConfig()` itself.
 - Diagnostic snapshots such as `debug_info()` must be safe by default.
 
 ## Docstrings and Comments
@@ -603,8 +671,27 @@ Rules:
 
 - Public classes and methods must have short docstrings describing the contract.
 - A public method docstring must describe the returned SDK model and behavior on nullable/empty cases.
+- A public method docstring must also document: every supported per-operation override, whether the method is idempotent, and the exception types the method raises on the most common failure modes.
+- Docstrings must not reference the shape of the raw upstream JSON, transport classes, or internal mapper objects.
 - Comments are used only where the intent cannot be expressed in code.
 - Comments must not duplicate what is obvious.
+
+## Documentation Structure
+
+User-facing documentation is organized along the Diátaxis framework. Missing any one of the four modes is a documentation defect.
+
+Required modes:
+
+- **Tutorials** — step-by-step getting-started path. The canonical tutorial goes from `pip install` to the first successful `get_self()` call with minimal detours.
+- **How-to guides** — task-oriented recipes for recurring real-world scenarios (upload a chat image, create a promotion order, iterate a paginated list with materialize).
+- **Reference** — the exhaustive, mechanically-accurate description of public classes, methods, enums, and exceptions. Reference is generated from docstrings and type hints.
+- **Explanations** — conceptual articles on why the SDK is shaped the way it is: transport layer, retry policy, pagination semantics, dry-run contract.
+
+Rules:
+
+- Every public domain must have at least one how-to snippet in the README.
+- Every new public contract must land with its reference stub and, when non-obvious, an explanation note.
+- A CHANGELOG.md entry is mandatory for every public-facing change and references the affected contract sections.
 
 ## Testing
 
@@ -656,6 +743,18 @@ Tests do not make network calls. All HTTP is replaced by a controlled fake trans
 - is used uniformly across all tests that verify the public API.
 
 Section clients, domain objects, and transport are tested in isolation from each other.
+
+### Testing Utilities as a Public Contract
+
+The fake transport is not only an internal test helper — it is a public tool SDK consumers use to test their own code against the SDK without a network.
+
+Rules:
+
+- `FakeTransport` and `FakeResponse` are exported from `avito.testing` and are part of the stable public contract.
+- The `avito.testing` namespace must contain only testing utilities, no production code paths.
+- Breaking changes to `FakeTransport` follow the same deprecation policy as the rest of the public API.
+- The documented contract of `FakeTransport` includes: scripting responses by sequence, asserting call count, inspecting method/url/body/headers of each captured call, injecting transport-level errors (timeout, connection reset), and simulating `Retry-After` headers.
+- SDK documentation must include at least one end-to-end example of a consumer-side test written with `avito.testing`.
 
 ### Test Structure
 
@@ -732,6 +831,21 @@ Rules:
 - Fields marked as required in the specification cannot be `T | None` in the public model without explicit justification.
 - Enum values in the SDK must match the allowed values from the specification — arbitrary extension is forbidden.
 
+## Deprecation Policy and Backward Compatibility
+
+Breaking changes are a last resort. Users must be able to upgrade a minor version without touching their code.
+
+Rules:
+
+- Every removal or behavior change of a public symbol must pass through a deprecation period. The minimum deprecation period is **two minor releases**, and for widely-used domain objects or exceptions — one major release.
+- A deprecated public symbol must continue to work, emit `warnings.warn(DeprecationWarning, stacklevel=2)` on first use, and carry a docstring line describing the replacement and the target removal version.
+- Deprecations are recorded in `CHANGELOG.md` under a dedicated `Deprecated` section in the release where the warning is introduced, and under `Removed` in the release where the symbol disappears.
+- Silent renaming of public methods, public models, public fields, or public exception types is forbidden. Renames go through the deprecation path with both names active during the transition.
+- Type aliases that serve as a deprecation bridge must be marked with `warnings.warn(..., DeprecationWarning)` at import time or use PEP 702 `typing_extensions.deprecated`.
+- Adding new optional parameters to public methods is a non-breaking change only when the default preserves prior behavior exactly.
+- Changing the return type of a public method, including widening to a union or adding a new raised exception type, is a breaking change and requires the same deprecation path as a rename.
+- Public SDK semantic versioning: breaking changes → major bump; additive changes → minor bump; fixes and internal refactors → patch bump. Version numbers must not disagree with the nature of the change.
+
 ## Imports and Dependencies
 
 Rules:
@@ -762,3 +876,15 @@ Rules:
 - Generic environment aliases (`SECRET`, `TOKEN`) in the official config contract.
 - Dead code: unused symbols, aliases, and imports.
 - Internal-layer request objects in public domain method signatures.
+- `**kwargs` on public methods: every accepted argument must be explicitly declared.
+- Positional passing of optional parameters: all optional parameters on public methods and the client constructor must be keyword-only.
+- Mutating a live `AvitoClient` (changing `base_url`, `auth`, timeouts, retry policy after construction).
+- Silent breaking changes: renaming or removing a public symbol without a deprecation period, a warning, and a `CHANGELOG.md` entry.
+- Open `str` fields where the upstream contract defines a closed set of values: these must be enums.
+- Retry strategies without jitter or without respecting `Retry-After` on `429`.
+- Retrying non-idempotent writes without an idempotency key or an explicit per-operation opt-in.
+- Raising on expected "not found" for probe methods (`exists()` must return `False`, not throw).
+- Exposing `FakeTransport` only through internal test imports instead of `avito.testing`.
+- Mixing sync and async surfaces in the same class or module (`avito.aio` is the only home for async).
+- Public methods that swallow upstream `request_id` or retry `attempt` in raised exceptions.
+- Documentation that covers only reference or only tutorials (all four Diátaxis modes are mandatory).
