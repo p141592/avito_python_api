@@ -1,6 +1,9 @@
 # SDK для Avito
 
 [![CI](https://github.com/p141592/avito/actions/workflows/ci.yml/badge.svg)](https://github.com/p141592/avito/actions/workflows/ci.yml)
+[![codecov](https://codecov.io/gh/p141592/avito/graph/badge.svg)](https://codecov.io/gh/p141592/avito)
+[![PyPI Downloads](https://img.shields.io/pypi/dm/avito-py.svg)](https://pypi.org/project/avito-py/)
+[![API coverage](https://img.shields.io/badge/API%20coverage-204%2F204-success)](docs/inventory.md)
 
 `avito-py` — Python SDK для работы с Avito API через единый объектный фасад `AvitoClient`.
 

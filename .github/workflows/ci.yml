@@ -31,3 +31,12 @@ jobs:
 
       - name: Run quality gate
         run: make check
+
+      - name: Collect coverage report
+        run: poetry run pytest --cov=avito --cov-report=term --cov-report=xml
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v5
+        with:
+          files: ./coverage.xml
+          fail_ci_if_error: false
