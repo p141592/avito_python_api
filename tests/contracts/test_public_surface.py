@@ -2,13 +2,29 @@ from __future__ import annotations
 
 import importlib
 import inspect
-from dataclasses import fields, is_dataclass
+from dataclasses import FrozenInstanceError, fields, is_dataclass
 from pathlib import Path
+
+import pytest
 
 import avito.autoteka as autoteka
 import avito.jobs as jobs
 import avito.orders as orders
 import avito.realty as realty
+from avito import (
+    AuthenticationError,
+    AuthorizationError,
+    AvitoError,
+    ConfigurationError,
+    ConflictError,
+    PaginatedList,
+    RateLimitError,
+    ResponseMappingError,
+    TransportError,
+    UnsupportedOperationError,
+    UpstreamApiError,
+    ValidationError,
+)
 from avito.autoteka import (
     AutotekaMonitoring,
     AutotekaReport,
@@ -20,6 +36,7 @@ from avito.jobs import Application, JobWebhook, Resume, Vacancy
 from avito.messenger import ChatMedia
 from avito.orders import DeliveryOrder, Order, OrderLabel, SandboxDelivery, Stock
 from avito.realty import RealtyBooking, RealtyListing, RealtyPricing
+from avito.testing import FakeResponse, FakeTransport
 
 MODEL_MODULES = (
     "avito.accounts.models",
@@ -56,6 +73,26 @@ def test_removed_generic_request_wrappers_are_not_exported() -> None:
     assert "AutotekaRequest" not in autoteka.__all__
     assert "AutotekaQuery" not in autoteka.__all__
     assert "OrdersRequest" not in orders.__all__
+
+
+def test_top_level_package_exports_canonical_error_contract() -> None:
+    assert AvitoError.__module__ == "avito.core.exceptions"
+    assert TransportError.__module__ == "avito.core.exceptions"
+    assert ValidationError.__module__ == "avito.core.exceptions"
+    assert AuthenticationError.__module__ == "avito.core.exceptions"
+    assert AuthorizationError.__module__ == "avito.core.exceptions"
+    assert RateLimitError.__module__ == "avito.core.exceptions"
+    assert ConflictError.__module__ == "avito.core.exceptions"
+    assert UnsupportedOperationError.__module__ == "avito.core.exceptions"
+    assert UpstreamApiError.__module__ == "avito.core.exceptions"
+    assert ResponseMappingError.__module__ == "avito.core.exceptions"
+    assert ConfigurationError.__module__ == "avito.core.exceptions"
+    assert PaginatedList.__module__ == "avito.core.pagination"
+
+
+def test_testing_package_exports_fake_transport_contract() -> None:
+    assert FakeTransport.__module__ == "avito.testing.fake_transport"
+    assert FakeResponse.__module__ == "httpx"
 
 
 def test_public_signatures_use_typed_requests_instead_of_generic_wrappers() -> None:
@@ -173,3 +210,40 @@ def test_chat_media_upload_images_no_longer_accepts_raw_dict() -> None:
     signature_text = str(inspect.signature(ChatMedia.upload_images))
     assert "dict[str, object]" not in signature_text
     assert "UploadImageFile" in signature_text
+
+
+def test_section_clients_are_frozen_dataclasses() -> None:
+    module_names = (
+        "avito.accounts.client",
+        "avito.ads.client",
+        "avito.autoteka.client",
+        "avito.cpa.client",
+        "avito.jobs.client",
+        "avito.messenger.client",
+        "avito.orders.client",
+        "avito.promotion.client",
+        "avito.ratings.client",
+        "avito.realty.client",
+        "avito.tariffs.client",
+    )
+    offenders: list[str] = []
+
+    for module_name in module_names:
+        module = importlib.import_module(module_name)
+        for _, cls in inspect.getmembers(module, inspect.isclass):
+            if cls.__module__ != module_name or cls.__name__.startswith("_"):
+                continue
+            if not is_dataclass(cls):
+                continue
+            params = getattr(cls, "__dataclass_params__", None)
+            if params is None or not params.frozen:
+                offenders.append(f"{module_name}.{cls.__name__}")
+
+    assert offenders == []
+
+
+def test_avito_error_is_frozen_after_initialization() -> None:
+    error = AvitoError(message="Ошибка", metadata={"token": "secret"})
+
+    with pytest.raises(FrozenInstanceError):
+        error.message = "Другое сообщение"  # type: ignore[misc]

@@ -5,7 +5,9 @@ from __future__ import annotations
 from collections.abc import Mapping
 from typing import cast
 
+from avito.core.enums import map_enum_or_unknown
 from avito.core.exceptions import ResponseMappingError
+from avito.orders.enums import DeliveryStatus, LabelTaskStatus, OrderStatus
 from avito.orders.models import (
     CourierRange,
     CourierRangesResult,
@@ -82,7 +84,11 @@ def map_orders(payload: object) -> OrdersResult:
         items=[
             OrderSummary(
                 order_id=_str(item, "id", "order_id", "orderId"),
-                status=_str(item, "status"),
+                status=map_enum_or_unknown(
+                    _str(item, "status"),
+                    OrderStatus,
+                    enum_name="orders.order_status",
+                ),
                 created_at=_str(item, "created", "created_at", "createdAt"),
                 buyer_name=_str(_mapping(item, "buyerInfo"), "fullName"),
                 total_price=_int(item, "totalPrice", "price"),
@@ -102,7 +108,11 @@ def map_order_action(payload: object) -> OrderActionResult:
     return OrderActionResult(
         success=bool(source.get("success", data.get("success", True))),
         order_id=_str(source, "orderId", "order_id", "id"),
-        status=_str(source, "status"),
+        status=map_enum_or_unknown(
+            _str(source, "status"),
+            OrderStatus,
+            enum_name="orders.order_status",
+        ),
         message=_str(source, "message"),
     )
 
@@ -137,7 +147,11 @@ def map_label_task(payload: object) -> LabelTaskResult:
     task_int = _int(source, "taskId", "taskID")
     return LabelTaskResult(
         task_id=task_id or (str(task_int) if task_int is not None else None),
-        status=_str(source, "status"),
+        status=map_enum_or_unknown(
+            _str(source, "status"),
+            LabelTaskStatus,
+            enum_name="orders.label_task_status",
+        ),
     )
 
 
@@ -154,7 +168,11 @@ def map_delivery_entity(payload: object) -> DeliveryEntityResult:
         task_id=task_id or (str(task_int) if task_int is not None else None),
         order_id=_str(source, "orderId", "orderID"),
         parcel_id=_str(source, "parcelId", "parcelID"),
-        status=_str(source, "status"),
+        status=map_enum_or_unknown(
+            _str(source, "status"),
+            DeliveryStatus,
+            enum_name="orders.delivery_status",
+        ),
         message=_str(_mapping(data, "error"), "message") or _str(source, "message"),
     )
 
@@ -187,7 +205,11 @@ def map_delivery_task(payload: object) -> DeliveryTaskInfo:
     task_int = _int(source, "taskId", "taskID")
     return DeliveryTaskInfo(
         task_id=task_id or (str(task_int) if task_int is not None else None),
-        status=_str(source, "status"),
+        status=map_enum_or_unknown(
+            _str(source, "status"),
+            DeliveryStatus,
+            enum_name="orders.delivery_status",
+        ),
         error=_str(_mapping(data, "error"), "message") or _str(source, "error"),
     )
 

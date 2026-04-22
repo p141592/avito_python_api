@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
+from avito.ads.enums import ListingStatus
 from avito.ads.mappers import (
     map_action_result,
     map_ad_item,
@@ -66,7 +67,7 @@ from avito.promotion.mappers import map_promotion_action
 from avito.promotion.models import PromotionActionResult
 
 
-@dataclass(slots=True)
+@dataclass(slots=True, frozen=True)
 class AdsClient:
     """Выполняет HTTP-операции по разделу объявлений."""
 
@@ -87,7 +88,7 @@ class AdsClient:
         self,
         *,
         user_id: int | None = None,
-        status: str | None = None,
+        status: ListingStatus | str | None = None,
         limit: int | None = None,
         offset: int | None = None,
     ) -> PaginatedList[Listing]:
@@ -130,7 +131,7 @@ class AdsClient:
         *,
         page: int | None,
         user_id: int | None,
-        status: str | None,
+        status: ListingStatus | str | None,
         page_size: int,
     ) -> JsonPage[Listing]:
         if page is None:
@@ -157,26 +158,40 @@ class AdsClient:
             per_page=page_size,
         )
 
-    def update_price(self, *, item_id: int, price: UpdatePriceRequest) -> UpdatePriceResult:
+    def update_price(
+        self,
+        *,
+        item_id: int,
+        price: int | float,
+        idempotency_key: str | None = None,
+    ) -> UpdatePriceResult:
         """Обновляет цену объявления."""
 
         return request_public_model(
             self.transport,
             "POST",
             f"/core/v1/items/{item_id}/update_price",
-            context=RequestContext("ads.update_price", allow_retry=True),
+            context=RequestContext("ads.update_price", allow_retry=idempotency_key is not None),
             mapper=map_update_price_result,
-            json_body=price.to_payload(),
+            json_body=UpdatePriceRequest(price=price).to_payload(),
+            idempotency_key=idempotency_key,
         )
 
 
-@dataclass(slots=True)
+@dataclass(slots=True, frozen=True)
 class StatsClient:
     """Выполняет HTTP-операции по статистике объявлений."""
 
     transport: Transport
 
-    def get_calls_stats(self, *, user_id: int, request: CallsStatsRequest) -> CallsStatsResult:
+    def get_calls_stats(
+        self,
+        *,
+        user_id: int,
+        item_ids: list[int],
+        date_from: str | None = None,
+        date_to: str | None = None,
+    ) -> CallsStatsResult:
         """Получает статистику звонков."""
 
         return request_public_model(
@@ -185,10 +200,22 @@ class StatsClient:
             f"/core/v1/accounts/{user_id}/calls/stats/",
             context=RequestContext("ads.stats.calls", allow_retry=True),
             mapper=map_calls_stats,
-            json_body=request.to_payload(),
+            json_body=CallsStatsRequest(
+                item_ids=item_ids,
+                date_from=date_from,
+                date_to=date_to,
+            ).to_payload(),
         )
 
-    def get_item_stats(self, *, user_id: int, request: ItemStatsRequest) -> ItemStatsResult:
+    def get_item_stats(
+        self,
+        *,
+        user_id: int,
+        item_ids: list[int],
+        date_from: str | None = None,
+        date_to: str | None = None,
+        fields: list[str] | None = None,
+    ) -> ItemStatsResult:
         """Получает статистику по списку объявлений."""
 
         return request_public_model(
@@ -197,10 +224,23 @@ class StatsClient:
             f"/stats/v1/accounts/{user_id}/items",
             context=RequestContext("ads.stats.items", allow_retry=True),
             mapper=map_item_stats,
-            json_body=request.to_payload(),
+            json_body=ItemStatsRequest(
+                item_ids=item_ids,
+                date_from=date_from,
+                date_to=date_to,
+                fields=fields or [],
+            ).to_payload(),
         )
 
-    def get_item_analytics(self, *, user_id: int, request: ItemStatsRequest) -> ItemAnalyticsResult:
+    def get_item_analytics(
+        self,
+        *,
+        user_id: int,
+        item_ids: list[int],
+        date_from: str | None = None,
+        date_to: str | None = None,
+        fields: list[str] | None = None,
+    ) -> ItemAnalyticsResult:
         """Получает аналитику по профилю."""
 
         return request_public_model(
@@ -209,10 +249,23 @@ class StatsClient:
             f"/stats/v2/accounts/{user_id}/items",
             context=RequestContext("ads.stats.analytics", allow_retry=True),
             mapper=map_item_analytics,
-            json_body=request.to_payload(),
+            json_body=ItemStatsRequest(
+                item_ids=item_ids,
+                date_from=date_from,
+                date_to=date_to,
+                fields=fields or [],
+            ).to_payload(),
         )
 
-    def get_account_spendings(self, *, user_id: int, request: ItemStatsRequest) -> AccountSpendings:
+    def get_account_spendings(
+        self,
+        *,
+        user_id: int,
+        item_ids: list[int],
+        date_from: str | None = None,
+        date_to: str | None = None,
+        fields: list[str] | None = None,
+    ) -> AccountSpendings:
         """Получает статистику расходов профиля."""
 
         return request_public_model(
@@ -221,17 +274,24 @@ class StatsClient:
             f"/stats/v2/accounts/{user_id}/spendings",
             context=RequestContext("ads.stats.spendings", allow_retry=True),
             mapper=map_spendings,
-            json_body=request.to_payload(),
+            json_body=ItemStatsRequest(
+                item_ids=item_ids,
+                date_from=date_from,
+                date_to=date_to,
+                fields=fields or [],
+            ).to_payload(),
         )
 
 
-@dataclass(slots=True)
+@dataclass(slots=True, frozen=True)
 class VasClient:
     """Выполняет HTTP-операции VAS и продвижения."""
 
     transport: Transport
 
-    def get_prices(self, *, user_id: int, request: VasPricesRequest) -> VasPricesResult:
+    def get_prices(
+        self, *, user_id: int, item_ids: list[int], location_id: int | None = None
+    ) -> VasPricesResult:
         """Получает цены VAS и доступные услуги продвижения."""
 
         return request_public_model(
@@ -240,7 +300,7 @@ class VasClient:
             f"/core/v1/accounts/{user_id}/vas/prices",
             context=RequestContext("ads.vas.prices", allow_retry=True),
             mapper=map_vas_prices,
-            json_body=request.to_payload(),
+            json_body=VasPricesRequest(item_ids=item_ids, location_id=location_id).to_payload(),
         )
 
     def apply_item_vas(
@@ -248,22 +308,27 @@ class VasClient:
         *,
         user_id: int,
         item_id: int,
-        request: ApplyVasRequest,
+        codes: list[str],
+        idempotency_key: str | None = None,
     ) -> PromotionActionResult:
         """Применяет дополнительные услуги к объявлению."""
 
-        payload_to_send = request.to_payload()
-        payload = self.transport.request_json(
+        payload_to_send = ApplyVasRequest(codes=codes).to_payload()
+        return self.transport.request_public_model(
             "PUT",
             f"/core/v1/accounts/{user_id}/items/{item_id}/vas",
-            context=RequestContext("ads.vas.apply_item_vas", allow_retry=True),
+            context=RequestContext(
+                "ads.vas.apply_item_vas",
+                allow_retry=idempotency_key is not None,
+            ),
+            mapper=lambda payload: map_promotion_action(
+                payload,
+                action="apply_vas",
+                target={"item_id": item_id, "user_id": user_id},
+                request_payload=payload_to_send,
+            ),
             json_body=payload_to_send,
-        )
-        return map_promotion_action(
-            payload,
-            action="apply_vas",
-            target={"item_id": item_id, "user_id": user_id},
-            request_payload=payload_to_send,
+            idempotency_key=idempotency_key,
         )
 
     def apply_item_vas_package(
@@ -271,48 +336,55 @@ class VasClient:
         *,
         user_id: int,
         item_id: int,
-        request: ApplyVasPackageRequest,
+        package_code: str,
+        idempotency_key: str | None = None,
     ) -> PromotionActionResult:
         """Применяет пакет дополнительных услуг."""
 
-        payload_to_send = request.to_payload()
-        payload = self.transport.request_json(
+        payload_to_send = ApplyVasPackageRequest(package_code=package_code).to_payload()
+        return self.transport.request_public_model(
             "PUT",
             f"/core/v2/accounts/{user_id}/items/{item_id}/vas_packages",
-            context=RequestContext("ads.vas.apply_item_vas_package", allow_retry=True),
+            context=RequestContext(
+                "ads.vas.apply_item_vas_package",
+                allow_retry=idempotency_key is not None,
+            ),
+            mapper=lambda payload: map_promotion_action(
+                payload,
+                action="apply_vas_package",
+                target={"item_id": item_id, "user_id": user_id},
+                request_payload=payload_to_send,
+            ),
             json_body=payload_to_send,
-        )
-        return map_promotion_action(
-            payload,
-            action="apply_vas_package",
-            target={"item_id": item_id, "user_id": user_id},
-            request_payload=payload_to_send,
+            idempotency_key=idempotency_key,
         )
 
     def apply_vas_direct(
         self,
         *,
         item_id: int,
-        request: ApplyVasRequest,
+        codes: list[str],
+        idempotency_key: str | None = None,
     ) -> PromotionActionResult:
         """Применяет услуги продвижения через v2 endpoint."""
 
-        payload_to_send = request.to_payload()
-        payload = self.transport.request_json(
+        payload_to_send = ApplyVasRequest(codes=codes).to_payload()
+        return self.transport.request_public_model(
             "PUT",
             f"/core/v2/items/{item_id}/vas/",
-            context=RequestContext("ads.vas.apply_direct", allow_retry=True),
+            context=RequestContext("ads.vas.apply_direct", allow_retry=idempotency_key is not None),
+            mapper=lambda payload: map_promotion_action(
+                payload,
+                action="apply_vas_direct",
+                target={"item_id": item_id},
+                request_payload=payload_to_send,
+            ),
             json_body=payload_to_send,
-        )
-        return map_promotion_action(
-            payload,
-            action="apply_vas_direct",
-            target={"item_id": item_id},
-            request_payload=payload_to_send,
+            idempotency_key=idempotency_key,
         )
 
 
-@dataclass(slots=True)
+@dataclass(slots=True, frozen=True)
 class AutoloadClient:
     """Выполняет HTTP-операции автозагрузки."""
 
@@ -329,28 +401,44 @@ class AutoloadClient:
             mapper=map_autoload_profile,
         )
 
-    def save_profile(self, request: AutoloadProfileUpdateRequest) -> AdsActionResult:
+    def save_profile(
+        self,
+        *,
+        is_enabled: bool | None = None,
+        email: str | None = None,
+        callback_url: str | None = None,
+        idempotency_key: str | None = None,
+    ) -> AdsActionResult:
         """Создает или редактирует профиль автозагрузки."""
 
         return request_public_model(
             self.transport,
             "POST",
             "/autoload/v2/profile",
-            context=RequestContext("ads.autoload.save_profile", allow_retry=True),
+            context=RequestContext("ads.autoload.save_profile", allow_retry=idempotency_key is not None),
             mapper=map_action_result,
-            json_body=request.to_payload(),
+            json_body=AutoloadProfileUpdateRequest(
+                is_enabled=is_enabled,
+                email=email,
+                callback_url=callback_url,
+            ).to_payload(),
+            idempotency_key=idempotency_key,
         )
 
-    def upload_by_url(self, request: UploadByUrlRequest) -> UploadResult:
+    def upload_by_url(self, *, url: str, idempotency_key: str | None = None) -> UploadResult:
         """Запускает загрузку файла по ссылке."""
 
         return request_public_model(
             self.transport,
             "POST",
             "/autoload/v1/upload",
-            context=RequestContext("ads.autoload.upload_by_url", allow_retry=True),
+            context=RequestContext(
+                "ads.autoload.upload_by_url",
+                allow_retry=idempotency_key is not None,
+            ),
             mapper=map_upload_result,
-            json_body=request.to_payload(),
+            json_body=UploadByUrlRequest(url=url).to_payload(),
+            idempotency_key=idempotency_key,
         )
 
     def get_node_fields(self, *, node_slug: str) -> AutoloadFieldsResult:
@@ -484,7 +572,7 @@ class AutoloadClient:
         )
 
 
-@dataclass(slots=True)
+@dataclass(slots=True, frozen=True)
 class AutoloadArchiveClient:
     """Выполняет архивные HTTP-операции автозагрузки."""
 
@@ -501,16 +589,31 @@ class AutoloadArchiveClient:
             mapper=map_autoload_profile,
         )
 
-    def save_profile(self, request: AutoloadProfileUpdateRequest) -> AdsActionResult:
+    def save_profile(
+        self,
+        *,
+        is_enabled: bool | None = None,
+        email: str | None = None,
+        callback_url: str | None = None,
+        idempotency_key: str | None = None,
+    ) -> AdsActionResult:
         """Создает или редактирует архивный профиль автозагрузки."""
 
         return request_public_model(
             self.transport,
             "POST",
             "/autoload/v1/profile",
-            context=RequestContext("ads.autoload_archive.save_profile", allow_retry=True),
+            context=RequestContext(
+                "ads.autoload_archive.save_profile",
+                allow_retry=idempotency_key is not None,
+            ),
             mapper=map_action_result,
-            json_body=request.to_payload(),
+            json_body=AutoloadProfileUpdateRequest(
+                is_enabled=is_enabled,
+                email=email,
+                callback_url=callback_url,
+            ).to_payload(),
+            idempotency_key=idempotency_key,
         )
 
     def get_last_completed_report(self) -> LegacyAutoloadReport:

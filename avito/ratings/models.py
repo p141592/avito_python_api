@@ -5,6 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from avito.core.serialization import SerializableModel
+from avito.ratings.enums import ReviewStage
 
 
 @dataclass(slots=True, frozen=True)
@@ -41,7 +42,7 @@ class ReviewInfo(SerializableModel):
 
     review_id: str | None
     score: int | None
-    stage: str | None
+    stage: ReviewStage | None
     text: str | None
     created_at: int | None
     can_answer: bool | None

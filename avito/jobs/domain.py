@@ -15,34 +15,24 @@ from avito.jobs.client import (
     WebhookClient,
 )
 from avito.jobs.models import (
-    ApplicationActionRequest,
     ApplicationIdsQuery,
-    ApplicationIdsRequest,
     ApplicationIdsResult,
     ApplicationsResult,
     ApplicationStatesResult,
     ApplicationViewedItem,
-    ApplicationViewedRequest,
     JobActionResult,
     JobDictionariesResult,
     JobDictionaryValuesResult,
     JobWebhookInfo,
     JobWebhooksResult,
-    JobWebhookUpdateRequest,
     ResumeContactInfo,
     ResumeInfo,
     ResumeSearchQuery,
     ResumesResult,
     VacanciesQuery,
     VacanciesResult,
-    VacancyArchiveRequest,
-    VacancyAutoRenewalRequest,
-    VacancyCreateRequest,
-    VacancyIdsRequest,
     VacancyInfo,
-    VacancyProlongateRequest,
     VacancyStatusesResult,
-    VacancyUpdateRequest,
 )
 
 
@@ -53,44 +43,64 @@ class Vacancy(DomainObject):
     vacancy_id: int | str | None = None
     user_id: int | str | None = None
 
-    def create(self, *, title: str, version: int = 2) -> JobActionResult:
+    def create(
+        self,
+        *,
+        title: str,
+        version: int = 2,
+        idempotency_key: str | None = None,
+    ) -> JobActionResult:
         client = VacanciesClient(self.transport)
-        request = VacancyCreateRequest(title=title)
         if version == 1:
-            return client.create_classic(request)
-        return client.create(request)
+            return client.create_classic(title=title, idempotency_key=idempotency_key)
+        return client.create(title=title, idempotency_key=idempotency_key)
 
     def update(
         self,
         *,
-        request: VacancyUpdateRequest,
+        title: str,
         vacancy_id: int | str | None = None,
         vacancy_uuid: str | None = None,
         version: int = 2,
+        idempotency_key: str | None = None,
     ) -> JobActionResult:
         client = VacanciesClient(self.transport)
         if version == 1:
             return client.update_classic(
-                vacancy_id=vacancy_id or self._require_vacancy_id(), request=request
+                vacancy_id=vacancy_id or self._require_vacancy_id(),
+                title=title,
+                idempotency_key=idempotency_key,
             )
         return client.update(
-            vacancy_uuid=vacancy_uuid or self._require_vacancy_id(), request=request
+            vacancy_uuid=vacancy_uuid or self._require_vacancy_id(),
+            title=title,
+            idempotency_key=idempotency_key,
         )
 
     def delete(
-        self, *, request: VacancyArchiveRequest, vacancy_id: int | str | None = None
+        self,
+        *,
+        employee_id: int,
+        vacancy_id: int | str | None = None,
+        idempotency_key: str | None = None,
     ) -> JobActionResult:
         return VacanciesClient(self.transport).archive(
             vacancy_id=vacancy_id or self._require_vacancy_id(),
-            request=request,
+            employee_id=employee_id,
+            idempotency_key=idempotency_key,
         )
 
     def prolongate(
-        self, *, request: VacancyProlongateRequest, vacancy_id: int | str | None = None
+        self,
+        *,
+        billing_type: str,
+        vacancy_id: int | str | None = None,
+        idempotency_key: str | None = None,
     ) -> JobActionResult:
         return VacanciesClient(self.transport).prolongate(
             vacancy_id=vacancy_id or self._require_vacancy_id(),
-            request=request,
+            billing_type=billing_type,
+            idempotency_key=idempotency_key,
         )
 
     def list(self, *, query: VacanciesQuery | None = None) -> VacanciesResult:
@@ -105,17 +115,22 @@ class Vacancy(DomainObject):
         )
 
     def get_by_ids(self, *, ids: Sequence[int]) -> VacanciesResult:
-        return VacanciesClient(self.transport).get_by_ids(VacancyIdsRequest(ids=list(ids)))
+        return VacanciesClient(self.transport).get_by_ids(ids=list(ids))
 
     def get_statuses(self, *, ids: Sequence[int]) -> VacancyStatusesResult:
-        return VacanciesClient(self.transport).get_statuses(VacancyIdsRequest(ids=list(ids)))
+        return VacanciesClient(self.transport).get_statuses(ids=list(ids))
 
     def update_auto_renewal(
-        self, *, request: VacancyAutoRenewalRequest, vacancy_uuid: str | None = None
+        self,
+        *,
+        auto_renewal: bool,
+        vacancy_uuid: str | None = None,
+        idempotency_key: str | None = None,
     ) -> JobActionResult:
         return VacanciesClient(self.transport).update_auto_renewal(
             vacancy_uuid=vacancy_uuid or self._require_vacancy_id(),
-            request=request,
+            auto_renewal=auto_renewal,
+            idempotency_key=idempotency_key,
         )
 
     def _require_vacancy_id(self) -> str:
@@ -130,30 +145,44 @@ class Application(DomainObject):
 
     user_id: int | str | None = None
 
-    def apply(self, *, ids: Sequence[str], action: str) -> JobActionResult:
+    def apply(
+        self,
+        *,
+        ids: Sequence[str],
+        action: str,
+        idempotency_key: str | None = None,
+    ) -> JobActionResult:
         return ApplicationsClient(self.transport).apply_actions(
-            ApplicationActionRequest(ids=list(ids), action=action)
+            ids=list(ids),
+            action=action,
+            idempotency_key=idempotency_key,
         )
 
     def list(
         self,
         *,
-        request: ApplicationIdsRequest | None = None,
+        ids: Sequence[str] | None = None,
         query: ApplicationIdsQuery | None = None,
     ) -> ApplicationsResult | ApplicationIdsResult:
         client = ApplicationsClient(self.transport)
-        if request is not None:
-            return client.get_by_ids(request)
+        if ids is not None:
+            return client.get_by_ids(ids=list(ids))
         if query is None:
-            raise ValidationError("Для операции требуется `query` или `request`.")
+            raise ValidationError("Для операции требуется `query` или `ids`.")
         return client.get_ids(query=query)
 
     def get_states(self) -> ApplicationStatesResult:
         return ApplicationsClient(self.transport).get_states()
 
-    def update(self, *, applies: Sequence[ApplicationViewedItem]) -> JobActionResult:
+    def update(
+        self,
+        *,
+        applies: Sequence[ApplicationViewedItem],
+        idempotency_key: str | None = None,
+    ) -> JobActionResult:
         return ApplicationsClient(self.transport).set_is_viewed(
-            ApplicationViewedRequest(applies=list(applies))
+            applies=list(applies),
+            idempotency_key=idempotency_key,
         )
 
 
@@ -195,11 +224,21 @@ class JobWebhook(DomainObject):
     def list(self) -> JobWebhooksResult:
         return WebhookClient(self.transport).list_webhooks()
 
-    def update(self, *, url: str) -> JobWebhookInfo:
-        return WebhookClient(self.transport).put_webhook(JobWebhookUpdateRequest(url=url))
+    def update(
+        self, *, url: str, idempotency_key: str | None = None
+    ) -> JobWebhookInfo:
+        return WebhookClient(self.transport).put_webhook(
+            url=url,
+            idempotency_key=idempotency_key,
+        )
 
-    def delete(self, *, url: str | None = None) -> JobActionResult:
-        return WebhookClient(self.transport).delete_webhook(url=url)
+    def delete(
+        self, *, url: str | None = None, idempotency_key: str | None = None
+    ) -> JobActionResult:
+        return WebhookClient(self.transport).delete_webhook(
+            url=url,
+            idempotency_key=idempotency_key,
+        )
 
 
 @dataclass(slots=True, frozen=True)

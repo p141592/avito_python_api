@@ -5,7 +5,9 @@ from __future__ import annotations
 from collections.abc import Mapping
 from typing import cast
 
+from avito.core.enums import map_enum_or_unknown
 from avito.core.exceptions import ResponseMappingError
+from avito.ratings.enums import ReviewStage
 from avito.ratings.models import RatingProfileInfo, ReviewAnswerInfo, ReviewInfo, ReviewsResult
 
 Payload = Mapping[str, object]
@@ -104,7 +106,11 @@ def map_reviews(payload: object) -> ReviewsResult:
             ReviewInfo(
                 review_id=_str(item, "id"),
                 score=_int(item, "score"),
-                stage=_str(item, "stage"),
+                stage=map_enum_or_unknown(
+                    _str(item, "stage"),
+                    ReviewStage,
+                    enum_name="ratings.review_stage",
+                ),
                 text=_str(item, "text"),
                 created_at=_int(item, "createdAt"),
                 can_answer=_bool(item, "canAnswer"),

@@ -5,6 +5,7 @@ from __future__ import annotations
 from collections.abc import Mapping
 from typing import cast
 
+from avito.autoteka.enums import AutotekaStatus
 from avito.autoteka.models import (
     AutotekaLeadEvent,
     AutotekaLeadsResult,
@@ -24,6 +25,7 @@ from avito.autoteka.models import (
     MonitoringEventsResult,
     MonitoringInvalidVehicle,
 )
+from avito.core.enums import map_enum_or_unknown
 from avito.core.exceptions import ResponseMappingError
 
 Payload = Mapping[str, object]
@@ -187,7 +189,11 @@ def map_package(payload: object) -> AutotekaPackageInfo:
 def _map_preview_source(source: Payload) -> AutotekaPreviewInfo:
     return AutotekaPreviewInfo(
         preview_id=_str(source, "previewId"),
-        status=_str(source, "status"),
+        status=map_enum_or_unknown(
+            _str(source, "status"),
+            AutotekaStatus,
+            enum_name="autoteka.status",
+        ),
         vehicle_id=_str(source, "vin", "vehicleId"),
         reg_number=_str(source, "regNumber", "plateNumber"),
     )
@@ -207,7 +213,11 @@ def _map_report_source(source: Payload) -> AutotekaReportInfo:
     data = _mapping(source, "data")
     return AutotekaReportInfo(
         report_id=_str(source, "reportId"),
-        status=_str(source, "status"),
+        status=map_enum_or_unknown(
+            _str(source, "status"),
+            AutotekaStatus,
+            enum_name="autoteka.status",
+        ),
         vehicle_id=_str(data, "vin", "vehicleId") or _str(source, "vin"),
         created_at=_str(source, "createdAt") or _str(data, "createdAt"),
         web_link=_str(source, "webLink"),
@@ -257,7 +267,11 @@ def map_specification(payload: object) -> AutotekaSpecificationInfo:
     source = specification or result or data
     return AutotekaSpecificationInfo(
         specification_id=_str(source, "specificationId"),
-        status=_str(source, "status"),
+        status=map_enum_or_unknown(
+            _str(source, "status"),
+            AutotekaStatus,
+            enum_name="autoteka.status",
+        ),
         vehicle_id=_str(source, "vehicleId"),
         plate_number=_str(source, "plateNumber"),
     )
@@ -273,7 +287,11 @@ def map_teaser(payload: object) -> AutotekaTeaserInfo:
     source = teaser_wrapper or result or data
     return AutotekaTeaserInfo(
         teaser_id=_str(source, "teaserId"),
-        status=_str(source, "status"),
+        status=map_enum_or_unknown(
+            _str(source, "status"),
+            AutotekaStatus,
+            enum_name="autoteka.status",
+        ),
         brand=_str(teaser_data, "brand") if teaser_data else _str(source, "brand"),
         model=_str(teaser_data, "model") if teaser_data else _str(source, "model"),
         year=_int(teaser_data, "year") if teaser_data else _int(source, "year"),
@@ -288,7 +306,11 @@ def map_valuation(payload: object) -> AutotekaValuationInfo:
     valuation = _mapping(result, "valuation")
     source = result or data
     return AutotekaValuationInfo(
-        status=_str(source, "status"),
+        status=map_enum_or_unknown(
+            _str(source, "status"),
+            AutotekaStatus,
+            enum_name="autoteka.status",
+        ),
         vehicle_id=_str(source, "vehicleId"),
         brand=_str(source, "brand"),
         model=_str(source, "model"),

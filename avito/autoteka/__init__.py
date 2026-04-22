@@ -7,6 +7,7 @@ from avito.autoteka.domain import (
     AutotekaValuation,
     AutotekaVehicle,
 )
+from avito.autoteka.enums import AutotekaStatus
 from avito.autoteka.models import (
     AutotekaLeadEvent,
     AutotekaLeadsResult,
@@ -51,6 +52,7 @@ __all__ = (
     "AutotekaReportsResult",
     "AutotekaScoring",
     "AutotekaScoringInfo",
+    "AutotekaStatus",
     "AutotekaSpecificationInfo",
     "AutotekaTeaserInfo",
     "AutotekaValuation",

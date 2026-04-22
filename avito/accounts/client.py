@@ -31,7 +31,7 @@ from avito.core import JsonPage, PaginatedList, Paginator, RequestContext, Trans
 from avito.core.mapping import request_public_model
 
 
-@dataclass(slots=True)
+@dataclass(slots=True, frozen=True)
 class AccountsClient:
     """Выполняет HTTP-операции по разделу информации о пользователе."""
 
@@ -59,18 +59,25 @@ class AccountsClient:
             mapper=map_account_balance,
         )
 
-    def get_operations_history(self, request: OperationsHistoryRequest) -> PaginatedList[OperationRecord]:
+    def get_operations_history(
+        self,
+        *,
+        date_from: str | None = None,
+        date_to: str | None = None,
+        limit: int | None = None,
+        offset: int | None = None,
+    ) -> PaginatedList[OperationRecord]:
         """Получает историю операций пользователя."""
 
-        page_size = request.limit or 25
-        base_offset = request.offset or 0
+        page_size = limit or 25
+        base_offset = offset or 0
 
         def fetch_page(page: int | None, _cursor: str | None) -> JsonPage[OperationRecord]:
             current_page = page or 1
             current_offset = base_offset + (current_page - 1) * page_size
             paged_request = OperationsHistoryRequest(
-                date_from=request.date_from,
-                date_to=request.date_to,
+                date_from=date_from,
+                date_to=date_to,
                 limit=page_size,
                 offset=current_offset,
             )
@@ -92,7 +99,7 @@ class AccountsClient:
         return Paginator(fetch_page).as_list(first_page=fetch_page(1, None))
 
 
-@dataclass(slots=True)
+@dataclass(slots=True, frozen=True)
 class HierarchyClient:
     """Выполняет HTTP-операции по иерархии аккаунтов."""
 
@@ -131,28 +138,49 @@ class HierarchyClient:
             mapper=map_company_phones,
         )
 
-    def link_items(self, request: EmployeeItemLinkRequest) -> AccountActionResult:
+    def link_items(
+        self,
+        *,
+        employee_id: int,
+        item_ids: list[int],
+        source_employee_id: int | None = None,
+        idempotency_key: str | None = None,
+    ) -> AccountActionResult:
         """Прикрепляет объявления к сотруднику."""
 
         return request_public_model(
             self.transport,
             "POST",
             "/linkItemsV1",
-            context=RequestContext("accounts.hierarchy.link_items", allow_retry=True),
+            context=RequestContext(
+                "accounts.hierarchy.link_items",
+                allow_retry=idempotency_key is not None,
+            ),
             mapper=map_action_result,
-            json_body=request.to_payload(),
+            json_body=EmployeeItemLinkRequest(
+                employee_id=employee_id,
+                item_ids=item_ids,
+                source_employee_id=source_employee_id,
+            ).to_payload(),
+            idempotency_key=idempotency_key,
         )
 
-    def list_items_by_employee(self, request: EmployeeItemsRequest) -> PaginatedList[EmployeeItem]:
+    def list_items_by_employee(
+        self,
+        *,
+        employee_id: int,
+        limit: int | None = None,
+        offset: int | None = None,
+    ) -> PaginatedList[EmployeeItem]:
         """Получает список объявлений по сотруднику."""
 
-        page_size = request.limit or 25
+        page_size = limit or 25
 
         def fetch_page(page: int | None, _cursor: str | None) -> JsonPage[EmployeeItem]:
             current_page = page or 1
-            current_offset = (request.offset or 0) + (current_page - 1) * page_size
+            current_offset = (offset or 0) + (current_page - 1) * page_size
             paged_request = EmployeeItemsRequest(
-                employee_id=request.employee_id,
+                employee_id=employee_id,
                 limit=page_size,
                 offset=current_offset,
             )

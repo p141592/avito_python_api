@@ -8,26 +8,16 @@ from avito.core import ValidationError
 from avito.core.domain import DomainObject
 from avito.messenger.client import MediaClient, MessengerClient, SpecialOffersClient, WebhookClient
 from avito.messenger.models import (
-    BlacklistRequest,
     ChatInfo,
     ChatsResult,
     MessageActionResult,
     MessagesResult,
-    MultiConfirmSpecialOfferRequest,
-    MultiCreateSpecialOfferRequest,
     MultiCreateSpecialOfferResult,
-    SendImageMessageRequest,
-    SendMessageRequest,
-    SpecialOfferAvailableRequest,
     SpecialOfferAvailableResult,
-    SpecialOfferStatsRequest,
     SpecialOfferStatsResult,
     SubscriptionsResult,
     TariffInfo,
-    UnsubscribeWebhookRequest,
-    UpdateWebhookRequest,
     UploadImageFile,
-    UploadImagesRequest,
     UploadImagesResult,
     VoiceFilesResult,
     WebhookActionResult,
@@ -54,20 +44,27 @@ class Chat(DomainObject):
 
         return MessengerClient(self.transport).list_chats(user_id=self._require_user_id())
 
-    def mark_read(self) -> MessageActionResult:
+    def mark_read(self, *, idempotency_key: str | None = None) -> MessageActionResult:
         """Помечает чат как прочитанный."""
 
         return MessengerClient(self.transport).read_chat(
             user_id=self._require_user_id(),
             chat_id=self._require_chat_id(),
+            idempotency_key=idempotency_key,
         )
 
-    def blacklist(self, *, blacklisted_user_id: int) -> MessageActionResult:
+    def blacklist(
+        self,
+        *,
+        blacklisted_user_id: int,
+        idempotency_key: str | None = None,
+    ) -> MessageActionResult:
         """Добавляет пользователя в blacklist."""
 
         return MessengerClient(self.transport).add_to_blacklist(
             user_id=self._require_user_id(),
-            request=BlacklistRequest(blacklisted_user_id=blacklisted_user_id),
+            blacklisted_user_id=blacklisted_user_id,
+            idempotency_key=idempotency_key,
         )
 
     def _require_user_id(self) -> int:
@@ -97,28 +94,46 @@ class ChatMessage(DomainObject):
             chat_id=chat_id or self._require_chat_id(),
         )
 
-    def send_message(self, *, chat_id: str | None = None, message: str) -> MessageActionResult:
+    def send_message(
+        self,
+        *,
+        chat_id: str | None = None,
+        message: str,
+        idempotency_key: str | None = None,
+    ) -> MessageActionResult:
         """Отправляет текстовое сообщение."""
 
         return MessengerClient(self.transport).send_message(
             user_id=self._require_user_id(),
             chat_id=chat_id or self._require_chat_id(),
-            request=SendMessageRequest(message=message),
+            message=message,
+            idempotency_key=idempotency_key,
         )
 
     def send_image(
-        self, *, chat_id: str | None = None, image_id: str, caption: str | None = None
+        self,
+        *,
+        chat_id: str | None = None,
+        image_id: str,
+        caption: str | None = None,
+        idempotency_key: str | None = None,
     ) -> MessageActionResult:
         """Отправляет сообщение с изображением."""
 
         return MessengerClient(self.transport).send_image_message(
             user_id=self._require_user_id(),
             chat_id=chat_id or self._require_chat_id(),
-            request=SendImageMessageRequest(image_id=image_id, caption=caption),
+            image_id=image_id,
+            caption=caption,
+            idempotency_key=idempotency_key,
         )
 
     def delete(
-        self, *, chat_id: str | None = None, message_id: str | None = None
+        self,
+        *,
+        chat_id: str | None = None,
+        message_id: str | None = None,
+        idempotency_key: str | None = None,
     ) -> MessageActionResult:
         """Удаляет сообщение."""
 
@@ -127,6 +142,7 @@ class ChatMessage(DomainObject):
             user_id=self._require_user_id(),
             chat_id=chat_id or self._require_chat_id(),
             message_id=resolved_message_id,
+            idempotency_key=idempotency_key,
         )
 
     def _require_user_id(self) -> int:
@@ -156,15 +172,25 @@ class ChatWebhook(DomainObject):
 
         return WebhookClient(self.transport).get_subscriptions()
 
-    def unsubscribe(self, *, url: str) -> WebhookActionResult:
+    def unsubscribe(self, *, url: str, idempotency_key: str | None = None) -> WebhookActionResult:
         """Отключает webhook."""
 
-        return WebhookClient(self.transport).unsubscribe(UnsubscribeWebhookRequest(url=url))
+        return WebhookClient(self.transport).unsubscribe(url=url, idempotency_key=idempotency_key)
 
-    def subscribe(self, *, url: str, secret: str | None = None) -> WebhookActionResult:
+    def subscribe(
+        self,
+        *,
+        url: str,
+        secret: str | None = None,
+        idempotency_key: str | None = None,
+    ) -> WebhookActionResult:
         """Включает webhook v3."""
 
-        return WebhookClient(self.transport).update_v3(UpdateWebhookRequest(url=url, secret=secret))
+        return WebhookClient(self.transport).update_v3(
+            url=url,
+            secret=secret,
+            idempotency_key=idempotency_key,
+        )
 
 
 @dataclass(slots=True, frozen=True)
@@ -178,12 +204,18 @@ class ChatMedia(DomainObject):
 
         return MediaClient(self.transport).get_voice_files(user_id=self._require_user_id())
 
-    def upload_images(self, *, files: list[UploadImageFile]) -> UploadImagesResult:
+    def upload_images(
+        self,
+        *,
+        files: list[UploadImageFile],
+        idempotency_key: str | None = None,
+    ) -> UploadImagesResult:
         """Загружает изображения для сообщений."""
 
         return MediaClient(self.transport).upload_images(
             user_id=self._require_user_id(),
-            request=UploadImagesRequest(files=files),
+            files=files,
+            idempotency_key=idempotency_key,
         )
 
     def _require_user_id(self) -> int:
@@ -202,35 +234,43 @@ class SpecialOfferCampaign(DomainObject):
     def get_available(self, *, item_ids: list[int]) -> SpecialOfferAvailableResult:
         """Получает объявления, доступные для рассылки."""
 
-        return SpecialOffersClient(self.transport).get_available(
-            SpecialOfferAvailableRequest(item_ids=item_ids)
-        )
+        return SpecialOffersClient(self.transport).get_available(item_ids=item_ids)
 
     def create_multi(
-        self, *, item_ids: list[int], message: str, discount_percent: int | None = None
+        self,
+        *,
+        item_ids: list[int],
+        message: str,
+        discount_percent: int | None = None,
+        idempotency_key: str | None = None,
     ) -> MultiCreateSpecialOfferResult:
         """Создает рассылку спецпредложений."""
 
         return SpecialOffersClient(self.transport).create_multi(
-            MultiCreateSpecialOfferRequest(
-                item_ids=item_ids,
-                message=message,
-                discount_percent=discount_percent,
-            )
+            item_ids=item_ids,
+            message=message,
+            discount_percent=discount_percent,
+            idempotency_key=idempotency_key,
         )
 
-    def confirm_multi(self, *, campaign_id: str | None = None) -> WebhookActionResult:
+    def confirm_multi(
+        self,
+        *,
+        campaign_id: str | None = None,
+        idempotency_key: str | None = None,
+    ) -> WebhookActionResult:
         """Подтверждает и оплачивает рассылку."""
 
         return SpecialOffersClient(self.transport).confirm_multi(
-            MultiConfirmSpecialOfferRequest(campaign_id=campaign_id or self._require_campaign_id())
+            campaign_id=campaign_id or self._require_campaign_id(),
+            idempotency_key=idempotency_key,
         )
 
     def get_stats(self, *, campaign_id: str | None = None) -> SpecialOfferStatsResult:
         """Получает статистику рассылки."""
 
         return SpecialOffersClient(self.transport).get_stats(
-            SpecialOfferStatsRequest(campaign_id=campaign_id or self._require_campaign_id())
+            campaign_id=campaign_id or self._require_campaign_id()
         )
 
     def get_tariff_info(self) -> TariffInfo:

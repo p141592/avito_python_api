@@ -15,42 +15,55 @@ from avito.ratings.models import (
 )
 
 
-@dataclass(slots=True)
+@dataclass(slots=True, frozen=True)
 class RatingsClient:
     """Выполняет HTTP-операции рейтингов и отзывов."""
 
     transport: Transport
 
-    def create_review_answer(self, request: CreateReviewAnswerRequest) -> ReviewAnswerInfo:
-        payload = self.transport.request_json(
+    def create_review_answer(
+        self,
+        *,
+        review_id: int,
+        text: str,
+        idempotency_key: str | None = None,
+    ) -> ReviewAnswerInfo:
+        return self.transport.request_public_model(
             "POST",
             "/ratings/v1/answers",
-            context=RequestContext("ratings.answers.create", allow_retry=True),
-            json_body=request.to_payload(),
+            context=RequestContext("ratings.answers.create", allow_retry=idempotency_key is not None),
+            mapper=map_review_answer,
+            json_body=CreateReviewAnswerRequest(review_id=review_id, text=text).to_payload(),
+            idempotency_key=idempotency_key,
         )
-        return map_review_answer(payload)
 
-    def delete_review_answer(self, *, answer_id: int | str) -> ReviewAnswerInfo:
-        payload = self.transport.request_json(
+    def delete_review_answer(
+        self,
+        *,
+        answer_id: int | str,
+        idempotency_key: str | None = None,
+    ) -> ReviewAnswerInfo:
+        return self.transport.request_public_model(
             "DELETE",
             f"/ratings/v1/answers/{answer_id}",
-            context=RequestContext("ratings.answers.delete", allow_retry=True),
+            context=RequestContext("ratings.answers.delete", allow_retry=idempotency_key is not None),
+            mapper=map_review_answer,
+            idempotency_key=idempotency_key,
         )
-        return map_review_answer(payload)
 
     def get_ratings_info(self) -> RatingProfileInfo:
-        payload = self.transport.request_json(
+        return self.transport.request_public_model(
             "GET",
             "/ratings/v1/info",
             context=RequestContext("ratings.info.get"),
+            mapper=map_rating_profile,
         )
-        return map_rating_profile(payload)
 
     def list_reviews(self, *, query: ReviewsQuery | None = None) -> ReviewsResult:
-        payload = self.transport.request_json(
+        return self.transport.request_public_model(
             "GET",
             "/ratings/v1/reviews",
             context=RequestContext("ratings.reviews.list"),
+            mapper=map_reviews,
             params=query.to_params() if query is not None else None,
         )
-        return map_reviews(payload)

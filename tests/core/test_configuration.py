@@ -12,6 +12,7 @@ from avito.core.exceptions import ConfigurationError
 ENV_KEYS = (
     "AVITO_BASE_URL",
     "AVITO_USER_ID",
+    "AVITO_USER_AGENT_SUFFIX",
     "AVITO_AUTH__CLIENT_ID",
     "AVITO_AUTH__CLIENT_SECRET",
     "AVITO_AUTH__REFRESH_TOKEN",
@@ -40,6 +41,7 @@ def test_avito_settings_from_env_reads_full_configuration(
             (
                 "AVITO_BASE_URL=https://sandbox.avito.ru",
                 "AVITO_USER_ID=42",
+                "AVITO_USER_AGENT_SUFFIX=ci/contract-tests",
                 "AVITO_AUTH__CLIENT_ID=client-id",
                 "AVITO_AUTH__CLIENT_SECRET=client-secret",
                 "AVITO_AUTH__REFRESH_TOKEN=refresh-token",
@@ -51,6 +53,7 @@ def test_avito_settings_from_env_reads_full_configuration(
 
     assert settings.base_url == "https://sandbox.avito.ru"
     assert settings.user_id == 42
+    assert settings.user_agent_suffix == "ci/contract-tests"
     assert settings.auth.client_id == "client-id"
     assert settings.auth.client_secret == "client-secret"
     assert settings.auth.refresh_token == "refresh-token"
@@ -165,6 +168,7 @@ def test_process_environment_overrides_dotenv_and_parses_retry_options(
                 "AVITO_TIMEOUT_READ=11",
                 "AVITO_RETRY_MAX_ATTEMPTS=4",
                 "AVITO_RETRY_BACKOFF_FACTOR=0.75",
+                "AVITO_RETRY_MAX_DELAY=9.5",
                 "AVITO_RETRY_RETRYABLE_METHODS=GET,POST,PATCH",
                 "AVITO_RETRY_RETRY_ON_RATE_LIMIT=false",
                 "AVITO_RETRY_MAX_RATE_LIMIT_WAIT_SECONDS=12.5",
@@ -184,6 +188,15 @@ def test_process_environment_overrides_dotenv_and_parses_retry_options(
     assert settings.timeouts.read == 11.0
     assert settings.retry_policy.max_attempts == 4
     assert settings.retry_policy.backoff_factor == 0.75
+    assert settings.retry_policy.max_delay == 9.5
     assert settings.retry_policy.retryable_methods == ("GET", "POST", "PATCH")
     assert settings.retry_policy.retry_on_rate_limit is False
     assert settings.retry_policy.max_rate_limit_wait_seconds == 12.5
+
+
+def test_avito_settings_rejects_secret_like_user_agent_suffix() -> None:
+    with pytest.raises(ConfigurationError, match="user_agent_suffix"):
+        AvitoSettings(
+            auth=AuthSettings(client_id="client-id", client_secret="client-secret"),
+            user_agent_suffix="secret=abc",
+        ).validate_required()

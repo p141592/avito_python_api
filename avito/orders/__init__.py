@@ -8,6 +8,13 @@ from avito.orders.domain import (
     SandboxDelivery,
     Stock,
 )
+from avito.orders.enums import (
+    DeliveryStatus,
+    LabelTaskStatus,
+    OrderStatus,
+    TrackingAvitoEventType,
+    TrackingAvitoStatus,
+)
 from avito.orders.models import (
     AddSortingCentersRequest,
     AddTariffV2Request,
@@ -91,6 +98,7 @@ __all__ = (
     "DeliveryAnnouncementRequest",
     "DeliveryDateInterval",
     "DeliveryEntityResult",
+    "DeliveryStatus",
     "DeliveryOrder",
     "DeliveryParcelIdsRequest",
     "DeliveryParcelRequest",
@@ -101,6 +109,7 @@ __all__ = (
     "DeliveryDirection",
     "DeliveryDirectionZone",
     "LabelPdfResult",
+    "LabelTaskStatus",
     "LabelTaskResult",
     "Order",
     "OrderDeliveryProperties",
@@ -113,6 +122,7 @@ __all__ = (
     "OrderLabelsRequest",
     "OrderLabel",
     "OrderMarkingsRequest",
+    "OrderStatus",
     "OrderTrackingNumberRequest",
     "OrdersResult",
     "ProhibitOrderAcceptanceRequest",
@@ -139,6 +149,8 @@ __all__ = (
     "DeliveryTermsZone",
     "UpdateTermsRequest",
     "DeliveryTrackingOptions",
+    "TrackingAvitoEventType",
+    "TrackingAvitoStatus",
     "DeliveryTrackingRequest",
     "DeliveryTerms",
     "CancelParcelRequest",

@@ -6,7 +6,14 @@ from collections.abc import Mapping
 from datetime import datetime
 from typing import cast
 
+from avito.core.enums import map_enum_or_unknown
 from avito.core.exceptions import ResponseMappingError
+from avito.promotion.enums import (
+    CampaignType,
+    PromotionStatus,
+    TargetActionBudgetType,
+    TargetActionSelectedType,
+)
 from avito.promotion.models import (
     AutostrategyBudget,
     AutostrategyBudgetPoint,
@@ -147,7 +154,11 @@ def map_promotion_services(payload: object) -> PromotionServicesResult:
                 service_code=_str(item, "serviceCode", "code"),
                 service_name=_str(item, "serviceName", "name", "title"),
                 price=_int(item, "price", "pricePenny"),
-                status=_str(item, "status"),
+                status=map_enum_or_unknown(
+                    _str(item, "status"),
+                    PromotionStatus,
+                    enum_name="promotion.status",
+                ),
             )
             for item in _items_payload(data)
         ],
@@ -164,7 +175,11 @@ def map_promotion_orders(payload: object) -> PromotionOrdersResult:
                 order_id=_str(item, "orderId", "orderID", "id"),
                 item_id=_int(item, "itemId", "itemID"),
                 service_code=_str(item, "serviceCode", "code"),
-                status=_str(item, "status"),
+                status=map_enum_or_unknown(
+                    _str(item, "status"),
+                    PromotionStatus,
+                    enum_name="promotion.status",
+                ),
                 created_at=_datetime(item, "createdAt", "created_at"),
             )
             for item in _items_payload(data)
@@ -177,7 +192,11 @@ def map_promotion_order_status(payload: object) -> PromotionOrderStatusResult:
 
     data = _expect_mapping(payload)
     order_id = _str(data, "orderId", "orderID", "id")
-    status = _str(data, "status")
+    status = map_enum_or_unknown(
+        _str(data, "status"),
+        PromotionStatus,
+        enum_name="promotion.status",
+    )
     if order_id is None or status is None:
         raise ResponseMappingError(
             "Статус заявки promotion должен содержать `orderId` и `status`.",
@@ -195,7 +214,11 @@ def map_promotion_order_status(payload: object) -> PromotionOrderStatusResult:
                 item_id=_int(item, "itemId", "itemID"),
                 price=_int(item, "price"),
                 slug=_str(item, "slug"),
-                status=_str(item, "status"),
+                status=map_enum_or_unknown(
+                    _str(item, "status"),
+                    PromotionStatus,
+                    enum_name="promotion.status",
+                ),
                 error_reason=_str(item, "errorReason"),
             )
             for item in _list(data, "items")
@@ -248,14 +271,18 @@ def map_promotion_action(
         PromotionActionItem(
             item_id=_int(item, "itemId", "itemID"),
             success=bool(item.get("success", True)),
-            status=_str(item, "status"),
+            status=map_enum_or_unknown(
+                _str(item, "status"),
+                PromotionStatus,
+                enum_name="promotion.status",
+            ),
             message=_str(_mapping(item, "error"), "message") or _str(item, "message"),
             upstream_reference=_str(item, "orderId", "requestId", "promotionId", "id"),
         )
         for item in items_payload
     ]
     applied = bool(data.get("success", True)) if not items else all(item.success for item in items)
-    statuses = [item.status for item in items if item.status]
+    statuses = [item.status for item in items if item.status is not None]
     messages = [item.message for item in items if item.message]
     resolved_status = _resolve_action_status(payload=data, statuses=statuses, applied=applied)
     details: dict[str, object] = {}
@@ -283,16 +310,25 @@ def map_promotion_action(
     )
 
 
-def _resolve_action_status(*, payload: Payload, statuses: list[str], applied: bool) -> str:
+def _resolve_action_status(
+    *,
+    payload: Payload,
+    statuses: list[PromotionStatus],
+    applied: bool,
+) -> PromotionStatus:
     if statuses:
         unique_statuses = list(dict.fromkeys(statuses))
         if len(unique_statuses) == 1:
             return unique_statuses[0]
-        return "applied" if applied else "partial"
-    payload_status = _str(payload, "status")
+        return PromotionStatus.APPLIED if applied else PromotionStatus.PARTIAL
+    payload_status = map_enum_or_unknown(
+        _str(payload, "status"),
+        PromotionStatus,
+        enum_name="promotion.status",
+    )
     if payload_status is not None:
         return payload_status
-    return "applied" if applied else "failed"
+    return PromotionStatus.APPLIED if applied else PromotionStatus.FAILED
 
 
 def _extract_upstream_reference(
@@ -447,7 +483,11 @@ def _map_budget_values(payload: Payload, key: str) -> list[TargetActionBudget]:
 def _map_target_action_auto(payload: Payload) -> TargetActionAutoBids:
     return TargetActionAutoBids(
         budget_penny=_int(payload, "budgetPenny"),
-        budget_type=_str(payload, "budgetType"),
+        budget_type=map_enum_or_unknown(
+            _str(payload, "budgetType"),
+            TargetActionBudgetType,
+            enum_name="promotion.target_action_budget_type",
+        ),
         min_budget_penny=_int(payload, "minBudgetPenny"),
         max_budget_penny=_int(payload, "maxBudgetPenny"),
         daily_budget=_map_budget_values(payload, "dailyBudget"),
@@ -461,7 +501,11 @@ def map_target_action_get_bids_out(payload: object) -> TargetActionGetBidsResult
 
     data = _expect_mapping(payload)
     action_type_id = _int(data, "actionTypeID")
-    selected_type = _str(data, "selectedType")
+    selected_type = map_enum_or_unknown(
+        _str(data, "selectedType"),
+        TargetActionSelectedType,
+        enum_name="promotion.target_action_selected_type",
+    )
     if action_type_id is None or selected_type is None:
         raise ResponseMappingError(
             "Ответ getBids должен содержать `actionTypeID` и `selectedType`.",
@@ -512,7 +556,11 @@ def map_target_action_get_promotions_by_item_ids_out(
                 auto=(
                     TargetActionAutoPromotion(
                         budget_penny=_int(cast(Payload, item["autoPromotion"]), "budgetPenny"),
-                        budget_type=_str(cast(Payload, item["autoPromotion"]), "budgetType"),
+                        budget_type=map_enum_or_unknown(
+                            _str(cast(Payload, item["autoPromotion"]), "budgetType"),
+                            TargetActionBudgetType,
+                            enum_name="promotion.target_action_budget_type",
+                        ),
                     )
                     if isinstance(item.get("autoPromotion"), Mapping)
                     else None
@@ -584,7 +632,11 @@ def _map_campaign(payload: Payload) -> CampaignInfo | None:
         return None
     return CampaignInfo(
         campaign_id=_int(payload, "campaignId"),
-        campaign_type=_str(payload, "campaignType"),
+        campaign_type=map_enum_or_unknown(
+            _str(payload, "campaignType"),
+            CampaignType,
+            enum_name="promotion.campaign_type",
+        ),
         budget=_int(payload, "budget"),
         balance=_int(payload, "balance"),
         create_time=_datetime(payload, "createTime"),

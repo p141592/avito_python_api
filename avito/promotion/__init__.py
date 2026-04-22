@@ -8,6 +8,12 @@ from avito.promotion.domain import (
     TargetActionPricing,
     TrxPromotion,
 )
+from avito.promotion.enums import (
+    CampaignType,
+    PromotionStatus,
+    TargetActionBudgetType,
+    TargetActionSelectedType,
+)
 from avito.promotion.models import (
     AutostrategyBudget,
     AutostrategyStat,
@@ -74,6 +80,7 @@ __all__ = (
     "CampaignForecastRange",
     "CampaignInfo",
     "CampaignItem",
+    "CampaignType",
     "CampaignListFilter",
     "CampaignOrderBy",
     "CampaignUpdateTimeFilter",
@@ -89,6 +96,7 @@ __all__ = (
     "PromotionOrderStatusItem",
     "PromotionOrderStatusResult",
     "PromotionOrdersResult",
+    "PromotionStatus",
     "PromotionService",
     "PromotionServiceDictionary",
     "PromotionServiceType",
@@ -97,12 +105,14 @@ __all__ = (
     "TargetActionAutoBids",
     "TargetActionAutoPromotion",
     "TargetActionBid",
+    "TargetActionBudgetType",
     "TargetActionBudget",
     "TargetActionGetBidsResult",
     "TargetActionManualBids",
     "TargetActionManualPromotion",
     "TargetActionPromotion",
     "TargetActionPromotionsByItemIdsResult",
+    "TargetActionSelectedType",
     "TrxCommissionsResult",
     "TrxItem",
     "TrxPromotion",

@@ -1,6 +1,7 @@
 """Пакет jobs."""
 
 from avito.jobs.domain import Application, JobDictionary, JobWebhook, Resume, Vacancy
+from avito.jobs.enums import ApplicationStatus, JobActionStatus, VacancyStatus
 from avito.jobs.models import (
     ApplicationActionRequest,
     ApplicationIdsQuery,
@@ -39,10 +40,12 @@ __all__ = (
     "ApplicationIdsQuery",
     "ApplicationIdsRequest",
     "ApplicationsResult",
+    "ApplicationStatus",
     "ApplicationStatesResult",
     "ApplicationViewedItem",
     "ApplicationViewedRequest",
     "JobActionResult",
+    "JobActionStatus",
     "JobDictionariesResult",
     "JobDictionary",
     "JobDictionaryValuesResult",
@@ -66,4 +69,5 @@ __all__ = (
     "VacancyStatusesResult",
     "VacanciesQuery",
     "VacancyUpdateRequest",
+    "VacancyStatus",
 )

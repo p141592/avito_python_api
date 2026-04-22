@@ -10,7 +10,7 @@ from avito.tariffs.mappers import map_tariff_info
 from avito.tariffs.models import TariffInfo
 
 
-@dataclass(slots=True)
+@dataclass(slots=True, frozen=True)
 class TariffsClient:
     """Выполняет HTTP-операции тарифов."""
 

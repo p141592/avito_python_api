@@ -5,6 +5,12 @@ from __future__ import annotations
 from dataclasses import dataclass
 from datetime import datetime
 
+from avito.accounts.enums import (
+    AccountHierarchyRole,
+    EmployeeItemStatus,
+    OperationStatus,
+    OperationType,
+)
 from avito.core.serialization import SerializableModel
 
 
@@ -36,8 +42,8 @@ class OperationRecord(SerializableModel):
     id: str | None
     created_at: datetime | None
     amount: float | None
-    operation_type: str | None
-    status: str | None
+    operation_type: OperationType | None
+    status: OperationStatus | None
     description: str | None
 
 
@@ -79,7 +85,7 @@ class AhUserStatus(SerializableModel):
 
     user_id: int | None
     is_active: bool | None
-    role: str | None
+    role: AccountHierarchyRole | None
 
 
 @dataclass(slots=True, frozen=True)
@@ -167,7 +173,7 @@ class EmployeeItem(SerializableModel):
 
     item_id: int | None
     title: str | None
-    status: str | None
+    status: EmployeeItemStatus | None
     price: float | None
 
 

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import logging
 from datetime import datetime
 
 import httpx
@@ -16,6 +17,7 @@ from avito.promotion import (
     TargetActionPricing,
     TrxPromotion,
 )
+from avito.promotion.enums import PromotionStatus, TargetActionBudgetType, TargetActionSelectedType
 from avito.promotion.models import (
     BbipItem,
 )
@@ -203,6 +205,132 @@ def test_promotion_write_methods_keep_same_payload_in_dry_run_mode() -> None:
     assert vas_apply.request_payload == vas_preview.request_payload
     assert bbip_apply.request_payload == bbip_preview.request_payload
     assert trx_apply.request_payload == trx_preview.request_payload
+
+
+def test_promotion_dry_run_does_not_call_transport() -> None:
+    seen_paths: list[str] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        seen_paths.append(request.url.path)
+        return httpx.Response(200, json={"items": []})
+
+    transport = make_transport(httpx.MockTransport(handler))
+    bbip = BbipPromotion(transport, item_id=101)
+    trx = TrxPromotion(transport, item_id=101)
+    pricing = TargetActionPricing(transport, item_id=101)
+    bbip_item = BbipItem(item_id=101, duration=7, price=1000, old_price=1200).to_dict()
+    trx_item = {
+        "item_id": 101,
+        "commission": 1500,
+        "date_from": datetime.fromisoformat("2026-04-18T00:00:00+00:00"),
+    }
+
+    bbip.create_order(items=[bbip_item], dry_run=True)
+    trx.apply(items=[trx_item], dry_run=True)
+    pricing.update_manual(action_type_id=5, bid_penny=1500, dry_run=True)
+
+    assert seen_paths == []
+
+
+def test_promotion_unknown_enums_map_to_unknown_and_warn_once(
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    def handler(request: httpx.Request) -> httpx.Response:
+        if request.url.path == "/promotion/v1/items/services/get":
+            return httpx.Response(
+                200,
+                json={
+                    "items": [
+                        {
+                            "itemId": 101,
+                            "serviceCode": "x2",
+                            "serviceName": "X2",
+                            "price": 9900,
+                            "status": "mystery-promotion-status",
+                        }
+                    ]
+                },
+            )
+        assert request.url.path == "/cpxpromo/1/getBids/101"
+        return httpx.Response(
+            200,
+            json={
+                "actionTypeID": 5,
+                "selectedType": "mystery-selected-type",
+                "auto": {
+                    "budgetPenny": 1000,
+                    "budgetType": "mystery-budget-type",
+                    "dailyBudget": {"budgets": []},
+                    "weeklyBudget": {"budgets": []},
+                    "monthlyBudget": {"budgets": []},
+                },
+            },
+        )
+
+    caplog.set_level(logging.WARNING, logger="avito.core.enums")
+    transport = make_transport(httpx.MockTransport(handler))
+    order = PromotionOrder(transport, order_id="ord-1")
+    pricing = TargetActionPricing(transport, item_id=101)
+
+    first_service = order.list_services(item_ids=[101]).items[0]
+    second_service = order.list_services(item_ids=[101]).items[0]
+    first_bids = pricing.get_bids()
+    second_bids = pricing.get_bids()
+
+    assert first_service.status is PromotionStatus.UNKNOWN
+    assert second_service.status is PromotionStatus.UNKNOWN
+    assert first_bids.selected_type is TargetActionSelectedType.UNKNOWN
+    assert second_bids.selected_type is TargetActionSelectedType.UNKNOWN
+    assert first_bids.auto is not None
+    assert second_bids.auto is not None
+    assert first_bids.auto.budget_type is TargetActionBudgetType.UNKNOWN
+    assert second_bids.auto.budget_type is TargetActionBudgetType.UNKNOWN
+
+    status_records = [
+        record
+        for record in caplog.records
+        if getattr(record, "enum", None) == "promotion.status"
+        and getattr(record, "value", None) == "mystery-promotion-status"
+    ]
+    selected_type_records = [
+        record
+        for record in caplog.records
+        if getattr(record, "enum", None) == "promotion.target_action_selected_type"
+        and getattr(record, "value", None) == "mystery-selected-type"
+    ]
+    budget_type_records = [
+        record
+        for record in caplog.records
+        if getattr(record, "enum", None) == "promotion.target_action_budget_type"
+        and getattr(record, "value", None) == "mystery-budget-type"
+    ]
+    assert len(status_records) == 1
+    assert len(selected_type_records) == 1
+    assert len(budget_type_records) == 1
+
+
+def test_idempotency_key_forwarded_once_per_retry_chain() -> None:
+    calls = {"count": 0}
+    seen_keys: list[str | None] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        calls["count"] += 1
+        seen_keys.append(request.headers.get("Idempotency-Key"))
+        if calls["count"] == 1:
+            raise httpx.ConnectError("offline", request=request)
+        return httpx.Response(200, json={"items": [{"itemID": 101, "success": True, "status": "manual"}]})
+
+    transport = make_transport(httpx.MockTransport(handler))
+    pricing = TargetActionPricing(transport, item_id=101)
+
+    result = pricing.update_manual(
+        action_type_id=5,
+        bid_penny=1500,
+        idempotency_key="idem-123",
+    )
+
+    assert result.status == "manual"
+    assert seen_keys == ["idem-123", "idem-123"]
 
 
 def test_promotion_read_mappers_raise_on_invalid_shape() -> None:

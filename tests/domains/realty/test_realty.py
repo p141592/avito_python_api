@@ -6,11 +6,8 @@ import httpx
 
 from avito.realty import RealtyAnalyticsReport, RealtyBooking, RealtyListing, RealtyPricing
 from avito.realty.models import (
-    RealtyBaseParamsUpdateRequest,
-    RealtyBookingsUpdateRequest,
     RealtyInterval,
     RealtyPricePeriod,
-    RealtyPricesUpdateRequest,
 )
 from tests.helpers.transport import make_transport
 
@@ -43,12 +40,12 @@ def test_realty_bookings_require_expected_params_and_map_fields() -> None:
     listing = RealtyListing(transport, item_id="20")
     analytics = RealtyAnalyticsReport(transport, item_id="20")
 
-    assert booking.update_bookings_info(request=RealtyBookingsUpdateRequest(blocked_dates=["2026-04-18"])).success is True
+    assert booking.update_bookings_info(blocked_dates=["2026-04-18"]).success is True
     bookings = booking.list_realty_bookings(date_start="2026-05-01", date_end="2026-05-05", with_unpaid=True)
     assert bookings.items[0].contact is not None
     assert bookings.items[0].contact.name == "Иван"
-    assert pricing.update_realty_prices(request=RealtyPricesUpdateRequest(periods=[RealtyPricePeriod(date_from="2026-05-01", price=5000)])).status == "success"
+    assert pricing.update_realty_prices(periods=[RealtyPricePeriod(date_from="2026-05-01", price=5000)]).status == "success"
     assert listing.get_intervals(intervals=[RealtyInterval(date="2026-05-01", available=True)]).success is True
-    assert listing.update_base_params(request=RealtyBaseParamsUpdateRequest(min_stay_days=2)).success is True
+    assert listing.update_base_params(min_stay_days=2).success is True
     assert analytics.get_market_price_correspondence(price=5000000).correspondence == "normal"
     assert analytics.get_report_for_classified().report_link == "https://example.com/realty-report/20"

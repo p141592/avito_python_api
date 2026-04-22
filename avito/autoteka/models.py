@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
+from avito.autoteka.enums import AutotekaStatus
 from avito.core.serialization import SerializableModel
 
 
@@ -272,7 +273,7 @@ class AutotekaPreviewInfo(SerializableModel):
     """Информация о превью автомобиля."""
 
     preview_id: str | None
-    status: str | None
+    status: AutotekaStatus | None
     vehicle_id: str | None
     reg_number: str | None
 
@@ -282,7 +283,7 @@ class AutotekaReportInfo(SerializableModel):
     """Информация об отчете Автотеки."""
 
     report_id: str | None
-    status: str | None
+    status: AutotekaStatus | None
     vehicle_id: str | None
     created_at: str | None
     web_link: str | None
@@ -310,7 +311,7 @@ class AutotekaSpecificationInfo(SerializableModel):
     """Информация о запросе спецификации автомобиля."""
 
     specification_id: str | None
-    status: str | None
+    status: AutotekaStatus | None
     vehicle_id: str | None
     plate_number: str | None
 
@@ -320,7 +321,7 @@ class AutotekaTeaserInfo(SerializableModel):
     """Информация о тизере Автотеки."""
 
     teaser_id: str | None
-    status: str | None
+    status: AutotekaStatus | None
     brand: str | None = None
     model: str | None = None
     year: int | None = None
@@ -330,7 +331,7 @@ class AutotekaTeaserInfo(SerializableModel):
 class AutotekaValuationInfo(SerializableModel):
     """Оценка стоимости автомобиля."""
 
-    status: str | None
+    status: AutotekaStatus | None
     vehicle_id: str | None
     brand: str | None
     model: str | None

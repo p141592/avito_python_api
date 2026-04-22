@@ -13,6 +13,7 @@ from avito.ads.client import (
     StatsClient,
     VasClient,
 )
+from avito.ads.enums import ListingStatus
 from avito.ads.models import (
     AccountSpendings,
     AdsActionResult,
@@ -21,24 +22,18 @@ from avito.ads.models import (
     AutoloadFeesResult,
     AutoloadFieldsResult,
     AutoloadProfileSettings,
-    AutoloadProfileUpdateRequest,
     AutoloadReportDetails,
     AutoloadReportItemsResult,
     AutoloadReportSummary,
     AutoloadTreeResult,
-    CallsStatsRequest,
     CallsStatsResult,
     IdMappingResult,
     ItemAnalyticsResult,
-    ItemStatsRequest,
     ItemStatsResult,
     LegacyAutoloadReport,
     Listing,
-    UpdatePriceRequest,
     UpdatePriceResult,
-    UploadByUrlRequest,
     UploadResult,
-    VasPricesRequest,
     VasPricesResult,
 )
 from avito.core import PaginatedList, ValidationError
@@ -47,6 +42,7 @@ from avito.core.validation import (
     validate_non_empty_string,
     validate_string_items,
 )
+from avito.promotion.enums import PromotionStatus
 from avito.promotion.models import PromotionActionResult
 
 
@@ -59,7 +55,7 @@ def _preview_result(
     return PromotionActionResult(
         action=action,
         target=target,
-        status="preview",
+        status=PromotionStatus.PREVIEW,
         applied=False,
         request_payload=request_payload,
         details={"validated": True},
@@ -84,7 +80,11 @@ class Ad(DomainObject):
         return AdsClient(self.transport).get_item(user_id=user_id, item_id=item_id)
 
     def list(
-        self, *, status: str | None = None, limit: int | None = None, offset: int | None = None
+        self,
+        *,
+        status: ListingStatus | str | None = None,
+        limit: int | None = None,
+        offset: int | None = None,
     ) -> PaginatedList[Listing]:
         """Получает список объявлений."""
 
@@ -93,12 +93,19 @@ class Ad(DomainObject):
             user_id=user_id, status=status, limit=limit, offset=offset
         )
 
-    def update_price(self, *, price: int | float) -> UpdatePriceResult:
+    def update_price(
+        self,
+        *,
+        price: int | float,
+        idempotency_key: str | None = None,
+    ) -> UpdatePriceResult:
         """Обновляет цену текущего объявления."""
 
         item_id = self._require_item_id()
         return AdsClient(self.transport).update_price(
-            item_id=item_id, price=UpdatePriceRequest(price=price)
+            item_id=item_id,
+            price=price,
+            idempotency_key=idempotency_key,
         )
 
     def _require_item_id(self) -> int:
@@ -134,11 +141,9 @@ class AdStats(DomainObject):
         )
         return StatsClient(self.transport).get_calls_stats(
             user_id=user_id,
-            request=CallsStatsRequest(
-                item_ids=resolved_item_ids,
-                date_from=_serialize_datetime(date_from),
-                date_to=_serialize_datetime(date_to),
-            ),
+            item_ids=resolved_item_ids,
+            date_from=_serialize_datetime(date_from),
+            date_to=_serialize_datetime(date_to),
         )
 
     def get_item_stats(
@@ -157,12 +162,10 @@ class AdStats(DomainObject):
         )
         return StatsClient(self.transport).get_item_stats(
             user_id=user_id,
-            request=ItemStatsRequest(
-                item_ids=resolved_item_ids,
-                date_from=_serialize_datetime(date_from),
-                date_to=_serialize_datetime(date_to),
-                fields=fields or [],
-            ),
+            item_ids=resolved_item_ids,
+            date_from=_serialize_datetime(date_from),
+            date_to=_serialize_datetime(date_to),
+            fields=fields or [],
         )
 
     def get_item_analytics(
@@ -181,12 +184,10 @@ class AdStats(DomainObject):
         )
         return StatsClient(self.transport).get_item_analytics(
             user_id=user_id,
-            request=ItemStatsRequest(
-                item_ids=resolved_item_ids,
-                date_from=_serialize_datetime(date_from),
-                date_to=_serialize_datetime(date_to),
-                fields=fields or [],
-            ),
+            item_ids=resolved_item_ids,
+            date_from=_serialize_datetime(date_from),
+            date_to=_serialize_datetime(date_to),
+            fields=fields or [],
         )
 
     def get_account_spendings(
@@ -205,12 +206,10 @@ class AdStats(DomainObject):
         )
         return StatsClient(self.transport).get_account_spendings(
             user_id=user_id,
-            request=ItemStatsRequest(
-                item_ids=resolved_item_ids,
-                date_from=_serialize_datetime(date_from),
-                date_to=_serialize_datetime(date_to),
-                fields=fields or [],
-            ),
+            item_ids=resolved_item_ids,
+            date_from=_serialize_datetime(date_from),
+            date_to=_serialize_datetime(date_to),
+            fields=fields or [],
         )
 
     def _require_user_id(self) -> int:
@@ -234,7 +233,8 @@ class AdPromotion(DomainObject):
         user_id = self._require_user_id()
         return VasClient(self.transport).get_prices(
             user_id=user_id,
-            request=VasPricesRequest(item_ids=item_ids, location_id=location_id),
+            item_ids=item_ids,
+            location_id=location_id,
         )
 
     def apply_vas(
@@ -242,13 +242,13 @@ class AdPromotion(DomainObject):
         *,
         codes: list[str],
         dry_run: bool = False,
+        idempotency_key: str | None = None,
     ) -> PromotionActionResult:
         """Применяет дополнительные услуги к объявлению."""
 
         item_id, user_id = self._require_ids()
         validate_string_items("codes", codes)
-        request = ApplyVasRequest(codes=codes)
-        request_payload = request.to_payload()
+        request_payload = ApplyVasRequest(codes=codes).to_payload()
         target: dict[str, object] = {"item_id": item_id, "user_id": user_id}
         if dry_run:
             return _preview_result(
@@ -259,7 +259,8 @@ class AdPromotion(DomainObject):
         return VasClient(self.transport).apply_item_vas(
             user_id=user_id,
             item_id=item_id,
-            request=request,
+            codes=codes,
+            idempotency_key=idempotency_key,
         )
 
     def apply_vas_package(
@@ -267,13 +268,13 @@ class AdPromotion(DomainObject):
         *,
         package_code: str,
         dry_run: bool = False,
+        idempotency_key: str | None = None,
     ) -> PromotionActionResult:
         """Применяет пакет дополнительных услуг."""
 
         item_id, user_id = self._require_ids()
         validate_non_empty_string("package_code", package_code)
-        request = ApplyVasPackageRequest(package_code=package_code)
-        request_payload = request.to_payload()
+        request_payload = ApplyVasPackageRequest(package_code=package_code).to_payload()
         target: dict[str, object] = {"item_id": item_id, "user_id": user_id}
         if dry_run:
             return _preview_result(
@@ -284,7 +285,8 @@ class AdPromotion(DomainObject):
         return VasClient(self.transport).apply_item_vas_package(
             user_id=user_id,
             item_id=item_id,
-            request=request,
+            package_code=package_code,
+            idempotency_key=idempotency_key,
         )
 
     def apply_vas_direct(
@@ -292,13 +294,13 @@ class AdPromotion(DomainObject):
         *,
         codes: list[str],
         dry_run: bool = False,
+        idempotency_key: str | None = None,
     ) -> PromotionActionResult:
         """Применяет услуги продвижения через прямой v2 endpoint."""
 
         item_id = self._require_item_id()
         validate_string_items("codes", codes)
-        request = ApplyVasRequest(codes=codes)
-        request_payload = request.to_payload()
+        request_payload = ApplyVasRequest(codes=codes).to_payload()
         target: dict[str, object] = {"item_id": item_id}
         if dry_run:
             return _preview_result(
@@ -308,7 +310,8 @@ class AdPromotion(DomainObject):
             )
         return VasClient(self.transport).apply_vas_direct(
             item_id=item_id,
-            request=request,
+            codes=codes,
+            idempotency_key=idempotency_key,
         )
 
     def _require_item_id(self) -> int:
@@ -342,19 +345,24 @@ class AutoloadProfile(DomainObject):
         is_enabled: bool | None = None,
         email: str | None = None,
         callback_url: str | None = None,
+        idempotency_key: str | None = None,
     ) -> AdsActionResult:
         """Сохраняет профиль автозагрузки."""
 
         return AutoloadClient(self.transport).save_profile(
-            AutoloadProfileUpdateRequest(
-                is_enabled=is_enabled, email=email, callback_url=callback_url
-            )
+            is_enabled=is_enabled,
+            email=email,
+            callback_url=callback_url,
+            idempotency_key=idempotency_key,
         )
 
-    def upload_by_url(self, *, url: str) -> UploadResult:
+    def upload_by_url(self, *, url: str, idempotency_key: str | None = None) -> UploadResult:
         """Загружает файл по ссылке."""
 
-        return AutoloadClient(self.transport).upload_by_url(UploadByUrlRequest(url=url))
+        return AutoloadClient(self.transport).upload_by_url(
+            url=url,
+            idempotency_key=idempotency_key,
+        )
 
     def get_tree(self) -> AutoloadTreeResult:
         """Получает дерево категорий."""
@@ -441,13 +449,15 @@ class AutoloadArchive(DomainObject):
         is_enabled: bool | None = None,
         email: str | None = None,
         callback_url: str | None = None,
+        idempotency_key: str | None = None,
     ) -> AdsActionResult:
         """Сохраняет архивный профиль автозагрузки."""
 
         return AutoloadArchiveClient(self.transport).save_profile(
-            AutoloadProfileUpdateRequest(
-                is_enabled=is_enabled, email=email, callback_url=callback_url
-            )
+            is_enabled=is_enabled,
+            email=email,
+            callback_url=callback_url,
+            idempotency_key=idempotency_key,
         )
 
     def get_last_completed_report(self) -> LegacyAutoloadReport:

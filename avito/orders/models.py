@@ -7,6 +7,13 @@ from dataclasses import dataclass
 
 from avito.core import BinaryResponse
 from avito.core.serialization import SerializableModel
+from avito.orders.enums import (
+    DeliveryStatus,
+    LabelTaskStatus,
+    OrderStatus,
+    TrackingAvitoEventType,
+    TrackingAvitoStatus,
+)
 
 
 @dataclass(slots=True, frozen=True)
@@ -301,8 +308,8 @@ class DeliveryTrackingRequest:
     """Запрос передачи tracking-события sandbox-заказа."""
 
     order_id: str
-    avito_status: str
-    avito_event_type: str
+    avito_status: TrackingAvitoStatus | str
+    avito_event_type: TrackingAvitoEventType | str
     provider_event_code: str
     date: str
     location: str
@@ -1020,7 +1027,7 @@ class OrderSummary(SerializableModel):
     """Краткая информация о заказе."""
 
     order_id: str | None
-    status: str | None
+    status: OrderStatus | None
     created_at: str | None
     buyer_name: str | None
     total_price: int | None
@@ -1040,7 +1047,7 @@ class OrderActionResult(SerializableModel):
 
     success: bool
     order_id: str | None = None
-    status: str | None = None
+    status: OrderStatus | None = None
     message: str | None = None
 
 
@@ -1067,7 +1074,7 @@ class LabelTaskResult(SerializableModel):
     """Результат генерации этикеток."""
 
     task_id: str | None
-    status: str | None = None
+    status: LabelTaskStatus | None = None
 
 
 @dataclass(slots=True, frozen=True)
@@ -1103,7 +1110,7 @@ class DeliveryEntityResult(SerializableModel):
     task_id: str | None = None
     order_id: str | None = None
     parcel_id: str | None = None
-    status: str | None = None
+    status: DeliveryStatus | None = None
     message: str | None = None
 
 
@@ -1128,7 +1135,7 @@ class DeliveryTaskInfo(SerializableModel):
     """Информация о задаче доставки."""
 
     task_id: str | None
-    status: str | None
+    status: DeliveryStatus | None
     error: str | None
 
 

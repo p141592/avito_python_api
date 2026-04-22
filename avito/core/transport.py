@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
+import importlib.metadata as importlib_metadata
 import json
+import platform
 import time
 from collections.abc import Callable, Mapping, Sequence
 from email.message import Message
@@ -12,7 +14,6 @@ from urllib.parse import quote
 
 import httpx
 
-from avito.auth.provider import AuthProvider
 from avito.core.exceptions import (
     AuthenticationError,
     AuthorizationError,
@@ -36,6 +37,7 @@ from avito.core.types import (
 )
 
 if TYPE_CHECKING:
+    from avito.auth.provider import AuthProvider
     from avito.config import AvitoSettings
 
 QueryScalar = str | int | float | bool | None
@@ -82,6 +84,7 @@ class Transport:
             timeout=build_httpx_timeout(settings.timeouts),
         )
         self._sleep = sleep
+        self._user_agent = self._build_user_agent()
 
     def debug_info(self) -> TransportDebugInfo:
         """Возвращает безопасный снимок transport-конфигурации без секретов."""
@@ -97,6 +100,12 @@ class Transport:
             retry_max_attempts=self._retry_policy.max_attempts,
             retryable_methods=self._retry_policy.retryable_methods,
         )
+
+    @property
+    def auth_provider(self) -> AuthProvider | None:
+        """Возвращает auth provider transport-слоя, если он настроен."""
+
+        return self._auth_provider
 
     def close(self) -> None:
         """Закрывает внутренний экземпляр `httpx.Client`."""
@@ -115,11 +124,16 @@ class Transport:
         files: Mapping[str, object] | None = None,
         headers: Mapping[str, str] | None = None,
         content: bytes | None = None,
+        idempotency_key: str | None = None,
     ) -> httpx.Response:
         """Выполняет запрос и возвращает успешный `httpx.Response`."""
 
         normalized_path = self._normalize_path(path)
-        request_headers = self._merge_headers(context=context, headers=headers)
+        request_headers = self._merge_headers(
+            context=context,
+            headers=headers,
+            idempotency_key=idempotency_key,
+        )
         timeout = build_httpx_timeout(context.timeout or self._settings.timeouts)
         attempt = 0
         unauthorized_refresh_used = False
@@ -144,6 +158,7 @@ class Transport:
                     attempt=attempt,
                     context=context,
                     is_timeout=isinstance(exc, httpx.TimeoutException),
+                    idempotency_key=idempotency_key,
                 )
                 if decision.should_retry:
                     self._sleep(decision.delay_seconds)
@@ -176,6 +191,7 @@ class Transport:
                     attempt=attempt,
                     context=context,
                     response=response,
+                    idempotency_key=idempotency_key,
                 )
                 if decision.should_retry:
                     self._sleep(decision.delay_seconds)
@@ -188,6 +204,7 @@ class Transport:
                     attempt=attempt,
                     context=context,
                     response=response,
+                    idempotency_key=idempotency_key,
                 )
                 if decision.should_retry:
                     self._sleep(decision.delay_seconds)
@@ -210,6 +227,7 @@ class Transport:
         data: Mapping[str, object] | None = None,
         files: Mapping[str, object] | None = None,
         headers: Mapping[str, str] | None = None,
+        idempotency_key: str | None = None,
     ) -> object:
         """Выполняет запрос и возвращает JSON-ответ."""
 
@@ -222,6 +240,7 @@ class Transport:
             data=data,
             files=files,
             headers=headers,
+            idempotency_key=idempotency_key,
         )
         try:
             return response.json()
@@ -234,6 +253,35 @@ class Transport:
                 payload=response.text,
                 headers=dict(response.headers),
             ) from exc
+
+    def request_public_model[ModelT](
+        self,
+        method: HttpMethod,
+        path: str,
+        *,
+        context: RequestContext,
+        mapper: Callable[[object], ModelT],
+        params: Mapping[str, object] | None = None,
+        json_body: object | None = None,
+        data: Mapping[str, object] | None = None,
+        files: Mapping[str, object] | None = None,
+        headers: Mapping[str, str] | None = None,
+        idempotency_key: str | None = None,
+    ) -> ModelT:
+        """Выполняет запрос, получает JSON и маппит его в публичную SDK-модель."""
+
+        payload = self.request_json(
+            method,
+            path,
+            context=context,
+            params=params,
+            json_body=json_body,
+            data=data,
+            files=files,
+            headers=headers,
+            idempotency_key=idempotency_key,
+        )
+        return mapper(payload)
 
     def download_binary(
         self,
@@ -310,14 +358,34 @@ class Transport:
         *,
         context: RequestContext,
         headers: Mapping[str, str] | None,
+        idempotency_key: str | None,
     ) -> dict[str, str]:
-        merged: dict[str, str] = {"Accept": "application/json"}
+        merged: dict[str, str] = {
+            "Accept": "application/json",
+            "User-Agent": self._user_agent,
+        }
         merged.update(dict(context.headers))
         if headers is not None:
             merged.update(dict(headers))
+        if idempotency_key is not None:
+            merged["Idempotency-Key"] = idempotency_key
         if context.requires_auth and self._auth_provider is not None:
             merged["Authorization"] = f"Bearer {self._auth_provider.get_access_token()}"
         return merged
+
+    def _build_user_agent(self) -> str:
+        try:
+            package_version = importlib_metadata.version("avito-py")
+        except importlib_metadata.PackageNotFoundError:
+            package_version = "0+unknown"
+        user_agent = (
+            f"avito-py/{package_version} "
+            f"python/{platform.python_version()} "
+            f"httpx/{httpx.__version__}"
+        )
+        if self._settings.user_agent_suffix is not None:
+            user_agent += f" {self._settings.user_agent_suffix}"
+        return user_agent
 
     def _decide_transport_retry(
         self,
@@ -326,12 +394,17 @@ class Transport:
         attempt: int,
         context: RequestContext,
         is_timeout: bool,
+        idempotency_key: str | None,
     ) -> RetryDecision:
         if attempt >= self._retry_policy.max_attempts:
             return RetryDecision(False)
         if not self._retry_policy.retry_on_transport_error:
             return RetryDecision(False)
-        if not self._retry_policy.is_retryable_method(method, explicit_retry=context.allow_retry):
+        if not self._is_retryable_request(
+            method=method,
+            context=context,
+            idempotency_key=idempotency_key,
+        ):
             return RetryDecision(False)
         return RetryDecision(
             True,
@@ -346,10 +419,15 @@ class Transport:
         attempt: int,
         context: RequestContext,
         response: httpx.Response,
+        idempotency_key: str | None,
     ) -> RetryDecision:
         if attempt >= self._retry_policy.max_attempts:
             return RetryDecision(False)
-        if not self._retry_policy.is_retryable_method(method, explicit_retry=context.allow_retry):
+        if not self._is_retryable_request(
+            method=method,
+            context=context,
+            idempotency_key=idempotency_key,
+        ):
             return RetryDecision(False)
         if response.status_code == 429:
             if not self._retry_policy.retry_on_rate_limit:
@@ -365,6 +443,21 @@ class Transport:
                 delay_seconds=self._retry_policy.compute_backoff(attempt),
             )
         return RetryDecision(False)
+
+    def _is_retryable_request(
+        self,
+        *,
+        method: str,
+        context: RequestContext,
+        idempotency_key: str | None,
+    ) -> bool:
+        normalized_method = method.upper()
+        if normalized_method in {"POST", "PATCH"} and idempotency_key is None:
+            return False
+        return self._retry_policy.is_retryable_method(
+            normalized_method,
+            explicit_retry=context.allow_retry,
+        )
 
     def _map_http_error(
         self, response: httpx.Response, *, operation: str | None = None

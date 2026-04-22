@@ -13,73 +13,102 @@ from avito.realty.models import (
     RealtyBookingsQuery,
     RealtyBookingsResult,
     RealtyBookingsUpdateRequest,
+    RealtyInterval,
     RealtyIntervalsRequest,
     RealtyMarketPriceInfo,
+    RealtyPricePeriod,
     RealtyPricesUpdateRequest,
 )
 
 
-@dataclass(slots=True)
+@dataclass(slots=True, frozen=True)
 class ShortTermRentClient:
     """Выполняет HTTP-операции краткосрочной аренды."""
 
     transport: Transport
 
     def update_bookings_info(
-        self, *, user_id: int | str, item_id: int | str, request: RealtyBookingsUpdateRequest
+        self,
+        *,
+        user_id: int | str,
+        item_id: int | str,
+        blocked_dates: list[str],
+        idempotency_key: str | None = None,
     ) -> RealtyActionResult:
-        payload = self.transport.request_json(
+        return self.transport.request_public_model(
             "POST",
             f"/core/v1/accounts/{user_id}/items/{item_id}/bookings",
-            context=RequestContext("realty.bookings.update", allow_retry=True),
-            json_body=request.to_payload(),
+            context=RequestContext("realty.bookings.update", allow_retry=idempotency_key is not None),
+            mapper=map_action,
+            json_body=RealtyBookingsUpdateRequest(blocked_dates=blocked_dates).to_payload(),
+            idempotency_key=idempotency_key,
         )
-        return map_action(payload)
 
     def list_realty_bookings(
         self, *, user_id: int | str, item_id: int | str, query: RealtyBookingsQuery
     ) -> RealtyBookingsResult:
-        payload = self.transport.request_json(
+        return self.transport.request_public_model(
             "GET",
             f"/realty/v1/accounts/{user_id}/items/{item_id}/bookings",
             context=RequestContext("realty.bookings.list"),
+            mapper=map_bookings,
             params=query.to_params(),
         )
-        return map_bookings(payload)
 
     def update_realty_prices(
-        self, *, user_id: int | str, item_id: int | str, request: RealtyPricesUpdateRequest
+        self,
+        *,
+        user_id: int | str,
+        item_id: int | str,
+        periods: list[RealtyPricePeriod],
+        idempotency_key: str | None = None,
     ) -> RealtyActionResult:
-        payload = self.transport.request_json(
+        return self.transport.request_public_model(
             "POST",
             f"/realty/v1/accounts/{user_id}/items/{item_id}/prices",
-            context=RequestContext("realty.prices.update", allow_retry=True),
-            json_body=request.to_payload(),
+            context=RequestContext("realty.prices.update", allow_retry=idempotency_key is not None),
+            mapper=map_action,
+            json_body=RealtyPricesUpdateRequest(periods=periods).to_payload(),
+            idempotency_key=idempotency_key,
         )
-        return map_action(payload)
 
-    def get_intervals(self, request: RealtyIntervalsRequest) -> RealtyActionResult:
-        payload = self.transport.request_json(
+    def get_intervals(
+        self,
+        *,
+        item_id: int,
+        intervals: list[RealtyInterval],
+        idempotency_key: str | None = None,
+    ) -> RealtyActionResult:
+        return self.transport.request_public_model(
             "POST",
             "/realty/v1/items/intervals",
-            context=RequestContext("realty.intervals.fill", allow_retry=True),
-            json_body=request.to_payload(),
+            context=RequestContext("realty.intervals.fill", allow_retry=idempotency_key is not None),
+            mapper=map_action,
+            json_body=RealtyIntervalsRequest(item_id=item_id, intervals=intervals).to_payload(),
+            idempotency_key=idempotency_key,
         )
-        return map_action(payload)
 
     def update_base_params(
-        self, *, item_id: int | str, request: RealtyBaseParamsUpdateRequest
+        self,
+        *,
+        item_id: int | str,
+        min_stay_days: int,
+        idempotency_key: str | None = None,
     ) -> RealtyActionResult:
-        payload = self.transport.request_json(
+        return self.transport.request_public_model(
             "POST",
             f"/realty/v1/items/{item_id}/base",
-            context=RequestContext("realty.base_params.update", allow_retry=True),
-            json_body=request.to_payload(),
+            context=RequestContext(
+                "realty.base_params.update",
+                allow_retry=idempotency_key is not None,
+            ),
+            mapper=map_action,
+            json_body=RealtyBaseParamsUpdateRequest(min_stay_days=min_stay_days).to_payload(),
+            idempotency_key=idempotency_key,
         )
-        return map_action(payload)
 
 
-@dataclass(slots=True)
+@dataclass(slots=True, frozen=True)
 class RealtyAnalyticsClient:
     """Выполняет HTTP-операции аналитики недвижимости."""
 
@@ -88,17 +117,23 @@ class RealtyAnalyticsClient:
     def get_market_price_correspondence(
         self, *, item_id: int | str, price: int | str
     ) -> RealtyMarketPriceInfo:
-        payload = self.transport.request_json(
+        return self.transport.request_public_model(
             "GET",
             f"/realty/v1/marketPriceCorrespondence/{item_id}/{price}",
             context=RequestContext("realty.analytics.market_price"),
+            mapper=map_market_price,
         )
-        return map_market_price(payload)
 
-    def get_report_for_classified(self, *, item_id: int | str) -> RealtyAnalyticsInfo:
-        payload = self.transport.request_json(
+    def get_report_for_classified(
+        self,
+        *,
+        item_id: int | str,
+        idempotency_key: str | None = None,
+    ) -> RealtyAnalyticsInfo:
+        return self.transport.request_public_model(
             "POST",
             f"/realty/v1/report/create/{item_id}",
-            context=RequestContext("realty.analytics.report", allow_retry=True),
+            context=RequestContext("realty.analytics.report", allow_retry=idempotency_key is not None),
+            mapper=map_analytics_report,
+            idempotency_key=idempotency_key,
         )
-        return map_analytics_report(payload)

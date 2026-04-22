@@ -7,6 +7,14 @@ from datetime import datetime
 from typing import BinaryIO
 
 from avito.core.serialization import SerializableModel
+from avito.messenger.enums import (
+    MessageActionStatus,
+    MessageDirection,
+    MessageType,
+    SpecialOfferCampaignStatus,
+    SubscriptionStatus,
+    WebhookStatus,
+)
 
 
 @dataclass(slots=True, frozen=True)
@@ -33,7 +41,7 @@ class SendMessageRequest:
     """Запрос отправки текстового сообщения."""
 
     message: str
-    type: str | None = None
+    type: MessageType | None = None
 
     def to_payload(self) -> dict[str, object]:
         """Сериализует сообщение для API."""
@@ -71,8 +79,8 @@ class MessageInfo(SerializableModel):
     author_id: int | None
     text: str | None
     created_at: datetime | None
-    direction: str | None
-    type: str | None
+    direction: MessageDirection | None
+    type: MessageType | None
 
 
 @dataclass(slots=True, frozen=True)
@@ -89,7 +97,7 @@ class MessageActionResult(SerializableModel):
 
     success: bool
     message_id: str | None = None
-    status: str | None = None
+    status: MessageActionStatus | None = None
 
 
 @dataclass(slots=True, frozen=True)
@@ -154,7 +162,7 @@ class SubscriptionInfo(SerializableModel):
 
     url: str | None
     version: str | None
-    status: str | None
+    status: SubscriptionStatus | None
 
 
 @dataclass(slots=True, frozen=True)
@@ -198,7 +206,7 @@ class WebhookActionResult(SerializableModel):
     """Результат операции с webhook."""
 
     success: bool
-    status: str | None = None
+    status: WebhookStatus | None = None
 
 
 @dataclass(slots=True, frozen=True)
@@ -268,7 +276,7 @@ class MultiCreateSpecialOfferResult(SerializableModel):
     """Результат создания рассылки."""
 
     campaign_id: str | None
-    status: str | None
+    status: SpecialOfferCampaignStatus | None
 
 
 @dataclass(slots=True, frozen=True)

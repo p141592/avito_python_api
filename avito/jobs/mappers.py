@@ -5,7 +5,9 @@ from __future__ import annotations
 from collections.abc import Mapping
 from typing import cast
 
+from avito.core.enums import map_enum_or_unknown
 from avito.core.exceptions import ResponseMappingError
+from avito.jobs.enums import ApplicationStatus, JobActionStatus, VacancyStatus
 from avito.jobs.models import (
     ApplicationIdItem,
     ApplicationIdsResult,
@@ -97,7 +99,11 @@ def map_job_action(payload: object) -> JobActionResult:
     return JobActionResult(
         success=bool(source.get("ok", source.get("success", True))),
         id=identifier or (str(numeric_id) if numeric_id is not None else None),
-        status=_str(source, "status", "state"),
+        status=map_enum_or_unknown(
+            _str(source, "status", "state"),
+            JobActionStatus,
+            enum_name="jobs.action_status",
+        ),
         message=_str(source, "message"),
     )
 
@@ -107,7 +113,11 @@ def map_application(payload: Payload) -> ApplicationInfo:
         id=_str(payload, "id"),
         vacancy_id=_int(payload, "vacancy_id", "vacancyId"),
         resume_id=_str(payload, "resume_id", "resumeId"),
-        state=_str(payload, "state", "status"),
+        state=map_enum_or_unknown(
+            _str(payload, "state", "status"),
+            ApplicationStatus,
+            enum_name="jobs.application_status",
+        ),
         is_viewed=_bool(payload, "is_viewed", "isViewed"),
         applicant_name=_str(_mapping(payload, "applicant"), "name", "fullName"),
     )
@@ -208,7 +218,11 @@ def map_vacancy(payload: Payload) -> VacancyInfo:
         ),
         uuid=_str(payload, "uuid", "vacancy_uuid", "vacancyUuid"),
         title=_str(payload, "title", "name"),
-        status=_str(payload, "status", "state"),
+        status=map_enum_or_unknown(
+            _str(payload, "status", "state"),
+            VacancyStatus,
+            enum_name="jobs.vacancy_status",
+        ),
         url=_str(payload, "url"),
     )
 
@@ -248,7 +262,11 @@ def map_vacancy_statuses(payload: object) -> VacancyStatusesResult:
                     else None
                 ),
                 uuid=_str(item, "uuid", "vacancy_uuid"),
-                status=_str(item, "status", "state"),
+                status=map_enum_or_unknown(
+                    _str(item, "status", "state"),
+                    VacancyStatus,
+                    enum_name="jobs.vacancy_status",
+                ),
             )
             for item in _list(data, "items", "statuses", "vacancies", "result")
         ],

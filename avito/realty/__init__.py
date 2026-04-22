@@ -6,6 +6,7 @@ from avito.realty.domain import (
     RealtyListing,
     RealtyPricing,
 )
+from avito.realty.enums import RealtyStatus
 from avito.realty.models import (
     RealtyActionResult,
     RealtyAnalyticsInfo,
@@ -38,4 +39,5 @@ __all__ = (
     "RealtyPricePeriod",
     "RealtyPricing",
     "RealtyPricesUpdateRequest",
+    "RealtyStatus",
 )

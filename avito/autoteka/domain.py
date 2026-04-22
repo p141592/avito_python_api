@@ -25,22 +25,11 @@ from avito.autoteka.models import (
     AutotekaSpecificationInfo,
     AutotekaTeaserInfo,
     AutotekaValuationInfo,
-    CatalogResolveRequest,
     CatalogResolveResult,
-    ExternalItemPreviewRequest,
-    ItemIdRequest,
-    LeadsRequest,
-    MonitoringBucketRequest,
     MonitoringBucketResult,
     MonitoringEventsQuery,
     MonitoringEventsResult,
-    PlateNumberRequest,
-    PreviewReportRequest,
-    RegNumberRequest,
-    TeaserCreateRequest,
     ValuationBySpecificationRequest,
-    VehicleIdRequest,
-    VinRequest,
 )
 from avito.core import ValidationError
 from avito.core.domain import DomainObject
@@ -56,44 +45,67 @@ class AutotekaVehicle(DomainObject):
     def resolve_catalog(self, *, brand_id: int) -> CatalogResolveResult:
         """Актуализирует параметры автокаталога."""
 
-        return CatalogClient(self.transport).resolve_catalog(CatalogResolveRequest(brand_id=brand_id))
+        return CatalogClient(self.transport).resolve_catalog(brand_id=brand_id)
 
     def get_leads(self, *, limit: int) -> AutotekaLeadsResult:
-        return LeadsClient(self.transport).get_leads(LeadsRequest(limit=limit))
+        return LeadsClient(self.transport).get_leads(limit=limit)
 
-    def create_preview_by_vin(self, *, vin: str) -> AutotekaPreviewInfo:
-        return PreviewClient(self.transport).create_by_vin(VinRequest(vin=vin))
+    def create_preview_by_vin(
+        self, *, vin: str, idempotency_key: str | None = None
+    ) -> AutotekaPreviewInfo:
+        return PreviewClient(self.transport).create_by_vin(
+            vin=vin,
+            idempotency_key=idempotency_key,
+        )
 
     def get_preview(self, *, preview_id: int | str | None = None) -> AutotekaPreviewInfo:
         return PreviewClient(self.transport).get_preview(
             preview_id=preview_id or self._require_vehicle_id("preview_id")
         )
 
-    def create_preview_by_external_item(self, *, item_id: str, site: str) -> AutotekaPreviewInfo:
+    def create_preview_by_external_item(
+        self,
+        *,
+        item_id: str,
+        site: str,
+        idempotency_key: str | None = None,
+    ) -> AutotekaPreviewInfo:
         return PreviewClient(self.transport).create_by_external_item(
-            ExternalItemPreviewRequest(item_id=item_id, site=site)
+            item_id=item_id,
+            site=site,
+            idempotency_key=idempotency_key,
         )
 
-    def create_preview_by_item_id(self, *, item_id: int) -> AutotekaPreviewInfo:
-        return PreviewClient(self.transport).create_by_item_id(ItemIdRequest(item_id=item_id))
+    def create_preview_by_item_id(
+        self, *, item_id: int, idempotency_key: str | None = None
+    ) -> AutotekaPreviewInfo:
+        return PreviewClient(self.transport).create_by_item_id(
+            item_id=item_id,
+            idempotency_key=idempotency_key,
+        )
 
-    def create_preview_by_reg_number(self, *, reg_number: str) -> AutotekaPreviewInfo:
+    def create_preview_by_reg_number(
+        self, *, reg_number: str, idempotency_key: str | None = None
+    ) -> AutotekaPreviewInfo:
         return PreviewClient(self.transport).create_by_reg_number(
-            RegNumberRequest(reg_number=reg_number)
+            reg_number=reg_number,
+            idempotency_key=idempotency_key,
         )
 
     def create_specification_by_plate_number(
-        self, *, plate_number: str
+        self, *, plate_number: str, idempotency_key: str | None = None
     ) -> AutotekaSpecificationInfo:
         return SpecificationsClient(self.transport).create_by_plate_number(
-            PlateNumberRequest(plate_number=plate_number)
+            plate_number=plate_number,
+            idempotency_key=idempotency_key,
         )
 
     def create_specification_by_vehicle_id(
-        self, *, vehicle_id: str
+        self, *, vehicle_id: str, idempotency_key: str | None = None
     ) -> AutotekaSpecificationInfo:
         return SpecificationsClient(self.transport).create_by_vehicle_id(
-            VehicleIdRequest(vehicle_id=vehicle_id)
+            vehicle_id=vehicle_id,
+            idempotency_key=idempotency_key,
         )
 
     def get_specification_by_id(
@@ -105,8 +117,13 @@ class AutotekaVehicle(DomainObject):
             specification_id=specification_id or self._require_vehicle_id("specification_id")
         )
 
-    def create_teaser(self, *, vehicle_id: str) -> AutotekaTeaserInfo:
-        return TeaserClient(self.transport).create(TeaserCreateRequest(vehicle_id=vehicle_id))
+    def create_teaser(
+        self, *, vehicle_id: str, idempotency_key: str | None = None
+    ) -> AutotekaTeaserInfo:
+        return TeaserClient(self.transport).create(
+            vehicle_id=vehicle_id,
+            idempotency_key=idempotency_key,
+        )
 
     def get_teaser(self, *, teaser_id: int | str | None = None) -> AutotekaTeaserInfo:
         return TeaserClient(self.transport).get(
@@ -129,12 +146,20 @@ class AutotekaReport(DomainObject):
     def get_active_package(self) -> AutotekaPackageInfo:
         return ReportClient(self.transport).get_active_package()
 
-    def create_report(self, *, preview_id: int) -> AutotekaReportInfo:
-        return ReportClient(self.transport).create_report(PreviewReportRequest(preview_id=preview_id))
+    def create_report(
+        self, *, preview_id: int, idempotency_key: str | None = None
+    ) -> AutotekaReportInfo:
+        return ReportClient(self.transport).create_report(
+            preview_id=preview_id,
+            idempotency_key=idempotency_key,
+        )
 
-    def create_report_by_vehicle_id(self, *, vehicle_id: str) -> AutotekaReportInfo:
+    def create_report_by_vehicle_id(
+        self, *, vehicle_id: str, idempotency_key: str | None = None
+    ) -> AutotekaReportInfo:
         return ReportClient(self.transport).create_report_by_vehicle_id(
-            VehicleIdRequest(vehicle_id=vehicle_id)
+            vehicle_id=vehicle_id,
+            idempotency_key=idempotency_key,
         )
 
     def list_reports(self) -> AutotekaReportsResult:
@@ -147,13 +172,21 @@ class AutotekaReport(DomainObject):
             report_id=report_id or self._require_report_id()
         )
 
-    def create_sync_report_by_reg_number(self, *, reg_number: str) -> AutotekaReportInfo:
+    def create_sync_report_by_reg_number(
+        self, *, reg_number: str, idempotency_key: str | None = None
+    ) -> AutotekaReportInfo:
         return ReportClient(self.transport).create_sync_report_by_reg_number(
-            RegNumberRequest(reg_number=reg_number)
+            reg_number=reg_number,
+            idempotency_key=idempotency_key,
         )
 
-    def create_sync_report_by_vin(self, *, vin: str) -> AutotekaReportInfo:
-        return ReportClient(self.transport).create_sync_report_by_vin(VinRequest(vin=vin))
+    def create_sync_report_by_vin(
+        self, *, vin: str, idempotency_key: str | None = None
+    ) -> AutotekaReportInfo:
+        return ReportClient(self.transport).create_sync_report_by_vin(
+            vin=vin,
+            idempotency_key=idempotency_key,
+        )
 
     def _require_report_id(self) -> str:
         if self.report_id is None:
@@ -167,21 +200,27 @@ class AutotekaMonitoring(DomainObject):
 
     user_id: int | str | None = None
 
-    def create_monitoring_bucket_add(self, *, vehicles: list[str]) -> MonitoringBucketResult:
+    def create_monitoring_bucket_add(
+        self, *, vehicles: list[str], idempotency_key: str | None = None
+    ) -> MonitoringBucketResult:
         return MonitoringClient(self.transport).add_bucket(
-            MonitoringBucketRequest(vehicles=vehicles)
+            vehicles=vehicles,
+            idempotency_key=idempotency_key,
         )
 
-    def delete_bucket(self) -> MonitoringBucketResult:
+    def delete_bucket(self, *, idempotency_key: str | None = None) -> MonitoringBucketResult:
         """Очищает bucket мониторинга."""
 
-        return MonitoringClient(self.transport).delete_bucket()
+        return MonitoringClient(self.transport).delete_bucket(idempotency_key=idempotency_key)
 
-    def remove_bucket(self, *, vehicles: list[str]) -> MonitoringBucketResult:
+    def remove_bucket(
+        self, *, vehicles: list[str], idempotency_key: str | None = None
+    ) -> MonitoringBucketResult:
         """Удаляет автомобили из bucket мониторинга."""
 
         return MonitoringClient(self.transport).remove_bucket(
-            MonitoringBucketRequest(vehicles=vehicles)
+            vehicles=vehicles,
+            idempotency_key=idempotency_key,
         )
 
     def get_monitoring_reg_actions(
@@ -199,9 +238,12 @@ class AutotekaScoring(DomainObject):
     scoring_id: int | str | None = None
     user_id: int | str | None = None
 
-    def create_scoring_by_vehicle_id(self, *, vehicle_id: str) -> AutotekaScoringInfo:
+    def create_scoring_by_vehicle_id(
+        self, *, vehicle_id: str, idempotency_key: str | None = None
+    ) -> AutotekaScoringInfo:
         return ScoringClient(self.transport).create_by_vehicle_id(
-            VehicleIdRequest(vehicle_id=vehicle_id)
+            vehicle_id=vehicle_id,
+            idempotency_key=idempotency_key,
         )
 
     def get_scoring_by_id(self, *, scoring_id: int | str | None = None) -> AutotekaScoringInfo:

@@ -5,6 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from avito.core.serialization import SerializableModel
+from avito.realty.enums import RealtyStatus
 
 
 @dataclass(slots=True, frozen=True)
@@ -12,7 +13,7 @@ class RealtyActionResult(SerializableModel):
     """Результат mutation-операции по недвижимости."""
 
     success: bool
-    status: str | None = None
+    status: RealtyStatus | None = None
 
 
 @dataclass(slots=True, frozen=True)
@@ -57,7 +58,7 @@ class RealtyBookingInfo(SerializableModel):
     guest_count: int | None
     nights: int | None
     safe_deposit: RealtyBookingSafeDeposit | None
-    status: str | None
+    status: RealtyStatus | None
 
 
 @dataclass(slots=True, frozen=True)
@@ -165,5 +166,4 @@ class RealtyAnalyticsInfo(SerializableModel):
     success: bool
     report_link: str | None = None
     error_message: str | None = None
-
 
