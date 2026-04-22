@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Mapping
-from dataclasses import FrozenInstanceError, dataclass, field
+from dataclasses import dataclass, field
 
 _SECRET_KEYS = (
     "authorization",
@@ -40,7 +40,7 @@ def sanitize_metadata(value: object) -> object:
     return value
 
 
-@dataclass(slots=True)
+@dataclass(slots=True, frozen=True)
 class AvitoError(Exception):
     """Базовое исключение SDK с безопасными диагностическими метаданными."""
 
@@ -51,21 +51,6 @@ class AvitoError(Exception):
     metadata: Mapping[str, object] = field(default_factory=dict)
     payload: object | None = None
     headers: Mapping[str, str] | None = None
-    _is_initialized: bool = field(init=False, default=False, repr=False, compare=False)
-
-    def __setattr__(self, name: str, value: object) -> None:
-        if name == "_is_initialized":
-            object.__setattr__(self, name, value)
-            return
-
-        if not getattr(self, "_is_initialized", False):
-            object.__setattr__(self, name, value)
-            return
-
-        if name in self.__dataclass_fields__:
-            raise FrozenInstanceError(f"нельзя присвоить значение полю {name!r}")
-
-        object.__setattr__(self, name, value)
 
     def __post_init__(self) -> None:
         sanitized_payload = sanitize_metadata(self.payload)
@@ -73,10 +58,10 @@ class AvitoError(Exception):
             sanitize_metadata(dict(self.headers)) if self.headers is not None else None
         )
         sanitized_metadata = sanitize_metadata(dict(self.metadata))
+        Exception.__init__(self, self.message)
         object.__setattr__(self, "payload", sanitized_payload)
         object.__setattr__(self, "headers", sanitized_headers)
         object.__setattr__(self, "metadata", sanitized_metadata)
-        object.__setattr__(self, "_is_initialized", True)
 
     def __str__(self) -> str:
         details: list[str] = [self.message]

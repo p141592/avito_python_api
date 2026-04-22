@@ -5,7 +5,9 @@ from __future__ import annotations
 from collections.abc import Mapping
 from typing import cast
 
+from avito.core.enums import map_enum_or_unknown
 from avito.core.exceptions import ResponseMappingError
+from avito.realty.enums import RealtyStatus
 from avito.realty.models import (
     RealtyActionResult,
     RealtyAnalyticsInfo,
@@ -67,7 +69,11 @@ def map_action(payload: object) -> RealtyActionResult:
     data = _expect_mapping(payload)
     return RealtyActionResult(
         success=_str(data, "result") == "success" or bool(data.get("success", False)),
-        status=_str(data, "result", "status"),
+        status=map_enum_or_unknown(
+            _str(data, "result", "status"),
+            RealtyStatus,
+            enum_name="realty.status",
+        ),
     )
 
 
@@ -102,7 +108,11 @@ def map_bookings(payload: object) -> RealtyBookingsResult:
                     if isinstance(item.get("safe_deposit"), Mapping)
                     else None
                 ),
-                status=_str(item, "status"),
+                status=map_enum_or_unknown(
+                    _str(item, "status"),
+                    RealtyStatus,
+                    enum_name="realty.status",
+                ),
             )
             for item in _list(data, "bookings", "items")
         ],

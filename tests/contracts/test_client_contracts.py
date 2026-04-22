@@ -15,6 +15,7 @@ from avito.autoteka import (
     AutotekaVehicle,
 )
 from avito.core import Transport
+from avito.core.exceptions import ConfigurationError
 from avito.core.types import ApiTimeouts
 from avito.cpa import CallTrackingCall, CpaArchive, CpaCall, CpaChat, CpaLead
 from avito.jobs import Application, JobDictionary, JobWebhook, Resume, Vacancy
@@ -164,3 +165,14 @@ def test_auth_token_clients_use_explicit_sdk_timeouts() -> None:
     assert autoteka_timeout.pool == 3.0
 
     client.close()
+
+
+def test_closed_client_rejects_new_domain_factories() -> None:
+    client = AvitoClient(
+        AvitoSettings(auth=AuthSettings(client_id="client-id", client_secret="client-secret"))
+    )
+
+    client.close()
+
+    with pytest.raises(ConfigurationError, match="Клиент закрыт"):
+        client.account()

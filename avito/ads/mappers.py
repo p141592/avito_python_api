@@ -6,6 +6,7 @@ from collections.abc import Mapping
 from datetime import datetime
 from typing import cast
 
+from avito.ads.enums import AdsActionStatus, AutoloadFieldType, AutoloadReportStatus, ListingStatus
 from avito.ads.models import (
     AccountSpendings,
     AdsActionResult,
@@ -37,6 +38,7 @@ from avito.ads.models import (
     VasPrice,
     VasPricesResult,
 )
+from avito.core.enums import map_enum_or_unknown
 from avito.core.exceptions import ResponseMappingError
 
 Payload = Mapping[str, object]
@@ -113,7 +115,11 @@ def map_ad_item(payload: object) -> Listing:
         user_id=_int(data, "user_id", "userId"),
         title=_str(data, "title"),
         description=_str(data, "description"),
-        status=_str(data, "status"),
+        status=map_enum_or_unknown(
+            _str(data, "status"),
+            ListingStatus,
+            enum_name="ads.listing_status",
+        ),
         price=_float(data, "price"),
         url=_str(data, "url", "link"),
     )
@@ -134,7 +140,11 @@ def map_update_price_result(payload: object) -> UpdatePriceResult:
     return UpdatePriceResult(
         item_id=_int(data, "item_id", "itemId", "id"),
         price=_float(data, "price"),
-        status=_str(data, "status", "result"),
+        status=map_enum_or_unknown(
+            _str(data, "status", "result"),
+            AdsActionStatus,
+            enum_name="ads.action_status",
+        ),
     )
 
 
@@ -222,7 +232,11 @@ def map_vas_apply_result(payload: object) -> VasApplyResult:
     data = _expect_mapping(payload)
     return VasApplyResult(
         success=bool(data.get("success", True)),
-        status=_str(data, "status", "result", "message"),
+        status=map_enum_or_unknown(
+            _str(data, "status", "result", "message"),
+            AdsActionStatus,
+            enum_name="ads.action_status",
+        ),
     )
 
 
@@ -255,7 +269,11 @@ def map_autoload_fields(payload: object) -> AutoloadFieldsResult:
         AutoloadField(
             slug=_str(item, "slug", "code", "id"),
             title=_str(item, "title", "name"),
-            type=_str(item, "type"),
+            type=map_enum_or_unknown(
+                _str(item, "type"),
+                AutoloadFieldType,
+                enum_name="ads.autoload_field_type",
+            ),
             required=_bool(item, "required", "is_required", "isRequired"),
         )
         for item in _list(data, "fields", "items", "result")
@@ -292,7 +310,11 @@ def map_id_mapping(payload: object) -> IdMappingResult:
 def _map_report_summary(item: Payload) -> AutoloadReportSummary:
     return AutoloadReportSummary(
         report_id=_int(item, "report_id", "reportId", "id"),
-        status=_str(item, "status"),
+        status=map_enum_or_unknown(
+            _str(item, "status"),
+            AutoloadReportStatus,
+            enum_name="ads.autoload_report_status",
+        ),
         created_at=_datetime(item, "created_at", "createdAt"),
         finished_at=_datetime(item, "finished_at", "finishedAt"),
         processed_items=_int(item, "processed_items", "processedItems", "items"),
@@ -315,7 +337,11 @@ def map_autoload_report_details(payload: object) -> AutoloadReportDetails:
     data = _expect_mapping(payload)
     return AutoloadReportDetails(
         report_id=_int(data, "report_id", "reportId", "id"),
-        status=_str(data, "status"),
+        status=map_enum_or_unknown(
+            _str(data, "status"),
+            AutoloadReportStatus,
+            enum_name="ads.autoload_report_status",
+        ),
         created_at=_datetime(data, "created_at", "createdAt"),
         finished_at=_datetime(data, "finished_at", "finishedAt"),
         errors_count=_int(data, "errors_count", "errorsCount"),
@@ -329,7 +355,11 @@ def map_legacy_autoload_report(payload: object) -> LegacyAutoloadReport:
     data = _expect_mapping(payload)
     return LegacyAutoloadReport(
         report_id=_int(data, "report_id", "reportId", "id"),
-        status=_str(data, "status"),
+        status=map_enum_or_unknown(
+            _str(data, "status"),
+            AutoloadReportStatus,
+            enum_name="ads.autoload_report_status",
+        ),
     )
 
 
@@ -341,7 +371,11 @@ def map_autoload_report_items(payload: object) -> AutoloadReportItemsResult:
         AutoloadReportItem(
             item_id=_int(item, "item_id", "itemId", "id"),
             avito_id=_int(item, "avito_id", "avitoId"),
-            status=_str(item, "status"),
+            status=map_enum_or_unknown(
+                _str(item, "status"),
+                AutoloadReportStatus,
+                enum_name="ads.autoload_report_status",
+            ),
             title=_str(item, "title"),
         )
         for item in _list(data, "items", "result")
@@ -374,7 +408,7 @@ def map_action_result(payload: object) -> AdsActionResult:
         data = cast(Payload, payload)
         return AdsActionResult(
             success=bool(data.get("success", True)),
-            message=_str(data, "message", "status"),
+            message=_str(data, "message"),
         )
     return AdsActionResult(success=True)
 

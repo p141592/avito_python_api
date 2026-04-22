@@ -7,6 +7,12 @@ from datetime import datetime
 from typing import TypedDict
 
 from avito.core.serialization import SerializableModel
+from avito.promotion.enums import (
+    CampaignType,
+    PromotionStatus,
+    TargetActionBudgetType,
+    TargetActionSelectedType,
+)
 
 
 @dataclass(slots=True, frozen=True)
@@ -44,7 +50,7 @@ class PromotionService(SerializableModel):
     service_code: str | None
     service_name: str | None
     price: int | None
-    status: str | None
+    status: PromotionStatus | None
 
 
 @dataclass(slots=True, frozen=True)
@@ -79,7 +85,7 @@ class PromotionOrderInfo(SerializableModel):
     order_id: str | None
     item_id: int | None
     service_code: str | None
-    status: str | None
+    status: PromotionStatus | None
     created_at: datetime | None
 
 
@@ -118,7 +124,7 @@ class PromotionOrderStatusItem(SerializableModel):
     item_id: int | None
     price: int | None
     slug: str | None
-    status: str | None
+    status: PromotionStatus | None
     error_reason: str | None
 
 
@@ -127,7 +133,7 @@ class PromotionOrderStatusResult(SerializableModel):
     """Статус заявки на продвижение."""
 
     order_id: str | None
-    status: str | None
+    status: PromotionStatus | None
     total_price: int | None
     items: list[PromotionOrderStatusItem]
     errors: list[PromotionOrderError]
@@ -241,7 +247,7 @@ class PromotionActionItem(SerializableModel):
 
     item_id: int | None
     success: bool
-    status: str | None = None
+    status: PromotionStatus | None = None
     message: str | None = None
     upstream_reference: str | None = None
 
@@ -252,7 +258,7 @@ class PromotionActionResult(SerializableModel):
 
     action: str
     target: dict[str, object] | None
-    status: str
+    status: PromotionStatus
     applied: bool
     request_payload: dict[str, object] | None = None
     warnings: list[str] = field(default_factory=list)
@@ -465,7 +471,7 @@ class TargetActionAutoBids(SerializableModel):
     """Детали автоматического продвижения цены целевого действия."""
 
     budget_penny: int | None
-    budget_type: str | None
+    budget_type: TargetActionBudgetType | None
     min_budget_penny: int | None
     max_budget_penny: int | None
     daily_budget: list[TargetActionBudget]
@@ -478,7 +484,7 @@ class TargetActionGetBidsResult(SerializableModel):
     """Ответ GET /cpxpromo/1/getBids/{itemId}."""
 
     action_type_id: int
-    selected_type: str
+    selected_type: TargetActionSelectedType
     auto: TargetActionAutoBids | None = None
     manual: TargetActionManualBids | None = None
 
@@ -498,7 +504,7 @@ class TargetActionAutoPromotion(SerializableModel):
     """Текущий auto-budget по объявлению."""
 
     budget_penny: int | None
-    budget_type: str | None
+    budget_type: TargetActionBudgetType | None
 
 
 @dataclass(slots=True, frozen=True)
@@ -547,7 +553,7 @@ class UpdateAutoBidRequest:
     item_id: int
     action_type_id: int
     budget_penny: int
-    budget_type: str
+    budget_type: TargetActionBudgetType | str
 
     def to_payload(self) -> dict[str, object]:
         """Сериализует запрос автоматической настройки."""
@@ -623,7 +629,7 @@ class AutostrategyBudget(SerializableModel):
 class CreateAutostrategyBudgetRequest:
     """Запрос расчета бюджета кампании."""
 
-    campaign_type: str
+    campaign_type: CampaignType | str
     start_time: datetime | None = None
     finish_time: datetime | None = None
     items: list[int] | None = None
@@ -653,7 +659,7 @@ class CampaignInfo(SerializableModel):
     """Информация об автокампании."""
 
     campaign_id: int | None
-    campaign_type: str | None
+    campaign_type: CampaignType | None
     budget: int | None
     balance: int | None
     create_time: datetime | None
@@ -721,7 +727,7 @@ class AutostrategyStat(SerializableModel):
 class CreateAutostrategyCampaignRequest:
     """Запрос создания автокампании."""
 
-    campaign_type: str
+    campaign_type: CampaignType | str
     title: str
     budget: int | None = None
     budget_bonus: int | None = None

@@ -339,7 +339,7 @@ All HTTP must go through a single transport layer.
 Rules:
 
 - Direct calls to `httpx.get()`/`httpx.post()` inside section clients are forbidden.
-- Use `httpx.Client` or `httpx.AsyncClient` as an internal dependency of the transport layer.
+- Use `httpx.Client` as an internal dependency of the transport layer.
 - Timeouts are set explicitly.
 - Authorization headers are injected by the transport/auth layer, not by business methods.
 - URL construction, error handling, retries, and logging are concentrated in the transport.
@@ -349,7 +349,6 @@ Recommendation:
 
 - Build a high-quality sync SDK first.
 - The SDK is synchronous — this must be explicitly documented in the README and public API.
-- An async version should be added as a separate layer, not mixed with sync in the same classes.
 
 ### User-Agent and Client Identification
 
@@ -362,19 +361,6 @@ Recommendation:
 - Client-level configuration (`timeouts`, `retries`) is the default. Per-operation overrides are accepted as keyword-only arguments on public methods and are scoped to the single call.
 - Overrides must not mutate the client or shared state. The transport layer resolves the effective policy as `override or client_default` without writing back.
 - The list of supported per-operation overrides is part of the public contract and must be documented on each public method.
-
-## Async and Sync Parity
-
-When an async surface is added it must be a separate, parallel layer, not a retrofit of sync classes.
-
-Rules:
-
-- The async namespace is `avito.aio` with mirrored module paths: `avito.aio.client`, `avito.aio.<domain>.client`.
-- Async client classes have the same names as their sync counterparts (`AvitoClient`, `AdClient`, ...) but live in the `aio` namespace.
-- Public method names and parameter lists must be identical between sync and async. Only the call-site keyword (`await`) and the context-manager form (`async with`) differ.
-- Mixing `async def` and `def` on the same class is forbidden.
-- Return types are the same public dataclasses in both layers. `PaginatedList[T]` has an `AsyncPaginatedList[T]` sibling with matching semantics and matching `materialize()`.
-- Feature parity between sync and async is part of the public contract: a method that exists in sync must exist in async within the same release, or be explicitly marked sync-only in the documentation.
 
 ## Authorization
 
@@ -885,6 +871,5 @@ Rules:
 - Retrying non-idempotent writes without an idempotency key or an explicit per-operation opt-in.
 - Raising on expected "not found" for probe methods (`exists()` must return `False`, not throw).
 - Exposing `FakeTransport` only through internal test imports instead of `avito.testing`.
-- Mixing sync and async surfaces in the same class or module (`avito.aio` is the only home for async).
 - Public methods that swallow upstream `request_id` or retry `attempt` in raised exceptions.
 - Documentation that covers only reference or only tutorials (all four Diátaxis modes are mandatory).

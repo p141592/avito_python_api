@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import random as random_module
 from collections.abc import Iterator
 from datetime import UTC, datetime, timedelta
 
@@ -26,16 +27,19 @@ from avito.core import (
 )
 from avito.core.retries import RetryPolicy
 from avito.core.types import ApiTimeouts
+from avito.testing import FakeTransport
 
 
 def make_settings(
     *,
     retry_policy: RetryPolicy | None = None,
     timeouts: ApiTimeouts | None = None,
+    user_agent_suffix: str | None = None,
 ) -> AvitoSettings:
     return AvitoSettings(
         base_url="https://api.avito.ru",
         auth=AuthSettings(client_id="client-id", client_secret="client-secret"),
+        user_agent_suffix=user_agent_suffix,
         retry_policy=retry_policy or RetryPolicy(),
         timeouts=timeouts or ApiTimeouts(),
     )
@@ -62,6 +66,46 @@ def test_transport_retries_timeout_and_returns_json() -> None:
 
     assert payload == {"ok": True}
     assert calls["count"] == 2
+
+
+def test_transport_sends_user_agent_on_every_request() -> None:
+    fake_transport = FakeTransport()
+    fake_transport.add_json("GET", "/items", {"ok": True})
+    fake_transport.add_json("POST", "/items", {"created": True})
+    transport = fake_transport.build()
+
+    transport.request_json("GET", "/items", context=RequestContext("list_items"))
+    transport.request_json(
+        "POST",
+        "/items",
+        context=RequestContext("create_item", allow_retry=True),
+        json_body={"name": "item"},
+    )
+
+    assert len(fake_transport.requests) == 2
+    for request in fake_transport.requests:
+        user_agent = request.headers.get("user-agent")
+        assert user_agent is not None
+        assert user_agent.startswith("avito-py/")
+        assert "python/" in user_agent
+        assert "httpx/" in user_agent
+
+
+def test_transport_appends_user_agent_suffix() -> None:
+    fake_transport = FakeTransport()
+    fake_transport.add_json("GET", "/items", {"ok": True})
+    transport = Transport(
+        make_settings(user_agent_suffix="ci/transport-tests"),
+        client=httpx.Client(
+            transport=httpx.MockTransport(fake_transport._handle),
+            base_url=fake_transport.base_url,
+        ),
+        sleep=lambda _: None,
+    )
+
+    transport.request_json("GET", "/items", context=RequestContext("list_items"))
+
+    assert fake_transport.last(path="/items").headers["user-agent"].endswith("ci/transport-tests")
 
 
 def test_transport_refreshes_token_after_401() -> None:
@@ -99,6 +143,21 @@ def test_transport_refreshes_token_after_401() -> None:
     assert seen_authorization_headers == ["Bearer expired-token", "Bearer fresh-token"]
 
 
+def test_retry_policy_uses_full_jitter_with_cap() -> None:
+    policy = RetryPolicy(
+        backoff_factor=2.0,
+        max_delay=3.0,
+        random_source=random_module.Random(7),
+    )
+
+    first_delay = policy.compute_backoff(3)
+    second_delay = policy.compute_backoff(3)
+
+    assert 0.0 <= first_delay <= 3.0
+    assert 0.0 <= second_delay <= 3.0
+    assert first_delay != second_delay
+
+
 def test_transport_does_not_retry_non_idempotent_request_without_explicit_permission() -> None:
     calls = {"count": 0}
 
@@ -116,6 +175,64 @@ def test_transport_does_not_retry_non_idempotent_request_without_explicit_permis
 
     with pytest.raises(Exception, match="offline"):
         transport.request_json("POST", "/items", context=RequestContext("create_item"))
+
+    assert calls["count"] == 1
+
+
+def test_transport_retries_post_with_same_idempotency_key_for_whole_retry_chain() -> None:
+    calls = {"count": 0}
+    seen_keys: list[str | None] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        calls["count"] += 1
+        seen_keys.append(request.headers.get("Idempotency-Key"))
+        if calls["count"] == 1:
+            raise httpx.ConnectError("offline", request=request)
+        return httpx.Response(200, json={"ok": True})
+
+    transport = Transport(
+        make_settings(),
+        client=httpx.Client(
+            transport=httpx.MockTransport(handler), base_url="https://api.avito.ru"
+        ),
+        sleep=lambda _: None,
+    )
+
+    payload = transport.request_json(
+        "POST",
+        "/items",
+        context=RequestContext("create_item", allow_retry=True),
+        json_body={"name": "item"},
+        idempotency_key="idem-123",
+    )
+
+    assert payload == {"ok": True}
+    assert calls["count"] == 2
+    assert seen_keys == ["idem-123", "idem-123"]
+
+
+def test_transport_does_not_retry_post_without_idempotency_key_even_with_allow_retry() -> None:
+    calls = {"count": 0}
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        calls["count"] += 1
+        raise httpx.ConnectError("offline", request=request)
+
+    transport = Transport(
+        make_settings(),
+        client=httpx.Client(
+            transport=httpx.MockTransport(handler), base_url="https://api.avito.ru"
+        ),
+        sleep=lambda _: None,
+    )
+
+    with pytest.raises(Exception, match="offline"):
+        transport.request_json(
+            "POST",
+            "/items",
+            context=RequestContext("create_item", allow_retry=True),
+            json_body={"name": "item"},
+        )
 
     assert calls["count"] == 1
 

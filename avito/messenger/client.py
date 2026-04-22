@@ -38,6 +38,7 @@ from avito.messenger.models import (
     TariffInfo,
     UnsubscribeWebhookRequest,
     UpdateWebhookRequest,
+    UploadImageFile,
     UploadImagesRequest,
     UploadImagesResult,
     VoiceFilesResult,
@@ -45,7 +46,7 @@ from avito.messenger.models import (
 )
 
 
-@dataclass(slots=True)
+@dataclass(slots=True, frozen=True)
 class MessengerClient:
     """Выполняет HTTP-операции чатов и сообщений."""
 
@@ -54,92 +55,127 @@ class MessengerClient:
     def list_chats(self, *, user_id: int) -> ChatsResult:
         """Получает список чатов пользователя."""
 
-        payload = self.transport.request_json(
+        return self.transport.request_public_model(
             "GET",
             f"/messenger/v2/accounts/{user_id}/chats",
             context=RequestContext("messenger.list_chats"),
+            mapper=map_chats,
         )
-        return map_chats(payload)
 
     def get_chat(self, *, user_id: int, chat_id: str) -> ChatInfo:
         """Получает информацию по чату."""
 
-        payload = self.transport.request_json(
+        return self.transport.request_public_model(
             "GET",
             f"/messenger/v2/accounts/{user_id}/chats/{chat_id}",
             context=RequestContext("messenger.get_chat"),
+            mapper=map_chat,
         )
-        return map_chat(payload)
 
-    def read_chat(self, *, user_id: int, chat_id: str) -> MessageActionResult:
+    def read_chat(
+        self,
+        *,
+        user_id: int,
+        chat_id: str,
+        idempotency_key: str | None = None,
+    ) -> MessageActionResult:
         """Помечает чат как прочитанный."""
 
-        payload = self.transport.request_json(
+        return self.transport.request_public_model(
             "POST",
             f"/messenger/v1/accounts/{user_id}/chats/{chat_id}/read",
-            context=RequestContext("messenger.read_chat", allow_retry=True),
+            context=RequestContext("messenger.read_chat", allow_retry=idempotency_key is not None),
+            mapper=map_message_action,
+            idempotency_key=idempotency_key,
         )
-        return map_message_action(payload)
 
-    def add_to_blacklist(self, *, user_id: int, request: BlacklistRequest) -> MessageActionResult:
+    def add_to_blacklist(
+        self, *, user_id: int, blacklisted_user_id: int, idempotency_key: str | None = None
+    ) -> MessageActionResult:
         """Добавляет пользователя в blacklist."""
 
-        payload = self.transport.request_json(
+        return self.transport.request_public_model(
             "POST",
             f"/messenger/v2/accounts/{user_id}/blacklist",
-            context=RequestContext("messenger.add_to_blacklist", allow_retry=True),
-            json_body=request.to_payload(),
+            context=RequestContext(
+                "messenger.add_to_blacklist",
+                allow_retry=idempotency_key is not None,
+            ),
+            mapper=map_message_action,
+            json_body=BlacklistRequest(blacklisted_user_id=blacklisted_user_id).to_payload(),
+            idempotency_key=idempotency_key,
         )
-        return map_message_action(payload)
 
     def send_message(
-        self, *, user_id: int, chat_id: str, request: SendMessageRequest
+        self, *, user_id: int, chat_id: str, message: str, idempotency_key: str | None = None
     ) -> MessageActionResult:
         """Отправляет текстовое сообщение."""
 
-        payload = self.transport.request_json(
+        return self.transport.request_public_model(
             "POST",
             f"/messenger/v1/accounts/{user_id}/chats/{chat_id}/messages",
-            context=RequestContext("messenger.send_message", allow_retry=True),
-            json_body=request.to_payload(),
+            context=RequestContext("messenger.send_message", allow_retry=idempotency_key is not None),
+            mapper=map_message_action,
+            json_body=SendMessageRequest(message=message).to_payload(),
+            idempotency_key=idempotency_key,
         )
-        return map_message_action(payload)
 
     def send_image_message(
-        self, *, user_id: int, chat_id: str, request: SendImageMessageRequest
+        self,
+        *,
+        user_id: int,
+        chat_id: str,
+        image_id: str,
+        caption: str | None = None,
+        idempotency_key: str | None = None,
     ) -> MessageActionResult:
         """Отправляет сообщение с изображением."""
 
-        payload = self.transport.request_json(
+        return self.transport.request_public_model(
             "POST",
             f"/messenger/v1/accounts/{user_id}/chats/{chat_id}/messages/image",
-            context=RequestContext("messenger.send_image_message", allow_retry=True),
-            json_body=request.to_payload(),
+            context=RequestContext(
+                "messenger.send_image_message",
+                allow_retry=idempotency_key is not None,
+            ),
+            mapper=map_message_action,
+            json_body=SendImageMessageRequest(image_id=image_id, caption=caption).to_payload(),
+            idempotency_key=idempotency_key,
         )
-        return map_message_action(payload)
 
-    def delete_message(self, *, user_id: int, chat_id: str, message_id: str) -> MessageActionResult:
+    def delete_message(
+        self,
+        *,
+        user_id: int,
+        chat_id: str,
+        message_id: str,
+        idempotency_key: str | None = None,
+    ) -> MessageActionResult:
         """Удаляет сообщение."""
 
-        payload = self.transport.request_json(
+        return self.transport.request_public_model(
             "POST",
             f"/messenger/v1/accounts/{user_id}/chats/{chat_id}/messages/{message_id}",
-            context=RequestContext("messenger.delete_message", allow_retry=True),
+            context=RequestContext(
+                "messenger.delete_message",
+                allow_retry=idempotency_key is not None,
+            ),
+            mapper=map_message_action,
+            idempotency_key=idempotency_key,
         )
-        return map_message_action(payload)
 
     def list_messages(self, *, user_id: int, chat_id: str) -> MessagesResult:
         """Получает список сообщений V3."""
 
-        payload = self.transport.request_json(
+        return self.transport.request_public_model(
             "GET",
             f"/messenger/v3/accounts/{user_id}/chats/{chat_id}/messages/",
             context=RequestContext("messenger.list_messages"),
+            mapper=map_messages,
         )
-        return map_messages(payload)
 
 
-@dataclass(slots=True)
+@dataclass(slots=True, frozen=True)
 class WebhookClient:
     """Выполняет HTTP-операции webhook мессенджера."""
 
@@ -148,37 +184,51 @@ class WebhookClient:
     def get_subscriptions(self) -> SubscriptionsResult:
         """Получает список подписок webhook."""
 
-        payload = self.transport.request_json(
+        return self.transport.request_public_model(
             "POST",
             "/messenger/v1/subscriptions",
             context=RequestContext("messenger.webhook.get_subscriptions", allow_retry=True),
+            mapper=map_subscriptions,
         )
-        return map_subscriptions(payload)
 
-    def unsubscribe(self, request: UnsubscribeWebhookRequest) -> WebhookActionResult:
+    def unsubscribe(self, *, url: str, idempotency_key: str | None = None) -> WebhookActionResult:
         """Отключает webhook."""
 
-        payload = self.transport.request_json(
+        return self.transport.request_public_model(
             "POST",
             "/messenger/v1/webhook/unsubscribe",
-            context=RequestContext("messenger.webhook.unsubscribe", allow_retry=True),
-            json_body=request.to_payload(),
+            context=RequestContext(
+                "messenger.webhook.unsubscribe",
+                allow_retry=idempotency_key is not None,
+            ),
+            mapper=map_webhook_action,
+            json_body=UnsubscribeWebhookRequest(url=url).to_payload(),
+            idempotency_key=idempotency_key,
         )
-        return map_webhook_action(payload)
 
-    def update_v3(self, request: UpdateWebhookRequest) -> WebhookActionResult:
+    def update_v3(
+        self,
+        *,
+        url: str,
+        secret: str | None = None,
+        idempotency_key: str | None = None,
+    ) -> WebhookActionResult:
         """Включает уведомления webhook v3."""
 
-        payload = self.transport.request_json(
+        return self.transport.request_public_model(
             "POST",
             "/messenger/v3/webhook",
-            context=RequestContext("messenger.webhook.update_v3", allow_retry=True),
-            json_body=request.to_payload(),
+            context=RequestContext(
+                "messenger.webhook.update_v3",
+                allow_retry=idempotency_key is not None,
+            ),
+            mapper=map_webhook_action,
+            json_body=UpdateWebhookRequest(url=url, secret=secret).to_payload(),
+            idempotency_key=idempotency_key,
         )
-        return map_webhook_action(payload)
 
 
-@dataclass(slots=True)
+@dataclass(slots=True, frozen=True)
 class MediaClient:
     """Выполняет HTTP-операции media uploads и voice files."""
 
@@ -187,91 +237,115 @@ class MediaClient:
     def get_voice_files(self, *, user_id: int) -> VoiceFilesResult:
         """Получает голосовые сообщения."""
 
-        payload = self.transport.request_json(
+        return self.transport.request_public_model(
             "GET",
             f"/messenger/v1/accounts/{user_id}/getVoiceFiles",
             context=RequestContext("messenger.media.get_voice_files"),
+            mapper=map_voice_files,
         )
-        return map_voice_files(payload)
 
     def upload_images(
         self,
         *,
         user_id: int,
-        request: UploadImagesRequest,
+        files: list[UploadImageFile],
+        idempotency_key: str | None = None,
     ) -> UploadImagesResult:
         """Загружает изображения для сообщений."""
 
-        payload = self.transport.request_json(
+        return self.transport.request_public_model(
             "POST",
             f"/messenger/v1/accounts/{user_id}/uploadImages",
-            context=RequestContext("messenger.media.upload_images", allow_retry=True),
-            files=request.to_files(),
+            context=RequestContext(
+                "messenger.media.upload_images",
+                allow_retry=idempotency_key is not None,
+            ),
+            mapper=map_upload_images,
+            files=UploadImagesRequest(files=files).to_files(),
+            idempotency_key=idempotency_key,
         )
-        return map_upload_images(payload)
 
 
-@dataclass(slots=True)
+@dataclass(slots=True, frozen=True)
 class SpecialOffersClient:
     """Выполняет HTTP-операции рассылок скидок и спецпредложений."""
 
     transport: Transport
 
-    def get_available(self, request: SpecialOfferAvailableRequest) -> SpecialOfferAvailableResult:
+    def get_available(self, *, item_ids: list[int]) -> SpecialOfferAvailableResult:
         """Получает доступные объявления для рассылки."""
 
-        payload = self.transport.request_json(
+        return self.transport.request_public_model(
             "POST",
             "/special-offers/v1/available",
             context=RequestContext("messenger.special_offers.get_available", allow_retry=True),
-            json_body=request.to_payload(),
+            mapper=map_available_special_offers,
+            json_body=SpecialOfferAvailableRequest(item_ids=item_ids).to_payload(),
         )
-        return map_available_special_offers(payload)
 
     def create_multi(
-        self, request: MultiCreateSpecialOfferRequest
+        self,
+        *,
+        item_ids: list[int],
+        message: str,
+        discount_percent: int | None = None,
+        idempotency_key: str | None = None,
     ) -> MultiCreateSpecialOfferResult:
         """Создает рассылку спецпредложений."""
 
-        payload = self.transport.request_json(
+        return self.transport.request_public_model(
             "POST",
             "/special-offers/v1/multiCreate",
-            context=RequestContext("messenger.special_offers.create_multi", allow_retry=True),
-            json_body=request.to_payload(),
+            context=RequestContext(
+                "messenger.special_offers.create_multi",
+                allow_retry=idempotency_key is not None,
+            ),
+            mapper=map_multi_create_result,
+            json_body=MultiCreateSpecialOfferRequest(
+                item_ids=item_ids,
+                message=message,
+                discount_percent=discount_percent,
+            ).to_payload(),
+            idempotency_key=idempotency_key,
         )
-        return map_multi_create_result(payload)
 
-    def confirm_multi(self, request: MultiConfirmSpecialOfferRequest) -> WebhookActionResult:
+    def confirm_multi(
+        self, *, campaign_id: str, idempotency_key: str | None = None
+    ) -> WebhookActionResult:
         """Подтверждает и оплачивает рассылку."""
 
-        payload = self.transport.request_json(
+        return self.transport.request_public_model(
             "POST",
             "/special-offers/v1/multiConfirm",
-            context=RequestContext("messenger.special_offers.confirm_multi", allow_retry=True),
-            json_body=request.to_payload(),
+            context=RequestContext(
+                "messenger.special_offers.confirm_multi",
+                allow_retry=idempotency_key is not None,
+            ),
+            mapper=map_webhook_action,
+            json_body=MultiConfirmSpecialOfferRequest(campaign_id=campaign_id).to_payload(),
+            idempotency_key=idempotency_key,
         )
-        return map_webhook_action(payload)
 
-    def get_stats(self, request: SpecialOfferStatsRequest) -> SpecialOfferStatsResult:
+    def get_stats(self, *, campaign_id: str) -> SpecialOfferStatsResult:
         """Получает статистику рассылки."""
 
-        payload = self.transport.request_json(
+        return self.transport.request_public_model(
             "POST",
             "/special-offers/v1/stats",
             context=RequestContext("messenger.special_offers.get_stats", allow_retry=True),
-            json_body=request.to_payload(),
+            mapper=map_special_offer_stats,
+            json_body=SpecialOfferStatsRequest(campaign_id=campaign_id).to_payload(),
         )
-        return map_special_offer_stats(payload)
 
     def get_tariff_info(self) -> TariffInfo:
         """Получает информацию о тарифе спецпредложений."""
 
-        payload = self.transport.request_json(
+        return self.transport.request_public_model(
             "POST",
             "/special-offers/v1/tariffInfo",
             context=RequestContext("messenger.special_offers.get_tariff_info", allow_retry=True),
+            mapper=map_tariff_info,
         )
-        return map_tariff_info(payload)
 
 
 __all__ = ("MediaClient", "MessengerClient", "SpecialOffersClient", "WebhookClient")

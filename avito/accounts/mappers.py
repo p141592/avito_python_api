@@ -6,6 +6,12 @@ from collections.abc import Mapping
 from datetime import datetime
 from typing import cast
 
+from avito.accounts.enums import (
+    AccountHierarchyRole,
+    EmployeeItemStatus,
+    OperationStatus,
+    OperationType,
+)
 from avito.accounts.models import (
     AccountActionResult,
     AccountBalance,
@@ -20,6 +26,7 @@ from avito.accounts.models import (
     OperationRecord,
     OperationsHistoryResult,
 )
+from avito.core.enums import map_enum_or_unknown
 from avito.core.exceptions import ResponseMappingError
 
 Payload = Mapping[str, object]
@@ -129,8 +136,16 @@ def map_operations_history(payload: object) -> OperationsHistoryResult:
             id=_as_str(item, "id", "operation_id"),
             created_at=_as_datetime(item, "created_at", "createdAt", "date"),
             amount=_as_float(item, "amount", "price", "sum"),
-            operation_type=_as_str(item, "type", "operation_type", "operationType"),
-            status=_as_str(item, "status"),
+            operation_type=map_enum_or_unknown(
+                _as_str(item, "type", "operation_type", "operationType"),
+                OperationType,
+                enum_name="accounts.operation_type",
+            ),
+            status=map_enum_or_unknown(
+                _as_str(item, "status"),
+                OperationStatus,
+                enum_name="accounts.operation_status",
+            ),
             description=_as_str(item, "description", "title"),
         )
         for item in _as_list(data, "operations", "items", "result")
@@ -148,7 +163,11 @@ def map_ah_user_status(payload: object) -> AhUserStatus:
     return AhUserStatus(
         user_id=_as_int(data, "user_id", "userId", "id"),
         is_active=_as_bool(data, "is_active", "isActive", "active"),
-        role=_as_str(data, "role", "status"),
+        role=map_enum_or_unknown(
+            _as_str(data, "role", "status"),
+            AccountHierarchyRole,
+            enum_name="accounts.account_hierarchy_role",
+        ),
     )
 
 
@@ -192,7 +211,11 @@ def map_employee_items(payload: object) -> EmployeeItemsResult:
         EmployeeItem(
             item_id=_as_int(item, "item_id", "itemId", "id"),
             title=_as_str(item, "title"),
-            status=_as_str(item, "status"),
+            status=map_enum_or_unknown(
+                _as_str(item, "status"),
+                EmployeeItemStatus,
+                enum_name="accounts.employee_item_status",
+            ),
             price=_as_float(item, "price"),
         )
         for item in _as_list(data, "items", "result")

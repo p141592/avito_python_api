@@ -5,13 +5,8 @@ import httpx
 from avito.jobs import Application, JobDictionary, JobWebhook, Resume, Vacancy
 from avito.jobs.models import (
     ApplicationIdsQuery,
-    ApplicationIdsRequest,
     ApplicationViewedItem,
     ResumeSearchQuery,
-    VacancyArchiveRequest,
-    VacancyAutoRenewalRequest,
-    VacancyProlongateRequest,
-    VacancyUpdateRequest,
 )
 from tests.helpers.transport import make_transport
 
@@ -49,7 +44,7 @@ def test_application_webhook_and_resume_flows() -> None:
     resume = Resume(transport, resume_id="res-1")
 
     assert application.list(query=ApplicationIdsQuery(updated_at_from="2026-04-18")).items[0].id == "app-1"
-    assert application.list(request=ApplicationIdsRequest(ids=["app-1"])).items[0].applicant_name == "Иван"
+    assert application.list(ids=["app-1"]).items[0].applicant_name == "Иван"
     assert application.get_states().items[0].slug == "new"
     assert application.update(applies=[ApplicationViewedItem(id="app-1", is_viewed=True)]).status == "viewed"
     assert application.apply(ids=["app-1"], action="invited").status == "invited"
@@ -96,15 +91,15 @@ def test_vacancy_and_dictionary_flows() -> None:
     dictionary = JobDictionary(transport, dictionary_id="profession")
 
     assert vacancy.create(title="Продавец", version=1).id == "101"
-    assert vacancy.update(request=VacancyUpdateRequest(title="Старший продавец"), version=1).status == "updated"
-    assert vacancy.delete(request=VacancyArchiveRequest(employee_id=7)).status == "archived"
-    assert vacancy.prolongate(request=VacancyProlongateRequest(billing_type="package")).status == "prolongated"
+    assert vacancy.update(title="Старший продавец", version=1).status == "updated"
+    assert vacancy.delete(employee_id=7).status == "archived"
+    assert vacancy.prolongate(billing_type="package").status == "prolongated"
     assert vacancy.list().items[0].uuid == "vac-uuid-1"
     assert vacancy.create(title="Вакансия v2").id == "vac-uuid-1"
     assert vacancy.get_by_ids(ids=[101]).items[0].title == "Продавец"
     assert vacancy.get_statuses(ids=[101]).items[0].status == "active"
-    assert vacancy.update(request=VacancyUpdateRequest(title="Вакансия v2 updated"), version=2, vacancy_uuid="vac-uuid-1").status == "updated"
+    assert vacancy.update(title="Вакансия v2 updated", version=2, vacancy_uuid="vac-uuid-1").status == "updated"
     assert vacancy.get().url == "https://avito.ru/vacancy/101"
-    assert vacancy.update_auto_renewal(request=VacancyAutoRenewalRequest(auto_renewal=True), vacancy_uuid="vac-uuid-1").status == "auto-renewal-updated"
+    assert vacancy.update_auto_renewal(auto_renewal=True, vacancy_uuid="vac-uuid-1").status == "auto-renewal-updated"
     assert dictionary.list().items[0].id == "profession"
     assert dictionary.get().items[0].deprecated is True

@@ -5,7 +5,9 @@ from __future__ import annotations
 from collections.abc import Mapping
 from typing import cast
 
+from avito.core.enums import map_enum_or_unknown
 from avito.core.exceptions import ResponseMappingError
+from avito.tariffs.enums import TariffLevel
 from avito.tariffs.models import TariffContractInfo, TariffInfo
 
 Payload = Mapping[str, object]
@@ -68,7 +70,11 @@ def _map_contract(payload: Payload) -> TariffContractInfo | None:
     packages = payload.get("packages")
     packages_count = len(packages) if isinstance(packages, list) else None
     return TariffContractInfo(
-        level=_str(payload, "level"),
+        level=map_enum_or_unknown(
+            _str(payload, "level"),
+            TariffLevel,
+            enum_name="tariffs.level",
+        ),
         is_active=_bool(payload, "isActive"),
         start_time=_int(payload, "startTime"),
         close_time=_int(payload, "closeTime"),

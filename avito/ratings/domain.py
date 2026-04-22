@@ -8,7 +8,6 @@ from avito.core import ValidationError
 from avito.core.domain import DomainObject
 from avito.ratings.client import RatingsClient
 from avito.ratings.models import (
-    CreateReviewAnswerRequest,
     RatingProfileInfo,
     ReviewAnswerInfo,
     ReviewsQuery,
@@ -33,14 +32,28 @@ class ReviewAnswer(DomainObject):
     answer_id: int | str | None = None
     user_id: int | str | None = None
 
-    def create(self, *, review_id: int, text: str) -> ReviewAnswerInfo:
+    def create(
+        self,
+        *,
+        review_id: int,
+        text: str,
+        idempotency_key: str | None = None,
+    ) -> ReviewAnswerInfo:
         return RatingsClient(self.transport).create_review_answer(
-            CreateReviewAnswerRequest(review_id=review_id, text=text)
+            review_id=review_id,
+            text=text,
+            idempotency_key=idempotency_key,
         )
 
-    def delete(self, *, answer_id: int | str | None = None) -> ReviewAnswerInfo:
+    def delete(
+        self,
+        *,
+        answer_id: int | str | None = None,
+        idempotency_key: str | None = None,
+    ) -> ReviewAnswerInfo:
         return RatingsClient(self.transport).delete_review_answer(
-            answer_id=answer_id or self._require_answer_id()
+            answer_id=answer_id or self._require_answer_id(),
+            idempotency_key=idempotency_key,
         )
 
     def _require_answer_id(self) -> str:

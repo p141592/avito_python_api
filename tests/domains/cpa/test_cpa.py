@@ -5,11 +5,6 @@ import json
 import httpx
 
 from avito.cpa import CallTrackingCall, CpaArchive, CpaCall, CpaChat, CpaLead
-from avito.cpa.models import (
-    CpaChatsByTimeRequest,
-    CpaLeadComplaintRequest,
-    CpaPhonesFromChatsRequest,
-)
 from tests.helpers.transport import make_transport
 
 
@@ -28,9 +23,9 @@ def test_cpa_chat_and_phone_flows() -> None:
 
     chat = CpaChat(make_transport(httpx.MockTransport(handler)), action_id="act-1")
     assert chat.get().item_title == "Велосипед"
-    assert chat.list(request=CpaChatsByTimeRequest(created_at_from="2026-04-18T00:00:00+03:00"), version=1).items[0].buyer_name == "Петр"
-    assert chat.list(request=CpaChatsByTimeRequest(created_at_from="2026-04-18T00:00:00+03:00", limit=10)).items[0].is_arbitrage_available is True
-    assert chat.get_phones_info_from_chats(request=CpaPhonesFromChatsRequest(action_ids=["act-1", "act-2"])).items[1].phone_number == "+79990000002"
+    assert chat.list(created_at_from="2026-04-18T00:00:00+03:00", version=1).items[0].buyer_name == "Петр"
+    assert chat.list(created_at_from="2026-04-18T00:00:00+03:00", limit=10).items[0].is_arbitrage_available is True
+    assert chat.get_phones_info_from_chats(action_ids=["act-1", "act-2"]).items[1].phone_number == "+79990000002"
 
 
 def test_cpa_calls_archive_and_balance_flows() -> None:
@@ -59,7 +54,7 @@ def test_cpa_calls_archive_and_balance_flows() -> None:
 
     assert cpa_call.list(date_time_from="2026-04-18T00:00:00+03:00", date_time_to="2026-04-18T23:59:59+03:00").items[0].record_url == "https://example.com/record-2001.mp3"
     assert cpa_call.create_complaint(call_id=2001, reason="spam").success is True
-    assert cpa_lead.create_complaint_by_action_id(request=CpaLeadComplaintRequest(action_id="act-1", reason="duplicate")).success is True
+    assert cpa_lead.create_complaint_by_action_id(action_id="act-1", reason="duplicate").success is True
     assert cpa_lead.get_balance_info().balance == -5000
     assert archive.get_balance_info().advance == 1000
     assert archive.get_call_by_id(call_id=2001).call_id == "2001"

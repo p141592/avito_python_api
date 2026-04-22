@@ -10,14 +10,11 @@ from avito.realty.client import RealtyAnalyticsClient, ShortTermRentClient
 from avito.realty.models import (
     RealtyActionResult,
     RealtyAnalyticsInfo,
-    RealtyBaseParamsUpdateRequest,
     RealtyBookingsQuery,
     RealtyBookingsResult,
-    RealtyBookingsUpdateRequest,
     RealtyInterval,
-    RealtyIntervalsRequest,
     RealtyMarketPriceInfo,
-    RealtyPricesUpdateRequest,
+    RealtyPricePeriod,
 )
 
 
@@ -35,18 +32,16 @@ class RealtyListing(DomainObject):
         item_id: int | None = None,
     ) -> RealtyActionResult:
         return ShortTermRentClient(self.transport).get_intervals(
-            RealtyIntervalsRequest(
-                item_id=item_id or int(self._require_item_id()),
-                intervals=intervals,
-            )
+            item_id=item_id or int(self._require_item_id()),
+            intervals=intervals,
         )
 
     def update_base_params(
-        self, *, request: RealtyBaseParamsUpdateRequest, item_id: int | str | None = None
+        self, *, min_stay_days: int, item_id: int | str | None = None
     ) -> RealtyActionResult:
         return ShortTermRentClient(self.transport).update_base_params(
             item_id=item_id or self._require_item_id(),
-            request=request,
+            min_stay_days=min_stay_days,
         )
 
     def _require_item_id(self) -> str:
@@ -65,14 +60,14 @@ class RealtyBooking(DomainObject):
     def update_bookings_info(
         self,
         *,
-        request: RealtyBookingsUpdateRequest,
+        blocked_dates: list[str],
         user_id: int | str | None = None,
         item_id: int | str | None = None,
     ) -> RealtyActionResult:
         return ShortTermRentClient(self.transport).update_bookings_info(
             user_id=user_id or self._require_user_id(),
             item_id=item_id or self._require_item_id(),
-            request=request,
+            blocked_dates=blocked_dates,
         )
 
     def list_realty_bookings(
@@ -115,14 +110,14 @@ class RealtyPricing(DomainObject):
     def update_realty_prices(
         self,
         *,
-        request: RealtyPricesUpdateRequest,
+        periods: list[RealtyPricePeriod],
         user_id: int | str | None = None,
         item_id: int | str | None = None,
     ) -> RealtyActionResult:
         return ShortTermRentClient(self.transport).update_realty_prices(
             user_id=user_id or self._require_user_id(),
             item_id=item_id or self._require_item_id(),
-            request=request,
+            periods=periods,
         )
 
     def _require_item_id(self) -> str:

@@ -5,6 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from avito.core.serialization import SerializableModel
+from avito.jobs.enums import ApplicationStatus, JobActionStatus, VacancyStatus
 
 
 @dataclass(slots=True, frozen=True)
@@ -186,7 +187,7 @@ class JobActionResult(SerializableModel):
 
     success: bool
     id: str | None = None
-    status: str | None = None
+    status: JobActionStatus | None = None
     message: str | None = None
 
 
@@ -197,7 +198,7 @@ class ApplicationInfo(SerializableModel):
     id: str | None
     vacancy_id: int | None
     resume_id: str | None
-    state: str | None
+    state: ApplicationStatus | None
     is_viewed: bool | None
     applicant_name: str | None
 
@@ -276,7 +277,7 @@ class VacancyInfo(SerializableModel):
     id: str | None
     uuid: str | None
     title: str | None
-    status: str | None
+    status: VacancyStatus | None
     url: str | None
 
 
@@ -294,7 +295,7 @@ class VacancyStatusInfo(SerializableModel):
 
     id: str | None
     uuid: str | None
-    status: str | None
+    status: VacancyStatus | None
 
 
 @dataclass(slots=True, frozen=True)

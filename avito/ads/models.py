@@ -5,6 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from datetime import datetime
 
+from avito.ads.enums import AdsActionStatus, AutoloadFieldType, AutoloadReportStatus, ListingStatus
 from avito.core.serialization import SerializableModel
 
 
@@ -16,7 +17,7 @@ class Listing(SerializableModel):
     user_id: int | None
     title: str | None
     description: str | None
-    status: str | None
+    status: ListingStatus | None
     price: float | None
     url: str | None
 
@@ -47,7 +48,7 @@ class UpdatePriceResult(SerializableModel):
 
     item_id: int | None
     price: float | None
-    status: str | None
+    status: AdsActionStatus | None
 
 
 @dataclass(slots=True, frozen=True)
@@ -197,7 +198,7 @@ class VasApplyResult(SerializableModel):
     """Результат применения услуг продвижения."""
 
     success: bool
-    status: str | None = None
+    status: AdsActionStatus | None = None
 
 
 @dataclass(slots=True, frozen=True)
@@ -281,7 +282,7 @@ class AutoloadField(SerializableModel):
 
     slug: str | None
     title: str | None
-    type: str | None
+    type: AutoloadFieldType | None
     required: bool | None
 
 
@@ -320,7 +321,7 @@ class AutoloadReportSummary(SerializableModel):
     """Краткая информация по отчету автозагрузки."""
 
     report_id: int | None
-    status: str | None
+    status: AutoloadReportStatus | None
     created_at: datetime | None
     finished_at: datetime | None
     processed_items: int | None
@@ -340,7 +341,7 @@ class AutoloadReportItem(SerializableModel):
 
     item_id: int | None
     avito_id: int | None
-    status: str | None
+    status: AutoloadReportStatus | None
     title: str | None
 
 
@@ -374,7 +375,7 @@ class AutoloadReportDetails(SerializableModel):
     """Детальная информация по отчету автозагрузки."""
 
     report_id: int | None
-    status: str | None
+    status: AutoloadReportStatus | None
     created_at: datetime | None
     finished_at: datetime | None
     errors_count: int | None
@@ -386,7 +387,7 @@ class LegacyAutoloadReport(SerializableModel):
     """Legacy-ответ автозагрузки."""
 
     report_id: int | None
-    status: str | None
+    status: AutoloadReportStatus | None
 
 
 @dataclass(slots=True, frozen=True)

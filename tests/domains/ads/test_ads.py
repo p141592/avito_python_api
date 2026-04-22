@@ -1,11 +1,14 @@
 from __future__ import annotations
 
 import json
+import logging
 from datetime import datetime
 
 import httpx
+import pytest
 
 from avito.ads import Ad, AdPromotion, AdStats
+from avito.ads.enums import ListingStatus
 from tests.helpers.transport import make_transport
 
 
@@ -106,3 +109,34 @@ def test_ad_stats_accept_datetime_filters_and_serialize_isoformat() -> None:
 
     assert seen_payloads[0]["dateFrom"] == "2026-04-18T00:00:00+03:00"
     assert seen_payloads[0]["dateTo"] == "2026-04-18T23:59:59+03:00"
+
+
+def test_ads_unknown_enum_maps_to_unknown_and_warns_once(caplog: pytest.LogCaptureFixture) -> None:
+    def handler(request: httpx.Request) -> httpx.Response:
+        assert request.url.path == "/core/v1/accounts/7/items/101/"
+        return httpx.Response(
+            200,
+            json={
+                "id": 101,
+                "user_id": 7,
+                "title": "Смартфон",
+                "price": 1000,
+                "status": "mystery-status",
+            },
+        )
+
+    caplog.set_level(logging.WARNING, logger="avito.core.enums")
+    ad = Ad(make_transport(httpx.MockTransport(handler)), item_id=101, user_id=7)
+
+    first = ad.get()
+    second = ad.get()
+
+    assert first.status is ListingStatus.UNKNOWN
+    assert second.status is ListingStatus.UNKNOWN
+    records = [
+        record
+        for record in caplog.records
+        if getattr(record, "enum", None) == "ads.listing_status"
+        and getattr(record, "value", None) == "mystery-status"
+    ]
+    assert len(records) == 1

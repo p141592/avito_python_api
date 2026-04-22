@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Sequence
 from dataclasses import dataclass
 
 from avito.core import RequestContext, Transport
@@ -29,6 +30,7 @@ from avito.jobs.models import (
     ApplicationIdsResult,
     ApplicationsResult,
     ApplicationStatesResult,
+    ApplicationViewedItem,
     ApplicationViewedRequest,
     JobActionResult,
     JobDictionariesResult,
@@ -53,25 +55,34 @@ from avito.jobs.models import (
 )
 
 
-@dataclass(slots=True)
+@dataclass(slots=True, frozen=True)
 class ApplicationsClient:
     """Выполняет HTTP-операции откликов."""
 
     transport: Transport
 
-    def apply_actions(self, request: ApplicationActionRequest) -> JobActionResult:
+    def apply_actions(
+        self,
+        *,
+        ids: list[str],
+        action: str,
+        idempotency_key: str | None = None,
+    ) -> JobActionResult:
         return self._post_action(
-            "/job/v1/applications/apply_actions", "jobs.applications.apply_actions", request
+            "/job/v1/applications/apply_actions",
+            "jobs.applications.apply_actions",
+            ApplicationActionRequest(ids=ids, action=action),
+            idempotency_key=idempotency_key,
         )
 
-    def get_by_ids(self, request: ApplicationIdsRequest) -> ApplicationsResult:
+    def get_by_ids(self, *, ids: list[str]) -> ApplicationsResult:
         return request_public_model(
             self.transport,
             "POST",
             "/job/v1/applications/get_by_ids",
             context=RequestContext("jobs.applications.get_by_ids", allow_retry=True),
             mapper=map_applications,
-            json_body=request.to_payload(),
+            json_body=ApplicationIdsRequest(ids=ids).to_payload(),
         )
 
     def get_ids(self, *, query: ApplicationIdsQuery) -> ApplicationIdsResult:
@@ -93,9 +104,17 @@ class ApplicationsClient:
             mapper=map_application_states,
         )
 
-    def set_is_viewed(self, request: ApplicationViewedRequest) -> JobActionResult:
+    def set_is_viewed(
+        self,
+        *,
+        applies: list[ApplicationViewedItem],
+        idempotency_key: str | None = None,
+    ) -> JobActionResult:
         return self._post_action(
-            "/job/v1/applications/set_is_viewed", "jobs.applications.set_is_viewed", request
+            "/job/v1/applications/set_is_viewed",
+            "jobs.applications.set_is_viewed",
+            ApplicationViewedRequest(applies=applies),
+            idempotency_key=idempotency_key,
         )
 
     def _post_action(
@@ -103,18 +122,20 @@ class ApplicationsClient:
         path: str,
         operation: str,
         request: ApplicationActionRequest | ApplicationViewedRequest,
+        idempotency_key: str | None = None,
     ) -> JobActionResult:
         return request_public_model(
             self.transport,
             "POST",
             path,
-            context=RequestContext(operation, allow_retry=True),
+            context=RequestContext(operation, allow_retry=idempotency_key is not None),
             mapper=map_job_action,
             json_body=request.to_payload(),
+            idempotency_key=idempotency_key,
         )
 
 
-@dataclass(slots=True)
+@dataclass(slots=True, frozen=True)
 class WebhookClient:
     """Выполняет HTTP-операции webhook откликов."""
 
@@ -129,24 +150,28 @@ class WebhookClient:
             mapper=map_job_webhook,
         )
 
-    def put_webhook(self, request: JobWebhookUpdateRequest) -> JobWebhookInfo:
+    def put_webhook(self, *, url: str, idempotency_key: str | None = None) -> JobWebhookInfo:
         return request_public_model(
             self.transport,
             "PUT",
             "/job/v1/applications/webhook",
-            context=RequestContext("jobs.webhook.put", allow_retry=True),
+            context=RequestContext("jobs.webhook.put", allow_retry=idempotency_key is not None),
             mapper=map_job_webhook,
-            json_body=request.to_payload(),
+            json_body=JobWebhookUpdateRequest(url=url).to_payload(),
+            idempotency_key=idempotency_key,
         )
 
-    def delete_webhook(self, *, url: str | None = None) -> JobActionResult:
+    def delete_webhook(
+        self, *, url: str | None = None, idempotency_key: str | None = None
+    ) -> JobActionResult:
         return request_public_model(
             self.transport,
             "DELETE",
             "/job/v1/applications/webhook",
-            context=RequestContext("jobs.webhook.delete", allow_retry=True),
+            context=RequestContext("jobs.webhook.delete", allow_retry=idempotency_key is not None),
             mapper=map_job_action,
             params={"url": url},
+            idempotency_key=idempotency_key,
         )
 
     def list_webhooks(self) -> JobWebhooksResult:
@@ -159,7 +184,7 @@ class WebhookClient:
         )
 
 
-@dataclass(slots=True)
+@dataclass(slots=True, frozen=True)
 class ResumeClient:
     """Выполняет HTTP-операции резюме."""
 
@@ -194,65 +219,81 @@ class ResumeClient:
         )
 
 
-@dataclass(slots=True)
+@dataclass(slots=True, frozen=True)
 class VacanciesClient:
     """Выполняет HTTP-операции вакансий."""
 
     transport: Transport
 
-    def create_classic(self, request: VacancyCreateRequest) -> JobActionResult:
+    def create_classic(self, *, title: str, idempotency_key: str | None = None) -> JobActionResult:
         return request_public_model(
             self.transport,
             "POST",
             "/job/v1/vacancies",
-            context=RequestContext("jobs.vacancies.create_classic", allow_retry=True),
+            context=RequestContext(
+                "jobs.vacancies.create_classic",
+                allow_retry=idempotency_key is not None,
+            ),
             mapper=map_job_action,
-            json_body=request.to_payload(),
+            json_body=VacancyCreateRequest(title=title).to_payload(),
+            idempotency_key=idempotency_key,
         )
 
     def archive(
         self,
         *,
         vacancy_id: int | str,
-        request: VacancyArchiveRequest,
+        employee_id: int,
+        idempotency_key: str | None = None,
     ) -> JobActionResult:
         return request_public_model(
             self.transport,
             "PUT",
             f"/job/v1/vacancies/archived/{vacancy_id}",
-            context=RequestContext("jobs.vacancies.archive", allow_retry=True),
+            context=RequestContext("jobs.vacancies.archive", allow_retry=idempotency_key is not None),
             mapper=map_job_action,
-            json_body=request.to_payload(),
+            json_body=VacancyArchiveRequest(employee_id=employee_id).to_payload(),
+            idempotency_key=idempotency_key,
         )
 
     def update_classic(
         self,
         *,
         vacancy_id: int | str,
-        request: VacancyUpdateRequest,
+        title: str,
+        idempotency_key: str | None = None,
     ) -> JobActionResult:
         return request_public_model(
             self.transport,
             "PUT",
             f"/job/v1/vacancies/{vacancy_id}",
-            context=RequestContext("jobs.vacancies.update_classic", allow_retry=True),
+            context=RequestContext(
+                "jobs.vacancies.update_classic",
+                allow_retry=idempotency_key is not None,
+            ),
             mapper=map_job_action,
-            json_body=request.to_payload(),
+            json_body=VacancyUpdateRequest(title=title).to_payload(),
+            idempotency_key=idempotency_key,
         )
 
     def prolongate(
         self,
         *,
         vacancy_id: int | str,
-        request: VacancyProlongateRequest,
+        billing_type: str,
+        idempotency_key: str | None = None,
     ) -> JobActionResult:
         return request_public_model(
             self.transport,
             "POST",
             f"/job/v1/vacancies/{vacancy_id}/prolongate",
-            context=RequestContext("jobs.vacancies.prolongate", allow_retry=True),
+            context=RequestContext(
+                "jobs.vacancies.prolongate",
+                allow_retry=idempotency_key is not None,
+            ),
             mapper=map_job_action,
-            json_body=request.to_payload(),
+            json_body=VacancyProlongateRequest(billing_type=billing_type).to_payload(),
+            idempotency_key=idempotency_key,
         )
 
     def list(self, *, query: VacanciesQuery | None = None) -> VacanciesResult:
@@ -265,44 +306,52 @@ class VacanciesClient:
             params=query.to_params() if query is not None else None,
         )
 
-    def create(self, request: VacancyCreateRequest) -> JobActionResult:
+    def create(self, *, title: str, idempotency_key: str | None = None) -> JobActionResult:
         return request_public_model(
             self.transport,
             "POST",
             "/job/v2/vacancies",
-            context=RequestContext("jobs.vacancies.create", allow_retry=True),
+            context=RequestContext("jobs.vacancies.create", allow_retry=idempotency_key is not None),
             mapper=map_job_action,
-            json_body=request.to_payload(),
+            json_body=VacancyCreateRequest(title=title).to_payload(),
+            idempotency_key=idempotency_key,
         )
 
-    def get_by_ids(self, request: VacancyIdsRequest) -> VacanciesResult:
+    def get_by_ids(self, *, ids: Sequence[int]) -> VacanciesResult:
         return request_public_model(
             self.transport,
             "POST",
             "/job/v2/vacancies/batch",
             context=RequestContext("jobs.vacancies.get_by_ids", allow_retry=True),
             mapper=map_vacancies,
-            json_body=request.to_payload(),
+            json_body=VacancyIdsRequest(ids=list(ids)).to_payload(),
         )
 
-    def get_statuses(self, request: VacancyIdsRequest) -> VacancyStatusesResult:
+    def get_statuses(self, *, ids: Sequence[int]) -> VacancyStatusesResult:
         return request_public_model(
             self.transport,
             "POST",
             "/job/v2/vacancies/statuses",
             context=RequestContext("jobs.vacancies.get_statuses", allow_retry=True),
             mapper=map_vacancy_statuses,
-            json_body=request.to_payload(),
+            json_body=VacancyIdsRequest(ids=list(ids)).to_payload(),
         )
 
-    def update(self, *, vacancy_uuid: str, request: VacancyUpdateRequest) -> JobActionResult:
+    def update(
+        self,
+        *,
+        vacancy_uuid: str,
+        title: str,
+        idempotency_key: str | None = None,
+    ) -> JobActionResult:
         return request_public_model(
             self.transport,
             "POST",
             f"/job/v2/vacancies/update/{vacancy_uuid}",
-            context=RequestContext("jobs.vacancies.update", allow_retry=True),
+            context=RequestContext("jobs.vacancies.update", allow_retry=idempotency_key is not None),
             mapper=map_job_action,
-            json_body=request.to_payload(),
+            json_body=VacancyUpdateRequest(title=title).to_payload(),
+            idempotency_key=idempotency_key,
         )
 
     def get_item(
@@ -321,19 +370,24 @@ class VacanciesClient:
         self,
         *,
         vacancy_uuid: str,
-        request: VacancyAutoRenewalRequest,
+        auto_renewal: bool,
+        idempotency_key: str | None = None,
     ) -> JobActionResult:
         return request_public_model(
             self.transport,
             "PUT",
             f"/job/v2/vacancies/{vacancy_uuid}/auto_renewal",
-            context=RequestContext("jobs.vacancies.update_auto_renewal", allow_retry=True),
+            context=RequestContext(
+                "jobs.vacancies.update_auto_renewal",
+                allow_retry=idempotency_key is not None,
+            ),
             mapper=map_job_action,
-            json_body=request.to_payload(),
+            json_body=VacancyAutoRenewalRequest(auto_renewal=auto_renewal).to_payload(),
+            idempotency_key=idempotency_key,
         )
 
 
-@dataclass(slots=True)
+@dataclass(slots=True, frozen=True)
 class DictionariesClient:
     """Выполняет HTTP-операции словарей вакансий."""
 

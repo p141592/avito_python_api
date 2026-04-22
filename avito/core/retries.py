@@ -2,7 +2,8 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+import random as random_module
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import ClassVar, Literal
 
@@ -31,6 +32,7 @@ class RetryPolicy:
         "retry_on_server_error": ("AVITO_RETRY_RETRY_ON_SERVER_ERROR",),
         "retry_on_transport_error": ("AVITO_RETRY_RETRY_ON_TRANSPORT_ERROR",),
         "max_rate_limit_wait_seconds": ("AVITO_RETRY_MAX_RATE_LIMIT_WAIT_SECONDS",),
+        "max_delay": ("AVITO_RETRY_MAX_DELAY",),
     }
 
     max_attempts: int = 3
@@ -40,6 +42,12 @@ class RetryPolicy:
     retry_on_server_error: bool = True
     retry_on_transport_error: bool = True
     max_rate_limit_wait_seconds: float = 30.0
+    max_delay: float = 30.0
+    random_source: random_module.Random = field(
+        default_factory=random_module.Random,
+        repr=False,
+        compare=False,
+    )
 
     @classmethod
     def from_env(cls, *, env_file: str | Path | None = ".env") -> RetryPolicy:
@@ -54,15 +62,18 @@ class RetryPolicy:
         retry_on_server_error = defaults.retry_on_server_error
         retry_on_transport_error = defaults.retry_on_transport_error
         max_rate_limit_wait_seconds = defaults.max_rate_limit_wait_seconds
+        max_delay = defaults.max_delay
         for field_name, value in resolved_values.items():
             if field_name == "max_attempts":
                 max_attempts = parse_env_int(value, field_name=field_name)
-            elif field_name in {"backoff_factor", "max_rate_limit_wait_seconds"}:
+            elif field_name in {"backoff_factor", "max_rate_limit_wait_seconds", "max_delay"}:
                 parsed_float = parse_env_float(value, field_name=field_name)
                 if field_name == "backoff_factor":
                     backoff_factor = parsed_float
-                else:
+                elif field_name == "max_rate_limit_wait_seconds":
                     max_rate_limit_wait_seconds = parsed_float
+                else:
+                    max_delay = parsed_float
             elif field_name == "retryable_methods":
                 retryable_methods = parse_env_str_tuple(value, field_name=field_name)
             else:
@@ -81,6 +92,7 @@ class RetryPolicy:
             retry_on_server_error=retry_on_server_error,
             retry_on_transport_error=retry_on_transport_error,
             max_rate_limit_wait_seconds=max_rate_limit_wait_seconds,
+            max_delay=max_delay,
         )
 
     def is_retryable_method(self, method: str, *, explicit_retry: bool = False) -> bool:
@@ -92,7 +104,9 @@ class RetryPolicy:
         """Возвращает backoff в секундах для номера попытки, начиная с единицы."""
 
         safe_attempt = max(attempt - 1, 0)
-        return float(self.backoff_factor) * float(2**safe_attempt)
+        base_delay = float(self.backoff_factor) * float(2**safe_attempt)
+        capped_delay = min(base_delay, self.max_delay)
+        return capped_delay * self.random_source.random()
 
 
 @dataclass(slots=True, frozen=True)

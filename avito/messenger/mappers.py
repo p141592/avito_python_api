@@ -6,7 +6,16 @@ from collections.abc import Mapping
 from datetime import datetime
 from typing import cast
 
+from avito.core.enums import map_enum_or_unknown
 from avito.core.exceptions import ResponseMappingError
+from avito.messenger.enums import (
+    MessageActionStatus,
+    MessageDirection,
+    MessageType,
+    SpecialOfferCampaignStatus,
+    SubscriptionStatus,
+    WebhookStatus,
+)
 from avito.messenger.models import (
     ChatInfo,
     ChatsResult,
@@ -127,8 +136,16 @@ def map_message(payload: object) -> MessageInfo:
         author_id=_int(data, "author_id", "authorId", "user_id", "userId"),
         text=_str(data, "text", "message"),
         created_at=_datetime(data, "created_at", "createdAt"),
-        direction=_str(data, "direction"),
-        type=_str(data, "type"),
+        direction=map_enum_or_unknown(
+            _str(data, "direction"),
+            MessageDirection,
+            enum_name="messenger.message_direction",
+        ),
+        type=map_enum_or_unknown(
+            _str(data, "type"),
+            MessageType,
+            enum_name="messenger.message_type",
+        ),
     )
 
 
@@ -149,7 +166,11 @@ def map_message_action(payload: object) -> MessageActionResult:
     return MessageActionResult(
         success=bool(data.get("success", True)),
         message_id=_str(data, "message_id", "messageId", "id"),
-        status=_str(data, "status", "message"),
+        status=map_enum_or_unknown(
+            _str(data, "status", "message"),
+            MessageActionStatus,
+            enum_name="messenger.message_action_status",
+        ),
     )
 
 
@@ -194,7 +215,11 @@ def map_subscriptions(payload: object) -> SubscriptionsResult:
             SubscriptionInfo(
                 url=_str(item, "url"),
                 version=_str(item, "version"),
-                status=_str(item, "status"),
+                status=map_enum_or_unknown(
+                    _str(item, "status"),
+                    SubscriptionStatus,
+                    enum_name="messenger.subscription_status",
+                ),
             )
             for item in _list(data, "subscriptions", "items", "result")
         ],
@@ -207,7 +232,11 @@ def map_webhook_action(payload: object) -> WebhookActionResult:
     data = _expect_mapping(payload)
     return WebhookActionResult(
         success=bool(data.get("success", True)),
-        status=_str(data, "status", "message"),
+        status=map_enum_or_unknown(
+            _str(data, "status", "message"),
+            WebhookStatus,
+            enum_name="messenger.webhook_status",
+        ),
     )
 
 
@@ -233,7 +262,11 @@ def map_multi_create_result(payload: object) -> MultiCreateSpecialOfferResult:
     data = _expect_mapping(payload)
     return MultiCreateSpecialOfferResult(
         campaign_id=_str(data, "campaign_id", "campaignId", "id"),
-        status=_str(data, "status"),
+        status=map_enum_or_unknown(
+            _str(data, "status"),
+            SpecialOfferCampaignStatus,
+            enum_name="messenger.special_offer_campaign_status",
+        ),
     )
 
 

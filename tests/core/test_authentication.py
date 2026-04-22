@@ -90,7 +90,7 @@ def test_auth_provider_uses_refresh_token_flow_after_initial_token() -> None:
     )
 
     first_access_token = provider.get_access_token()
-    provider._access_token = replace(  # type: ignore[attr-defined]
+    provider._access_token = replace(
         provider._access_token,  # type: ignore[arg-type, attr-defined]
         expires_at=datetime.now(UTC) - timedelta(seconds=1),
     )

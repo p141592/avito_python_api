@@ -14,11 +14,8 @@ from avito.accounts.models import (
     AhUserStatus,
     CompanyPhonesResult,
     EmployeeItem,
-    EmployeeItemLinkRequest,
-    EmployeeItemsRequest,
     EmployeesResult,
     OperationRecord,
-    OperationsHistoryRequest,
 )
 from avito.core import PaginatedList, ValidationError
 from avito.core.domain import DomainObject
@@ -58,12 +55,10 @@ class Account(DomainObject):
         """Получает историю операций пользователя."""
 
         return AccountsClient(self.transport).get_operations_history(
-            OperationsHistoryRequest(
-                date_from=_serialize_datetime(date_from),
-                date_to=_serialize_datetime(date_to),
-                limit=limit,
-                offset=offset,
-            )
+            date_from=_serialize_datetime(date_from),
+            date_to=_serialize_datetime(date_to),
+            limit=limit,
+            offset=offset,
         )
 
 
@@ -94,15 +89,15 @@ class AccountHierarchy(DomainObject):
         employee_id: int,
         item_ids: Sequence[int],
         source_employee_id: int | None = None,
+        idempotency_key: str | None = None,
     ) -> AccountActionResult:
         """Прикрепляет объявления к сотруднику."""
 
         return HierarchyClient(self.transport).link_items(
-            EmployeeItemLinkRequest(
-                employee_id=employee_id,
-                item_ids=list(item_ids),
-                source_employee_id=source_employee_id,
-            )
+            employee_id=employee_id,
+            item_ids=list(item_ids),
+            source_employee_id=source_employee_id,
+            idempotency_key=idempotency_key,
         )
 
     def list_items_by_employee(
@@ -115,7 +110,9 @@ class AccountHierarchy(DomainObject):
         """Получает список объявлений сотрудника."""
 
         return HierarchyClient(self.transport).list_items_by_employee(
-            EmployeeItemsRequest(employee_id=employee_id, limit=limit, offset=offset)
+            employee_id=employee_id,
+            limit=limit,
+            offset=offset,
         )
 
 

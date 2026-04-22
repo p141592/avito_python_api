@@ -5,13 +5,14 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from avito.core.serialization import SerializableModel
+from avito.tariffs.enums import TariffLevel
 
 
 @dataclass(slots=True, frozen=True)
 class TariffContractInfo(SerializableModel):
     """Информация о текущем или запланированном тарифном контракте."""
 
-    level: str | None
+    level: TariffLevel | None
     is_active: bool | None
     start_time: int | None
     close_time: int | None

@@ -17,7 +17,9 @@ from avito.auth.models import (
     TokenResponse,
 )
 from avito.auth.settings import AuthSettings
-from avito.core.exceptions import AuthenticationError
+from avito.core.exceptions import AuthenticationError, ConfigurationError
+
+_UNSET = object()
 
 
 class TokenFetcher(Protocol):
@@ -52,13 +54,16 @@ class AuthProvider:
         """Принудительно обновляет токен через refresh token или client credentials."""
 
         token_response = self._fetch_token_response()
-        self._store_token_response(token_response)
+        self._update_tokens(
+            access_token=token_response.access_token,
+            refresh_token=token_response.refresh_token,
+        )
         return token_response
 
     def invalidate_token(self) -> None:
         """Сбрасывает закэшированный токен после `401 Unauthorized`."""
 
-        self._access_token = None
+        self._update_tokens(access_token=None)
 
     def close(self) -> None:
         """Закрывает внутренние HTTP-клиенты provider-а."""
@@ -82,7 +87,7 @@ class AuthProvider:
                     scope=self.settings.autoteka_scope,
                 )
             )
-            self._autoteka_access_token = token_response.access_token
+            self._update_tokens(autoteka_access_token=token_response.access_token)
             token = token_response.access_token
         return token.value
 
@@ -128,26 +133,53 @@ class AuthProvider:
             )
         )
 
-    def _store_token_response(self, token_response: TokenResponse) -> None:
-        self._access_token = token_response.access_token
-        self._refresh_token = token_response.refresh_token or self._refresh_token
+    def _update_tokens(
+        self,
+        *,
+        access_token: AccessToken | None | object = _UNSET,
+        refresh_token: str | None | object = _UNSET,
+        autoteka_access_token: AccessToken | None | object = _UNSET,
+    ) -> None:
+        if access_token is not _UNSET:
+            self._access_token = access_token if isinstance(access_token, AccessToken) else None
+        if refresh_token is not _UNSET:
+            if isinstance(refresh_token, str):
+                self._refresh_token = refresh_token
+        if autoteka_access_token is not _UNSET:
+            self._autoteka_access_token = (
+                autoteka_access_token
+                if isinstance(autoteka_access_token, AccessToken)
+                else None
+            )
 
     def _get_token_client(self) -> TokenClient:
         if self.token_client is None:
             self.token_client = TokenClient(self.settings)
-        return self.token_client
+        token_client = self.token_client
+        if token_client is None:
+            raise ConfigurationError("Не удалось инициализировать OAuth token client.")
+        return token_client
 
     def _get_alternate_token_client(self) -> AlternateTokenClient:
         if self.alternate_token_client is None:
             self.alternate_token_client = AlternateTokenClient(self.settings)
-        return self.alternate_token_client
+        alternate_token_client = self.alternate_token_client
+        if alternate_token_client is None:
+            raise ConfigurationError("Не удалось инициализировать alternate OAuth token client.")
+        return alternate_token_client
 
     def _get_autoteka_token_client(self) -> TokenClient:
         if self.autoteka_token_client is None:
             self.autoteka_token_client = TokenClient(
-                self.settings, token_url=self.settings.autoteka_token_url
+                self.settings,
+                token_url=self.settings.autoteka_token_url,
             )
-        return self.autoteka_token_client
+        autoteka_token_client = self.autoteka_token_client
+        if autoteka_token_client is None:
+            raise ConfigurationError(
+                "Не удалось инициализировать OAuth token client для Автотеки."
+            )
+        return autoteka_token_client
 
     def _require_client_id(self) -> str:
         if self.settings.client_id is None:
@@ -160,7 +192,7 @@ class AuthProvider:
         return self.settings.client_secret
 
 
-@dataclass(slots=True)
+@dataclass(slots=True, frozen=True)
 class TokenClient:
     """Служебный клиент для canonical OAuth token endpoint."""
 
@@ -261,7 +293,7 @@ class TokenClient:
         return None
 
 
-@dataclass(slots=True)
+@dataclass(slots=True, frozen=True)
 class AlternateTokenClient:
     """Служебный клиент для альтернативного token endpoint из swagger."""
 

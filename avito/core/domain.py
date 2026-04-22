@@ -3,8 +3,10 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from typing import TYPE_CHECKING
 
-from avito.core.transport import Transport
+if TYPE_CHECKING:
+    from avito.core.transport import Transport
 
 
 @dataclass(slots=True, frozen=True)
