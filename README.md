@@ -5,7 +5,7 @@
 [![PyPI Downloads](https://img.shields.io/pypi/dm/avito-py.svg)](https://pypi.org/project/avito-py/)
 [![API coverage](https://img.shields.io/badge/API%20coverage-204%2F204-success)](docs/inventory.md)
 
-`avito-py` — Python SDK для работы с Avito API через единый объектный фасад `AvitoClient`.
+`avito-py` — синхронный Python SDK для работы с Avito API через единый объектный фасад `AvitoClient`.
 
 Цели SDK:
 
@@ -13,6 +13,8 @@
 - возвращать типизированные `dataclass`-модели вместо сырого JSON;
 - дать единый вход в доменные сценарии вида `avito.ad(...).get()` и `avito.chat(...).send_message(...)`;
 - покрыть все swagger-документы из каталога [docs](docs).
+
+SDK является синхронным. Любая асинхронная поддержка, если она появится, будет жить в отдельном namespace `avito.aio` и никогда не будет смешана с sync-классами в одном модуле.
 
 Каталог [docs](docs) рассматривается как upstream API contract. Эти файлы не редактируются вручную при развитии SDK: публичные модели, мапперы и тесты должны подстраиваться под documented shape из `docs/*`.
 
@@ -32,14 +34,14 @@ pip install avito-py
 
 ## Быстрый старт
 
-Получение ключей - https://www.avito.ru/professionals/api
+Получение ключей — https://www.avito.ru/professionals/api
 
 ```python
 from avito import AvitoClient
 
-with AvitoClient() as avito:
+with AvitoClient.from_env() as avito:
     profile = avito.account().get_self()
-    ad = avito.ad(42).get()
+    ad = avito.ad(item_id=42, user_id=123).get()
 
 print(profile.name)
 print(ad.title)
@@ -47,7 +49,31 @@ print(ad.title)
 
 По умолчанию настройки читаются из переменных окружения с префиксом `AVITO_`.
 
-Официальный способ конфигурации SDK:
+## Инициализация клиента
+
+SDK предоставляет три нормативных способа создания клиента — от самого простого к самому явному.
+
+### 1. Из переменных окружения
+
+```python
+from avito import AvitoClient
+
+with AvitoClient.from_env() as avito:
+    ...
+```
+
+### 2. Напрямую через `client_id` / `client_secret`
+
+Короткий путь без промежуточных объектов:
+
+```python
+from avito import AvitoClient
+
+with AvitoClient(client_id="client-id", client_secret="client-secret") as avito:
+    ...
+```
+
+### 3. Полная конфигурация через `AvitoSettings`
 
 ```python
 from avito import AuthSettings, AvitoClient, AvitoSettings
@@ -60,17 +86,14 @@ settings = AvitoSettings(
         client_secret="client-secret",
     ),
 )
-client = AvitoClient(settings)
+
+with AvitoClient(settings) as avito:
+    ...
 ```
 
-Инициализация из окружения и `.env`:
+Все опциональные параметры конструктора — keyword-only. `AvitoClient` иммутабелен: `base_url`, таймауты, retry-политика и `auth` не меняются у живого клиента — вместо этого создаётся новый клиент.
 
-```python
-from avito import AvitoClient, AvitoSettings
-
-settings = AvitoSettings.from_env()
-client = AvitoClient.from_env()
-```
+### Переменные окружения
 
 Поддерживаемые env-переменные и alias-имена:
 
@@ -91,7 +114,7 @@ client = AvitoClient.from_env()
 
 - значения из process environment имеют приоритет над `.env`;
 - `AvitoSettings.from_env()` и `AvitoClient.from_env()` детерминированно читают `.env` из текущей рабочей директории или из переданного `env_file`;
-- при отсутствии `client_id` или `client_secret` SDK завершает инициализацию с typed-ошибкой `ConfigurationError`.
+- при отсутствии `client_id` или `client_secret` SDK завершает инициализацию с typed-ошибкой `ConfigurationError` до первого HTTP-запроса.
 
 ## Примеры по доменам
 
@@ -100,7 +123,7 @@ client = AvitoClient.from_env()
 ```python
 from avito import AvitoClient
 
-with AvitoClient() as avito:
+with AvitoClient.from_env() as avito:
     account = avito.account(user_id=123)
     balance = account.get_balance()
     ad = avito.ad(item_id=42, user_id=123).get()
@@ -112,7 +135,7 @@ with AvitoClient() as avito:
 ```python
 from avito import AvitoClient
 
-with AvitoClient() as avito:
+with AvitoClient.from_env() as avito:
     profile = avito.autoload_profile(user_id=123).get()
     report = avito.autoload_report(report_id=777).get()
 ```
@@ -123,7 +146,7 @@ with AvitoClient() as avito:
 from avito import AvitoClient
 from avito.messenger import UploadImageFile
 
-with AvitoClient() as avito:
+with AvitoClient.from_env() as avito:
     chats = avito.chat(user_id=123).list()
     message = avito.chat_message(chat_id="chat-1", user_id=123).send_message(
         message="Здравствуйте"
@@ -147,7 +170,7 @@ with AvitoClient() as avito:
 from avito import AvitoClient
 from datetime import datetime
 
-with AvitoClient() as avito:
+with AvitoClient.from_env() as avito:
     services = avito.promotion_order().list_orders()
     forecast = avito.bbip_promotion(item_id=42).get_forecasts(items=[])
     budget = avito.autostrategy_campaign().create_budget(
@@ -170,13 +193,15 @@ print(campaign.campaign.title if campaign.campaign else None)
 print(campaigns.total_count)
 ```
 
+Write-операции продвижения, поддерживающие сухой прогон, принимают `dry_run: bool = False`. При `dry_run=True` SDK валидирует параметры, строит тот же payload, что и в реальном вызове, но не выполняет сетевой запрос и возвращает `PromotionActionResult` со статусом `preview`/`validated`.
+
 ### Заказы и доставка
 
 ```python
 from avito import AvitoClient
 from avito.orders import OrderLabelsRequest, StockInfoRequest
 
-with AvitoClient() as avito:
+with AvitoClient.from_env() as avito:
     orders = avito.order().list()
     label_task = avito.order_label().create(request=OrderLabelsRequest(order_ids=["100500"]))
     label_pdf = avito.order_label(task_id=label_task.task_id).download()
@@ -189,7 +214,7 @@ with AvitoClient() as avito:
 from avito import AvitoClient
 from avito.jobs import ApplicationIdsQuery, ResumeSearchQuery
 
-with AvitoClient() as avito:
+with AvitoClient.from_env() as avito:
     vacancies = avito.vacancy().list()
     applications = avito.application().list(
         query=ApplicationIdsQuery(updated_at_from="2026-04-18")
@@ -204,7 +229,7 @@ with AvitoClient() as avito:
 from avito import AvitoClient
 from avito.cpa import CpaCallsByTimeRequest
 
-with AvitoClient() as avito:
+with AvitoClient.from_env() as avito:
     calls = avito.cpa_call().list(
         request=CpaCallsByTimeRequest(
             date_time_from="2026-04-18T00:00:00Z",
@@ -215,37 +240,13 @@ with AvitoClient() as avito:
     records = avito.call_tracking_call(10).download()
 ```
 
-## Пагинация
-
-Публичные list-операции, которые поддерживают lazy pagination, возвращают обычные SDK-результаты, а поле `items` в них ведет себя как list-like коллекция `PaginatedList`.
-
-Текущий стабильный контракт:
-
-- первая страница загружается сразу, остальные страницы подгружаются только при чтении элементов за ее пределами;
-- доступ к уже загруженным элементам не делает повторных запросов;
-- частичная итерация и slicing загружают только необходимые страницы;
-- явная полная материализация выполняется через `items.materialize()`.
-
-Пример:
-
-```python
-from avito import AvitoClient
-
-with AvitoClient() as avito:
-    result = avito.ad(user_id=123).list(status="active", limit=50)
-
-    first = result.items[0]
-    preview = result.items[:10]
-    all_items = result.items.materialize()
-```
-
 ### Автотека
 
 ```python
 from avito import AvitoClient
 from avito.autoteka import CatalogResolveRequest, PreviewReportRequest, VinRequest
 
-with AvitoClient() as avito:
+with AvitoClient.from_env() as avito:
     catalog = avito.autoteka_vehicle().resolve_catalog(
         request=CatalogResolveRequest(brand_id=1)
     )
@@ -264,7 +265,7 @@ with AvitoClient() as avito:
 from avito import AvitoClient
 from avito.realty import RealtyBookingsUpdateRequest, RealtyPricePeriod, RealtyPricesUpdateRequest
 
-with AvitoClient() as avito:
+with AvitoClient.from_env() as avito:
     booking = avito.realty_booking(20, user_id=10)
     booking.update_bookings_info(
         request=RealtyBookingsUpdateRequest(blocked_dates=["2026-05-01"])
@@ -279,6 +280,47 @@ with AvitoClient() as avito:
     tariff = avito.tariff().get_tariff_info()
 ```
 
+## Пагинация
+
+Публичные list-операции, которые поддерживают lazy pagination, возвращают обычные SDK-результаты, а поле `items` в них типизировано как `PaginatedList[T]` и ведёт себя как list-like коллекция.
+
+Стабильный публичный контракт:
+
+- первая страница загружается сразу, остальные подгружаются только при чтении элементов за её пределами;
+- доступ к уже загруженным элементам не делает повторных запросов;
+- частичная итерация и slicing загружают только необходимые страницы;
+- пустая коллекция не приводит к дополнительным запросам;
+- ошибка на последующей странице поднимается в момент её чтения;
+- явная полная материализация выполняется через `items.materialize()` и загружает всё ровно один раз.
+
+Пример:
+
+```python
+from avito import AvitoClient
+
+with AvitoClient.from_env() as avito:
+    result = avito.ad(user_id=123).list(status="active", limit=50)
+
+    first = result.items[0]
+    preview = result.items[:10]
+    all_items = result.items.materialize()
+```
+
+## Ошибки
+
+Все исключения SDK наследуются от `AvitoError` и импортируются из `avito.core.exceptions`. HTTP-коды отображаются в конкретные типы:
+
+- `400`, `422` → `ValidationError`
+- `401` → `AuthenticationError`
+- `403` → `AuthorizationError`
+- `409` → `ConflictError`
+- `429` → `RateLimitError`
+- прочие `5xx` и нераспознанные ответы → `UpstreamApiError`
+- транспортные сбои → `TransportError`
+- ошибки маппинга ответа → `ResponseMappingError`
+
+`AuthenticationError` (401) и `AuthorizationError` (403) — семантически разные ошибки и **не** состоят в отношении наследования. Тексты сообщений написаны на русском языке. Секреты (access token, `client_secret`, `Authorization`) автоматически санитайзятся из сообщений и metadata.
+
 ## Отладка интеграции
 
 SDK не раскрывает сырой transport в основном API, но даёт безопасный debug snapshot без секретов:
@@ -286,7 +328,7 @@ SDK не раскрывает сырой transport в основном API, но
 ```python
 from avito import AvitoClient
 
-client = AvitoClient()
+client = AvitoClient.from_env()
 info = client.debug_info()
 
 print(info.base_url)
