@@ -43,14 +43,14 @@ poetry run pytest tests/test_facade.py::test_name
 
 ## API coverage and inventory
 
-`docs/` contains Swagger/OpenAPI specs (23 documents, 204 operations) — the authoritative source of truth for all API contracts.
+`docs/avito/api/` contains Swagger/OpenAPI specs (23 documents, 204 operations) — the authoritative source of truth for all API contracts.
 
-`docs/inventory.md` is the canonical mapping of every API operation to its SDK domain object and public method. Before implementing any new method, check the inventory to find:
+`docs/avito/inventory.md` is the canonical mapping of every API operation to its SDK domain object and public method. Before implementing any new method, check the inventory to find:
 - which `пакет_sdk` and `доменный_объект` it belongs to
 - the expected `публичный_метод_sdk`, request/response type names
 - whether the operation is deprecated (`deprecated: да` → wrap in a legacy domain object)
 
-**When adding a new API method**: add it to the `## Операции` table in `docs/inventory.md` (between the `operations-table:start/end` markers) following the existing format.
+**When adding a new API method**: add it to the `## Операции` table in `docs/avito/inventory.md` (between the `operations-table:start/end` markers) following the existing format.
 
 All 204 operations from the specs must be covered. A missing method is a defect.
 

@@ -3,7 +3,7 @@
 [![CI](https://github.com/p141592/avito/actions/workflows/ci.yml/badge.svg)](https://github.com/p141592/avito/actions/workflows/ci.yml)
 [![Coverage Status](https://coveralls.io/repos/github/p141592/avito_python_api/badge.svg?branch=main)](https://coveralls.io/github/p141592/avito_python_api?branch=main)
 [![PyPI Downloads](https://img.shields.io/pypi/dm/avito-py.svg)](https://pypi.org/project/avito-py/)
-[![API coverage](https://img.shields.io/badge/API%20coverage-204%2F204-success)](docs/inventory.md)
+[![API coverage](https://img.shields.io/badge/API%20coverage-204%2F204-success)](docs/avito/inventory.md)
 
 `avito-py` — синхронный Python SDK для работы с Avito API через единый объектный фасад `AvitoClient`.
 
@@ -12,11 +12,11 @@
 - скрыть transport, OAuth и retry-логику от пользовательского кода;
 - возвращать типизированные `dataclass`-модели вместо сырого JSON;
 - дать единый вход в доменные сценарии вида `avito.ad(...).get()` и `avito.chat(...).send_message(...)`;
-- покрыть все swagger-документы из каталога [docs](docs).
+- покрыть все swagger-документы из каталога [docs/avito/api](docs/avito/api).
 
 SDK является синхронным. Любая асинхронная поддержка, если она появится, будет жить в отдельном namespace `avito.aio` и никогда не будет смешана с sync-классами в одном модуле.
 
-Каталог [docs](docs) рассматривается как upstream API contract. Эти файлы не редактируются вручную при развитии SDK: публичные модели, мапперы и тесты должны подстраиваться под documented shape из `docs/*`.
+Каталог [docs/avito/api](docs/avito/api) рассматривается как upstream API contract. Эти файлы не редактируются вручную при развитии SDK: публичные модели, мапперы и тесты должны подстраиваться под documented shape из `docs/avito/api/*`.
 
 ## Установка
 
@@ -378,4 +378,4 @@ git push origin v1.0.2
 ## Документация репозитория
 
 - [STYLEGUIDE.md](STYLEGUIDE.md) — нормативные архитектурные правила
-- [docs/inventory.md](docs/inventory.md) — матрица соответствия swagger-операций и публичного API SDK
+- [docs/avito/inventory.md](docs/avito/inventory.md) — матрица соответствия swagger-операций и публичного API SDK

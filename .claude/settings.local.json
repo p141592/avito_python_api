@@ -19,7 +19,13 @@
       "WebFetch(domain:newsletter.pragmaticengineer.com)",
       "Bash(awk '{print $NF}')",
       "Bash(grep \"| $\" /Users/n.baryshnikov/Projects/avito_python_api/docs/inventory.md)",
-      "Bash(grep -r \"def.*:$\" /Users/n.baryshnikov/Projects/avito_python_api/avito --include=\"*.py\")"
+      "Bash(grep -r \"def.*:$\" /Users/n.baryshnikov/Projects/avito_python_api/avito --include=\"*.py\")",
+      "Bash(awk -F'|' '{print $2}')",
+      "Bash(grep -E '\\(def |\"\"\"$\\)' /Users/n.baryshnikov/Projects/avito_python_api/avito/client.py)",
+      "Bash(grep -E '\\(def |\"\"\"$\\)')",
+      "Bash(\" /Users/n.baryshnikov/Projects/avito_python_api/avito/client.py)",
+      "Bash(rg \"```\" /Users/n.baryshnikov/Projects/avito_python_api/avito/client.py)",
+      "Bash(grep ``` *)"
     ]
   }
 }

@@ -283,11 +283,11 @@ Fields with a fixed set of allowed values from the upstream specification must b
 
 Rules:
 
-- Every field whose set of allowed values is defined by the API specification in `docs/` must be represented by a public `Enum` from `avito/<domain>/enums.py`.
+- Every field whose set of allowed values is defined by the API specification in `docs/avito/api/` must be represented by a public `Enum` from `avito/<domain>/enums.py`.
 - Enums are declared with string values matching the wire format exactly, so serialization is a direct dump without extra conversion.
 - Enums must be forward-compatible: an unknown upstream value must not crash mapping. Map unknown values to a designated `UNKNOWN` member or a typed fallback and log at `warning` level once per process.
 - Public method arguments that accept an enum may also accept the corresponding `str` literal for ergonomics, but the public method signature type annotation must be the enum type (optionally unioned with `Literal[...]`).
-- Arbitrary extension of enum values (adding a member that is not present in `docs/`) is forbidden. New members are added only after the upstream contract is updated.
+- Arbitrary extension of enum values (adding a member that is not present in `docs/avito/api/`) is forbidden. New members are added only after the upstream contract is updated.
 
 ## Pydantic and Validation
 
@@ -398,7 +398,7 @@ Rules:
 
 - Public write methods on supported endpoints accept an optional `idempotency_key: str | None` keyword-only argument.
 - If the caller does not provide a key, the SDK must not generate one silently. Absence of a key means "no idempotency guarantee" and must be documented on the method.
-- When a key is provided, the transport layer forwards it to the upstream via the header contract defined in `docs/`, once per retry chain (the same key across all retry attempts of the same logical call).
+- When a key is provided, the transport layer forwards it to the upstream via the header contract defined in `docs/avito/api/`, once per retry chain (the same key across all retry attempts of the same logical call).
 - The idempotency key is part of the safe-retry decision: POST with a key is retryable on transport errors; POST without a key is not.
 - Idempotency keys must never be logged at `info` level or above; they may appear redacted in `debug`.
 
@@ -805,14 +805,14 @@ Rules:
 
 ## API Documentation and Contract Coverage
 
-Avito API specifications are stored in the `docs/` directory as Swagger/OpenAPI files. This is the authoritative source of truth for all API contracts.
+Avito API specifications are stored in the `docs/avito/api/` directory as Swagger/OpenAPI files. This is the authoritative source of truth for all API contracts.
 
 Rules:
 
-- Before implementing any new method or model, consult the specification in `docs/`.
-- The SDK must cover **all** API methods described in `docs/`. A method absent from the SDK but present in the specification is a defect.
-- Public method signatures, model field names and types, allowed enum values, and nullable behavior must exactly match the contract in `docs/`.
-- When there is a discrepancy between code and the specification in `docs/`, the specification takes priority.
+- Before implementing any new method or model, consult the specification in `docs/avito/api/`.
+- The SDK must cover **all** API methods described in `docs/avito/api/`. A method absent from the SDK but present in the specification is a defect.
+- Public method signatures, model field names and types, allowed enum values, and nullable behavior must exactly match the contract in `docs/avito/api/`.
+- When there is a discrepancy between code and the specification in `docs/avito/api/`, the specification takes priority.
 - If the upstream API adds a new endpoint or changes an existing one, a corresponding SDK change is mandatory.
 - Fields marked as required in the specification cannot be `T | None` in the public model without explicit justification.
 - Enum values in the SDK must match the allowed values from the specification — arbitrary extension is forbidden.
