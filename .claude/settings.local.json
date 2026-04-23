@@ -25,7 +25,11 @@
       "Bash(grep -E '\\(def |\"\"\"$\\)')",
       "Bash(\" /Users/n.baryshnikov/Projects/avito_python_api/avito/client.py)",
       "Bash(rg \"```\" /Users/n.baryshnikov/Projects/avito_python_api/avito/client.py)",
-      "Bash(grep ``` *)"
+      "Bash(grep ``` *)",
+      "Bash(poetry install *)",
+      "Bash(poetry lock *)",
+      "Bash(awk -F'|' '{print $4}')",
+      "Bash(grep -v \"^$\")"
     ]
   }
 }
