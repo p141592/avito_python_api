@@ -58,6 +58,15 @@ def placeholder_count() -> int:
     return count
 
 
+def docs_examples_harness_enabled() -> bool:
+    makefile = (ROOT / "Makefile").read_text(encoding="utf-8")
+    return (
+        "poetry run pytest tests/docs/" in makefile
+        and (ROOT / "tests" / "docs" / "test_markdown_examples.py").exists()
+        and (ROOT / "tests" / "docs" / "conftest.py").exists()
+    )
+
+
 def public_domains() -> list[str]:
     excluded = {"auth", "core", "testing"}
     return sorted({row.sdk_package for row in parse_inventory() if row.sdk_package not in excluded})
@@ -114,7 +123,10 @@ def build_report(args: argparse.Namespace) -> dict[str, Any]:
     domains = public_domains()
     domain_grade = 1.0 if len(domain_coverage) == len(domains) else 0.25
     reference_grade = 1.0 if reference_gaps == 0 and docstring_gaps == 0 else 0.5
-    example_grade = 0.0
+    harness_enabled = docs_examples_harness_enabled()
+    example_grade = 1.0 if harness_enabled else 0.0
+    explanation_target = 10
+    explanation_grade = 1.0 if len(explanations) >= explanation_target else 0.25
 
     return {
         "generated_at": datetime.now(UTC).isoformat(),
@@ -139,9 +151,17 @@ def build_report(args: argparse.Namespace) -> dict[str, Any]:
                 reference_grade,
                 f"reference-public gaps={reference_gaps}; docstring gaps={docstring_gaps}",
             ),
-            "15.4": grade(0.25, f"explanations pages={len(explanations)}"),
+            "15.4": grade(
+                explanation_grade,
+                f"explanations pages={len(explanations)} из {explanation_target}",
+            ),
             "15.5": grade(0.5, "CHANGELOG подключён в docs/site/changelog.md"),
-            "15.6": grade(example_grade, "mktestdocs harness ещё не включён"),
+            "15.6": grade(
+                example_grade,
+                "pytest tests/docs/ включён в docs-strict"
+                if harness_enabled
+                else "docs examples harness ещё не включён",
+            ),
         },
         "supporting_gates": {
             "7.3_debug_info_safe_by_default": grade(0.5, "debug_info есть в client.md"),

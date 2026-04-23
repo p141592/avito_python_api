@@ -159,7 +159,9 @@ class FakeTransport:
         if key not in self._routes:
             available = ", ".join(f"{method} {path}" for method, path in sorted(self._routes))
             raise AssertionError(
-                f"Unexpected request {recorded.method} {recorded.path}. Known: {available}"
+                "Маршрут не прописан в FakeTransport: "
+                f"{recorded.method} {recorded.path}. "
+                f"Добавьте route_sequence или add_json для этого пути. Доступные: {available}"
             )
 
         responders = self._routes[key]

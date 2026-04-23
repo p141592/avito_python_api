@@ -1,3 +1,9 @@
 nav:
   - index.md
   - auth-and-config.md
+  - account-profile.md
+  - ad-listing-and-stats.md
+  - chat-image-upload.md
+  - order-labels.md
+  - job-applications.md
+  - ratings-and-tariffs.md
