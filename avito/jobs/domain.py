@@ -50,6 +50,15 @@ class Vacancy(DomainObject):
         version: int = 2,
         idempotency_key: str | None = None,
     ) -> JobActionResult:
+        """Выполняет публичную операцию `Vacancy.create` и возвращает типизированную SDK-модель.
+
+        Параметр `idempotency_key` задает ключ идемпотентности для безопасного повтора write-операции.
+
+        Пустой результат возвращается как пустая коллекция или `None` согласно аннотации метода.
+
+        Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
+        """
+
         client = VacanciesClient(self.transport)
         if version == 1:
             return client.create_classic(title=title, idempotency_key=idempotency_key)
@@ -64,6 +73,15 @@ class Vacancy(DomainObject):
         version: int = 2,
         idempotency_key: str | None = None,
     ) -> JobActionResult:
+        """Выполняет публичную операцию `Vacancy.update` и возвращает типизированную SDK-модель.
+
+        Параметр `idempotency_key` задает ключ идемпотентности для безопасного повтора write-операции.
+
+        Пустой результат возвращается как пустая коллекция или `None` согласно аннотации метода.
+
+        Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
+        """
+
         client = VacanciesClient(self.transport)
         if version == 1:
             return client.update_classic(
@@ -84,6 +102,15 @@ class Vacancy(DomainObject):
         vacancy_id: int | str | None = None,
         idempotency_key: str | None = None,
     ) -> JobActionResult:
+        """Выполняет публичную операцию `Vacancy.delete` и возвращает типизированную SDK-модель.
+
+        Параметр `idempotency_key` задает ключ идемпотентности для безопасного повтора write-операции.
+
+        Пустой результат возвращается как пустая коллекция или `None` согласно аннотации метода.
+
+        Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
+        """
+
         return VacanciesClient(self.transport).archive(
             vacancy_id=vacancy_id or self._require_vacancy_id(),
             employee_id=employee_id,
@@ -97,6 +124,15 @@ class Vacancy(DomainObject):
         vacancy_id: int | str | None = None,
         idempotency_key: str | None = None,
     ) -> JobActionResult:
+        """Выполняет публичную операцию `Vacancy.prolongate` и возвращает типизированную SDK-модель.
+
+        Параметр `idempotency_key` задает ключ идемпотентности для безопасного повтора write-операции.
+
+        Пустой результат возвращается как пустая коллекция или `None` согласно аннотации метода.
+
+        Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
+        """
+
         return VacanciesClient(self.transport).prolongate(
             vacancy_id=vacancy_id or self._require_vacancy_id(),
             billing_type=billing_type,
@@ -104,20 +140,48 @@ class Vacancy(DomainObject):
         )
 
     def list(self, *, query: VacanciesQuery | None = None) -> VacanciesResult:
+        """Выполняет публичную операцию `Vacancy.list` и возвращает типизированную SDK-модель.
+
+        Пустой результат возвращается как пустая коллекция или `None` согласно аннотации метода.
+
+        Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
+        """
+
         return VacanciesClient(self.transport).list(query=query)
 
     def get(
         self, *, vacancy_id: int | str | None = None, query: VacanciesQuery | None = None
     ) -> VacancyInfo:
+        """Выполняет публичную операцию `Vacancy.get` и возвращает типизированную SDK-модель.
+
+        Пустой результат возвращается как пустая коллекция или `None` согласно аннотации метода.
+
+        Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
+        """
+
         return VacanciesClient(self.transport).get_item(
             vacancy_id=vacancy_id or self._require_vacancy_id(),
             query=query,
         )
 
     def get_by_ids(self, *, ids: Sequence[int]) -> VacanciesResult:
+        """Выполняет публичную операцию `Vacancy.get_by_ids` и возвращает типизированную SDK-модель.
+
+        Пустой результат возвращается как пустая коллекция или `None` согласно аннотации метода.
+
+        Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
+        """
+
         return VacanciesClient(self.transport).get_by_ids(ids=list(ids))
 
     def get_statuses(self, *, ids: Sequence[int]) -> VacancyStatusesResult:
+        """Выполняет публичную операцию `Vacancy.get_statuses` и возвращает типизированную SDK-модель.
+
+        Пустой результат возвращается как пустая коллекция или `None` согласно аннотации метода.
+
+        Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
+        """
+
         return VacanciesClient(self.transport).get_statuses(ids=list(ids))
 
     def update_auto_renewal(
@@ -127,6 +191,15 @@ class Vacancy(DomainObject):
         vacancy_uuid: str | None = None,
         idempotency_key: str | None = None,
     ) -> JobActionResult:
+        """Выполняет публичную операцию `Vacancy.update_auto_renewal` и возвращает типизированную SDK-модель.
+
+        Параметр `idempotency_key` задает ключ идемпотентности для безопасного повтора write-операции.
+
+        Пустой результат возвращается как пустая коллекция или `None` согласно аннотации метода.
+
+        Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
+        """
+
         return VacanciesClient(self.transport).update_auto_renewal(
             vacancy_uuid=vacancy_uuid or self._require_vacancy_id(),
             auto_renewal=auto_renewal,
@@ -152,6 +225,15 @@ class Application(DomainObject):
         action: str,
         idempotency_key: str | None = None,
     ) -> JobActionResult:
+        """Выполняет публичную операцию `Application.apply` и возвращает типизированную SDK-модель.
+
+        Параметр `idempotency_key` задает ключ идемпотентности для безопасного повтора write-операции.
+
+        Пустой результат возвращается как пустая коллекция или `None` согласно аннотации метода.
+
+        Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
+        """
+
         return ApplicationsClient(self.transport).apply_actions(
             ids=list(ids),
             action=action,
@@ -164,6 +246,13 @@ class Application(DomainObject):
         ids: Sequence[str] | None = None,
         query: ApplicationIdsQuery | None = None,
     ) -> ApplicationsResult | ApplicationIdsResult:
+        """Выполняет публичную операцию `Application.list` и возвращает типизированную SDK-модель.
+
+        Пустой результат возвращается как пустая коллекция или `None` согласно аннотации метода.
+
+        Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
+        """
+
         client = ApplicationsClient(self.transport)
         if ids is not None:
             return client.get_by_ids(ids=list(ids))
@@ -172,6 +261,13 @@ class Application(DomainObject):
         return client.get_ids(query=query)
 
     def get_states(self) -> ApplicationStatesResult:
+        """Выполняет публичную операцию `Application.get_states` и возвращает типизированную SDK-модель.
+
+        Пустой результат возвращается как пустая коллекция или `None` согласно аннотации метода.
+
+        Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
+        """
+
         return ApplicationsClient(self.transport).get_states()
 
     def update(
@@ -180,6 +276,15 @@ class Application(DomainObject):
         applies: Sequence[ApplicationViewedItem],
         idempotency_key: str | None = None,
     ) -> JobActionResult:
+        """Выполняет публичную операцию `Application.update` и возвращает типизированную SDK-модель.
+
+        Параметр `idempotency_key` задает ключ идемпотентности для безопасного повтора write-операции.
+
+        Пустой результат возвращается как пустая коллекция или `None` согласно аннотации метода.
+
+        Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
+        """
+
         return ApplicationsClient(self.transport).set_is_viewed(
             applies=list(applies),
             idempotency_key=idempotency_key,
@@ -194,14 +299,35 @@ class Resume(DomainObject):
     user_id: int | str | None = None
 
     def list(self, *, query: ResumeSearchQuery | None = None) -> ResumesResult:
+        """Выполняет публичную операцию `Resume.list` и возвращает типизированную SDK-модель.
+
+        Пустой результат возвращается как пустая коллекция или `None` согласно аннотации метода.
+
+        Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
+        """
+
         return ResumeClient(self.transport).search(query=query)
 
     def get(self, *, resume_id: int | str | None = None) -> ResumeInfo:
+        """Выполняет публичную операцию `Resume.get` и возвращает типизированную SDK-модель.
+
+        Пустой результат возвращается как пустая коллекция или `None` согласно аннотации метода.
+
+        Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
+        """
+
         return ResumeClient(self.transport).get_item(
             resume_id=str(resume_id or self._require_resume_id())
         )
 
     def get_contacts(self, *, resume_id: int | str | None = None) -> ResumeContactInfo:
+        """Выполняет публичную операцию `Resume.get_contacts` и возвращает типизированную SDK-модель.
+
+        Пустой результат возвращается как пустая коллекция или `None` согласно аннотации метода.
+
+        Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
+        """
+
         return ResumeClient(self.transport).get_contacts(
             resume_id=str(resume_id or self._require_resume_id())
         )
@@ -219,14 +345,35 @@ class JobWebhook(DomainObject):
     user_id: int | str | None = None
 
     def get(self) -> JobWebhookInfo:
+        """Выполняет публичную операцию `JobWebhook.get` и возвращает типизированную SDK-модель.
+
+        Пустой результат возвращается как пустая коллекция или `None` согласно аннотации метода.
+
+        Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
+        """
+
         return WebhookClient(self.transport).get_webhook()
 
     def list(self) -> JobWebhooksResult:
+        """Выполняет публичную операцию `JobWebhook.list` и возвращает типизированную SDK-модель.
+
+        Пустой результат возвращается как пустая коллекция или `None` согласно аннотации метода.
+
+        Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
+        """
+
         return WebhookClient(self.transport).list_webhooks()
 
-    def update(
-        self, *, url: str, idempotency_key: str | None = None
-    ) -> JobWebhookInfo:
+    def update(self, *, url: str, idempotency_key: str | None = None) -> JobWebhookInfo:
+        """Выполняет публичную операцию `JobWebhook.update` и возвращает типизированную SDK-модель.
+
+        Параметр `idempotency_key` задает ключ идемпотентности для безопасного повтора write-операции.
+
+        Пустой результат возвращается как пустая коллекция или `None` согласно аннотации метода.
+
+        Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
+        """
+
         return WebhookClient(self.transport).put_webhook(
             url=url,
             idempotency_key=idempotency_key,
@@ -235,6 +382,15 @@ class JobWebhook(DomainObject):
     def delete(
         self, *, url: str | None = None, idempotency_key: str | None = None
     ) -> JobActionResult:
+        """Выполняет публичную операцию `JobWebhook.delete` и возвращает типизированную SDK-модель.
+
+        Параметр `idempotency_key` задает ключ идемпотентности для безопасного повтора write-операции.
+
+        Пустой результат возвращается как пустая коллекция или `None` согласно аннотации метода.
+
+        Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
+        """
+
         return WebhookClient(self.transport).delete_webhook(
             url=url,
             idempotency_key=idempotency_key,
@@ -249,9 +405,23 @@ class JobDictionary(DomainObject):
     user_id: int | str | None = None
 
     def list(self) -> JobDictionariesResult:
+        """Выполняет публичную операцию `JobDictionary.list` и возвращает типизированную SDK-модель.
+
+        Пустой результат возвращается как пустая коллекция или `None` согласно аннотации метода.
+
+        Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
+        """
+
         return DictionariesClient(self.transport).list_dicts()
 
     def get(self, *, dictionary_id: str | None = None) -> JobDictionaryValuesResult:
+        """Выполняет публичную операцию `JobDictionary.get` и возвращает типизированную SDK-модель.
+
+        Пустой результат возвращается как пустая коллекция или `None` согласно аннотации метода.
+
+        Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
+        """
+
         return DictionariesClient(self.transport).get_dict_by_id(
             dictionary_id=dictionary_id or self._require_dictionary_id()
         )

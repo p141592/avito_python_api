@@ -90,7 +90,10 @@ class AvitoClient:
         return client
 
     def auth(self) -> AuthProvider:
-        """Возвращает объект аутентификации и token-flow операций."""
+        """Возвращает объект аутентификации и token-flow операций.
+
+        Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
+        """
 
         self._ensure_open()
         return self.auth_provider

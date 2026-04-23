@@ -1,13 +1,12 @@
 from __future__ import annotations
 
 import argparse
-import importlib
-import inspect
 import json
 from dataclasses import asdict, dataclass
 from pathlib import Path
 
 from parse_inventory import InventoryRow, parse_inventory
+from public_sdk_surface import resolve_public_method
 
 ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_OUTPUT = ROOT / "inventory-coverage-report.json"
@@ -38,25 +37,15 @@ def removal_is_two_minor_later(deprecated_since: str, removal_version: str) -> b
 
 
 def domain_has_public_method(row: InventoryRow) -> bool:
-    if row.domain_object == "AvitoClient.auth()":
-        from avito import AvitoClient
-
-        return hasattr(AvitoClient, "auth")
-
-    try:
-        module = importlib.import_module(f"avito.{row.sdk_package}")
-    except ModuleNotFoundError:
-        return False
-
-    domain_class = getattr(module, row.domain_object, None)
-    if domain_class is None:
-        return False
-    return inspect.isclass(domain_class) and hasattr(domain_class, row.sdk_public_method)
+    return resolve_public_method(row) is not None
 
 
 def collect_gaps(rows: list[InventoryRow]) -> list[InventoryGap]:
     gaps: list[InventoryGap] = []
     for row in rows:
+        if not domain_has_public_method(row):
+            gaps.append(gap(row, "не найден публичный SDK-символ"))
+
         if row.deprecated:
             missing = [
                 name
@@ -75,9 +64,6 @@ def collect_gaps(rows: list[InventoryRow]) -> list[InventoryGap]:
         description_marks_deprecated = "deprecated" in row.description.lower()
         if description_marks_deprecated and not row.deprecated:
             gaps.append(gap(row, "описание содержит deprecated, но deprecated=нет"))
-        if row.deprecated and not domain_has_public_method(row):
-            gaps.append(gap(row, "не найден публичный SDK-символ"))
-
     return gaps
 
 

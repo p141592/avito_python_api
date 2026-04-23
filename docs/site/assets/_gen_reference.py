@@ -8,6 +8,7 @@ from pathlib import Path
 import mkdocs_gen_files
 
 from scripts.parse_inventory import InventoryRow, parse_inventory
+from scripts.public_sdk_surface import public_method_name
 
 EXCLUDED_PACKAGES = {"auth", "core", "testing"}
 
@@ -69,7 +70,8 @@ def write_operations(rows: list[InventoryRow]) -> None:
             "|---|---|---|---|---|\n"
         )
         for row in rows:
-            sdk = f"`avito.{row.sdk_package}.{row.domain_object}.{row.sdk_public_method}()`"
+            method_name = public_method_name(row)
+            sdk = f"`avito.{row.sdk_package}.{row.domain_object}.{method_name}()`"
             http = f"`{row.method} {row.path}`"
             deprecated = "нет"
             if row.deprecated:

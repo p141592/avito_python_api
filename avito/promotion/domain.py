@@ -85,16 +85,22 @@ class PromotionOrder(DomainObject):
     order_id: int | str | None = None
 
     def get_service_dictionary(self) -> PromotionServiceDictionary:
-        """Получает словарь услуг продвижения."""
+        """Получает словарь услуг продвижения.
+
+        Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
+        """
 
         return PromotionClient(self.transport).get_service_dictionary()
 
     def list_services(self, *, item_ids: list[int]) -> PromotionServicesResult:
-        """Получает список услуг продвижения по объявлениям."""
+        """Получает список услуг продвижения по объявлениям.
 
-        return PromotionClient(self.transport).list_services(
-            item_ids=item_ids
-        )
+        Пустой результат возвращается как пустая коллекция или `None` согласно аннотации метода.
+
+        Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
+        """
+
+        return PromotionClient(self.transport).list_services(item_ids=item_ids)
 
     def list_orders(
         self,
@@ -102,7 +108,12 @@ class PromotionOrder(DomainObject):
         item_ids: list[int] | None = None,
         order_ids: list[str] | None = None,
     ) -> PromotionOrdersResult:
-        """Получает список заявок на продвижение."""
+        """Получает список заявок на продвижение.
+
+        Пустой результат возвращается как пустая коллекция или `None` согласно аннотации метода.
+
+        Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
+        """
 
         return PromotionClient(self.transport).list_orders(
             item_ids=item_ids,
@@ -110,16 +121,17 @@ class PromotionOrder(DomainObject):
         )
 
     def get_order_status(self, *, order_ids: list[str] | None = None) -> PromotionOrderStatusResult:
-        """Получает статусы заявок на продвижение."""
+        """Получает статусы заявок на продвижение.
+
+        Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
+        """
 
         resolved_order_ids = order_ids or (
             [str(self.order_id)] if self.order_id is not None else []
         )
         if not resolved_order_ids:
             raise ValidationError("Для операции требуется хотя бы один `order_id`.")
-        return PromotionClient(self.transport).get_order_status(
-            order_ids=resolved_order_ids
-        )
+        return PromotionClient(self.transport).get_order_status(order_ids=resolved_order_ids)
 
 
 @dataclass(slots=True, frozen=True)
@@ -130,7 +142,10 @@ class BbipPromotion(DomainObject):
     user_id: int | str | None = None
 
     def get_forecasts(self, *, items: list[BbipItemInput]) -> BbipForecastsResult:
-        """Получает прогнозы BBIP."""
+        """Получает прогнозы BBIP.
+
+        Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
+        """
 
         bbip_items = [
             BbipItem(
@@ -150,7 +165,14 @@ class BbipPromotion(DomainObject):
         dry_run: bool = False,
         idempotency_key: str | None = None,
     ) -> PromotionActionResult:
-        """Подключает BBIP-продвижение."""
+        """Подключает BBIP-продвижение.
+
+        Параметр `idempotency_key` задает ключ идемпотентности для безопасного повтора write-операции.
+
+        При `dry_run=True` payload строится без вызова транспорта.
+
+        Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
+        """
 
         validate_non_empty("items", items)
         for index, item in enumerate(items):
@@ -181,12 +203,13 @@ class BbipPromotion(DomainObject):
         )
 
     def get_suggests(self, *, item_ids: list[int] | None = None) -> BbipSuggestsResult:
-        """Получает варианты бюджета BBIP."""
+        """Получает варианты бюджета BBIP.
+
+        Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
+        """
 
         resolved_item_ids = item_ids or self._resource_item_ids()
-        return BbipClient(self.transport).get_suggests(
-            item_ids=resolved_item_ids
-        )
+        return BbipClient(self.transport).get_suggests(item_ids=resolved_item_ids)
 
     def _resource_item_ids(self) -> list[int]:
         if self.item_id is None:
@@ -208,7 +231,14 @@ class TrxPromotion(DomainObject):
         dry_run: bool = False,
         idempotency_key: str | None = None,
     ) -> PromotionActionResult:
-        """Запускает TrxPromo."""
+        """Запускает TrxPromo.
+
+        Параметр `idempotency_key` задает ключ идемпотентности для безопасного повтора write-операции.
+
+        При `dry_run=True` payload строится без вызова транспорта.
+
+        Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
+        """
 
         validate_non_empty("items", items)
         for index, item in enumerate(items):
@@ -241,7 +271,14 @@ class TrxPromotion(DomainObject):
         dry_run: bool = False,
         idempotency_key: str | None = None,
     ) -> PromotionActionResult:
-        """Останавливает TrxPromo."""
+        """Останавливает TrxPromo.
+
+        Параметр `idempotency_key` задает ключ идемпотентности для безопасного повтора write-операции.
+
+        При `dry_run=True` payload строится без вызова транспорта.
+
+        Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
+        """
 
         resolved_item_ids = item_ids or self._resource_item_ids()
         validate_non_empty("item_ids", resolved_item_ids)
@@ -255,7 +292,10 @@ class TrxPromotion(DomainObject):
         )
 
     def get_commissions(self, *, item_ids: list[int] | None = None) -> TrxCommissionsResult:
-        """Получает доступные комиссии TrxPromo."""
+        """Получает доступные комиссии TrxPromo.
+
+        Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
+        """
 
         return TrxPromoClient(self.transport).get_commissions(
             item_ids=item_ids or self._resource_item_ids()
@@ -279,7 +319,10 @@ class CpaAuction(DomainObject):
         from_item_id: int | None = None,
         batch_size: int | None = None,
     ) -> CpaAuctionBidsResult:
-        """Получает действующие и доступные ставки."""
+        """Получает действующие и доступные ставки.
+
+        Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
+        """
 
         return CpaAuctionClient(self.transport).get_user_bids(
             from_item_id=from_item_id,
@@ -292,9 +335,17 @@ class CpaAuction(DomainObject):
         items: list[BidItemInput],
         idempotency_key: str | None = None,
     ) -> PromotionActionResult:
-        """Сохраняет новые ставки по объявлениям."""
+        """Сохраняет новые ставки по объявлениям.
 
-        bids = [CreateItemBid(item_id=item["item_id"], price_penny=item["price_penny"]) for item in items]
+        Параметр `idempotency_key` задает ключ идемпотентности для безопасного повтора write-операции.
+
+        Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
+        """
+
+        bids = [
+            CreateItemBid(item_id=item["item_id"], price_penny=item["price_penny"])
+            for item in items
+        ]
         return CpaAuctionClient(self.transport).create_item_bids(
             items=bids,
             idempotency_key=idempotency_key,
@@ -309,7 +360,10 @@ class TargetActionPricing(DomainObject):
     user_id: int | str | None = None
 
     def get_bids(self, *, item_id: int | None = None) -> TargetActionGetBidsResult:
-        """Получает детализированные цены и бюджеты."""
+        """Получает детализированные цены и бюджеты.
+
+        Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
+        """
 
         return TargetActionPriceClient(self.transport).get_bids(
             item_id=item_id or self._require_item_id()
@@ -318,7 +372,10 @@ class TargetActionPricing(DomainObject):
     def get_promotions_by_item_ids(
         self, *, item_ids: list[int] | None = None
     ) -> TargetActionPromotionsByItemIdsResult:
-        """Получает текущие настройки по нескольким объявлениям."""
+        """Получает текущие настройки по нескольким объявлениям.
+
+        Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
+        """
 
         resolved_item_ids = item_ids or [self._require_item_id()]
         return TargetActionPriceClient(self.transport).get_promotions_by_item_ids(
@@ -332,7 +389,14 @@ class TargetActionPricing(DomainObject):
         dry_run: bool = False,
         idempotency_key: str | None = None,
     ) -> PromotionActionResult:
-        """Останавливает продвижение."""
+        """Останавливает продвижение.
+
+        Параметр `idempotency_key` задает ключ идемпотентности для безопасного повтора write-операции.
+
+        При `dry_run=True` payload строится без вызова транспорта.
+
+        Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
+        """
 
         resolved_item_id = item_id or self._require_item_id()
         validate_positive_int("item_id", resolved_item_id)
@@ -355,7 +419,14 @@ class TargetActionPricing(DomainObject):
         dry_run: bool = False,
         idempotency_key: str | None = None,
     ) -> PromotionActionResult:
-        """Применяет автоматическую настройку."""
+        """Применяет автоматическую настройку.
+
+        Параметр `idempotency_key` задает ключ идемпотентности для безопасного повтора write-операции.
+
+        При `dry_run=True` payload строится без вызова транспорта.
+
+        Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
+        """
 
         resolved_item_id = item_id or self._require_item_id()
         validate_positive_int("item_id", resolved_item_id)
@@ -393,7 +464,14 @@ class TargetActionPricing(DomainObject):
         dry_run: bool = False,
         idempotency_key: str | None = None,
     ) -> PromotionActionResult:
-        """Применяет ручную настройку."""
+        """Применяет ручную настройку.
+
+        Параметр `idempotency_key` задает ключ идемпотентности для безопасного повтора write-операции.
+
+        При `dry_run=True` payload строится без вызова транспорта.
+
+        Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
+        """
 
         resolved_item_id = item_id or self._require_item_id()
         validate_positive_int("item_id", resolved_item_id)
@@ -443,7 +521,10 @@ class AutostrategyCampaign(DomainObject):
         finish_time: datetime | None = None,
         items: list[int] | None = None,
     ) -> AutostrategyBudget:
-        """Рассчитывает бюджет кампании."""
+        """Рассчитывает бюджет кампании.
+
+        Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
+        """
 
         _validate_optional_datetime("start_time", start_time)
         _validate_optional_datetime("finish_time", finish_time)
@@ -469,7 +550,12 @@ class AutostrategyCampaign(DomainObject):
         start_time: datetime | None = None,
         idempotency_key: str | None = None,
     ) -> CampaignActionResult:
-        """Создает новую кампанию."""
+        """Создает новую кампанию.
+
+        Параметр `idempotency_key` задает ключ идемпотентности для безопасного повтора write-операции.
+
+        Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
+        """
 
         _validate_optional_datetime("start_time", start_time)
         _validate_optional_datetime("finish_time", finish_time)
@@ -501,7 +587,12 @@ class AutostrategyCampaign(DomainObject):
         title: str | None = None,
         idempotency_key: str | None = None,
     ) -> CampaignActionResult:
-        """Редактирует кампанию."""
+        """Редактирует кампанию.
+
+        Параметр `idempotency_key` задает ключ идемпотентности для безопасного повтора write-операции.
+
+        Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
+        """
 
         _validate_optional_datetime("start_time", start_time)
         _validate_optional_datetime("finish_time", finish_time)
@@ -519,7 +610,10 @@ class AutostrategyCampaign(DomainObject):
         )
 
     def get(self, *, campaign_id: int | None = None) -> CampaignDetailsResult:
-        """Получает полную информацию о кампании."""
+        """Получает полную информацию о кампании.
+
+        Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
+        """
 
         return AutostrategyClient(self.transport).get_campaign_info(
             campaign_id=campaign_id or self._require_campaign_id()
@@ -532,7 +626,12 @@ class AutostrategyCampaign(DomainObject):
         campaign_id: int | None = None,
         idempotency_key: str | None = None,
     ) -> CampaignActionResult:
-        """Останавливает кампанию."""
+        """Останавливает кампанию.
+
+        Параметр `idempotency_key` задает ключ идемпотентности для безопасного повтора write-операции.
+
+        Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
+        """
 
         return AutostrategyClient(self.transport).stop_campaign(
             campaign_id=campaign_id or self._require_campaign_id(),
@@ -550,7 +649,12 @@ class AutostrategyCampaign(DomainObject):
         updated_from: datetime | None = None,
         updated_to: datetime | None = None,
     ) -> CampaignsResult:
-        """Получает список кампаний."""
+        """Получает список кампаний.
+
+        Пустой результат возвращается как пустая коллекция или `None` согласно аннотации метода.
+
+        Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
+        """
 
         filter_payload = (
             CampaignListFilter(
@@ -576,7 +680,10 @@ class AutostrategyCampaign(DomainObject):
         )
 
     def get_stat(self, *, campaign_id: int | None = None) -> AutostrategyStat:
-        """Получает статистику кампании."""
+        """Получает статистику кампании.
+
+        Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
+        """
 
         return AutostrategyClient(self.transport).get_stat(
             campaign_id=campaign_id or self._require_campaign_id()

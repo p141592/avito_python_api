@@ -56,6 +56,8 @@ docs-report:
 	poetry run python scripts/check_spec_inventory_sync.py --output spec-inventory-report.json
 	poetry run python scripts/check_reference_public_surface.py --output reference-public-report.json
 	poetry run python scripts/check_public_docstrings.py --output docstring-contract-report.json
+	poetry run python scripts/check_changelog_sections.py --output changelog-sections-report.json
+	poetry run bandit -r avito -lll -f json -o bandit-report.json
 	poetry run python scripts/build_docs_quality_report.py
 
 docs-check: docs-strict

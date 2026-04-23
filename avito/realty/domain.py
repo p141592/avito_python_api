@@ -31,6 +31,13 @@ class RealtyListing(DomainObject):
         intervals: list[RealtyInterval],
         item_id: int | None = None,
     ) -> RealtyActionResult:
+        """Выполняет публичную операцию `RealtyListing.get_intervals` и возвращает типизированную SDK-модель.
+
+        Пустой результат возвращается как пустая коллекция или `None` согласно аннотации метода.
+
+        Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
+        """
+
         return ShortTermRentClient(self.transport).get_intervals(
             item_id=item_id or int(self._require_item_id()),
             intervals=intervals,
@@ -39,6 +46,13 @@ class RealtyListing(DomainObject):
     def update_base_params(
         self, *, min_stay_days: int, item_id: int | str | None = None
     ) -> RealtyActionResult:
+        """Выполняет публичную операцию `RealtyListing.update_base_params` и возвращает типизированную SDK-модель.
+
+        Пустой результат возвращается как пустая коллекция или `None` согласно аннотации метода.
+
+        Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
+        """
+
         return ShortTermRentClient(self.transport).update_base_params(
             item_id=item_id or self._require_item_id(),
             min_stay_days=min_stay_days,
@@ -64,6 +78,13 @@ class RealtyBooking(DomainObject):
         user_id: int | str | None = None,
         item_id: int | str | None = None,
     ) -> RealtyActionResult:
+        """Выполняет публичную операцию `RealtyBooking.update_bookings_info` и возвращает типизированную SDK-модель.
+
+        Пустой результат возвращается как пустая коллекция или `None` согласно аннотации метода.
+
+        Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
+        """
+
         return ShortTermRentClient(self.transport).update_bookings_info(
             user_id=user_id or self._require_user_id(),
             item_id=item_id or self._require_item_id(),
@@ -79,6 +100,13 @@ class RealtyBooking(DomainObject):
         user_id: int | str | None = None,
         item_id: int | str | None = None,
     ) -> RealtyBookingsResult:
+        """Выполняет публичную операцию `RealtyBooking.list_realty_bookings` и возвращает типизированную SDK-модель.
+
+        Пустой результат возвращается как пустая коллекция или `None` согласно аннотации метода.
+
+        Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
+        """
+
         return ShortTermRentClient(self.transport).list_realty_bookings(
             user_id=user_id or self._require_user_id(),
             item_id=item_id or self._require_item_id(),
@@ -114,6 +142,13 @@ class RealtyPricing(DomainObject):
         user_id: int | str | None = None,
         item_id: int | str | None = None,
     ) -> RealtyActionResult:
+        """Выполняет публичную операцию `RealtyPricing.update_realty_prices` и возвращает типизированную SDK-модель.
+
+        Пустой результат возвращается как пустая коллекция или `None` согласно аннотации метода.
+
+        Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
+        """
+
         return ShortTermRentClient(self.transport).update_realty_prices(
             user_id=user_id or self._require_user_id(),
             item_id=item_id or self._require_item_id(),
@@ -144,12 +179,26 @@ class RealtyAnalyticsReport(DomainObject):
         item_id: int | str | None = None,
         price: int | str,
     ) -> RealtyMarketPriceInfo:
+        """Выполняет публичную операцию `RealtyAnalyticsReport.get_market_price_correspondence` и возвращает типизированную SDK-модель.
+
+        Пустой результат возвращается как пустая коллекция или `None` согласно аннотации метода.
+
+        Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
+        """
+
         return RealtyAnalyticsClient(self.transport).get_market_price_correspondence(
             item_id=item_id or self._require_item_id(),
             price=price,
         )
 
     def get_report_for_classified(self, *, item_id: int | str | None = None) -> RealtyAnalyticsInfo:
+        """Выполняет публичную операцию `RealtyAnalyticsReport.get_report_for_classified` и возвращает типизированную SDK-модель.
+
+        Пустой результат возвращается как пустая коллекция или `None` согласно аннотации метода.
+
+        Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
+        """
+
         return RealtyAnalyticsClient(self.transport).get_report_for_classified(
             item_id=item_id or self._require_item_id()
         )

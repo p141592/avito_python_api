@@ -42,6 +42,7 @@ mkdocstrings = { version = ">=0.27", extras = ["python"] }
 mkdocs-gen-files = ">=0.5"
 mkdocs-literate-nav = ">=0.6"
 mktestdocs = "^0.2.5"
+bandit = ">=1.7"
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
