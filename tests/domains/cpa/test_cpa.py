@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 
 import httpx
+import pytest
 
 from avito.cpa import CallTrackingCall, CpaArchive, CpaCall, CpaChat, CpaLead
 from tests.helpers.transport import make_transport
@@ -23,7 +24,9 @@ def test_cpa_chat_and_phone_flows() -> None:
 
     chat = CpaChat(make_transport(httpx.MockTransport(handler)), action_id="act-1")
     assert chat.get().item_title == "Велосипед"
-    assert chat.list(created_at_from="2026-04-18T00:00:00+03:00", version=1).items[0].buyer_name == "Петр"
+    with pytest.deprecated_call(match="cpa_chat\\(\\)\\.list\\(version=2\\)"):
+        classic_chats = chat.list(created_at_from="2026-04-18T00:00:00+03:00", version=1)
+    assert classic_chats.items[0].buyer_name == "Петр"
     assert chat.list(created_at_from="2026-04-18T00:00:00+03:00", limit=10).items[0].is_arbitrage_available is True
     assert chat.get_phones_info_from_chats(action_ids=["act-1", "act-2"]).items[1].phone_number == "+79990000002"
 
@@ -56,9 +59,15 @@ def test_cpa_calls_archive_and_balance_flows() -> None:
     assert cpa_call.create_complaint(call_id=2001, reason="spam").success is True
     assert cpa_lead.create_complaint_by_action_id(action_id="act-1", reason="duplicate").success is True
     assert cpa_lead.get_balance_info().balance == -5000
-    assert archive.get_balance_info().advance == 1000
-    assert archive.get_call_by_id(call_id=2001).call_id == "2001"
-    assert archive.get_call().binary.content == audio_bytes
+    with pytest.deprecated_call(match="cpa_lead\\(\\)\\.get_balance_info"):
+        archived_balance = archive.get_balance_info()
+    with pytest.deprecated_call(match="call_tracking_call\\(\\)\\.get"):
+        archived_call = archive.get_call_by_id(call_id=2001)
+    with pytest.deprecated_call(match="call_tracking_call\\(\\)\\.download"):
+        archived_audio = archive.get_call()
+    assert archived_balance.advance == 1000
+    assert archived_call.call_id == "2001"
+    assert archived_audio.binary.content == audio_bytes
 
 
 def test_calltracking_flows() -> None:

@@ -382,6 +382,21 @@ python-dateutil = ">=2.8.1"
 dev = ["flake8", "markdown", "twine", "wheel"]
 
 [[package]]
+name = "griffelib"
+version = "2.0.2"
+description = "Signatures for entire Python programs. Extract the structure, the frame, the skeleton of your project, to generate API documentation or find breaking changes in your API."
+optional = false
+python-versions = ">=3.10"
+groups = ["docs"]
+files = [
+    {file = "griffelib-2.0.2-py3-none-any.whl", hash = "sha256:925c857658fb1ba40c0772c37acbc2ab650bd794d9c1b9726922e36ea4117ea1"},
+    {file = "griffelib-2.0.2.tar.gz", hash = "sha256:3cf20b3bc470e83763ffbf236e0076b1211bac1bc67de13daf494640f2de707e"},
+]
+
+[package.extras]
+pypi = ["pip (>=24.0)", "platformdirs (>=4.2)", "wheel (>=0.42)"]
+
+[[package]]
 name = "h11"
 version = "0.16.0"
 description = "A pure-Python, bring-your-own-I/O implementation of HTTP/1.1"
@@ -769,6 +784,23 @@ i18n = ["babel (>=2.9.0)"]
 min-versions = ["babel (==2.9.0)", "click (==7.0)", "colorama (==0.4) ; platform_system == \"Windows\"", "ghp-import (==1.0)", "importlib-metadata (==4.4) ; python_version < \"3.10\"", "jinja2 (==2.11.1)", "markdown (==3.3.6)", "markupsafe (==2.0.1)", "mergedeep (==1.3.4)", "mkdocs-get-deps (==0.2.0)", "packaging (==20.5)", "pathspec (==0.11.1)", "pyyaml (==5.1)", "pyyaml-env-tag (==0.1)", "watchdog (==2.0)"]
 
 [[package]]
+name = "mkdocs-autorefs"
+version = "1.4.4"
+description = "Automatically link across pages in MkDocs."
+optional = false
+python-versions = ">=3.9"
+groups = ["docs"]
+files = [
+    {file = "mkdocs_autorefs-1.4.4-py3-none-any.whl", hash = "sha256:834ef5408d827071ad1bc69e0f39704fa34c7fc05bc8e1c72b227dfdc5c76089"},
+    {file = "mkdocs_autorefs-1.4.4.tar.gz", hash = "sha256:d54a284f27a7346b9c38f1f852177940c222da508e66edc816a0fa55fc6da197"},
+]
+
+[package.dependencies]
+Markdown = ">=3.3"
+markupsafe = ">=2.0.1"
+mkdocs = ">=1.1"
+
+[[package]]
 name = "mkdocs-awesome-pages-plugin"
 version = "2.10.1"
 description = "An MkDocs plugin that simplifies configuring page titles and their order"
@@ -784,6 +816,22 @@ files = [
 mkdocs = ">=1"
 natsort = ">=8.1.0"
 wcmatch = ">=7"
+
+[[package]]
+name = "mkdocs-gen-files"
+version = "0.6.1"
+description = "MkDocs plugin to programmatically generate documentation pages during the build"
+optional = false
+python-versions = ">=3.9"
+groups = ["docs"]
+files = [
+    {file = "mkdocs_gen_files-0.6.1-py3-none-any.whl", hash = "sha256:b3182bfc6219e35b8d26658cb988368659d5d023aac30c2a819247558fc12189"},
+    {file = "mkdocs_gen_files-0.6.1.tar.gz", hash = "sha256:57d7ff2229e23d077e46d14a33db6d37c8823f6ce1a503c874c1764a71679763"},
+]
+
+[package.dependencies]
+mkdocs = ">=1.4.1,<=1.6.1"
+properdocs = ">=1.6.5"
 
 [[package]]
 name = "mkdocs-get-deps"
@@ -820,6 +868,22 @@ wcmatch = "*"
 
 [package.extras]
 cache = ["platformdirs"]
+
+[[package]]
+name = "mkdocs-literate-nav"
+version = "0.6.3"
+description = "MkDocs plugin to specify the navigation in Markdown instead of YAML"
+optional = false
+python-versions = ">=3.9"
+groups = ["docs"]
+files = [
+    {file = "mkdocs_literate_nav-0.6.3-py3-none-any.whl", hash = "sha256:2c421561280fa9184f88cbf399bebbd4cc17ee507e978a31ce11fd6f3aabf233"},
+    {file = "mkdocs_literate_nav-0.6.3.tar.gz", hash = "sha256:edbaca22343f861fe4e34aac47d55a0c9955c640dbf02eea99fe631e914cf9ee"},
+]
+
+[package.dependencies]
+mkdocs = ">=1.4.1,<=1.6.1"
+properdocs = ">=1.6.5"
 
 [[package]]
 name = "mkdocs-material"
@@ -862,6 +926,49 @@ files = [
     {file = "mkdocs_material_extensions-1.3.1-py3-none-any.whl", hash = "sha256:adff8b62700b25cb77b53358dad940f3ef973dd6db797907c49e3c2ef3ab4e31"},
     {file = "mkdocs_material_extensions-1.3.1.tar.gz", hash = "sha256:10c9511cea88f568257f960358a467d12b970e1f7b2c0e5fb2bb48cab1928443"},
 ]
+
+[[package]]
+name = "mkdocstrings"
+version = "1.0.4"
+description = "Automatic documentation from sources, for MkDocs."
+optional = false
+python-versions = ">=3.10"
+groups = ["docs"]
+files = [
+    {file = "mkdocstrings-1.0.4-py3-none-any.whl", hash = "sha256:63464b4b29053514f32a1dbbf604e52876d5e638111b0c295ab7ed3cac73ca9b"},
+    {file = "mkdocstrings-1.0.4.tar.gz", hash = "sha256:3969a6515b77db65fd097b53c1b7aa4ae840bd71a2ee62a6a3e89503446d7172"},
+]
+
+[package.dependencies]
+Jinja2 = ">=3.1"
+Markdown = ">=3.6"
+MarkupSafe = ">=1.1"
+mkdocs = ">=1.6"
+mkdocs-autorefs = ">=1.4"
+mkdocstrings-python = {version = ">=1.16.2", optional = true, markers = "extra == \"python\""}
+pymdown-extensions = ">=6.3"
+
+[package.extras]
+crystal = ["mkdocstrings-crystal (>=0.3.4)"]
+python = ["mkdocstrings-python (>=1.16.2)"]
+python-legacy = ["mkdocstrings-python-legacy (>=0.2.1)"]
+
+[[package]]
+name = "mkdocstrings-python"
+version = "2.0.3"
+description = "A Python handler for mkdocstrings."
+optional = false
+python-versions = ">=3.10"
+groups = ["docs"]
+files = [
+    {file = "mkdocstrings_python-2.0.3-py3-none-any.whl", hash = "sha256:0b83513478bdfd803ff05aa43e9b1fca9dd22bcd9471f09ca6257f009bc5ee12"},
+    {file = "mkdocstrings_python-2.0.3.tar.gz", hash = "sha256:c518632751cc869439b31c9d3177678ad2bfa5c21b79b863956ad68fc92c13b8"},
+]
+
+[package.dependencies]
+griffelib = ">=2.0"
+mkdocs-autorefs = ">=1.4"
+mkdocstrings = ">=0.30"
 
 [[package]]
 name = "mypy"
@@ -1032,6 +1139,35 @@ files = [
 [package.extras]
 dev = ["pre-commit", "tox"]
 testing = ["coverage", "pytest", "pytest-benchmark"]
+
+[[package]]
+name = "properdocs"
+version = "1.6.7"
+description = "Project documentation with Markdown."
+optional = false
+python-versions = ">=3.9"
+groups = ["docs"]
+files = [
+    {file = "properdocs-1.6.7-py3-none-any.whl", hash = "sha256:6fa0cfa2e01bf338f684892c8a506cf70ea88ae7f3479c933b6fa20168101cbd"},
+    {file = "properdocs-1.6.7.tar.gz", hash = "sha256:adc7b16e562890af0e098a7e5b02e3a81c20894a87d6a28d345c9300de73c26e"},
+]
+
+[package.dependencies]
+click = ">=7.0"
+colorama = {version = ">=0.4", markers = "platform_system == \"Windows\""}
+ghp-import = ">=1.0"
+jinja2 = ">=2.11.1"
+markdown = ">=3.3.6"
+markupsafe = ">=2.0.1"
+packaging = ">=20.5"
+pathspec = ">=0.11.1"
+platformdirs = ">=2.2.0"
+pyyaml = ">=5.1"
+pyyaml-env-tag = ">=0.1"
+watchdog = ">=2.0"
+
+[package.extras]
+i18n = ["babel (>=2.9.0)"]
 
 [[package]]
 name = "pygments"
@@ -1401,4 +1537,4 @@ bracex = ">=2.1.1"
 [metadata]
 lock-version = "2.1"
 python-versions = "^3.14"
-content-hash = "0cca9123ad2deb513c6021da369efe32eedb94e2e1f253c9fbc461d88420faa4"
+content-hash = "f4e7dec6bc39ba9ed8c323a1cda116dba5d8b00ca9648a670e5fe3ce1382b798"

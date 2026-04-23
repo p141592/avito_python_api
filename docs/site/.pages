@@ -1,0 +1,7 @@
+nav:
+  - Главная: index.md
+  - Tutorials: tutorials
+  - How-to: how-to
+  - Reference: reference
+  - Explanations: explanations
+  - Changelog: changelog.md

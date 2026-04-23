@@ -16,4 +16,4 @@
     | Обратная совместимость | SemVer, политика deprecation, `DeprecationWarning` |
     | Только синхронный API | Почему нет async, где будет `avito.aio` |
 
-    Пока изучите [README](https://github.com/p141592/avito#readme) для общего обзора.
+    Пока изучите [README](https://github.com/p141592/avito_python_api#readme) для общего обзора.

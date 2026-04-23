@@ -1,2 +1,12 @@
 nav:
   - index.md
+  - coverage.md
+  - client.md
+  - config.md
+  - operations.md
+  - domains
+  - enums.md
+  - models.md
+  - exceptions.md
+  - pagination.md
+  - testing.md

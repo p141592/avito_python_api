@@ -37,6 +37,7 @@ from avito.ads.models import (
     VasPricesResult,
 )
 from avito.core import PaginatedList, ValidationError
+from avito.core.deprecation import deprecated_method
 from avito.core.domain import DomainObject
 from avito.core.validation import (
     validate_non_empty_string,
@@ -438,11 +439,26 @@ class AutoloadArchive(DomainObject):
 
     report_id: int | str | None = None
 
+    @deprecated_method(
+        symbol="AutoloadArchive.get_profile",
+        replacement="autoload_profile().get",
+        removal_version="1.3.0",
+        deprecated_since="1.1.0",
+    )
     def get_profile(self) -> AutoloadProfileSettings:
-        """Получает архивный профиль автозагрузки."""
+        """Получает архивный профиль автозагрузки.
+
+        Deprecated: используйте `autoload_profile().get`; удаление в версии 1.3.0.
+        """
 
         return AutoloadArchiveClient(self.transport).get_profile()
 
+    @deprecated_method(
+        symbol="AutoloadArchive.save_profile",
+        replacement="autoload_profile().save",
+        removal_version="1.3.0",
+        deprecated_since="1.1.0",
+    )
     def save_profile(
         self,
         *,
@@ -451,7 +467,10 @@ class AutoloadArchive(DomainObject):
         callback_url: str | None = None,
         idempotency_key: str | None = None,
     ) -> AdsActionResult:
-        """Сохраняет архивный профиль автозагрузки."""
+        """Сохраняет архивный профиль автозагрузки.
+
+        Deprecated: используйте `autoload_profile().save`; удаление в версии 1.3.0.
+        """
 
         return AutoloadArchiveClient(self.transport).save_profile(
             is_enabled=is_enabled,
@@ -460,13 +479,31 @@ class AutoloadArchive(DomainObject):
             idempotency_key=idempotency_key,
         )
 
+    @deprecated_method(
+        symbol="AutoloadArchive.get_last_completed_report",
+        replacement="autoload_report().get_last_completed",
+        removal_version="1.3.0",
+        deprecated_since="1.1.0",
+    )
     def get_last_completed_report(self) -> LegacyAutoloadReport:
-        """Получает архивную статистику по последней выгрузке."""
+        """Получает архивную статистику по последней выгрузке.
+
+        Deprecated: используйте `autoload_report().get_last_completed`; удаление в версии 1.3.0.
+        """
 
         return AutoloadArchiveClient(self.transport).get_last_completed_report()
 
+    @deprecated_method(
+        symbol="AutoloadArchive.get_report",
+        replacement="autoload_report().get",
+        removal_version="1.3.0",
+        deprecated_since="1.1.0",
+    )
     def get_report(self) -> LegacyAutoloadReport:
-        """Получает архивную статистику по конкретной выгрузке."""
+        """Получает архивную статистику по конкретной выгрузке.
+
+        Deprecated: используйте `autoload_report().get`; удаление в версии 1.3.0.
+        """
 
         report_id = self._require_report_id()
         return AutoloadArchiveClient(self.transport).get_report(report_id=report_id)

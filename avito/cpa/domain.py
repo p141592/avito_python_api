@@ -6,6 +6,7 @@ from collections.abc import Sequence
 from dataclasses import dataclass
 
 from avito.core import ValidationError
+from avito.core.deprecation import deprecated_method, warn_deprecated_once
 from avito.core.domain import DomainObject
 from avito.cpa.client import (
     CallTrackingClient,
@@ -71,6 +72,12 @@ class CpaChat(DomainObject):
     ) -> CpaChatsResult:
         client = CpaChatsClient(self.transport)
         if version == 1:
+            warn_deprecated_once(
+                symbol="CpaChat.list(version=1)",
+                replacement="cpa_chat().list(version=2)",
+                removal_version="1.3.0",
+                deprecated_since="1.1.0",
+            )
             return client.list_by_time_classic(created_at_from=created_at_from, limit=limit)
         return client.list_by_time(created_at_from=created_at_from, limit=limit)
 
@@ -110,15 +117,48 @@ class CpaArchive(DomainObject):
     call_id: int | str | None = None
     user_id: int | str | None = None
 
+    @deprecated_method(
+        symbol="CpaArchive.get_call",
+        replacement="call_tracking_call().download",
+        removal_version="1.3.0",
+        deprecated_since="1.1.0",
+    )
     def get_call(self, *, call_id: int | str | None = None) -> CpaAudioRecord:
+        """Получает архивную запись звонка.
+
+        Deprecated: используйте `call_tracking_call().download`; удаление в версии 1.3.0.
+        """
+
         return CpaArchiveClient(self.transport).get_record(
             call_id=call_id or self._require_call_id()
         )
 
+    @deprecated_method(
+        symbol="CpaArchive.get_balance_info",
+        replacement="cpa_lead().get_balance_info",
+        removal_version="1.3.0",
+        deprecated_since="1.1.0",
+    )
     def get_balance_info(self) -> CpaBalanceInfo:
+        """Получает архивный баланс CPA.
+
+        Deprecated: используйте `cpa_lead().get_balance_info`; удаление в версии 1.3.0.
+        """
+
         return CpaArchiveClient(self.transport).get_balance_info()
 
+    @deprecated_method(
+        symbol="CpaArchive.get_call_by_id",
+        replacement="call_tracking_call().get",
+        removal_version="1.3.0",
+        deprecated_since="1.1.0",
+    )
     def get_call_by_id(self, *, call_id: int) -> CpaCallInfo:
+        """Получает архивные данные звонка.
+
+        Deprecated: используйте `call_tracking_call().get`; удаление в версии 1.3.0.
+        """
+
         return CpaArchiveClient(self.transport).get_call_by_id(call_id=call_id)
 
     def _require_call_id(self) -> str:

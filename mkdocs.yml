@@ -1,8 +1,8 @@
 site_name: avito-py
 site_description: Синхронный Python SDK для Avito API
 site_url: https://p141592.github.io/avito_python_api/
-repo_url: https://github.com/p141592/avito
-repo_name: p141592/avito
+repo_url: https://github.com/p141592/avito_python_api
+repo_name: p141592/avito_python_api
 edit_uri: edit/main/docs/site/
 
 docs_dir: docs/site
@@ -43,8 +43,27 @@ plugins:
       lang:
         - ru
         - en
+  - gen-files:
+      scripts:
+        - docs/site/assets/_gen_reference.py
   - awesome-pages
+  - literate-nav:
+      nav_file: SUMMARY.md
   - include-markdown
+  - mkdocstrings:
+      handlers:
+        python:
+          options:
+            docstring_style: google
+            docstring_section_style: table
+            show_signature_annotations: true
+            separate_signature: true
+            merge_init_into_class: true
+            show_source: false
+            filters:
+              - "!^_"
+            members_order: source
+            heading_level: 2
 
 markdown_extensions:
   - admonition
@@ -70,11 +89,3 @@ extra:
   version:
     provider: mike
     default: latest
-
-nav:
-  - Главная: index.md
-  - Tutorials: tutorials/
-  - How-to: how-to/
-  - Reference: reference/
-  - Explanations: explanations/
-  - Changelog: changelog.md

@@ -8,8 +8,8 @@ packages=[
 ]
 license="MIT"
 readme="README.md"
-homepage="https://github.com/p141592/avito"
-repository="https://github.com/p141592/avito"
+homepage="https://github.com/p141592/avito_python_api"
+repository="https://github.com/p141592/avito_python_api"
 documentation="https://p141592.github.io/avito_python_api/"
 keywords=["avito", "sdk", "python", "api"]
 classifiers=[
@@ -38,6 +38,9 @@ mkdocs-material = "^9.5"
 mkdocs-awesome-pages-plugin = "^2.9"
 mkdocs-include-markdown-plugin = "^7.0"
 mike = "^2.1"
+mkdocstrings = { version = ">=0.27", extras = ["python"] }
+mkdocs-gen-files = ">=0.5"
+mkdocs-literate-nav = ">=0.6"
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
