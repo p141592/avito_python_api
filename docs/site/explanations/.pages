@@ -1,3 +1,12 @@
 nav:
   - index.md
   - architecture.md
+  - auth-flow.md
+  - transport-and-retries.md
+  - error-model.md
+  - pagination-semantics.md
+  - dry-run-and-idempotency.md
+  - testing-strategy.md
+  - api-coverage-and-deprecations.md
+  - config-resolution.md
+  - security-and-redaction.md

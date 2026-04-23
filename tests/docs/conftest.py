@@ -21,6 +21,11 @@ def build_docs_client() -> AvitoClient:
         {"user_id": 7, "balance": {"real": 1500.0, "bonus": 250.0, "currency": "RUB"}},
     )
     fake.add_json(
+        "GET",
+        "/core/v1/accounts/123/balance/",
+        {"user_id": 123, "balance": {"real": 1500.0, "bonus": 250.0, "currency": "RUB"}},
+    )
+    fake.add_json(
         "POST",
         "/core/v1/accounts/operations_history/",
         {
@@ -109,9 +114,27 @@ def build_docs_client() -> AvitoClient:
         },
     )
     fake.add_json(
+        "GET",
+        "/core/v1/accounts/123/items/42/",
+        {
+            "id": 42,
+            "user_id": 123,
+            "title": "Стол",
+            "description": "Письменный стол",
+            "status": "active",
+            "price": 4900,
+            "url": "https://www.avito.ru/items/42",
+        },
+    )
+    fake.add_json(
         "POST",
         "/stats/v1/accounts/7/items",
         {"items": [{"item_id": 101, "views": 45, "contacts": 5, "favorites": 2}]},
+    )
+    fake.add_json(
+        "POST",
+        "/stats/v1/accounts/123/items",
+        {"items": [{"item_id": 42, "views": 45, "contacts": 5, "favorites": 2}]},
     )
     fake.add_json(
         "POST",
@@ -119,6 +142,14 @@ def build_docs_client() -> AvitoClient:
         {
             "period": "day",
             "items": [{"item_id": 101, "views": 45, "contacts": 5, "favorites": 2}],
+        },
+    )
+    fake.add_json(
+        "POST",
+        "/stats/v2/accounts/123/items",
+        {
+            "period": "day",
+            "items": [{"item_id": 42, "views": 45, "contacts": 5, "favorites": 2}],
         },
     )
     fake.add_json(
@@ -142,6 +173,212 @@ def build_docs_client() -> AvitoClient:
         {"item_id": 101, "price": 10900, "status": "updated"},
     )
     fake.add_json(
+        "POST",
+        "/cpa/v2/callsByTime",
+        {
+            "calls": [
+                {
+                    "callId": "10",
+                    "itemId": "42",
+                    "buyerPhone": "+79990000000",
+                    "callTime": "2026-04-23T10:00:00Z",
+                    "talkDuration": 60,
+                }
+            ]
+        },
+    )
+    fake.add_json(
+        "POST",
+        "/calltracking/v1/getCallById/",
+        {
+            "call": {
+                "callId": "10",
+                "itemId": "42",
+                "buyerPhone": "+79990000000",
+                "callTime": "2026-04-23T10:00:00Z",
+                "talkDuration": 60,
+            },
+            "error": {"code": 0, "message": "ok"},
+        },
+    )
+    fake.add_json(
+        "POST",
+        "/autoteka/v1/catalogs/resolve",
+        {"result": {"fields": [{"id": "brand", "label": "Марка", "type": "select"}]}},
+    )
+    fake.add_json(
+        "POST",
+        "/autoteka/v1/previews",
+        {"result": {"preview": {"previewId": "88", "status": "done", "vin": "XTA00000000000000"}}},
+    )
+    fake.add_json(
+        "POST",
+        "/autoteka/v1/reports",
+        {
+            "result": {
+                "report": {
+                    "reportId": "99",
+                    "status": "done",
+                    "vin": "XTA00000000000000",
+                    "createdAt": "2026-04-23T10:00:00Z",
+                }
+            }
+        },
+    )
+    fake.add_json(
+        "GET",
+        "/autoteka/v1/reports/list/",
+        {
+            "result": [
+                {
+                    "reportId": "99",
+                    "status": "done",
+                    "vin": "XTA00000000000000",
+                    "createdAt": "2026-04-23T10:00:00Z",
+                }
+            ]
+        },
+    )
+    fake.add_json(
+        "POST",
+        "/core/v1/accounts/10/items/20/bookings",
+        {"result": "success"},
+    )
+    fake.add_json(
+        "GET",
+        "/realty/v1/accounts/10/items/20/bookings",
+        {
+            "bookings": [
+                {
+                    "id": 1,
+                    "base_price": 5000,
+                    "check_in": "2026-05-01",
+                    "check_out": "2026-05-05",
+                    "guest_count": 2,
+                    "nights": 4,
+                    "status": "active",
+                }
+            ]
+        },
+    )
+    fake.add_json(
+        "POST",
+        "/realty/v1/accounts/10/items/20/prices",
+        {"result": "success"},
+    )
+    fake.add(
+        "GET",
+        "/calltracking/v1/getRecordByCallId/",
+        FakeResponse(
+            200,
+            content=b"docs-call-record",
+            headers={"content-type": "audio/mpeg"},
+        ),
+    )
+    fake.add_json(
+        "POST",
+        "/promotion/v1/items/services/orders/get",
+        {
+            "items": [
+                {
+                    "orderId": "ord-promo-1",
+                    "itemId": 42,
+                    "serviceCode": "xl",
+                    "status": "active",
+                    "createdAt": "2026-04-23T10:00:00Z",
+                }
+            ]
+        },
+    )
+    fake.add_json(
+        "POST",
+        "/promotion/v1/items/services/bbip/forecasts/get",
+        {"items": [{"itemId": 42, "min": 100, "max": 250, "totalPrice": 500}]},
+    )
+    fake.add_json(
+        "POST",
+        "/autostrategy/v1/budget",
+        {
+            "calcId": 55,
+            "budget": {
+                "recommended": {"total": 1000, "real": 800, "bonus": 200},
+                "minimal": {"total": 500, "real": 500, "bonus": 0},
+                "maximal": {"total": 2000, "real": 1800, "bonus": 200},
+                "priceRanges": [],
+            },
+        },
+    )
+    fake.add_json(
+        "POST",
+        "/autostrategy/v1/campaign/info",
+        {
+            "campaign": {
+                "campaignId": 15,
+                "campaignType": "AS",
+                "budget": 1000,
+                "balance": 900,
+                "title": "Весенняя кампания",
+                "statusId": 1,
+                "version": 3,
+                "userId": 7,
+            },
+            "forecast": {"calls": {"from": 5, "to": 10}, "views": {"from": 100, "to": 250}},
+            "items": [{"itemId": 42, "isActive": True}],
+        },
+    )
+    fake.add_json(
+        "POST",
+        "/autostrategy/v1/campaigns",
+        {
+            "campaigns": [
+                {
+                    "campaignId": 15,
+                    "campaignType": "AS",
+                    "budget": 1000,
+                    "balance": 900,
+                    "title": "Весенняя кампания",
+                    "statusId": 1,
+                    "version": 3,
+                    "userId": 7,
+                }
+            ],
+            "totalCount": 1,
+        },
+    )
+    fake.add_json(
+        "GET",
+        "/autoload/v2/profile",
+        {"user_id": 123, "is_enabled": True, "upload_url": "https://autoload.example/upload"},
+    )
+    fake.add_json(
+        "GET",
+        "/autoload/v3/reports/777",
+        {
+            "report_id": 777,
+            "status": "done",
+            "created_at": "2026-04-23T10:00:00Z",
+            "finished_at": "2026-04-23T10:05:00Z",
+            "errors_count": 0,
+            "warnings_count": 0,
+        },
+    )
+    fake.add_json(
+        "GET",
+        "/autoload/v2/reports",
+        {
+            "reports": [
+                {
+                    "report_id": 777,
+                    "status": "done",
+                    "created_at": "2026-04-23T10:00:00Z",
+                    "finished_at": "2026-04-23T10:05:00Z",
+                    "processed_items": 1,
+                }
+            ],
+            "total": 1,
+        },
+    )
+    fake.add_json(
         "GET",
         "/messenger/v2/accounts/7/chats",
         {
@@ -149,6 +386,22 @@ def build_docs_client() -> AvitoClient:
                 {
                     "id": "chat-1",
                     "user_id": 7,
+                    "title": "Покупатель",
+                    "unread_count": 1,
+                    "last_message": {"text": "Здравствуйте"},
+                }
+            ],
+            "total": 1,
+        },
+    )
+    fake.add_json(
+        "GET",
+        "/messenger/v2/accounts/123/chats",
+        {
+            "chats": [
+                {
+                    "id": "chat-1",
+                    "user_id": 123,
                     "title": "Покупатель",
                     "unread_count": 1,
                     "last_message": {"text": "Здравствуйте"},
@@ -193,13 +446,41 @@ def build_docs_client() -> AvitoClient:
     )
     fake.add_json(
         "POST",
+        "/messenger/v1/accounts/123/chats/chat-1/messages",
+        {"success": True, "message_id": "msg-1", "status": "sent"},
+    )
+    fake.add_json(
+        "POST",
         "/messenger/v1/accounts/7/uploadImages",
+        {"images": [{"image_id": "img-1", "url": "https://cdn.example/img-1.jpg"}]},
+    )
+    fake.add_json(
+        "POST",
+        "/messenger/v1/accounts/123/uploadImages",
         {"images": [{"image_id": "img-1", "url": "https://cdn.example/img-1.jpg"}]},
     )
     fake.add_json(
         "POST",
         "/messenger/v1/accounts/7/chats/chat-1/messages/image",
         {"success": True, "message_id": "msg-img-1", "status": "sent"},
+    )
+    fake.add_json(
+        "POST",
+        "/messenger/v1/accounts/123/chats/chat-1/messages/image",
+        {"success": True, "message_id": "msg-img-1", "status": "sent"},
+    )
+    fake.add_json(
+        "POST",
+        "/messenger/v1/subscriptions",
+        {
+            "subscriptions": [
+                {
+                    "url": "https://example.com/messenger",
+                    "version": "v3",
+                    "status": "active",
+                }
+            ]
+        },
     )
     fake.add_json(
         "POST",
@@ -375,6 +656,11 @@ def build_docs_client() -> AvitoClient:
         "GET",
         "/job/v1/applications/webhook",
         {"url": "https://example.com/job", "is_active": True, "version": "v1"},
+    )
+    fake.add_json(
+        "GET",
+        "/job/v1/applications/webhooks",
+        {"items": [{"url": "https://example.com/job", "is_active": True, "version": "v1"}]},
     )
     fake.add_json(
         "PUT",

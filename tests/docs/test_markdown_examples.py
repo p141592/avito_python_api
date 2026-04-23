@@ -1,28 +1,37 @@
 from __future__ import annotations
 
-import re
 from pathlib import Path
+
+import mktestdocs
 
 DOCS_ROOT = Path(__file__).resolve().parents[2]
 EXECUTABLE_MARKDOWN = [
+    DOCS_ROOT / "README.md",
     *sorted((DOCS_ROOT / "docs/site/tutorials").glob("*.md")),
     *sorted((DOCS_ROOT / "docs/site/how-to").glob("*.md")),
 ]
-PYTHON_BLOCK = re.compile(r"```(?:python|pycon)\n(.*?)\n```", re.DOTALL)
 
 
-def executable_blocks(path: Path) -> list[str]:
-    return [match.group(1) for match in PYTHON_BLOCK.finditer(path.read_text(encoding="utf-8"))]
+def execute_pycon(source: str) -> None:
+    lines: list[str] = []
+    for line in source.splitlines():
+        if line.startswith(">>> "):
+            lines.append(line[4:])
+        elif line.startswith("... "):
+            lines.append(line[4:])
+    exec("\n".join(lines), {"__name__": "__main__"})
 
 
-def test_tutorial_and_howto_python_examples_execute_without_network() -> None:
-    namespace: dict[str, object] = {}
-    blocks = [(path, block) for path in EXECUTABLE_MARKDOWN for block in executable_blocks(path)]
+mktestdocs.register_executor("pycon", execute_pycon)
 
-    assert blocks, "В tutorials/how-to должен быть хотя бы один исполняемый Python-пример."
 
-    for path, block in blocks:
+def test_readme_tutorial_and_howto_python_examples_execute_without_network() -> None:
+    assert EXECUTABLE_MARKDOWN, "README/tutorials/how-to должны проверяться mktestdocs."
+
+    for path in EXECUTABLE_MARKDOWN:
         try:
-            exec(compile(block, str(path), "exec"), namespace)
+            mktestdocs.check_md_file(path, lang="python")
+            mktestdocs.check_md_file(path, lang="pycon")
         except Exception as exc:  # noqa: BLE001
-            raise AssertionError(f"Python-пример из {path} не выполнился.") from exc
+            relative_path = path.relative_to(DOCS_ROOT)
+            raise AssertionError(f"Python/pycon-пример из {relative_path} не выполнился.") from exc

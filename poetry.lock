@@ -971,6 +971,21 @@ mkdocs-autorefs = ">=1.4"
 mkdocstrings = ">=0.30"
 
 [[package]]
+name = "mktestdocs"
+version = "0.2.5"
+description = "A tool for testing markdown documentation"
+optional = false
+python-versions = ">=3.8"
+groups = ["docs"]
+files = [
+    {file = "mktestdocs-0.2.5-py3-none-any.whl", hash = "sha256:2b20d2387b2025597f3129773edef16d09b08b1b6d31da6cc51af5b693c10430"},
+    {file = "mktestdocs-0.2.5.tar.gz", hash = "sha256:7935d4e665b34b690cdf14749abb842723652485f67af12dce51099bcb98e105"},
+]
+
+[package.extras]
+test = ["pytest"]
+
+[[package]]
 name = "mypy"
 version = "1.20.1"
 description = "Optional static typing for Python"
@@ -1537,4 +1552,4 @@ bracex = ">=2.1.1"
 [metadata]
 lock-version = "2.1"
 python-versions = "^3.14"
-content-hash = "f4e7dec6bc39ba9ed8c323a1cda116dba5d8b00ca9648a670e5fe3ce1382b798"
+content-hash = "a96e13b2eced596d3c3cc912c1fde282cac5cb510c9dfa0b71e5d2b37bda2b84"

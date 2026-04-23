@@ -5,11 +5,14 @@ Explanations описывают причины архитектурных реш
 | Статья | Что объясняет |
 |---|---|
 | [Архитектура SDK](architecture.md) | Как `AvitoClient`, домены, section clients, transport, auth и mappers разделяют ответственность |
-| Transport и retry | Почему retry живёт в transport-слое и как учитываются 429/5xx |
-| Модель ошибок | Как HTTP-коды превращаются в typed exceptions |
-| Семантика пагинации | Почему `PaginatedList` ленивый и когда загружаются страницы |
-| Dry-run и идемпотентность | Как write-операции проверяются без сетевого вызова |
-| Security и redaction | Какие секреты SDK не раскрывает в диагностике и ошибках |
-| Совместимость | Как deprecation отражается в runtime, reference и changelog |
+| [OAuth и токены](auth-flow.md) | Почему token-flow скрыт за `AuthProvider` |
+| [Transport и retry](transport-and-retries.md) | Почему retry живёт в transport-слое и как учитываются 429/5xx |
+| [Модель ошибок](error-model.md) | Как HTTP-коды превращаются в typed exceptions |
+| [Семантика пагинации](pagination-semantics.md) | Почему `PaginatedList` ленивый и когда загружаются страницы |
+| [Dry-run и идемпотентность](dry-run-and-idempotency.md) | Как write-операции проверяются без сетевого вызова |
+| [Стратегия тестирования](testing-strategy.md) | Как `FakeTransport`, contract-тесты и docs-harness проверяют SDK |
+| [Покрытие API и deprecation](api-coverage-and-deprecations.md) | Как spec, inventory, reference и runtime warnings связаны между собой |
+| [Resolution конфигурации](config-resolution.md) | Как env, `.env` и defaults превращаются в `AvitoSettings` |
+| [Security и redaction](security-and-redaction.md) | Какие секреты SDK не раскрывает в диагностике и ошибках |
 
 Для практических сценариев используйте [how-to рецепты](../how-to/index.md), а для полного API-контракта — [reference](../reference/index.md).
