@@ -1,0 +1,80 @@
+site_name: avito-py
+site_description: Синхронный Python SDK для Avito API
+site_url: https://p141592.github.io/avito_python_api/
+repo_url: https://github.com/p141592/avito
+repo_name: p141592/avito
+edit_uri: edit/main/docs/site/
+
+docs_dir: docs/site
+site_dir: site
+
+theme:
+  name: material
+  language: ru
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-7
+        name: Тёмная тема
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-4
+        name: Светлая тема
+  features:
+    - navigation.tabs
+    - navigation.sections
+    - navigation.indexes
+    - navigation.top
+    - navigation.instant
+    - toc.follow
+    - search.suggest
+    - search.highlight
+    - content.code.copy
+    - content.code.annotate
+
+plugins:
+  - search:
+      lang:
+        - ru
+        - en
+  - awesome-pages
+  - include-markdown
+
+markdown_extensions:
+  - admonition
+  - pymdownx.details
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
+  - pymdownx.tabbed:
+      alternate_style: true
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - tables
+  - attr_list
+  - md_in_html
+  - toc:
+      permalink: true
+
+extra:
+  version:
+    provider: mike
+    default: latest
+
+nav:
+  - Главная: index.md
+  - Tutorials: tutorials/
+  - How-to: how-to/
+  - Reference: reference/
+  - Explanations: explanations/
+  - Changelog: changelog.md

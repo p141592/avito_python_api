@@ -40,3 +40,9 @@ major: check
 
 release:
 	poetry publish --no-interaction
+
+docs-serve:
+	poetry run mkdocs serve
+
+docs-build:
+	poetry run mkdocs build --strict

@@ -10,6 +10,7 @@ license="MIT"
 readme="README.md"
 homepage="https://github.com/p141592/avito"
 repository="https://github.com/p141592/avito"
+documentation="https://p141592.github.io/avito_python_api/"
 keywords=["avito", "sdk", "python", "api"]
 classifiers=[
     "License :: OSI Approved :: MIT License",
@@ -31,6 +32,12 @@ coverage = "^7.10.6"
 mypy = "^1.18.2"
 ruff = "^0.12.12"
 respx = "^0.22.0"
+
+[tool.poetry.group.docs.dependencies]
+mkdocs-material = "^9.5"
+mkdocs-awesome-pages-plugin = "^2.9"
+mkdocs-include-markdown-plugin = "^7.0"
+mike = "^2.1"
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

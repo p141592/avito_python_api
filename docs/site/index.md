@@ -1,0 +1,66 @@
+---
+hide:
+  - toc
+---
+
+# avito-py
+
+[![CI](https://github.com/p141592/avito/actions/workflows/ci.yml/badge.svg)](https://github.com/p141592/avito/actions/workflows/ci.yml)
+[![Coverage Status](https://coveralls.io/repos/github/p141592/avito_python_api/badge.svg?branch=main)](https://coveralls.io/github/p141592/avito_python_api?branch=main)
+[![PyPI Downloads](https://img.shields.io/pypi/dm/avito-py.svg)](https://pypi.org/project/avito-py/)
+[![API coverage](https://img.shields.io/badge/API%20coverage-204%2F204-success)](../avito/inventory.md)
+
+**`avito-py`** — синхронный Python SDK для работы с Avito API через единый объектный фасад `AvitoClient`.
+Скрывает transport, OAuth и retry-логику. Возвращает типизированные `dataclass`-модели. Покрывает 204 операции Avito API.
+
+```bash
+pip install avito-py
+```
+
+---
+
+<div class="grid cards" markdown>
+
+-   :material-rocket-launch:{ .lg .middle } **Впервые здесь**
+
+    ---
+
+    От `pip install` до первого запроса за 5 минут.
+
+    [:octicons-arrow-right-24: Начать](tutorials/getting-started.md)
+
+-   :material-book-open-variant:{ .lg .middle } **Ищу конкретный сценарий**
+
+    ---
+
+    Пошаговые рецепты: авторизация, мессенджер, заказы, пагинация, тестирование и другие.
+
+    [:octicons-arrow-right-24: How-to рецепты](how-to/index.md)
+
+-   :material-code-tags:{ .lg .middle } **Нужен точный контракт**
+
+    ---
+
+    Полный справочник по классам, методам, исключениям и моделям.
+
+    [:octicons-arrow-right-24: Reference](reference/index.md)
+
+-   :material-lightbulb-outline:{ .lg .middle } **Хочу понять архитектуру**
+
+    ---
+
+    Концепции, мотивация решений, объяснение retry, пагинации и модели ошибок.
+
+    [:octicons-arrow-right-24: Explanations](explanations/index.md)
+
+</div>
+
+---
+
+## Карта документации
+
+| | Учебные | Практические | Справочные | Концептуальные |
+|---|---|---|---|---|
+| **Режим** | Tutorials | How-to | Reference | Explanations |
+| **Цель** | Обучение через действие | Решить конкретную задачу | Точная информация | Понять «почему» |
+| **Раздел** | [Tutorials](tutorials/index.md) | [How-to](how-to/index.md) | [Reference](reference/index.md) | [Explanations](explanations/index.md) |
