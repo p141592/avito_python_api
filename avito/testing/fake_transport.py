@@ -8,7 +8,8 @@ from typing import cast
 
 import httpx
 
-from avito.auth import AuthSettings
+from avito.auth import AuthProvider, AuthSettings
+from avito.client import AvitoClient
 from avito.config import AvitoSettings
 from avito.core import Transport
 from avito.core.retries import RetryPolicy
@@ -89,6 +90,37 @@ class FakeTransport:
                 transport=httpx.MockTransport(self._handle), base_url=self.base_url
             ),
             sleep=lambda _: None,
+        )
+
+    def as_client(
+        self,
+        *,
+        user_id: int | None = None,
+        retry_policy: RetryPolicy | None = None,
+    ) -> AvitoClient:
+        """Создает публичный `AvitoClient` поверх fake transport без реального HTTP."""
+
+        auth_settings = AuthSettings(client_id="fake-client-id", client_secret="fake-client-secret")
+        settings = AvitoSettings(
+            base_url=self.base_url,
+            user_id=user_id,
+            auth=auth_settings,
+            retry_policy=retry_policy or RetryPolicy(),
+            timeouts=ApiTimeouts(),
+        )
+        auth_provider = AuthProvider(auth_settings)
+        transport = Transport(
+            settings,
+            auth_provider=None,
+            client=httpx.Client(
+                transport=httpx.MockTransport(self._handle), base_url=self.base_url
+            ),
+            sleep=lambda _: None,
+        )
+        return AvitoClient._from_transport(
+            settings,
+            transport=transport,
+            auth_provider=auth_provider,
         )
 
     def count(self, *, method: str | None = None, path: str | None = None) -> int:

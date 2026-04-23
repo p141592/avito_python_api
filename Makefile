@@ -47,6 +47,7 @@ docs-serve:
 docs-strict:
 	poetry run mkdocs build --strict
 	poetry run python scripts/check_readme_domain_coverage.py
+	poetry run pytest tests/docs/
 
 docs-build: docs-strict
 
