@@ -9,13 +9,17 @@ How-to раздел собирает рецепты для конкретных 
 | [Объявления, статистика и продвижение](ad-listing-and-stats.md) | Найти объявления, открыть карточку, прочитать статистику и подготовить VAS |
 | [Продвижение с dry-run](promotion-dry-run.md) | Проверить payload write-операции без сетевого вызова |
 | [Чаты, сообщения и изображения](chat-image-upload.md) | Отправить текст, загрузить изображение и отправить его в чат |
-| Пагинация | Читать `PaginatedList` частями и материализовать весь список |
 | [Заказы, этикетки и остатки](order-labels.md) | Создать задачу генерации, скачать PDF и обновить остатки |
 | [Вакансии, отклики и резюме](job-applications.md) | Получить отклики, обработать их и настроить webhook |
 | [Отчёт Автотеки](autoteka-report.md) | Пройти цепочку VIN → preview → report |
 | [Бронирование недвижимости](realty-booking.md) | Обновить блокировки дат и цены |
 | [CPA и CallTracking](cpa-calltracking.md) | Найти звонки и скачать запись |
 | [Рейтинги, отзывы и тарифы](ratings-and-tariffs.md) | Получить отзывы, ответить на отзыв и прочитать тариф |
-| Тестирование с FakeTransport | Проверить consumer-код без реального HTTP |
+| [Пагинация](pagination.md) | Читать `PaginatedList` частями и материализовать весь список |
+| [Per-operation overrides](per-operation-overrides.md) | Настроить таймауты, retry-политику и idempotency key |
+| [Идемпотентность](idempotency.md) | Безопасно повторять write-операции с idempotency_key |
+| [Тестирование с FakeTransport](testing-with-fake-transport.md) | Проверить consumer-код без реального HTTP |
+| [Диагностика и логирование](diagnostics-and-logging.md) | Использовать `debug_info()` и типизированные исключения |
+| [Безопасная работа с SDK](security-practices.md) | Хранить секреты и логировать безопасно |
 
 Для первого запуска начните с [быстрого старта](../tutorials/getting-started.md). Для поиска метода по операции API используйте [карту операций](../reference/operations.md).
