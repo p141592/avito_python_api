@@ -56,11 +56,27 @@ class Order(DomainObject):
     user_id: int | str | None = None
 
     def list(self) -> OrdersResult:
+        """Выполняет публичную операцию `Order.list` и возвращает типизированную SDK-модель.
+
+        Пустой результат возвращается как пустая коллекция или `None` согласно аннотации метода.
+
+        Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
+        """
+
         return OrdersClient(self.transport).list_orders()
 
     def update_markings(
         self, *, order_id: str, codes: Sequence[str], idempotency_key: str | None = None
     ) -> OrderActionResult:
+        """Выполняет публичную операцию `Order.update_markings` и возвращает типизированную SDK-модель.
+
+        Параметр `idempotency_key` задает ключ идемпотентности для безопасного повтора write-операции.
+
+        Пустой результат возвращается как пустая коллекция или `None` согласно аннотации метода.
+
+        Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
+        """
+
         return OrdersClient(self.transport).update_markings(
             order_id=order_id,
             codes=list(codes),
@@ -70,6 +86,15 @@ class Order(DomainObject):
     def accept_return_order(
         self, *, order_id: str, postal_office_id: str, idempotency_key: str | None = None
     ) -> OrderActionResult:
+        """Выполняет публичную операцию `Order.accept_return_order` и возвращает типизированную SDK-модель.
+
+        Параметр `idempotency_key` задает ключ идемпотентности для безопасного повтора write-операции.
+
+        Пустой результат возвращается как пустая коллекция или `None` согласно аннотации метода.
+
+        Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
+        """
+
         return OrdersClient(self.transport).accept_return_order(
             order_id=order_id,
             postal_office_id=postal_office_id,
@@ -79,6 +104,15 @@ class Order(DomainObject):
     def apply(
         self, *, order_id: str, transition: str, idempotency_key: str | None = None
     ) -> OrderActionResult:
+        """Выполняет публичную операцию `Order.apply` и возвращает типизированную SDK-модель.
+
+        Параметр `idempotency_key` задает ключ идемпотентности для безопасного повтора write-операции.
+
+        Пустой результат возвращается как пустая коллекция или `None` согласно аннотации метода.
+
+        Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
+        """
+
         return OrdersClient(self.transport).apply_transition(
             order_id=order_id,
             transition=transition,
@@ -88,6 +122,15 @@ class Order(DomainObject):
     def check_confirmation_code(
         self, *, order_id: str, code: str, idempotency_key: str | None = None
     ) -> OrderActionResult:
+        """Выполняет публичную операцию `Order.check_confirmation_code` и возвращает типизированную SDK-модель.
+
+        Параметр `idempotency_key` задает ключ идемпотентности для безопасного повтора write-операции.
+
+        Пустой результат возвращается как пустая коллекция или `None` согласно аннотации метода.
+
+        Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
+        """
+
         return OrdersClient(self.transport).check_confirmation_code(
             order_id=order_id,
             code=code,
@@ -97,6 +140,15 @@ class Order(DomainObject):
     def set_cnc_details(
         self, *, order_id: str, pickup_point_id: str, idempotency_key: str | None = None
     ) -> OrderActionResult:
+        """Выполняет публичную операцию `Order.set_cnc_details` и возвращает типизированную SDK-модель.
+
+        Параметр `idempotency_key` задает ключ идемпотентности для безопасного повтора write-операции.
+
+        Пустой результат возвращается как пустая коллекция или `None` согласно аннотации метода.
+
+        Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
+        """
+
         return OrdersClient(self.transport).set_cnc_details(
             order_id=order_id,
             pickup_point_id=pickup_point_id,
@@ -104,11 +156,27 @@ class Order(DomainObject):
         )
 
     def get_courier_delivery_range(self) -> CourierRangesResult:
+        """Выполняет публичную операцию `Order.get_courier_delivery_range` и возвращает типизированную SDK-модель.
+
+        Пустой результат возвращается как пустая коллекция или `None` согласно аннотации метода.
+
+        Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
+        """
+
         return OrdersClient(self.transport).get_courier_delivery_range()
 
     def set_courier_delivery_range(
         self, *, order_id: str, interval_id: str, idempotency_key: str | None = None
     ) -> OrderActionResult:
+        """Выполняет публичную операцию `Order.set_courier_delivery_range` и возвращает типизированную SDK-модель.
+
+        Параметр `idempotency_key` задает ключ идемпотентности для безопасного повтора write-операции.
+
+        Пустой результат возвращается как пустая коллекция или `None` согласно аннотации метода.
+
+        Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
+        """
+
         return OrdersClient(self.transport).set_courier_delivery_range(
             order_id=order_id,
             interval_id=interval_id,
@@ -118,6 +186,15 @@ class Order(DomainObject):
     def update_tracking_number(
         self, *, order_id: str, tracking_number: str, idempotency_key: str | None = None
     ) -> OrderActionResult:
+        """Выполняет публичную операцию `Order.update_tracking_number` и возвращает типизированную SDK-модель.
+
+        Параметр `idempotency_key` задает ключ идемпотентности для безопасного повтора write-операции.
+
+        Пустой результат возвращается как пустая коллекция или `None` согласно аннотации метода.
+
+        Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
+        """
+
         return OrdersClient(self.transport).set_tracking_number(
             order_id=order_id,
             tracking_number=tracking_number,
@@ -139,6 +216,15 @@ class OrderLabel(DomainObject):
         extended: bool = False,
         idempotency_key: str | None = None,
     ) -> LabelTaskResult:
+        """Выполняет публичную операцию `OrderLabel.create` и возвращает типизированную SDK-модель.
+
+        Параметр `idempotency_key` задает ключ идемпотентности для безопасного повтора write-операции.
+
+        Пустой результат возвращается как пустая коллекция или `None` согласно аннотации метода.
+
+        Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
+        """
+
         client = LabelsClient(self.transport)
         if extended:
             return client.create_generate_labels_extended(
@@ -151,6 +237,13 @@ class OrderLabel(DomainObject):
         )
 
     def download(self, *, task_id: str | None = None) -> LabelPdfResult:
+        """Выполняет публичную операцию `OrderLabel.download` и возвращает типизированную SDK-модель.
+
+        Пустой результат возвращается как пустая коллекция или `None` согласно аннотации метода.
+
+        Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
+        """
+
         resolved_task_id = task_id or self._require_task_id()
         return LabelsClient(self.transport).get_download_label(task_id=resolved_task_id)
 
@@ -169,14 +262,30 @@ class DeliveryOrder(DomainObject):
     def create_announcement(
         self, *, order_id: str, idempotency_key: str | None = None
     ) -> DeliveryEntityResult:
+        """Выполняет публичную операцию `DeliveryOrder.create_announcement` и возвращает типизированную SDK-модель.
+
+        Параметр `idempotency_key` задает ключ идемпотентности для безопасного повтора write-операции.
+
+        Пустой результат возвращается как пустая коллекция или `None` согласно аннотации метода.
+
+        Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
+        """
+
         return DeliveryClient(self.transport).create_announcement(
             order_id=order_id,
             idempotency_key=idempotency_key,
         )
 
-    def delete(
-        self, *, order_id: str, idempotency_key: str | None = None
-    ) -> DeliveryEntityResult:
+    def delete(self, *, order_id: str, idempotency_key: str | None = None) -> DeliveryEntityResult:
+        """Выполняет публичную операцию `DeliveryOrder.delete` и возвращает типизированную SDK-модель.
+
+        Параметр `idempotency_key` задает ключ идемпотентности для безопасного повтора write-операции.
+
+        Пустой результат возвращается как пустая коллекция или `None` согласно аннотации метода.
+
+        Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
+        """
+
         return DeliveryClient(self.transport).cancel_announcement(
             order_id=order_id,
             idempotency_key=idempotency_key,
@@ -189,6 +298,15 @@ class DeliveryOrder(DomainObject):
         parcel_id: str,
         idempotency_key: str | None = None,
     ) -> DeliveryEntityResult:
+        """Выполняет публичную операцию `DeliveryOrder.create` и возвращает типизированную SDK-модель.
+
+        Параметр `idempotency_key` задает ключ идемпотентности для безопасного повтора write-операции.
+
+        Пустой результат возвращается как пустая коллекция или `None` согласно аннотации метода.
+
+        Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
+        """
+
         return DeliveryClient(self.transport).create_parcel(
             order_id=order_id,
             parcel_id=parcel_id,
@@ -198,6 +316,15 @@ class DeliveryOrder(DomainObject):
     def update_change_parcels(
         self, *, parcel_ids: Sequence[str], idempotency_key: str | None = None
     ) -> DeliveryEntityResult:
+        """Выполняет публичную операцию `DeliveryOrder.update_change_parcels` и возвращает типизированную SDK-модель.
+
+        Параметр `idempotency_key` задает ключ идемпотентности для безопасного повтора write-операции.
+
+        Пустой результат возвращается как пустая коллекция или `None` согласно аннотации метода.
+
+        Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
+        """
+
         return DeliveryClient(self.transport).update_change_parcels(
             parcel_ids=list(parcel_ids),
             idempotency_key=idempotency_key,
@@ -206,6 +333,15 @@ class DeliveryOrder(DomainObject):
     def create_change_parcel_result(
         self, *, parcel_id: str, result: str, idempotency_key: str | None = None
     ) -> DeliveryEntityResult:
+        """Выполняет публичную операцию `DeliveryOrder.create_change_parcel_result` и возвращает типизированную SDK-модель.
+
+        Параметр `idempotency_key` задает ключ идемпотентности для безопасного повтора write-операции.
+
+        Пустой результат возвращается как пустая коллекция или `None` согласно аннотации метода.
+
+        Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
+        """
+
         return DeliveryClient(self.transport).change_parcel_result(
             parcel_id=parcel_id,
             result=result,
@@ -222,6 +358,15 @@ class SandboxDelivery(DomainObject):
     def create_announcement(
         self, *, order_id: str, idempotency_key: str | None = None
     ) -> DeliveryEntityResult:
+        """Выполняет публичную операцию `SandboxDelivery.create_announcement` и возвращает типизированную SDK-модель.
+
+        Параметр `idempotency_key` задает ключ идемпотентности для безопасного повтора write-операции.
+
+        Пустой результат возвращается как пустая коллекция или `None` согласно аннотации метода.
+
+        Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
+        """
+
         return SandboxDeliveryClient(self.transport).create_announcement(
             order_id=order_id,
             idempotency_key=idempotency_key,
@@ -230,6 +375,15 @@ class SandboxDelivery(DomainObject):
     def track_announcement(
         self, *, order_id: str, idempotency_key: str | None = None
     ) -> DeliveryEntityResult:
+        """Выполняет публичную операцию `SandboxDelivery.track_announcement` и возвращает типизированную SDK-модель.
+
+        Параметр `idempotency_key` задает ключ идемпотентности для безопасного повтора write-операции.
+
+        Пустой результат возвращается как пустая коллекция или `None` согласно аннотации метода.
+
+        Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
+        """
+
         return SandboxDeliveryClient(self.transport).track_announcement(
             order_id=order_id,
             idempotency_key=idempotency_key,
@@ -238,6 +392,15 @@ class SandboxDelivery(DomainObject):
     def update_custom_area_schedule(
         self, *, items: Sequence[CustomAreaScheduleEntry], idempotency_key: str | None = None
     ) -> DeliveryEntityResult:
+        """Выполняет публичную операцию `SandboxDelivery.update_custom_area_schedule` и возвращает типизированную SDK-модель.
+
+        Параметр `idempotency_key` задает ключ идемпотентности для безопасного повтора write-операции.
+
+        Пустой результат возвращается как пустая коллекция или `None` согласно аннотации метода.
+
+        Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
+        """
+
         return SandboxDeliveryClient(self.transport).update_custom_area_schedule(
             items=list(items),
             idempotency_key=idempotency_key,
@@ -246,6 +409,15 @@ class SandboxDelivery(DomainObject):
     def cancel_parcel(
         self, *, parcel_id: str, actor: str, idempotency_key: str | None = None
     ) -> DeliveryEntityResult:
+        """Выполняет публичную операцию `SandboxDelivery.cancel_parcel` и возвращает типизированную SDK-модель.
+
+        Параметр `idempotency_key` задает ключ идемпотентности для безопасного повтора write-операции.
+
+        Пустой результат возвращается как пустая коллекция или `None` согласно аннотации метода.
+
+        Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
+        """
+
         return SandboxDeliveryClient(self.transport).cancel_parcel(
             parcel_id=parcel_id,
             actor=actor,
@@ -255,6 +427,15 @@ class SandboxDelivery(DomainObject):
     def check_confirmation_code(
         self, *, parcel_id: str, confirm_code: str, idempotency_key: str | None = None
     ) -> DeliveryEntityResult:
+        """Выполняет публичную операцию `SandboxDelivery.check_confirmation_code` и возвращает типизированную SDK-модель.
+
+        Параметр `idempotency_key` задает ключ идемпотентности для безопасного повтора write-операции.
+
+        Пустой результат возвращается как пустая коллекция или `None` согласно аннотации метода.
+
+        Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
+        """
+
         return SandboxDeliveryClient(self.transport).check_confirmation_code(
             parcel_id=parcel_id,
             confirm_code=confirm_code,
@@ -268,6 +449,15 @@ class SandboxDelivery(DomainObject):
         properties: OrderDeliveryProperties,
         idempotency_key: str | None = None,
     ) -> DeliveryEntityResult:
+        """Выполняет публичную операцию `SandboxDelivery.set_order_properties` и возвращает типизированную SDK-модель.
+
+        Параметр `idempotency_key` задает ключ идемпотентности для безопасного повтора write-операции.
+
+        Пустой результат возвращается как пустая коллекция или `None` согласно аннотации метода.
+
+        Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
+        """
+
         return SandboxDeliveryClient(self.transport).set_order_properties(
             order_id=order_id,
             properties=properties,
@@ -277,6 +467,15 @@ class SandboxDelivery(DomainObject):
     def set_order_real_address(
         self, *, order_id: str, address: RealAddress, idempotency_key: str | None = None
     ) -> DeliveryEntityResult:
+        """Выполняет публичную операцию `SandboxDelivery.set_order_real_address` и возвращает типизированную SDK-модель.
+
+        Параметр `idempotency_key` задает ключ идемпотентности для безопасного повтора write-операции.
+
+        Пустой результат возвращается как пустая коллекция или `None` согласно аннотации метода.
+
+        Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
+        """
+
         return SandboxDeliveryClient(self.transport).set_order_real_address(
             order_id=order_id,
             address=address,
@@ -296,6 +495,15 @@ class SandboxDelivery(DomainObject):
         options: DeliveryTrackingOptions | None = None,
         idempotency_key: str | None = None,
     ) -> DeliveryEntityResult:
+        """Выполняет публичную операцию `SandboxDelivery.tracking` и возвращает типизированную SDK-модель.
+
+        Параметр `idempotency_key` задает ключ идемпотентности для безопасного повтора write-операции.
+
+        Пустой результат возвращается как пустая коллекция или `None` согласно аннотации метода.
+
+        Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
+        """
+
         return SandboxDeliveryClient(self.transport).tracking(
             order_id=order_id,
             avito_status=avito_status,
@@ -311,17 +519,42 @@ class SandboxDelivery(DomainObject):
     def prohibit_order_acceptance(
         self, *, order_id: str, idempotency_key: str | None = None
     ) -> DeliveryEntityResult:
+        """Выполняет публичную операцию `SandboxDelivery.prohibit_order_acceptance` и возвращает типизированную SDK-модель.
+
+        Параметр `idempotency_key` задает ключ идемпотентности для безопасного повтора write-операции.
+
+        Пустой результат возвращается как пустая коллекция или `None` согласно аннотации метода.
+
+        Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
+        """
+
         return SandboxDeliveryClient(self.transport).prohibit_order_acceptance(
             order_id=order_id,
             idempotency_key=idempotency_key,
         )
 
     def list_sorting_center(self) -> DeliverySortingCentersResult:
+        """Выполняет публичную операцию `SandboxDelivery.list_sorting_center` и возвращает типизированную SDK-модель.
+
+        Пустой результат возвращается как пустая коллекция или `None` согласно аннотации метода.
+
+        Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
+        """
+
         return SandboxDeliveryClient(self.transport).list_sorting_center()
 
     def add_sorting_center(
         self, *, items: Sequence[SortingCenterUpload], idempotency_key: str | None = None
     ) -> DeliveryEntityResult:
+        """Выполняет публичную операцию `SandboxDelivery.add_sorting_center` и возвращает типизированную SDK-модель.
+
+        Параметр `idempotency_key` задает ключ идемпотентности для безопасного повтора write-операции.
+
+        Пустой результат возвращается как пустая коллекция или `None` согласно аннотации метода.
+
+        Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
+        """
+
         return SandboxDeliveryClient(self.transport).add_sorting_center(
             items=list(items),
             idempotency_key=idempotency_key,
@@ -334,6 +567,15 @@ class SandboxDelivery(DomainObject):
         areas: Sequence[SandboxArea],
         idempotency_key: str | None = None,
     ) -> DeliveryEntityResult:
+        """Выполняет публичную операцию `SandboxDelivery.add_areas` и возвращает типизированную SDK-модель.
+
+        Параметр `idempotency_key` задает ключ идемпотентности для безопасного повтора write-операции.
+
+        Пустой результат возвращается как пустая коллекция или `None` согласно аннотации метода.
+
+        Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
+        """
+
         return SandboxDeliveryClient(self.transport).add_areas(
             tariff_id=tariff_id,
             areas=list(areas),
@@ -347,6 +589,15 @@ class SandboxDelivery(DomainObject):
         items: Sequence[TaggedSortingCenter],
         idempotency_key: str | None = None,
     ) -> DeliveryEntityResult:
+        """Выполняет публичную операцию `SandboxDelivery.add_tags_to_sorting_center` и возвращает типизированную SDK-модель.
+
+        Параметр `idempotency_key` задает ключ идемпотентности для безопасного повтора write-операции.
+
+        Пустой результат возвращается как пустая коллекция или `None` согласно аннотации метода.
+
+        Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
+        """
+
         return SandboxDeliveryClient(self.transport).add_tags_to_sorting_center(
             tariff_id=tariff_id,
             items=list(items),
@@ -360,6 +611,15 @@ class SandboxDelivery(DomainObject):
         items: Sequence[TerminalUpload],
         idempotency_key: str | None = None,
     ) -> DeliveryEntityResult:
+        """Выполняет публичную операцию `SandboxDelivery.add_terminals` и возвращает типизированную SDK-модель.
+
+        Параметр `idempotency_key` задает ключ идемпотентности для безопасного повтора write-операции.
+
+        Пустой результат возвращается как пустая коллекция или `None` согласно аннотации метода.
+
+        Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
+        """
+
         return SandboxDeliveryClient(self.transport).add_terminals(
             tariff_id=tariff_id,
             items=list(items),
@@ -373,6 +633,15 @@ class SandboxDelivery(DomainObject):
         items: Sequence[DeliveryTermsZone],
         idempotency_key: str | None = None,
     ) -> DeliveryEntityResult:
+        """Выполняет публичную операцию `SandboxDelivery.update_terms` и возвращает типизированную SDK-модель.
+
+        Параметр `idempotency_key` задает ключ идемпотентности для безопасного повтора write-операции.
+
+        Пустой результат возвращается как пустая коллекция или `None` согласно аннотации метода.
+
+        Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
+        """
+
         return SandboxDeliveryClient(self.transport).update_terms(
             tariff_id=tariff_id,
             items=list(items),
@@ -390,6 +659,15 @@ class SandboxDelivery(DomainObject):
         tariff_type: str | None = None,
         idempotency_key: str | None = None,
     ) -> DeliveryEntityResult:
+        """Выполняет публичную операцию `SandboxDelivery.add_tariff` и возвращает типизированную SDK-модель.
+
+        Параметр `idempotency_key` задает ключ идемпотентности для безопасного повтора write-операции.
+
+        Пустой результат возвращается как пустая коллекция или `None` согласно аннотации метода.
+
+        Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
+        """
+
         return SandboxDeliveryClient(self.transport).add_tariff(
             name=name,
             delivery_provider_tariff_id=delivery_provider_tariff_id,
@@ -407,6 +685,15 @@ class SandboxDelivery(DomainObject):
         parcel_id: str,
         idempotency_key: str | None = None,
     ) -> DeliveryEntityResult:
+        """Выполняет публичную операцию `SandboxDelivery.create_parcel` и возвращает типизированную SDK-модель.
+
+        Параметр `idempotency_key` задает ключ идемпотентности для безопасного повтора write-операции.
+
+        Пустой результат возвращается как пустая коллекция или `None` согласно аннотации метода.
+
+        Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
+        """
+
         return SandboxDeliveryClient(self.transport).create_parcel(
             order_id=order_id,
             parcel_id=parcel_id,
@@ -421,6 +708,15 @@ class SandboxDelivery(DomainObject):
         options: SandboxCancelAnnouncementOptions,
         idempotency_key: str | None = None,
     ) -> DeliveryEntityResult:
+        """Выполняет публичную операцию `SandboxDelivery.cancel_sandbox_announcement` и возвращает типизированную SDK-модель.
+
+        Параметр `idempotency_key` задает ключ идемпотентности для безопасного повтора write-операции.
+
+        Пустой результат возвращается как пустая коллекция или `None` согласно аннотации метода.
+
+        Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
+        """
+
         return SandboxDeliveryClient(self.transport).cancel_sandbox_announcement(
             announcement_id=announcement_id,
             date=date,
@@ -435,6 +731,15 @@ class SandboxDelivery(DomainObject):
         options: CancelSandboxParcelOptions | None = None,
         idempotency_key: str | None = None,
     ) -> DeliveryEntityResult:
+        """Выполняет публичную операцию `SandboxDelivery.cancel_sandbox_parcel` и возвращает типизированную SDK-модель.
+
+        Параметр `idempotency_key` задает ключ идемпотентности для безопасного повтора write-операции.
+
+        Пустой результат возвращается как пустая коллекция или `None` согласно аннотации метода.
+
+        Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
+        """
+
         return SandboxDeliveryClient(self.transport).cancel_sandbox_parcel(
             parcel_id=parcel_id,
             options=options,
@@ -450,6 +755,15 @@ class SandboxDelivery(DomainObject):
         options: ChangeParcelOptions | None = None,
         idempotency_key: str | None = None,
     ) -> DeliveryEntityResult:
+        """Выполняет публичную операцию `SandboxDelivery.change_sandbox_parcel` и возвращает типизированную SDK-модель.
+
+        Параметр `idempotency_key` задает ключ идемпотентности для безопасного повтора write-операции.
+
+        Пустой результат возвращается как пустая коллекция или `None` согласно аннотации метода.
+
+        Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
+        """
+
         return SandboxDeliveryClient(self.transport).change_sandbox_parcel(
             type=type,
             parcel_id=parcel_id,
@@ -471,6 +785,15 @@ class SandboxDelivery(DomainObject):
         options: SandboxCreateAnnouncementOptions,
         idempotency_key: str | None = None,
     ) -> DeliveryEntityResult:
+        """Выполняет публичную операцию `SandboxDelivery.create_sandbox_announcement` и возвращает типизированную SDK-модель.
+
+        Параметр `idempotency_key` задает ключ идемпотентности для безопасного повтора write-операции.
+
+        Пустой результат возвращается как пустая коллекция или `None` согласно аннотации метода.
+
+        Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
+        """
+
         return SandboxDeliveryClient(self.transport).create_sandbox_announcement(
             announcement_id=announcement_id,
             barcode=barcode,
@@ -486,6 +809,15 @@ class SandboxDelivery(DomainObject):
     def get_sandbox_announcement_event(
         self, *, announcement_id: str, idempotency_key: str | None = None
     ) -> DeliveryEntityResult:
+        """Выполняет публичную операцию `SandboxDelivery.get_sandbox_announcement_event` и возвращает типизированную SDK-модель.
+
+        Параметр `idempotency_key` задает ключ идемпотентности для безопасного повтора write-операции.
+
+        Пустой результат возвращается как пустая коллекция или `None` согласно аннотации метода.
+
+        Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
+        """
+
         return SandboxDeliveryClient(self.transport).get_sandbox_announcement_event(
             announcement_id=announcement_id,
             idempotency_key=idempotency_key,
@@ -494,6 +826,15 @@ class SandboxDelivery(DomainObject):
     def get_sandbox_change_parcel_info(
         self, *, application_id: str, idempotency_key: str | None = None
     ) -> DeliveryEntityResult:
+        """Выполняет публичную операцию `SandboxDelivery.get_sandbox_change_parcel_info` и возвращает типизированную SDK-модель.
+
+        Параметр `idempotency_key` задает ключ идемпотентности для безопасного повтора write-операции.
+
+        Пустой результат возвращается как пустая коллекция или `None` согласно аннотации метода.
+
+        Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
+        """
+
         return SandboxDeliveryClient(self.transport).get_sandbox_change_parcel_info(
             application_id=application_id,
             idempotency_key=idempotency_key,
@@ -502,6 +843,15 @@ class SandboxDelivery(DomainObject):
     def get_sandbox_parcel_info(
         self, *, parcel_id: str, idempotency_key: str | None = None
     ) -> DeliveryEntityResult:
+        """Выполняет публичную операцию `SandboxDelivery.get_sandbox_parcel_info` и возвращает типизированную SDK-модель.
+
+        Параметр `idempotency_key` задает ключ идемпотентности для безопасного повтора write-операции.
+
+        Пустой результат возвращается как пустая коллекция или `None` согласно аннотации метода.
+
+        Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
+        """
+
         return SandboxDeliveryClient(self.transport).get_sandbox_parcel_info(
             parcel_id=parcel_id,
             idempotency_key=idempotency_key,
@@ -510,6 +860,15 @@ class SandboxDelivery(DomainObject):
     def get_sandbox_registered_parcel_id(
         self, *, order_id: str, idempotency_key: str | None = None
     ) -> DeliveryEntityResult:
+        """Выполняет публичную операцию `SandboxDelivery.get_sandbox_registered_parcel_id` и возвращает типизированную SDK-модель.
+
+        Параметр `idempotency_key` задает ключ идемпотентности для безопасного повтора write-операции.
+
+        Пустой результат возвращается как пустая коллекция или `None` согласно аннотации метода.
+
+        Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
+        """
+
         return SandboxDeliveryClient(self.transport).get_sandbox_registered_parcel_id(
             order_id=order_id,
             idempotency_key=idempotency_key,
@@ -524,6 +883,13 @@ class DeliveryTask(DomainObject):
     user_id: int | str | None = None
 
     def get(self, *, task_id: str | None = None) -> DeliveryTaskInfo:
+        """Выполняет публичную операцию `DeliveryTask.get` и возвращает типизированную SDK-модель.
+
+        Пустой результат возвращается как пустая коллекция или `None` согласно аннотации метода.
+
+        Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
+        """
+
         resolved_task_id = task_id or self._require_task_id()
         return DeliveryTasksClient(self.transport).get_task(task_id=resolved_task_id)
 
@@ -540,6 +906,13 @@ class Stock(DomainObject):
     user_id: int | str | None = None
 
     def get(self, *, item_ids: Sequence[int]) -> StockInfoResult:
+        """Выполняет публичную операцию `Stock.get` и возвращает типизированную SDK-модель.
+
+        Пустой результат возвращается как пустая коллекция или `None` согласно аннотации метода.
+
+        Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
+        """
+
         return StockManagementClient(self.transport).get_info(item_ids=list(item_ids))
 
     def update(
@@ -548,6 +921,15 @@ class Stock(DomainObject):
         stocks: Sequence[StockUpdateEntry],
         idempotency_key: str | None = None,
     ) -> StockUpdateResult:
+        """Выполняет публичную операцию `Stock.update` и возвращает типизированную SDK-модель.
+
+        Параметр `idempotency_key` задает ключ идемпотентности для безопасного повтора write-операции.
+
+        Пустой результат возвращается как пустая коллекция или `None` согласно аннотации метода.
+
+        Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
+        """
+
         return StockManagementClient(self.transport).update_stocks(
             stocks=list(stocks),
             idempotency_key=idempotency_key,

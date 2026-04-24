@@ -6,6 +6,7 @@ from collections.abc import Sequence
 from dataclasses import dataclass
 
 from avito.core import ValidationError
+from avito.core.deprecation import deprecated_method, warn_deprecated_once
 from avito.core.domain import DomainObject
 from avito.cpa.client import (
     CallTrackingClient,
@@ -41,12 +42,26 @@ class CpaLead(DomainObject):
         action_id: str,
         reason: str,
     ) -> CpaActionResult:
+        """Выполняет публичную операцию `CpaLead.create_complaint_by_action_id` и возвращает типизированную SDK-модель.
+
+        Пустой результат возвращается как пустая коллекция или `None` согласно аннотации метода.
+
+        Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
+        """
+
         return CpaLeadsClient(self.transport).create_complaint_by_action_id(
             action_id=action_id,
             reason=reason,
         )
 
     def get_balance_info(self) -> CpaBalanceInfo:
+        """Выполняет публичную операцию `CpaLead.get_balance_info` и возвращает типизированную SDK-модель.
+
+        Пустой результат возвращается как пустая коллекция или `None` согласно аннотации метода.
+
+        Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
+        """
+
         return CpaLeadsClient(self.transport).get_balance_info()
 
 
@@ -58,6 +73,13 @@ class CpaChat(DomainObject):
     user_id: int | str | None = None
 
     def get(self, *, action_id: int | str | None = None) -> CpaChatInfo:
+        """Выполняет публичную операцию `CpaChat.get` и возвращает типизированную SDK-модель.
+
+        Пустой результат возвращается как пустая коллекция или `None` согласно аннотации метода.
+
+        Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
+        """
+
         return CpaChatsClient(self.transport).get_by_action_id(
             action_id=action_id or self._require_action_id()
         )
@@ -69,8 +91,21 @@ class CpaChat(DomainObject):
         limit: int | None = None,
         version: int = 2,
     ) -> CpaChatsResult:
+        """Выполняет публичную операцию `CpaChat.list` и возвращает типизированную SDK-модель.
+
+        Пустой результат возвращается как пустая коллекция или `None` согласно аннотации метода.
+
+        Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
+        """
+
         client = CpaChatsClient(self.transport)
         if version == 1:
+            warn_deprecated_once(
+                symbol="CpaChat.list(version=1)",
+                replacement="cpa_chat().list(version=2)",
+                removal_version="1.3.0",
+                deprecated_since="1.1.0",
+            )
             return client.list_by_time_classic(created_at_from=created_at_from, limit=limit)
         return client.list_by_time(created_at_from=created_at_from, limit=limit)
 
@@ -79,6 +114,13 @@ class CpaChat(DomainObject):
         *,
         action_ids: Sequence[str],
     ) -> CpaPhonesResult:
+        """Выполняет публичную операцию `CpaChat.get_phones_info_from_chats` и возвращает типизированную SDK-модель.
+
+        Пустой результат возвращается как пустая коллекция или `None` согласно аннотации метода.
+
+        Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
+        """
+
         return CpaChatsClient(self.transport).get_phones_info(action_ids=list(action_ids))
 
     def _require_action_id(self) -> str:
@@ -94,12 +136,26 @@ class CpaCall(DomainObject):
     user_id: int | str | None = None
 
     def list(self, *, date_time_from: str, date_time_to: str) -> CpaCallsResult:
+        """Выполняет публичную операцию `CpaCall.list` и возвращает типизированную SDK-модель.
+
+        Пустой результат возвращается как пустая коллекция или `None` согласно аннотации метода.
+
+        Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
+        """
+
         return CpaCallsClient(self.transport).list_by_time(
             date_time_from=date_time_from,
             date_time_to=date_time_to,
         )
 
     def create_complaint(self, *, call_id: int, reason: str) -> CpaActionResult:
+        """Выполняет публичную операцию `CpaCall.create_complaint` и возвращает типизированную SDK-модель.
+
+        Пустой результат возвращается как пустая коллекция или `None` согласно аннотации метода.
+
+        Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
+        """
+
         return CpaCallsClient(self.transport).create_complaint(call_id=call_id, reason=reason)
 
 
@@ -110,15 +166,54 @@ class CpaArchive(DomainObject):
     call_id: int | str | None = None
     user_id: int | str | None = None
 
+    @deprecated_method(
+        symbol="CpaArchive.get_call",
+        replacement="call_tracking_call().download",
+        removal_version="1.3.0",
+        deprecated_since="1.1.0",
+    )
     def get_call(self, *, call_id: int | str | None = None) -> CpaAudioRecord:
+        """Получает архивную запись звонка.
+
+                Deprecated: используйте `call_tracking_call().download`; удаление в версии 1.3.0.
+
+        Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
+        """
+
         return CpaArchiveClient(self.transport).get_record(
             call_id=call_id or self._require_call_id()
         )
 
+    @deprecated_method(
+        symbol="CpaArchive.get_balance_info",
+        replacement="cpa_lead().get_balance_info",
+        removal_version="1.3.0",
+        deprecated_since="1.1.0",
+    )
     def get_balance_info(self) -> CpaBalanceInfo:
+        """Получает архивный баланс CPA.
+
+                Deprecated: используйте `cpa_lead().get_balance_info`; удаление в версии 1.3.0.
+
+        Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
+        """
+
         return CpaArchiveClient(self.transport).get_balance_info()
 
+    @deprecated_method(
+        symbol="CpaArchive.get_call_by_id",
+        replacement="call_tracking_call().get",
+        removal_version="1.3.0",
+        deprecated_since="1.1.0",
+    )
     def get_call_by_id(self, *, call_id: int) -> CpaCallInfo:
+        """Получает архивные данные звонка.
+
+                Deprecated: используйте `call_tracking_call().get`; удаление в версии 1.3.0.
+
+        Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
+        """
+
         return CpaArchiveClient(self.transport).get_call_by_id(call_id=call_id)
 
     def _require_call_id(self) -> str:
@@ -135,9 +230,14 @@ class CallTrackingCall(DomainObject):
     user_id: int | str | None = None
 
     def get(self, *, call_id: int | None = None) -> CallTrackingCallResponse:
-        resolved_call_id = call_id or (
-            int(self.call_id) if self.call_id is not None else None
-        )
+        """Выполняет публичную операцию `CallTrackingCall.get` и возвращает типизированную SDK-модель.
+
+        Пустой результат возвращается как пустая коллекция или `None` согласно аннотации метода.
+
+        Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
+        """
+
+        resolved_call_id = call_id or (int(self.call_id) if self.call_id is not None else None)
         if resolved_call_id is None:
             raise ValidationError("Для операции требуется `call_id`.")
         return CallTrackingClient(self.transport).get_call_by_id(call_id=resolved_call_id)
@@ -150,6 +250,13 @@ class CallTrackingCall(DomainObject):
         limit: int | None = None,
         offset: int | None = None,
     ) -> CallTrackingCallsResult:
+        """Выполняет публичную операцию `CallTrackingCall.list` и возвращает типизированную SDK-модель.
+
+        Пустой результат возвращается как пустая коллекция или `None` согласно аннотации метода.
+
+        Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
+        """
+
         return CallTrackingClient(self.transport).get_calls(
             date_time_from=date_time_from,
             date_time_to=date_time_to,
@@ -158,6 +265,13 @@ class CallTrackingCall(DomainObject):
         )
 
     def download(self, *, call_id: int | str | None = None) -> CallTrackingRecord:
+        """Выполняет публичную операцию `CallTrackingCall.download` и возвращает типизированную SDK-модель.
+
+        Пустой результат возвращается как пустая коллекция или `None` согласно аннотации метода.
+
+        Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
+        """
+
         return CallTrackingClient(self.transport).get_record_by_call_id(
             call_id=call_id or self._require_call_id()
         )

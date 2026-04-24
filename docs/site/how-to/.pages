@@ -1,2 +1,19 @@
 nav:
   - index.md
+  - auth-and-config.md
+  - account-profile.md
+  - ad-listing-and-stats.md
+  - promotion-dry-run.md
+  - chat-image-upload.md
+  - order-labels.md
+  - job-applications.md
+  - autoteka-report.md
+  - realty-booking.md
+  - cpa-calltracking.md
+  - ratings-and-tariffs.md
+  - pagination.md
+  - per-operation-overrides.md
+  - idempotency.md
+  - testing-with-fake-transport.md
+  - diagnostics-and-logging.md
+  - security-practices.md

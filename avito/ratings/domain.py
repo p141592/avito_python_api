@@ -22,6 +22,13 @@ class Review(DomainObject):
     user_id: int | str | None = None
 
     def list(self, *, query: ReviewsQuery | None = None) -> ReviewsResult:
+        """Выполняет публичную операцию `Review.list` и возвращает типизированную SDK-модель.
+
+        Пустой результат возвращается как пустая коллекция или `None` согласно аннотации метода.
+
+        Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
+        """
+
         return RatingsClient(self.transport).list_reviews(query=query)
 
 
@@ -39,6 +46,15 @@ class ReviewAnswer(DomainObject):
         text: str,
         idempotency_key: str | None = None,
     ) -> ReviewAnswerInfo:
+        """Выполняет публичную операцию `ReviewAnswer.create` и возвращает типизированную SDK-модель.
+
+        Параметр `idempotency_key` задает ключ идемпотентности для безопасного повтора write-операции.
+
+        Пустой результат возвращается как пустая коллекция или `None` согласно аннотации метода.
+
+        Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
+        """
+
         return RatingsClient(self.transport).create_review_answer(
             review_id=review_id,
             text=text,
@@ -51,6 +67,15 @@ class ReviewAnswer(DomainObject):
         answer_id: int | str | None = None,
         idempotency_key: str | None = None,
     ) -> ReviewAnswerInfo:
+        """Выполняет публичную операцию `ReviewAnswer.delete` и возвращает типизированную SDK-модель.
+
+        Параметр `idempotency_key` задает ключ идемпотентности для безопасного повтора write-операции.
+
+        Пустой результат возвращается как пустая коллекция или `None` согласно аннотации метода.
+
+        Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
+        """
+
         return RatingsClient(self.transport).delete_review_answer(
             answer_id=answer_id or self._require_answer_id(),
             idempotency_key=idempotency_key,
@@ -69,6 +94,13 @@ class RatingProfile(DomainObject):
     user_id: int | str | None = None
 
     def get(self) -> RatingProfileInfo:
+        """Выполняет публичную операцию `RatingProfile.get` и возвращает типизированную SDK-модель.
+
+        Пустой результат возвращается как пустая коллекция или `None` согласно аннотации метода.
+
+        Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
+        """
+
         return RatingsClient(self.transport).get_ratings_info()
 
 

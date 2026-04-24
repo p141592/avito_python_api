@@ -32,7 +32,10 @@ class Chat(DomainObject):
     user_id: int | str | None = None
 
     def get(self) -> ChatInfo:
-        """Получает чат по `chat_id`."""
+        """Получает чат по `chat_id`.
+
+        Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
+        """
 
         return MessengerClient(self.transport).get_chat(
             user_id=self._require_user_id(),
@@ -40,12 +43,22 @@ class Chat(DomainObject):
         )
 
     def list(self) -> ChatsResult:
-        """Получает список чатов пользователя."""
+        """Получает список чатов пользователя.
+
+        Пустой результат возвращается как пустая коллекция или `None` согласно аннотации метода.
+
+        Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
+        """
 
         return MessengerClient(self.transport).list_chats(user_id=self._require_user_id())
 
     def mark_read(self, *, idempotency_key: str | None = None) -> MessageActionResult:
-        """Помечает чат как прочитанный."""
+        """Помечает чат как прочитанный.
+
+        Параметр `idempotency_key` задает ключ идемпотентности для безопасного повтора write-операции.
+
+        Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
+        """
 
         return MessengerClient(self.transport).read_chat(
             user_id=self._require_user_id(),
@@ -59,7 +72,12 @@ class Chat(DomainObject):
         blacklisted_user_id: int,
         idempotency_key: str | None = None,
     ) -> MessageActionResult:
-        """Добавляет пользователя в blacklist."""
+        """Добавляет пользователя в blacklist.
+
+        Параметр `idempotency_key` задает ключ идемпотентности для безопасного повтора write-операции.
+
+        Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
+        """
 
         return MessengerClient(self.transport).add_to_blacklist(
             user_id=self._require_user_id(),
@@ -87,7 +105,12 @@ class ChatMessage(DomainObject):
     user_id: int | str | None = None
 
     def list(self, *, chat_id: str | None = None) -> MessagesResult:
-        """Получает список сообщений V3."""
+        """Получает список сообщений V3.
+
+        Пустой результат возвращается как пустая коллекция или `None` согласно аннотации метода.
+
+        Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
+        """
 
         return MessengerClient(self.transport).list_messages(
             user_id=self._require_user_id(),
@@ -101,7 +124,12 @@ class ChatMessage(DomainObject):
         message: str,
         idempotency_key: str | None = None,
     ) -> MessageActionResult:
-        """Отправляет текстовое сообщение."""
+        """Отправляет текстовое сообщение.
+
+        Параметр `idempotency_key` задает ключ идемпотентности для безопасного повтора write-операции.
+
+        Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
+        """
 
         return MessengerClient(self.transport).send_message(
             user_id=self._require_user_id(),
@@ -118,7 +146,12 @@ class ChatMessage(DomainObject):
         caption: str | None = None,
         idempotency_key: str | None = None,
     ) -> MessageActionResult:
-        """Отправляет сообщение с изображением."""
+        """Отправляет сообщение с изображением.
+
+        Параметр `idempotency_key` задает ключ идемпотентности для безопасного повтора write-операции.
+
+        Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
+        """
 
         return MessengerClient(self.transport).send_image_message(
             user_id=self._require_user_id(),
@@ -135,7 +168,12 @@ class ChatMessage(DomainObject):
         message_id: str | None = None,
         idempotency_key: str | None = None,
     ) -> MessageActionResult:
-        """Удаляет сообщение."""
+        """Удаляет сообщение.
+
+        Параметр `idempotency_key` задает ключ идемпотентности для безопасного повтора write-операции.
+
+        Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
+        """
 
         resolved_message_id = message_id or self._require_message_id()
         return MessengerClient(self.transport).delete_message(
@@ -168,12 +206,22 @@ class ChatWebhook(DomainObject):
     user_id: int | str | None = None
 
     def list(self) -> SubscriptionsResult:
-        """Получает список webhook-подписок."""
+        """Получает список webhook-подписок.
+
+        Пустой результат возвращается как пустая коллекция или `None` согласно аннотации метода.
+
+        Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
+        """
 
         return WebhookClient(self.transport).get_subscriptions()
 
     def unsubscribe(self, *, url: str, idempotency_key: str | None = None) -> WebhookActionResult:
-        """Отключает webhook."""
+        """Отключает webhook.
+
+        Параметр `idempotency_key` задает ключ идемпотентности для безопасного повтора write-операции.
+
+        Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
+        """
 
         return WebhookClient(self.transport).unsubscribe(url=url, idempotency_key=idempotency_key)
 
@@ -184,7 +232,12 @@ class ChatWebhook(DomainObject):
         secret: str | None = None,
         idempotency_key: str | None = None,
     ) -> WebhookActionResult:
-        """Включает webhook v3."""
+        """Включает webhook v3.
+
+        Параметр `idempotency_key` задает ключ идемпотентности для безопасного повтора write-операции.
+
+        Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
+        """
 
         return WebhookClient(self.transport).update_v3(
             url=url,
@@ -200,7 +253,10 @@ class ChatMedia(DomainObject):
     user_id: int | str | None = None
 
     def get_voice_files(self) -> VoiceFilesResult:
-        """Получает голосовые сообщения."""
+        """Получает голосовые сообщения.
+
+        Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
+        """
 
         return MediaClient(self.transport).get_voice_files(user_id=self._require_user_id())
 
@@ -210,7 +266,12 @@ class ChatMedia(DomainObject):
         files: list[UploadImageFile],
         idempotency_key: str | None = None,
     ) -> UploadImagesResult:
-        """Загружает изображения для сообщений."""
+        """Загружает изображения для сообщений.
+
+        Параметр `idempotency_key` задает ключ идемпотентности для безопасного повтора write-операции.
+
+        Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
+        """
 
         return MediaClient(self.transport).upload_images(
             user_id=self._require_user_id(),
@@ -232,7 +293,10 @@ class SpecialOfferCampaign(DomainObject):
     user_id: int | str | None = None
 
     def get_available(self, *, item_ids: list[int]) -> SpecialOfferAvailableResult:
-        """Получает объявления, доступные для рассылки."""
+        """Получает объявления, доступные для рассылки.
+
+        Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
+        """
 
         return SpecialOffersClient(self.transport).get_available(item_ids=item_ids)
 
@@ -244,7 +308,12 @@ class SpecialOfferCampaign(DomainObject):
         discount_percent: int | None = None,
         idempotency_key: str | None = None,
     ) -> MultiCreateSpecialOfferResult:
-        """Создает рассылку спецпредложений."""
+        """Создает рассылку спецпредложений.
+
+        Параметр `idempotency_key` задает ключ идемпотентности для безопасного повтора write-операции.
+
+        Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
+        """
 
         return SpecialOffersClient(self.transport).create_multi(
             item_ids=item_ids,
@@ -259,7 +328,12 @@ class SpecialOfferCampaign(DomainObject):
         campaign_id: str | None = None,
         idempotency_key: str | None = None,
     ) -> WebhookActionResult:
-        """Подтверждает и оплачивает рассылку."""
+        """Подтверждает и оплачивает рассылку.
+
+        Параметр `idempotency_key` задает ключ идемпотентности для безопасного повтора write-операции.
+
+        Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
+        """
 
         return SpecialOffersClient(self.transport).confirm_multi(
             campaign_id=campaign_id or self._require_campaign_id(),
@@ -267,14 +341,20 @@ class SpecialOfferCampaign(DomainObject):
         )
 
     def get_stats(self, *, campaign_id: str | None = None) -> SpecialOfferStatsResult:
-        """Получает статистику рассылки."""
+        """Получает статистику рассылки.
+
+        Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
+        """
 
         return SpecialOffersClient(self.transport).get_stats(
             campaign_id=campaign_id or self._require_campaign_id()
         )
 
     def get_tariff_info(self) -> TariffInfo:
-        """Получает информацию о тарифе спецпредложений."""
+        """Получает информацию о тарифе спецпредложений.
+
+        Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
+        """
 
         return SpecialOffersClient(self.transport).get_tariff_info()
 

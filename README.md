@@ -1,6 +1,6 @@
 # SDK для Avito
 
-[![CI](https://github.com/p141592/avito/actions/workflows/ci.yml/badge.svg)](https://github.com/p141592/avito/actions/workflows/ci.yml)
+[![CI](https://github.com/p141592/avito_python_api/actions/workflows/ci.yml/badge.svg)](https://github.com/p141592/avito_python_api/actions/workflows/ci.yml)
 [![Coverage Status](https://coveralls.io/repos/github/p141592/avito_python_api/badge.svg?branch=main)](https://coveralls.io/github/p141592/avito_python_api?branch=main)
 [![PyPI Downloads](https://img.shields.io/pypi/dm/avito-py.svg)](https://pypi.org/project/avito-py/)
 [![API coverage](https://img.shields.io/badge/API%20coverage-204%2F204-success)](docs/avito/inventory.md)
@@ -128,7 +128,7 @@ with AvitoClient.from_env() as avito:
     account = avito.account(user_id=123)
     balance = account.get_balance()
     ad = avito.ad(item_id=42, user_id=123).get()
-    stats = avito.ad_stats(item_id=42, user_id=123).get()
+    stats = avito.ad_stats(item_id=42, user_id=123).get_item_stats()
 ```
 
 ### Автозагрузка
@@ -176,8 +176,8 @@ with AvitoClient.from_env() as avito:
     forecast = avito.bbip_promotion(item_id=42).get_forecasts(items=[])
     budget = avito.autostrategy_campaign().create_budget(
         campaign_type="AS",
-        start_time="2026-04-20T00:00:00Z",
-        finish_time="2026-04-27T00:00:00Z",
+        start_time=datetime(2026, 4, 20),
+        finish_time=datetime(2026, 4, 27),
         items=[42, 43],
     )
     campaign = avito.autostrategy_campaign(campaign_id=15).get()
@@ -200,13 +200,12 @@ Write-операции продвижения, поддерживающие су
 
 ```python
 from avito import AvitoClient
-from avito.orders import OrderLabelsRequest, StockInfoRequest
 
 with AvitoClient.from_env() as avito:
     orders = avito.order().list()
-    label_task = avito.order_label().create(request=OrderLabelsRequest(order_ids=["100500"]))
+    label_task = avito.order_label().create(order_ids=["100500"])
     label_pdf = avito.order_label(task_id=label_task.task_id).download()
-    stock_info = avito.stock().get(request=StockInfoRequest(item_ids=[100500]))
+    stock_info = avito.stock().get(item_ids=[100500])
 ```
 
 ### Работа
@@ -228,14 +227,11 @@ with AvitoClient.from_env() as avito:
 
 ```python
 from avito import AvitoClient
-from avito.cpa import CpaCallsByTimeRequest
 
 with AvitoClient.from_env() as avito:
     calls = avito.cpa_call().list(
-        request=CpaCallsByTimeRequest(
-            date_time_from="2026-04-18T00:00:00Z",
-            date_time_to="2026-04-19T00:00:00Z",
-        )
+        date_time_from="2026-04-18T00:00:00Z",
+        date_time_to="2026-04-19T00:00:00Z",
     )
     calltracking = avito.call_tracking_call(10).get()
     records = avito.call_tracking_call(10).download()
@@ -245,18 +241,11 @@ with AvitoClient.from_env() as avito:
 
 ```python
 from avito import AvitoClient
-from avito.autoteka import CatalogResolveRequest, PreviewReportRequest, VinRequest
 
 with AvitoClient.from_env() as avito:
-    catalog = avito.autoteka_vehicle().resolve_catalog(
-        request=CatalogResolveRequest(brand_id=1)
-    )
-    preview = avito.autoteka_vehicle().create_preview_by_vin(
-        request=VinRequest(vin="XTA00000000000000")
-    )
-    report = avito.autoteka_report().create_report(
-        request=PreviewReportRequest(preview_id=int(preview.preview_id or 0))
-    )
+    catalog = avito.autoteka_vehicle().resolve_catalog(brand_id=1)
+    preview = avito.autoteka_vehicle().create_preview_by_vin(vin="XTA00000000000000")
+    report = avito.autoteka_report().create_report(preview_id=int(preview.preview_id or 0))
     reports = avito.autoteka_report().list_reports()
 ```
 
@@ -264,18 +253,14 @@ with AvitoClient.from_env() as avito:
 
 ```python
 from avito import AvitoClient
-from avito.realty import RealtyBookingsUpdateRequest, RealtyPricePeriod, RealtyPricesUpdateRequest
+from avito.realty import RealtyPricePeriod
 
 with AvitoClient.from_env() as avito:
     booking = avito.realty_booking(20, user_id=10)
-    booking.update_bookings_info(
-        request=RealtyBookingsUpdateRequest(blocked_dates=["2026-05-01"])
-    )
+    booking.update_bookings_info(blocked_dates=["2026-05-01"])
     bookings = booking.list_realty_bookings(date_start="2026-05-01", date_end="2026-05-05")
     avito.realty_pricing(20, user_id=10).update_realty_prices(
-        request=RealtyPricesUpdateRequest(
-            periods=[RealtyPricePeriod(date_from="2026-05-01", price=5000)]
-        )
+        periods=[RealtyPricePeriod(date_from="2026-05-01", price=5000)]
     )
     reviews = avito.review().list()
     tariff = avito.tariff().get_tariff_info()
@@ -300,11 +285,11 @@ with AvitoClient.from_env() as avito:
 from avito import AvitoClient
 
 with AvitoClient.from_env() as avito:
-    result = avito.ad(user_id=123).list(status="active", limit=50)
+    items = avito.ad(user_id=123).list(status="active", limit=50)
 
-    first = result.items[0]
-    preview = result.items[:10]
-    all_items = result.items.materialize()
+    first = items[0]
+    preview = items[:10]
+    all_items = items.materialize()
 ```
 
 ## Ошибки

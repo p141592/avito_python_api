@@ -1,3 +1,5 @@
+"""Публичный тестовый transport и вспомогательные утилиты для SDK-контрактных тестов."""
+
 from __future__ import annotations
 
 import json
@@ -8,7 +10,8 @@ from typing import cast
 
 import httpx
 
-from avito.auth import AuthSettings
+from avito.auth import AuthProvider, AuthSettings
+from avito.client import AvitoClient
 from avito.config import AvitoSettings
 from avito.core import Transport
 from avito.core.retries import RetryPolicy
@@ -20,6 +23,8 @@ FakeResponse = httpx.Response
 
 @dataclass(slots=True, frozen=True)
 class RecordedRequest:
+    """Зафиксированный HTTP-запрос, перехваченный FakeTransport."""
+
     method: str
     path: str
     params: dict[str, str]
@@ -45,6 +50,8 @@ class FakeTransport:
         path: str,
         *responses: RouteResponder,
     ) -> FakeTransport:
+        """Регистрирует один или несколько ответов для HTTP-маршрута."""
+
         key = (method.upper(), path)
         bucket = self._routes.setdefault(key, deque())
         bucket.extend(responses)
@@ -59,6 +66,8 @@ class FakeTransport:
         status_code: int = 200,
         headers: Mapping[str, str] | None = None,
     ) -> FakeTransport:
+        """Регистрирует JSON-ответ для HTTP-маршрута."""
+
         return self.add(
             method,
             path,
@@ -75,6 +84,8 @@ class FakeTransport:
         retry_policy: RetryPolicy | None = None,
         user_id: int | None = None,
     ) -> Transport:
+        """Создаёт низкоуровневый Transport поверх fake transport (internal helper)."""
+
         settings = AvitoSettings(
             base_url=self.base_url,
             user_id=user_id,
@@ -91,7 +102,40 @@ class FakeTransport:
             sleep=lambda _: None,
         )
 
+    def as_client(
+        self,
+        *,
+        user_id: int | None = None,
+        retry_policy: RetryPolicy | None = None,
+    ) -> AvitoClient:
+        """Создает публичный `AvitoClient` поверх fake transport без реального HTTP."""
+
+        auth_settings = AuthSettings(client_id="fake-client-id", client_secret="fake-client-secret")
+        settings = AvitoSettings(
+            base_url=self.base_url,
+            user_id=user_id,
+            auth=auth_settings,
+            retry_policy=retry_policy or RetryPolicy(),
+            timeouts=ApiTimeouts(),
+        )
+        auth_provider = AuthProvider(auth_settings)
+        transport = Transport(
+            settings,
+            auth_provider=None,
+            client=httpx.Client(
+                transport=httpx.MockTransport(self._handle), base_url=self.base_url
+            ),
+            sleep=lambda _: None,
+        )
+        return AvitoClient._from_transport(
+            settings,
+            transport=transport,
+            auth_provider=auth_provider,
+        )
+
     def count(self, *, method: str | None = None, path: str | None = None) -> int:
+        """Возвращает число перехваченных запросов с опциональной фильтрацией."""
+
         return len(
             [
                 request
@@ -102,6 +146,8 @@ class FakeTransport:
         )
 
     def last(self, *, method: str | None = None, path: str | None = None) -> RecordedRequest:
+        """Возвращает последний перехваченный запрос с опциональной фильтрацией."""
+
         matches = [
             request
             for request in self.requests
@@ -127,7 +173,9 @@ class FakeTransport:
         if key not in self._routes:
             available = ", ".join(f"{method} {path}" for method, path in sorted(self._routes))
             raise AssertionError(
-                f"Unexpected request {recorded.method} {recorded.path}. Known: {available}"
+                "Маршрут не прописан в FakeTransport: "
+                f"{recorded.method} {recorded.path}. "
+                f"Добавьте route_sequence или add_json для этого пути. Доступные: {available}"
             )
 
         responders = self._routes[key]
@@ -153,10 +201,14 @@ def json_response(
     status_code: int = 200,
     headers: Mapping[str, str] | None = None,
 ) -> httpx.Response:
+    """Создаёт httpx.Response с JSON-телом для использования в FakeTransport."""
+
     return httpx.Response(status_code, json=payload, headers=dict(headers or {}))
 
 
 def route_sequence(*responses: RouteResponder) -> Iterable[RouteResponder]:
+    """Упаковывает несколько ответов в последовательность для FakeTransport.add()."""
+
     return responses
 
 

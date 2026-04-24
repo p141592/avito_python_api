@@ -127,6 +127,14 @@ venv.bak/
 
 # mkdocs documentation
 /site
+inventory-coverage-report.json
+spec-inventory-report.json
+reference-public-report.json
+docstring-contract-report.json
+changelog-sections-report.json
+bandit-report.json
+docs-quality-report.json
+ttfc-minutes.txt
 
 # mypy
 .mypy_cache/

@@ -35,7 +35,42 @@ jobs:
         run: poetry install --no-interaction --with docs
 
       - name: Build docs (strict)
-        run: poetry run mkdocs build --strict
+        run: make docs-strict
+
+      - name: Build docs reports
+        run: |
+          poetry run python scripts/check_inventory_coverage.py --output inventory-coverage-report.json
+          poetry run python scripts/check_spec_inventory_sync.py --output spec-inventory-report.json
+          poetry run python scripts/check_reference_public_surface.py --output reference-public-report.json
+          poetry run python scripts/check_public_docstrings.py --output docstring-contract-report.json
+          poetry run python scripts/check_changelog_sections.py --output changelog-sections-report.json
+          poetry run bandit -r avito -lll -f json -o bandit-report.json
+          poetry run python scripts/build_docs_quality_report.py \
+            --inventory-report inventory-coverage-report.json \
+            --spec-report spec-inventory-report.json \
+            --reference-report reference-public-report.json \
+            --docstring-report docstring-contract-report.json \
+            --changelog-report changelog-sections-report.json \
+            --bandit-report bandit-report.json \
+            --output docs-quality-report.json
+
+      - name: Upload docs reports
+        uses: actions/upload-artifact@v4
+        with:
+          name: docs-contract-reports
+          path: |
+            inventory-coverage-report.json
+            spec-inventory-report.json
+            reference-public-report.json
+            docstring-contract-report.json
+            changelog-sections-report.json
+            bandit-report.json
+            docs-quality-report.json
+
+      - name: Check links
+        uses: lycheeverse/lychee-action@v2
+        with:
+          args: --exclude "avito\.ru" --retry-wait-time 5 --max-retries 3 --timeout 30 site/
 
   deploy:
     runs-on: ubuntu-latest
@@ -67,4 +102,12 @@ jobs:
 
       - name: Deploy latest (push to main)
         if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
-        run: poetry run mike deploy --push --update-aliases main latest
+        run: |
+          poetry run mike deploy --push --update-aliases main latest
+          poetry run mike set-default --push latest
+
+      - name: Deploy stable (push tag)
+        if: startsWith(github.ref, 'refs/tags/v')
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          poetry run mike deploy --push --update-aliases "$VERSION" stable

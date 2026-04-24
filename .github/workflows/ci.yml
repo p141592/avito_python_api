@@ -14,6 +14,8 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Set up Python 3.14
         uses: actions/setup-python@v5
@@ -27,10 +29,19 @@ jobs:
           virtualenvs-in-project: true
 
       - name: Install dependencies
-        run: poetry install --no-interaction
+        run: poetry install --no-interaction --with docs
 
       - name: Run quality gate
         run: make check
+
+      - name: Run docs strict gate
+        run: make docs-strict
+
+      - name: Run qa-docs (pydocstyle + interrogate)
+        run: make qa-docs
+
+      - name: Interrogate diff gate (changed modules vs baseline)
+        run: poetry run python scripts/check_interrogate_gate.py --base-ref origin/main
 
       - name: Collect coverage report
         run: |

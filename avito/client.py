@@ -74,8 +74,26 @@ class AvitoClient:
 
         return cls(AvitoSettings.from_env(env_file=env_file))
 
+    @classmethod
+    def _from_transport(
+        cls,
+        settings: AvitoSettings,
+        *,
+        transport: Transport,
+        auth_provider: AuthProvider,
+    ) -> AvitoClient:
+        client = cls.__new__(cls)
+        client._closed = False
+        client.settings = settings
+        client.auth_provider = auth_provider
+        client.transport = transport
+        return client
+
     def auth(self) -> AuthProvider:
-        """Возвращает объект аутентификации и token-flow операций."""
+        """Возвращает объект аутентификации и token-flow операций.
+
+        Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
+        """
 
         self._ensure_open()
         return self.auth_provider

@@ -8,8 +8,8 @@ packages=[
 ]
 license="MIT"
 readme="README.md"
-homepage="https://github.com/p141592/avito"
-repository="https://github.com/p141592/avito"
+homepage="https://github.com/p141592/avito_python_api"
+repository="https://github.com/p141592/avito_python_api"
 documentation="https://p141592.github.io/avito_python_api/"
 keywords=["avito", "sdk", "python", "api"]
 classifiers=[
@@ -38,6 +38,13 @@ mkdocs-material = "^9.5"
 mkdocs-awesome-pages-plugin = "^2.9"
 mkdocs-include-markdown-plugin = "^7.0"
 mike = "^2.1"
+mkdocstrings = { version = ">=0.27", extras = ["python"] }
+mkdocs-gen-files = ">=0.5"
+mkdocs-literate-nav = ">=0.6"
+mktestdocs = "^0.2.5"
+bandit = ">=1.7"
+interrogate = ">=1.7"
+pydocstyle = { version = ">=6.3", extras = ["toml"] }
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
@@ -81,6 +88,10 @@ ignore = [
 [tool.ruff.format]
 quote-style = "double"
 indent-style = "space"
+
+[tool.pydocstyle]
+convention = "google"
+add_ignore = ["D202", "D105", "D107"]
 
 [build-system]
 requires = ["poetry-core>=1.9.0"]
