@@ -2,6 +2,7 @@
 export
 
 REGISTRY=10.11.0.9:5000
+MKDOCS_ENV=DISABLE_MKDOCS_2_WARNING=true
 
 check: test typecheck lint build
 
@@ -42,10 +43,10 @@ release:
 	poetry publish --no-interaction
 
 docs-serve:
-	poetry run mkdocs serve
+	$(MKDOCS_ENV) poetry run mkdocs serve
 
 docs-strict:
-	poetry run mkdocs build --strict
+	$(MKDOCS_ENV) poetry run mkdocs build --strict
 	poetry run python scripts/check_readme_domain_coverage.py
 	poetry run pytest tests/docs/
 
@@ -62,7 +63,8 @@ docs-report:
 	poetry run python scripts/build_docs_quality_report.py
 
 docs-check: docs-strict
-	lychee --exclude "avito\.ru" --retry-wait-time 5 --max-retries 3 --timeout 30 site/
+	ln -sfn . site/avito_python_api
+	lychee --root-dir "$(PWD)/site" --exclude "avito\.ru" --exclude "^https://p141592\.github\.io/avito_python_api/" --retry-wait-time 5 --max-retries 3 --timeout 30 site/
 
 qa-docs:
 	poetry run pydocstyle \

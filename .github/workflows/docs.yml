@@ -54,6 +54,9 @@ jobs:
             --bandit-report bandit-report.json \
             --output docs-quality-report.json
 
+      - name: Prepare local docs root for link checking
+        run: ln -s . site/avito_python_api
+
       - name: Upload docs reports
         uses: actions/upload-artifact@v4
         with:
@@ -69,8 +72,10 @@ jobs:
 
       - name: Check links
         uses: lycheeverse/lychee-action@v2
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
         with:
-          args: --exclude "avito\.ru" --retry-wait-time 5 --max-retries 3 --timeout 30 site/
+          args: --root-dir "${{ github.workspace }}/site" --exclude "avito\.ru" --exclude "^https://p141592\.github\.io/avito_python_api/" --retry-wait-time 5 --max-retries 3 --timeout 30 site/
 
   deploy:
     runs-on: ubuntu-latest
