@@ -11,25 +11,27 @@ site_dir: site
 theme:
   name: material
   language: ru
+  logo: assets/images/avito-mark.svg
+  favicon: assets/images/avito-mark.svg
   palette:
     - media: "(prefers-color-scheme: light)"
       scheme: default
-      primary: indigo
-      accent: indigo
+      primary: custom
+      accent: custom
       toggle:
         icon: material/brightness-7
         name: Тёмная тема
     - media: "(prefers-color-scheme: dark)"
       scheme: slate
-      primary: indigo
-      accent: indigo
+      primary: custom
+      accent: custom
       toggle:
         icon: material/brightness-4
         name: Светлая тема
   features:
-    - navigation.tabs
     - navigation.sections
     - navigation.indexes
+    - navigation.expand
     - navigation.top
     - navigation.instant
     - toc.follow
@@ -68,6 +70,9 @@ plugins:
 markdown_extensions:
   - admonition
   - pymdownx.details
+  - pymdownx.emoji:
+      emoji_index: !!python/name:material.extensions.emoji.twemoji
+      emoji_generator: !!python/name:material.extensions.emoji.to_svg
   - pymdownx.superfences:
       custom_fences:
         - name: mermaid
@@ -84,6 +89,9 @@ markdown_extensions:
   - md_in_html
   - toc:
       permalink: true
+
+extra_css:
+  - assets/stylesheets/extra.css
 
 extra:
   version:

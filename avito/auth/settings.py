@@ -15,37 +15,16 @@ class AuthSettings:
     """Единственный публичный контракт OAuth-конфигурации SDK."""
 
     ENV_ALIASES: ClassVar[dict[str, tuple[str, ...]]] = {
-        "client_id": ("AVITO_AUTH__CLIENT_ID", "AVITO_CLIENT_ID"),
-        "client_secret": (
-            "AVITO_AUTH__CLIENT_SECRET",
-            "AVITO_CLIENT_SECRET",
-        ),
-        "scope": ("AVITO_AUTH__SCOPE", "AVITO_SCOPE"),
-        "refresh_token": (
-            "AVITO_AUTH__REFRESH_TOKEN",
-            "AVITO_REFRESH_TOKEN",
-        ),
-        "token_url": ("AVITO_AUTH__TOKEN_URL", "AVITO_TOKEN_URL"),
-        "alternate_token_url": (
-            "AVITO_AUTH__ALTERNATE_TOKEN_URL",
-            "AVITO_ALTERNATE_TOKEN_URL",
-        ),
-        "autoteka_token_url": (
-            "AVITO_AUTH__AUTOTEKA_TOKEN_URL",
-            "AVITO_AUTOTEKA_TOKEN_URL",
-        ),
-        "autoteka_client_id": (
-            "AVITO_AUTH__AUTOTEKA_CLIENT_ID",
-            "AVITO_AUTOTEKA_CLIENT_ID",
-        ),
-        "autoteka_client_secret": (
-            "AVITO_AUTH__AUTOTEKA_CLIENT_SECRET",
-            "AVITO_AUTOTEKA_CLIENT_SECRET",
-        ),
-        "autoteka_scope": (
-            "AVITO_AUTH__AUTOTEKA_SCOPE",
-            "AVITO_AUTOTEKA_SCOPE",
-        ),
+        "client_id": ("AVITO_CLIENT_ID",),
+        "client_secret": ("AVITO_CLIENT_SECRET",),
+        "scope": ("AVITO_SCOPE",),
+        "refresh_token": ("AVITO_REFRESH_TOKEN",),
+        "token_url": ("AVITO_TOKEN_URL",),
+        "alternate_token_url": ("AVITO_ALTERNATE_TOKEN_URL",),
+        "autoteka_token_url": ("AVITO_AUTOTEKA_TOKEN_URL",),
+        "autoteka_client_id": ("AVITO_AUTOTEKA_CLIENT_ID",),
+        "autoteka_client_secret": ("AVITO_AUTOTEKA_CLIENT_SECRET",),
+        "autoteka_scope": ("AVITO_AUTOTEKA_SCOPE",),
     }
 
     client_id: str | None = None

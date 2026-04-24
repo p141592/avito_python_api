@@ -96,26 +96,26 @@ with AvitoClient(settings) as avito:
 
 ### Переменные окружения
 
-Поддерживаемые env-переменные и alias-имена:
+| Переменная | Обязательная | Описание |
+|---|---|---|
+| `AVITO_CLIENT_ID` | **да** | Client ID OAuth-приложения |
+| `AVITO_CLIENT_SECRET` | **да** | Client Secret OAuth-приложения |
+| `AVITO_BASE_URL` | нет | Базовый URL API (по умолчанию `https://api.avito.ru`) |
+| `AVITO_USER_ID` | нет | ID пользователя по умолчанию |
+| `AVITO_USER_AGENT_SUFFIX` | нет | Суффикс к заголовку `User-Agent` |
+| `AVITO_SCOPE` | нет | OAuth scope |
+| `AVITO_REFRESH_TOKEN` | нет | Refresh token для предварительного обмена |
+| `AVITO_AUTOTEKA_CLIENT_ID` | нет | Client ID для Автотека API |
+| `AVITO_AUTOTEKA_CLIENT_SECRET` | нет | Client Secret для Автотека API |
+| `AVITO_AUTOTEKA_SCOPE` | нет | OAuth scope для Автотека API |
 
-- `AVITO_BASE_URL`
-- `AVITO_USER_ID`
-- `AVITO_AUTH__CLIENT_ID`, alias: `AVITO_CLIENT_ID`
-- `AVITO_AUTH__CLIENT_SECRET`, alias: `AVITO_CLIENT_SECRET`
-- `AVITO_AUTH__REFRESH_TOKEN`, alias: `AVITO_REFRESH_TOKEN`
-- `AVITO_AUTH__SCOPE`, alias: `AVITO_SCOPE`
-- `AVITO_AUTH__TOKEN_URL`, alias: `AVITO_TOKEN_URL`
-- `AVITO_AUTH__ALTERNATE_TOKEN_URL`, alias: `AVITO_ALTERNATE_TOKEN_URL`
-- `AVITO_AUTH__AUTOTEKA_TOKEN_URL`, alias: `AVITO_AUTOTEKA_TOKEN_URL`
-- `AVITO_AUTH__AUTOTEKA_CLIENT_ID`, alias: `AVITO_AUTOTEKA_CLIENT_ID`
-- `AVITO_AUTH__AUTOTEKA_CLIENT_SECRET`, alias: `AVITO_AUTOTEKA_CLIENT_SECRET`
-- `AVITO_AUTH__AUTOTEKA_SCOPE`, alias: `AVITO_AUTOTEKA_SCOPE`
+Полный список переменных, включая URL-overrides, таймауты и retry-политику, — в [справочнике по конфигурации](https://p141592.github.io/avito_python_api/reference/config/).
 
 Правила resolution:
 
 - значения из process environment имеют приоритет над `.env`;
 - `AvitoSettings.from_env()` и `AvitoClient.from_env()` детерминированно читают `.env` из текущей рабочей директории или из переданного `env_file`;
-- при отсутствии `client_id` или `client_secret` SDK завершает инициализацию с typed-ошибкой `ConfigurationError` до первого HTTP-запроса.
+- при отсутствии `AVITO_CLIENT_ID` или `AVITO_CLIENT_SECRET` SDK поднимает `ConfigurationError` при создании клиента, до первого HTTP-запроса.
 
 ## Примеры по доменам
 

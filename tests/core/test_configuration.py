@@ -13,11 +13,9 @@ ENV_KEYS = (
     "AVITO_BASE_URL",
     "AVITO_USER_ID",
     "AVITO_USER_AGENT_SUFFIX",
-    "AVITO_AUTH__CLIENT_ID",
-    "AVITO_AUTH__CLIENT_SECRET",
-    "AVITO_AUTH__REFRESH_TOKEN",
     "AVITO_CLIENT_ID",
     "AVITO_CLIENT_SECRET",
+    "AVITO_REFRESH_TOKEN",
 )
 
 
@@ -42,9 +40,9 @@ def test_avito_settings_from_env_reads_full_configuration(
                 "AVITO_BASE_URL=https://sandbox.avito.ru",
                 "AVITO_USER_ID=42",
                 "AVITO_USER_AGENT_SUFFIX=ci/contract-tests",
-                "AVITO_AUTH__CLIENT_ID=client-id",
-                "AVITO_AUTH__CLIENT_SECRET=client-secret",
-                "AVITO_AUTH__REFRESH_TOKEN=refresh-token",
+                "AVITO_CLIENT_ID=client-id",
+                "AVITO_CLIENT_SECRET=client-secret",
+                "AVITO_REFRESH_TOKEN=refresh-token",
             )
         ),
     )
@@ -59,7 +57,7 @@ def test_avito_settings_from_env_reads_full_configuration(
     assert settings.auth.refresh_token == "refresh-token"
 
 
-def test_avito_settings_from_env_supports_alias_variables(
+def test_avito_settings_from_env_reads_from_dotenv_file(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
     clear_avito_env(monkeypatch)
@@ -127,8 +125,8 @@ def test_avito_client_from_env_initializes_client(
             (
                 "AVITO_BASE_URL=https://sandbox.avito.ru",
                 "AVITO_USER_ID=512",
-                "AVITO_AUTH__CLIENT_ID=client-id",
-                "AVITO_AUTH__CLIENT_SECRET=client-secret",
+                "AVITO_CLIENT_ID=client-id",
+                "AVITO_CLIENT_SECRET=client-secret",
             )
         ),
     )
@@ -162,8 +160,8 @@ def test_process_environment_overrides_dotenv_and_parses_retry_options(
         "\n".join(
             (
                 "AVITO_BASE_URL=https://from-file.avito.ru",
-                "AVITO_AUTH__CLIENT_ID=file-client-id",
-                "AVITO_AUTH__CLIENT_SECRET=file-client-secret",
+                "AVITO_CLIENT_ID=file-client-id",
+                "AVITO_CLIENT_SECRET=file-client-secret",
                 "AVITO_TIMEOUT_CONNECT=2.5",
                 "AVITO_TIMEOUT_READ=11",
                 "AVITO_RETRY_MAX_ATTEMPTS=4",

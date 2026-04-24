@@ -5,10 +5,7 @@ hide:
 
 # avito-py
 
-[![CI](https://github.com/p141592/avito_python_api/actions/workflows/ci.yml/badge.svg)](https://github.com/p141592/avito_python_api/actions/workflows/ci.yml)
-[![Coverage Status](https://coveralls.io/repos/github/p141592/avito_python_api/badge.svg?branch=main)](https://coveralls.io/github/p141592/avito_python_api?branch=main)
-[![PyPI Downloads](https://img.shields.io/pypi/dm/avito-py.svg)](https://pypi.org/project/avito-py/)
-[![API coverage](https://img.shields.io/badge/API%20coverage-204%2F204-success)](reference/coverage.md)
+<section class="avito-hero" markdown>
 
 **`avito-py`** — синхронный Python SDK для работы с Avito API через единый объектный фасад `AvitoClient`.
 Скрывает transport, OAuth и retry-логику. Возвращает типизированные `dataclass`-модели. Покрывает 204 операции Avito API.
@@ -17,7 +14,16 @@ hide:
 pip install avito-py
 ```
 
----
+<div class="avito-badges" markdown>
+
+[![CI](https://github.com/p141592/avito_python_api/actions/workflows/ci.yml/badge.svg)](https://github.com/p141592/avito_python_api/actions/workflows/ci.yml)
+[![Coverage Status](https://coveralls.io/repos/github/p141592/avito_python_api/badge.svg?branch=main)](https://coveralls.io/github/p141592/avito_python_api?branch=main)
+[![PyPI Downloads](https://img.shields.io/pypi/dm/avito-py.svg)](https://pypi.org/project/avito-py/)
+[![API coverage](https://img.shields.io/badge/API%20coverage-204%2F204-success)](reference/coverage.md)
+
+</div>
+
+</section>
 
 <div class="grid cards" markdown>
 
