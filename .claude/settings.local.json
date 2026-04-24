@@ -32,7 +32,10 @@
       "Bash(grep -v \"^$\")",
       "Bash(grep -n \"^\\\\`\\\\`\\\\`\" /Users/n.baryshnikov/Projects/avito_python_api/docs/site/how-to/idempotency.md)",
       "Bash(grep -n \"^\\\\`\\\\`\\\\`\" /Users/n.baryshnikov/Projects/avito_python_api/docs/site/how-to/per-operation-overrides.md)",
-      "Bash(grep -n \"^\\\\`\\\\`\\\\`\" /Users/n.baryshnikov/Projects/avito_python_api/docs/site/how-to/security-practices.md)"
+      "Bash(grep -n \"^\\\\`\\\\`\\\\`\" /Users/n.baryshnikov/Projects/avito_python_api/docs/site/how-to/security-practices.md)",
+      "Bash(pip show *)",
+      "Bash(awk -F'|' '{gsub\\(/^ +| +$/,\"\",$2\\); gsub\\(/^ +| +$/,\"\",$6\\); print $2 \":\" $6}')",
+      "Bash(make qa-docs *)"
     ]
   }
 }

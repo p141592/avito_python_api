@@ -43,6 +43,8 @@ mkdocs-gen-files = ">=0.5"
 mkdocs-literate-nav = ">=0.6"
 mktestdocs = "^0.2.5"
 bandit = ">=1.7"
+interrogate = ">=1.7"
+pydocstyle = { version = ">=6.3", extras = ["toml"] }
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
@@ -86,6 +88,10 @@ ignore = [
 [tool.ruff.format]
 quote-style = "double"
 indent-style = "space"
+
+[tool.pydocstyle]
+convention = "google"
+add_ignore = ["D202", "D105", "D107"]
 
 [build-system]
 requires = ["poetry-core>=1.9.0"]

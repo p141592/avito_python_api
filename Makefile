@@ -57,8 +57,17 @@ docs-report:
 	poetry run python scripts/check_reference_public_surface.py --output reference-public-report.json
 	poetry run python scripts/check_public_docstrings.py --output docstring-contract-report.json
 	poetry run python scripts/check_changelog_sections.py --output changelog-sections-report.json
+	poetry run python scripts/check_docs_examples.py --output reference-explanation-examples-report.json
 	poetry run bandit -r avito -lll -f json -o bandit-report.json
 	poetry run python scripts/build_docs_quality_report.py
 
 docs-check: docs-strict
 	lychee --exclude "avito\.ru" --retry-wait-time 5 --max-retries 3 --timeout 30 site/
+
+qa-docs:
+	poetry run pydocstyle \
+		avito/client.py avito/config.py \
+		avito/core/exceptions.py avito/core/pagination.py \
+		avito/*/domain.py \
+		avito/testing/fake_transport.py
+	poetry run interrogate avito/ --fail-under=0 --quiet

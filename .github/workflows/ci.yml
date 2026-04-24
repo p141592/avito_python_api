@@ -37,6 +37,12 @@ jobs:
       - name: Run docs strict gate
         run: make docs-strict
 
+      - name: Run qa-docs (pydocstyle + interrogate)
+        run: make qa-docs
+
+      - name: Interrogate diff gate (changed modules vs baseline)
+        run: poetry run python scripts/check_interrogate_gate.py --base-ref origin/main
+
       - name: Collect coverage report
         run: |
           poetry run coverage run -m pytest
