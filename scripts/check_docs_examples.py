@@ -47,7 +47,6 @@ def extract_fenced_blocks(text: str, fence_types: set[str]) -> list[str]:
     blocks: list[str] = []
     lines = text.splitlines()
     in_block = False
-    current_type = ""
     current_lines: list[str] = []
 
     for line in lines:
@@ -57,13 +56,11 @@ def extract_fenced_blocks(text: str, fence_types: set[str]) -> list[str]:
                 fence_type = m.group(1).lower()
                 if fence_type in fence_types:
                     in_block = True
-                    current_type = fence_type
                     current_lines = []
         else:
             if line.strip() == "```":
                 blocks.append("\n".join(current_lines))
                 in_block = False
-                current_type = ""
                 current_lines = []
             else:
                 current_lines.append(line)
