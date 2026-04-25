@@ -58,11 +58,33 @@ def _list(payload: Payload, *keys: str) -> list[Payload]:
     return []
 
 
+def _mapping(payload: Payload, *keys: str) -> Payload | None:
+    for key in keys:
+        value = payload.get(key)
+        if isinstance(value, Mapping):
+            return cast(Payload, value)
+    return None
+
+
 def _str(payload: Payload, *keys: str) -> str | None:
     for key in keys:
         value = payload.get(key)
         if isinstance(value, str):
             return value
+    return None
+
+
+def _nested_str(payload: Payload, *keys: str) -> str | None:
+    value = _str(payload, *keys)
+    if value is not None:
+        return value
+    for key in keys:
+        nested = _mapping(payload, key)
+        if nested is None:
+            continue
+        nested_value = _str(nested, "value", "name", "title", "slug", "status")
+        if nested_value is not None:
+            return nested_value
     return None
 
 
@@ -95,6 +117,11 @@ def _float(payload: Payload, *keys: str) -> float | None:
             continue
         if isinstance(value, (int, float)):
             return float(value)
+        if isinstance(value, Mapping):
+            nested = cast(Payload, value)
+            nested_value = _float(nested, "value", "amount", "current", "price")
+            if nested_value is not None:
+                return nested_value
     return None
 
 
@@ -106,6 +133,16 @@ def _bool(payload: Payload, *keys: str) -> bool | None:
     return None
 
 
+def _visibility(payload: Payload) -> bool | None:
+    visible = _bool(payload, "is_visible", "isVisible", "visible")
+    if visible is not None:
+        return visible
+    status = _nested_str(payload, "status")
+    if status is None:
+        return None
+    return status in {"active", "published", "visible"}
+
+
 def map_ad_item(payload: object) -> Listing:
     """Преобразует объявление в dataclass."""
 
@@ -114,14 +151,20 @@ def map_ad_item(payload: object) -> Listing:
         item_id=_int(data, "id", "item_id", "itemId"),
         user_id=_int(data, "user_id", "userId"),
         title=_str(data, "title"),
-        description=_str(data, "description"),
+        description=_str(data, "description", "descriptionHtml"),
         status=map_enum_or_unknown(
-            _str(data, "status"),
+            _nested_str(data, "status"),
             ListingStatus,
             enum_name="ads.listing_status",
         ),
         price=_float(data, "price"),
         url=_str(data, "url", "link"),
+        category=_nested_str(data, "category", "categoryName"),
+        city=_nested_str(data, "city", "location"),
+        published_at=_datetime(data, "published_at", "publishedAt", "created_at", "createdAt"),
+        updated_at=_datetime(data, "updated_at", "updatedAt"),
+        is_moderated=_bool(data, "is_moderated", "isModerated", "moderated"),
+        is_visible=_visibility(data),
     )
 
 

@@ -48,20 +48,31 @@ class AvitoError(Exception):
     status_code: int | None = None
     error_code: str | None = None
     operation: str | None = None
+    details: object | None = None
+    retry_after: float | None = None
+    request_id: str | None = None
     metadata: Mapping[str, object] = field(default_factory=dict)
     payload: object | None = None
     headers: Mapping[str, str] | None = None
 
     def __post_init__(self) -> None:
         sanitized_payload = sanitize_metadata(self.payload)
+        sanitized_details = sanitize_metadata(self.details)
         sanitized_headers = (
             sanitize_metadata(dict(self.headers)) if self.headers is not None else None
         )
         sanitized_metadata = sanitize_metadata(dict(self.metadata))
         Exception.__init__(self, self.message)
         object.__setattr__(self, "payload", sanitized_payload)
+        object.__setattr__(self, "details", sanitized_details)
         object.__setattr__(self, "headers", sanitized_headers)
         object.__setattr__(self, "metadata", sanitized_metadata)
+
+    @property
+    def status(self) -> int | None:
+        """HTTP-статус ответа API."""
+
+        return self.status_code
 
     def __str__(self) -> str:
         details: list[str] = [self.message]
@@ -71,6 +82,10 @@ class AvitoError(Exception):
             details.append(f"status={self.status_code}")
         if self.error_code is not None:
             details.append(f"code={self.error_code}")
+        if self.retry_after is not None:
+            details.append(f"retry_after={self.retry_after}")
+        if self.request_id is not None:
+            details.append(f"request_id={self.request_id}")
         return " ".join(details)
 
 

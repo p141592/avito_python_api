@@ -131,6 +131,10 @@ with AvitoClient.from_env() as avito:
     stats = avito.ad_stats(item_id=42, user_id=123).get_item_stats()
 ```
 
+`user_id` можно передать явно, задать через `AVITO_USER_ID` или оставить пустым для read-only вызовов, где SDK может определить пользователя через `account().get_self()`. Если идентификатор не удалось определить, SDK поднимает `ValidationError` с подсказкой, как вызвать метод правильно.
+
+Статистические методы принимают `date`, `datetime` и ISO-строки, а в Avito API отправляют дату в формате `YYYY-MM-DD`. Модель `Listing` нормализует основные поля объявления: `title`, `price`, `status`, `description`, `url`, `category`, `city`, `published_at`, `updated_at`, `is_moderated`, `is_visible`.
+
 ### Автозагрузка
 
 ```python
@@ -266,6 +270,8 @@ with AvitoClient.from_env() as avito:
     tariff = avito.tariff().get_tariff_info()
 ```
 
+`review().list()` по умолчанию запрашивает первую страницу отзывов (`page=1`). Для явной пагинации передайте `ReviewsQuery(page=...)`.
+
 ## Пагинация
 
 Публичные list-операции, которые поддерживают lazy pagination, возвращают обычные SDK-результаты, а поле `items` в них типизировано как `PaginatedList[T]` и ведёт себя как list-like коллекция.
@@ -306,6 +312,8 @@ with AvitoClient.from_env() as avito:
 - ошибки маппинга ответа → `ResponseMappingError`
 
 `AuthenticationError` (401) и `AuthorizationError` (403) — семантически разные ошибки и **не** состоят в отношении наследования. Тексты сообщений написаны на русском языке. Секреты (access token, `client_secret`, `Authorization`) автоматически санитайзятся из сообщений и metadata.
+
+Для диагностики доступны структурированные поля `operation`, `status` / `status_code`, `error_code`, `message`, `details`, `retry_after`, `request_id`, `metadata`, `payload` и `headers`. Например, у `RateLimitError` можно прочитать `retry_after`, а у ошибок валидации — `details`, если upstream вернул подробности по параметрам.
 
 ## Отладка интеграции
 

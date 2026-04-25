@@ -6,7 +6,7 @@ SDK предоставляет безопасный диагностически
 
 `debug_info()` возвращает `TransportDebugInfo` — снимок transport-настроек без OAuth-секретов. Его безопасно печатать в логи и передавать в отчёты об ошибках.
 
-```python
+```text
 from avito import AvitoClient
 
 with AvitoClient.from_env() as avito:
@@ -23,9 +23,12 @@ print(info.requires_auth)
 Каждое исключение SDK содержит поля для диагностики:
 
 - `operation` — имя SDK-операции (например, `ads.get_item`);
-- `status_code` — HTTP-статус ответа;
+- `status` / `status_code` — HTTP-статус ответа;
 - `error_code` — код ошибки из тела ответа API;
 - `message` — читаемое описание ошибки;
+- `details` — структурированные подробности ошибки из тела ответа API;
+- `retry_after` — задержка повтора для `429`, если API вернул `Retry-After`;
+- `request_id` — идентификатор запроса из upstream-заголовков;
 - `metadata` — дополнительные поля с редактированными секретами.
 
 ```text
@@ -39,6 +42,8 @@ with AvitoClient.from_env() as avito:
         print(exc.operation)
         print(exc.status_code)
         print(exc.error_code)
+        print(exc.details)
+        print(exc.request_id)
         print(str(exc))
 ```
 

@@ -20,6 +20,12 @@ class Listing(SerializableModel):
     status: ListingStatus | None
     price: float | None
     url: str | None
+    category: str | None = None
+    city: str | None = None
+    published_at: datetime | None = None
+    updated_at: datetime | None = None
+    is_moderated: bool | None = None
+    is_visible: bool | None = None
 
 
 @dataclass(slots=True, frozen=True)

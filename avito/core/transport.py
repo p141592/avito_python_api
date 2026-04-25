@@ -9,7 +9,7 @@ import time
 from collections.abc import Callable, Mapping, Sequence
 from email.message import Message
 from io import BytesIO
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, cast
 from urllib.parse import quote
 
 import httpx
@@ -465,6 +465,9 @@ class Transport:
         payload = self._safe_payload(response)
         message = self._extract_message(payload) or f"HTTP {response.status_code}"
         error_code = self._extract_error_code(payload)
+        details = self._extract_error_details(payload)
+        retry_after = self._get_retry_after_seconds(response.headers) if response.status_code == 429 else None
+        request_id = self._extract_request_id(response.headers)
         headers = dict(response.headers)
         metadata = {
             "method": response.request.method,
@@ -477,6 +480,9 @@ class Transport:
                 status_code=401,
                 error_code=error_code,
                 operation=operation,
+                details=details,
+                retry_after=retry_after,
+                request_id=request_id,
                 metadata=metadata,
                 payload=payload,
                 headers=headers,
@@ -487,6 +493,9 @@ class Transport:
                 status_code=403,
                 error_code=error_code,
                 operation=operation,
+                details=details,
+                retry_after=retry_after,
+                request_id=request_id,
                 metadata=metadata,
                 payload=payload,
                 headers=headers,
@@ -497,6 +506,9 @@ class Transport:
                 status_code=404,
                 error_code=error_code,
                 operation=operation,
+                details=details,
+                retry_after=retry_after,
+                request_id=request_id,
                 metadata=metadata,
                 payload=payload,
                 headers=headers,
@@ -507,6 +519,9 @@ class Transport:
                 status_code=response.status_code,
                 error_code=error_code,
                 operation=operation,
+                details=details,
+                retry_after=retry_after,
+                request_id=request_id,
                 metadata=metadata,
                 payload=payload,
                 headers=headers,
@@ -517,6 +532,9 @@ class Transport:
                 status_code=409,
                 error_code=error_code,
                 operation=operation,
+                details=details,
+                retry_after=retry_after,
+                request_id=request_id,
                 metadata=metadata,
                 payload=payload,
                 headers=headers,
@@ -527,6 +545,9 @@ class Transport:
                 status_code=429,
                 error_code=error_code,
                 operation=operation,
+                details=details,
+                retry_after=retry_after,
+                request_id=request_id,
                 metadata=metadata,
                 payload=payload,
                 headers=headers,
@@ -537,6 +558,9 @@ class Transport:
                 status_code=response.status_code,
                 error_code=error_code,
                 operation=operation,
+                details=details,
+                retry_after=retry_after,
+                request_id=request_id,
                 metadata=metadata,
                 payload=payload,
                 headers=headers,
@@ -547,6 +571,9 @@ class Transport:
                 status_code=response.status_code,
                 error_code=error_code,
                 operation=operation,
+                details=details,
+                retry_after=retry_after,
+                request_id=request_id,
                 metadata=metadata,
                 payload=payload,
                 headers=headers,
@@ -556,6 +583,9 @@ class Transport:
             status_code=response.status_code,
             error_code=error_code,
             operation=operation,
+            details=details,
+            retry_after=retry_after,
+            request_id=request_id,
             metadata=metadata,
             payload=payload,
             headers=headers,
@@ -585,6 +615,22 @@ class Transport:
             return None
         value = payload.get("code") or payload.get("error")
         return value if isinstance(value, str) else None
+
+    def _extract_error_details(self, payload: object) -> object | None:
+        if not isinstance(payload, Mapping):
+            return None
+        for key in ("details", "fields", "errors", "violations"):
+            value = payload.get(key)
+            if value is not None:
+                return cast(object, value)
+        return None
+
+    def _extract_request_id(self, headers: Mapping[str, str]) -> str | None:
+        for key in ("x-request-id", "x-correlation-id", "x-amzn-requestid"):
+            value = headers.get(key)
+            if value:
+                return value
+        return None
 
     def _get_retry_after_seconds(self, headers: Mapping[str, str]) -> float:
         raw_value = headers.get("retry-after")

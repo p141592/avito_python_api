@@ -58,6 +58,23 @@ def test_account_domain_maps_profile_balance_and_operations() -> None:
     assert history[0].operation_type == "payment"
 
 
+def test_account_balance_resolves_user_id_from_self_when_not_configured() -> None:
+    seen_paths: list[str] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        seen_paths.append(request.url.path)
+        if request.url.path == "/core/v1/accounts/self":
+            return httpx.Response(200, json={"id": 7})
+        return httpx.Response(200, json={"user_id": 7, "balance": {"real": 150.0}})
+
+    account = Account(make_transport(httpx.MockTransport(handler)))
+
+    balance = account.get_balance()
+
+    assert balance.user_id == 7
+    assert seen_paths == ["/core/v1/accounts/self", "/core/v1/accounts/7/balance/"]
+
+
 def test_account_hierarchy_domain_maps_employees_phones_and_items() -> None:
     def handler(request: httpx.Request) -> httpx.Response:
         if request.url.path == "/checkAhUserV1":

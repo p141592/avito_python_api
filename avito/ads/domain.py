@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from collections.abc import Sequence
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import date, datetime
 
 from avito.ads.client import (
     AdsClient,
@@ -63,8 +63,26 @@ def _preview_result(
     )
 
 
-def _serialize_datetime(value: datetime | None) -> str | None:
-    return value.isoformat() if value is not None else None
+StatsDate = date | datetime | str
+
+
+def _serialize_stats_date(value: StatsDate | None) -> str | None:
+    if value is None:
+        return None
+    if isinstance(value, datetime):
+        return value.date().isoformat()
+    if isinstance(value, date):
+        return value.isoformat()
+    normalized = value.strip()
+    if not normalized:
+        raise ValidationError("Дата статистики не должна быть пустой строкой.")
+    try:
+        return datetime.fromisoformat(normalized.replace("Z", "+00:00")).date().isoformat()
+    except ValueError:
+        try:
+            return date.fromisoformat(normalized).isoformat()
+        except ValueError as exc:
+            raise ValidationError("Дата статистики должна быть в ISO-формате.") from exc
 
 
 @dataclass(slots=True, frozen=True)
@@ -97,7 +115,7 @@ class Ad(DomainObject):
         Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
         """
 
-        user_id = int(self.user_id) if self.user_id is not None else None
+        user_id = self._resolve_user_id(self.user_id)
         return AdsClient(self.transport).list_items(
             user_id=user_id, status=status, limit=limit, offset=offset
         )
@@ -128,9 +146,9 @@ class Ad(DomainObject):
         return int(self.item_id)
 
     def _require_ids(self) -> tuple[int, int]:
-        if self.item_id is None or self.user_id is None:
-            raise ValidationError("Для операции требуются `item_id` и `user_id`.")
-        return int(self.item_id), int(self.user_id)
+        if self.item_id is None:
+            raise ValidationError("Для операции требуется `item_id`.")
+        return int(self.item_id), self._resolve_user_id(self.user_id)
 
 
 @dataclass(slots=True, frozen=True)
@@ -144,8 +162,8 @@ class AdStats(DomainObject):
         self,
         *,
         item_ids: list[int] | None = None,
-        date_from: datetime | None = None,
-        date_to: datetime | None = None,
+        date_from: StatsDate | None = None,
+        date_to: StatsDate | None = None,
     ) -> CallsStatsResult:
         """Получает статистику звонков.
 
@@ -157,16 +175,16 @@ class AdStats(DomainObject):
         return StatsClient(self.transport).get_calls_stats(
             user_id=user_id,
             item_ids=resolved_item_ids,
-            date_from=_serialize_datetime(date_from),
-            date_to=_serialize_datetime(date_to),
+            date_from=_serialize_stats_date(date_from),
+            date_to=_serialize_stats_date(date_to),
         )
 
     def get_item_stats(
         self,
         *,
         item_ids: list[int] | None = None,
-        date_from: datetime | None = None,
-        date_to: datetime | None = None,
+        date_from: StatsDate | None = None,
+        date_to: StatsDate | None = None,
         fields: list[str] | None = None,
     ) -> ItemStatsResult:
         """Получает статистику по списку объявлений.
@@ -179,8 +197,8 @@ class AdStats(DomainObject):
         return StatsClient(self.transport).get_item_stats(
             user_id=user_id,
             item_ids=resolved_item_ids,
-            date_from=_serialize_datetime(date_from),
-            date_to=_serialize_datetime(date_to),
+            date_from=_serialize_stats_date(date_from),
+            date_to=_serialize_stats_date(date_to),
             fields=fields or [],
         )
 
@@ -188,8 +206,8 @@ class AdStats(DomainObject):
         self,
         *,
         item_ids: list[int] | None = None,
-        date_from: datetime | None = None,
-        date_to: datetime | None = None,
+        date_from: StatsDate | None = None,
+        date_to: StatsDate | None = None,
         fields: list[str] | None = None,
     ) -> ItemAnalyticsResult:
         """Получает аналитику по профилю.
@@ -202,8 +220,8 @@ class AdStats(DomainObject):
         return StatsClient(self.transport).get_item_analytics(
             user_id=user_id,
             item_ids=resolved_item_ids,
-            date_from=_serialize_datetime(date_from),
-            date_to=_serialize_datetime(date_to),
+            date_from=_serialize_stats_date(date_from),
+            date_to=_serialize_stats_date(date_to),
             fields=fields or [],
         )
 
@@ -211,8 +229,8 @@ class AdStats(DomainObject):
         self,
         *,
         item_ids: list[int] | None = None,
-        date_from: datetime | None = None,
-        date_to: datetime | None = None,
+        date_from: StatsDate | None = None,
+        date_to: StatsDate | None = None,
         fields: list[str] | None = None,
     ) -> AccountSpendings:
         """Получает статистику расходов профиля.
@@ -225,15 +243,13 @@ class AdStats(DomainObject):
         return StatsClient(self.transport).get_account_spendings(
             user_id=user_id,
             item_ids=resolved_item_ids,
-            date_from=_serialize_datetime(date_from),
-            date_to=_serialize_datetime(date_to),
+            date_from=_serialize_stats_date(date_from),
+            date_to=_serialize_stats_date(date_to),
             fields=fields or [],
         )
 
     def _require_user_id(self) -> int:
-        if self.user_id is None:
-            raise ValidationError("Для операции требуется `user_id`.")
-        return int(self.user_id)
+        return self._resolve_user_id(self.user_id)
 
 
 @dataclass(slots=True, frozen=True)
@@ -360,9 +376,7 @@ class AdPromotion(DomainObject):
         return int(self.item_id)
 
     def _require_user_id(self) -> int:
-        if self.user_id is None:
-            raise ValidationError("Для операции требуется `user_id`.")
-        return int(self.user_id)
+        return self._resolve_user_id(self.user_id)
 
     def _require_ids(self) -> tuple[int, int]:
         return self._require_item_id(), self._require_user_id()

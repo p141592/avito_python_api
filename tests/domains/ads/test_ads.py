@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import json
 import logging
-from datetime import datetime
+from datetime import date, datetime
 
 import httpx
 import pytest
@@ -107,8 +107,61 @@ def test_ad_stats_accept_datetime_filters_and_serialize_isoformat() -> None:
 
     stats.get_item_analytics(item_ids=[101], date_from=started_at, date_to=finished_at)
 
-    assert seen_payloads[0]["dateFrom"] == "2026-04-18T00:00:00+03:00"
-    assert seen_payloads[0]["dateTo"] == "2026-04-18T23:59:59+03:00"
+    assert seen_payloads[0]["dateFrom"] == "2026-04-18"
+    assert seen_payloads[0]["dateTo"] == "2026-04-18"
+
+
+def test_ad_stats_accept_date_and_iso_string_filters() -> None:
+    seen_payloads: list[dict[str, object]] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        if request.url.path == "/core/v1/accounts/self":
+            return httpx.Response(200, json={"id": 7})
+        seen_payloads.append(json.loads(request.content.decode()))
+        return httpx.Response(200, json={"items": [{"item_id": 101, "views": 10}]})
+
+    stats = AdStats(make_transport(httpx.MockTransport(handler)), item_id=101)
+
+    stats.get_item_stats(date_from=date.fromisoformat("2026-04-18"), date_to="2026-04-19T10:15:00+03:00")
+
+    assert seen_payloads[0]["dateFrom"] == "2026-04-18"
+    assert seen_payloads[0]["dateTo"] == "2026-04-19"
+
+
+def test_ad_mapper_reads_nested_listing_fields() -> None:
+    def handler(request: httpx.Request) -> httpx.Response:
+        assert request.url.path == "/core/v1/accounts/7/items/101/"
+        return httpx.Response(
+            200,
+            json={
+                "id": 101,
+                "userId": 7,
+                "title": "Смартфон",
+                "description": "Хорошее состояние",
+                "price": {"value": 1000},
+                "status": {"value": "active"},
+                "url": "https://www.avito.ru/item",
+                "category": {"name": "Телефоны"},
+                "location": {"name": "Москва"},
+                "publishedAt": "2026-04-18T09:00:00Z",
+                "updatedAt": "2026-04-19T10:00:00Z",
+                "isModerated": True,
+                "visible": True,
+            },
+        )
+
+    ad = Ad(make_transport(httpx.MockTransport(handler)), item_id=101, user_id=7)
+
+    item = ad.get()
+
+    assert item.status is ListingStatus.ACTIVE
+    assert item.price == 1000
+    assert item.category == "Телефоны"
+    assert item.city == "Москва"
+    assert item.published_at is not None
+    assert item.updated_at is not None
+    assert item.is_moderated is True
+    assert item.is_visible is True
 
 
 def test_ads_unknown_enum_maps_to_unknown_and_warns_once(caplog: pytest.LogCaptureFixture) -> None:

@@ -6,6 +6,8 @@
 
 `ad().list()` возвращает `PaginatedList[Listing]`. Первую страницу SDK загружает сразу, остальные страницы дочитываются при обращении по индексу, итерации или `materialize()`.
 
+`user_id` можно передать явно или задать через `AVITO_USER_ID`. Если идентификатор не задан, SDK попробует получить его через `account().get_self()` и затем выполнит запрос объявлений.
+
 ```python
 from avito import AvitoClient
 
@@ -19,32 +21,36 @@ print(items[0].title)
 
 ## Карточка объявления
 
-Для чтения одного объявления нужны оба идентификатора: `user_id` и `item_id`.
+Для чтения одного объявления нужен `item_id`; `user_id` определяется тем же порядком, что и для списка: явный аргумент, настройки SDK, затем `get_self()`.
 
 ```python
 from avito import AvitoClient
 
 with AvitoClient.from_env() as avito:
-    item = avito.ad(item_id=101, user_id=7).get()
+    item = avito.ad(item_id=101).get()
 
 print(item.status)
 print(item.price)
+print(item.category)
+print(item.city)
 ```
+
+Модель `Listing` нормализует ключевые поля карточки: `title`, `price`, `status`, `description`, `url`, `category`, `city`, `published_at`, `updated_at`, `is_moderated` и `is_visible`. Вложенные upstream-ответы вроде `{"status": {"value": "active"}}` и `{"price": {"value": 1000}}` маппятся в обычные typed-поля SDK.
 
 ## Статистика объявлений
 
 `ad_stats()` группирует статистику, аналитику, звонки и расходы. Если `item_id` передан в фабрику, методы используют его по умолчанию.
 
 ```python
-from datetime import datetime, timezone
+from datetime import date
 
 from avito import AvitoClient
 
 with AvitoClient.from_env() as avito:
     stats = avito.ad_stats(item_id=101, user_id=7)
     item_stats = stats.get_item_stats(
-        date_from=datetime(2026, 4, 1, tzinfo=timezone.utc),
-        date_to=datetime(2026, 4, 23, tzinfo=timezone.utc),
+        date_from=date(2026, 4, 1),
+        date_to="2026-04-23",
     )
     calls = stats.get_calls_stats()
     spendings = stats.get_account_spendings()
@@ -53,6 +59,8 @@ print(item_stats.items[0].views)
 print(calls.items[0].answered_calls)
 print(spendings.total)
 ```
+
+Поля дат статистики принимают `date`, `datetime` и ISO-строки. Перед запросом SDK приводит их к формату `YYYY-MM-DD`, потому что статистические endpoints Avito ожидают дату без времени.
 
 ## Аналитика по списку объявлений
 

@@ -30,3 +30,14 @@ def test_ratings_flows() -> None:
     assert answer.delete().success is True
     assert profile.get().score == 4.7
     assert review.list(query=ReviewsQuery(page=2)).items[0].text == "Все отлично"
+
+
+def test_review_list_uses_working_default_page() -> None:
+    def handler(request: httpx.Request) -> httpx.Response:
+        assert request.url.path == "/ratings/v1/reviews"
+        assert request.url.params["page"] == "1"
+        return httpx.Response(200, json={"reviews": []})
+
+    review = Review(make_transport(httpx.MockTransport(handler)))
+
+    assert review.list().items == []

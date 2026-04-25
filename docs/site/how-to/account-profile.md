@@ -18,18 +18,26 @@ print(profile.email)
 
 ## Баланс
 
-`get_balance()` требует `user_id`. Его можно передать в фабрику `account()` один раз или явно в сам метод.
+`get_balance()` использует единый порядок определения пользователя:
+
+1. явный `user_id` в методе или фабрике;
+2. `AVITO_USER_ID` / `AvitoSettings.user_id`;
+3. `account().get_self()`, если `user_id` не задан.
+
+Для приложений с одним аккаунтом проще задать `AVITO_USER_ID`. Для скриптов можно не передавать `user_id`, тогда SDK сам прочитает профиль текущего токена и использует `profile.user_id`.
 
 ```python
 from avito import AvitoClient
 
 with AvitoClient.from_env() as avito:
-    balance = avito.account(user_id=7).get_balance()
+    balance = avito.account().get_balance()
 
 print(balance.real)
 print(balance.bonus)
 print(balance.total)
 ```
+
+Если `get_self()` не вернул идентификатор, SDK поднимет `ValidationError` с подсказкой передать `user_id` явно или настроить `AVITO_USER_ID`.
 
 ## История операций
 

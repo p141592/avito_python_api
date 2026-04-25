@@ -60,10 +60,11 @@ class RatingsClient:
         )
 
     def list_reviews(self, *, query: ReviewsQuery | None = None) -> ReviewsResult:
+        resolved_query = query or ReviewsQuery(page=1)
         return self.transport.request_public_model(
             "GET",
             "/ratings/v1/reviews",
             context=RequestContext("ratings.reviews.list"),
             mapper=map_reviews,
-            params=query.to_params() if query is not None else None,
+            params=resolved_query.to_params(),
         )

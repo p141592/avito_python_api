@@ -17,7 +17,7 @@ from avito.accounts.models import (
     EmployeesResult,
     OperationRecord,
 )
-from avito.core import PaginatedList, ValidationError
+from avito.core import PaginatedList
 from avito.core.domain import DomainObject
 
 
@@ -45,9 +45,7 @@ class Account(DomainObject):
         Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
         """
 
-        resolved_user_id = user_id or (int(self.user_id) if self.user_id is not None else None)
-        if resolved_user_id is None:
-            raise ValidationError("Для операции требуется `user_id`.")
+        resolved_user_id = self._resolve_user_id(user_id or self.user_id)
         return AccountsClient(self.transport).get_balance(user_id=resolved_user_id)
 
     def get_operations_history(
