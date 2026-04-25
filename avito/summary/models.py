@@ -9,6 +9,17 @@ from avito.core.serialization import SerializableModel
 
 
 @dataclass(slots=True, frozen=True)
+class SummaryUnavailableSection(SerializableModel):
+    """Диагностика недоступной части read-only сводки."""
+
+    section: str
+    operation: str | None
+    status_code: int | None
+    retry_after: float | None
+    message: str
+
+
+@dataclass(slots=True, frozen=True)
 class ListingHealthItem(SerializableModel):
     """Health-сводка по одному объявлению."""
 
@@ -39,6 +50,7 @@ class ListingHealthSummary(SerializableModel):
     total_favorites: int | None
     total_calls: int | None
     total_spendings: float | None
+    unavailable_sections: list[SummaryUnavailableSection]
 
 
 @dataclass(slots=True, frozen=True)
@@ -122,4 +134,5 @@ __all__ = (
     "OrderSummary",
     "PromotionSummary",
     "ReviewSummary",
+    "SummaryUnavailableSection",
 )

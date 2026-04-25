@@ -52,6 +52,7 @@ FileValue = (
     | tuple[str | None, BytesIO | bytes | str, str | None, Mapping[str, str]]
 )
 RequestFiles = Mapping[str, FileValue]
+_MIN_RETRY_AFTER_SECONDS = 0.5
 
 
 def build_httpx_timeout(timeouts: ApiTimeouts) -> httpx.Timeout:
@@ -635,11 +636,11 @@ class Transport:
     def _get_retry_after_seconds(self, headers: Mapping[str, str]) -> float:
         raw_value = headers.get("retry-after")
         if raw_value is None:
-            return self._retry_policy.compute_backoff(1)
+            return _MIN_RETRY_AFTER_SECONDS
         try:
             return max(float(raw_value), 0.0)
         except ValueError:
-            return self._retry_policy.compute_backoff(1)
+            return _MIN_RETRY_AFTER_SECONDS
 
     def _extract_filename(self, content_disposition: str | None) -> str | None:
         if content_disposition is None:

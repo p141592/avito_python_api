@@ -154,7 +154,51 @@ def test_listing_health_combines_listing_stats_calls_and_spendings() -> None:
     assert summary.total_views == 45
     assert summary.total_calls == 3
     assert summary.total_spendings == 77.5
+    assert summary.unavailable_sections == []
     assert summary.items[0].title == "Смартфон"
+    client.close()
+
+
+def test_listing_health_degrades_when_spendings_are_rate_limited() -> None:
+    def handler(request: httpx.Request) -> httpx.Response:
+        if request.url.path == "/core/v1/items":
+            return httpx.Response(
+                200,
+                json={
+                    "items": [{"id": 101, "title": "Смартфон", "status": "active"}],
+                    "total": 1,
+                },
+            )
+        if request.url.path == "/stats/v1/accounts/7/items":
+            return httpx.Response(200, json={"items": [{"item_id": 101, "views": 45}]})
+        if request.url.path == "/core/v1/accounts/7/calls/stats/":
+            return httpx.Response(200, json={"items": [{"item_id": 101, "calls": 3}]})
+        if request.url.path == "/stats/v2/accounts/7/spendings":
+            return httpx.Response(
+                429,
+                headers={"Retry-After": "0.01"},
+                json={"error": {"message": "Слишком много запросов"}},
+            )
+        raise AssertionError(request.url.path)
+
+    client = AvitoClient(
+        AvitoSettings(auth=AuthSettings(client_id="client-id", client_secret="client-secret"))
+    )
+    client.transport = make_transport(httpx.MockTransport(handler), user_id=7)
+
+    summary = client.listing_health()
+
+    assert summary.total_listings == 1
+    assert summary.total_views == 45
+    assert summary.total_calls == 3
+    assert summary.total_spendings is None
+    assert summary.items[0].spendings is None
+    assert len(summary.unavailable_sections) == 1
+    unavailable = summary.unavailable_sections[0]
+    assert unavailable.section == "spendings"
+    assert unavailable.operation == "ads.stats.spendings"
+    assert unavailable.status_code == 429
+    assert unavailable.retry_after == 0.01
     client.close()
 
 

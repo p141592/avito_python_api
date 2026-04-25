@@ -23,7 +23,7 @@ from avito.autoteka import (
 )
 from avito.config import AvitoSettings
 from avito.core import Transport, TransportDebugInfo
-from avito.core.exceptions import ConfigurationError
+from avito.core.exceptions import AvitoError, ConfigurationError
 from avito.core.transport import build_httpx_timeout
 from avito.cpa import CallTrackingCall, CpaArchive, CpaCall, CpaChat, CpaLead
 from avito.jobs import Application, JobDictionary, JobWebhook, Resume, Vacancy
@@ -51,6 +51,7 @@ from avito.summary import (
     OrderSummary,
     PromotionSummary,
     ReviewSummary,
+    SummaryUnavailableSection,
 )
 from avito.tariffs import Tariff
 
@@ -69,6 +70,16 @@ def _sum_optional_float(values: Iterable[float | None]) -> float | None:
     if not resolved:
         return None
     return sum(resolved)
+
+
+def _summary_unavailable_section(section: str, error: AvitoError) -> SummaryUnavailableSection:
+    return SummaryUnavailableSection(
+        section=section,
+        operation=error.operation,
+        status_code=error.status_code,
+        retry_after=error.retry_after,
+        message=error.message,
+    )
 
 
 class AvitoClient:
@@ -212,6 +223,7 @@ class AvitoClient:
         stats_by_item_id: dict[int, ListingStats] = {}
         calls_by_item_id: dict[int, CallStats] = {}
         spendings_by_item_id: dict[int, SpendingRecord] = {}
+        unavailable_sections: list[SummaryUnavailableSection] = []
         if item_ids:
             item_stats = self.ad_stats(user_id=resolved_user_id).get_item_stats(
                 item_ids=item_ids,
@@ -223,20 +235,24 @@ class AvitoClient:
                 date_from=date_from,
                 date_to=date_to,
             )
-            spendings = self.ad_stats(user_id=resolved_user_id).get_account_spendings(
-                item_ids=item_ids,
-                date_from=date_from,
-                date_to=date_to,
-            )
             stats_by_item_id = {
                 stats.item_id: stats for stats in item_stats.items if stats.item_id is not None
             }
             calls_by_item_id = {
                 stats.item_id: stats for stats in calls_stats.items if stats.item_id is not None
             }
-            spendings_by_item_id = {
-                item.item_id: item for item in spendings.items if item.item_id is not None
-            }
+            try:
+                spendings = self.ad_stats(user_id=resolved_user_id).get_account_spendings(
+                    item_ids=item_ids,
+                    date_from=date_from,
+                    date_to=date_to,
+                )
+            except AvitoError as error:
+                unavailable_sections.append(_summary_unavailable_section("spendings", error))
+            else:
+                spendings_by_item_id = {
+                    item.item_id: item for item in spendings.items if item.item_id is not None
+                }
         health_items = [
             ListingHealthItem(
                 item_id=listing.item_id,
@@ -274,6 +290,7 @@ class AvitoClient:
             total_favorites=_sum_optional_int(item.favorites for item in health_items),
             total_calls=_sum_optional_int(item.calls for item in health_items),
             total_spendings=_sum_optional_float(item.spendings for item in health_items),
+            unavailable_sections=unavailable_sections,
         )
 
     def chat_summary(self, *, user_id: int | str | None = None) -> ChatSummary:

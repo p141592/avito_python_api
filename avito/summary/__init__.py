@@ -10,6 +10,7 @@ from avito.summary.models import (
     OrderSummary,
     PromotionSummary,
     ReviewSummary,
+    SummaryUnavailableSection,
 )
 
 __all__ = (
@@ -22,4 +23,5 @@ __all__ = (
     "OrderSummary",
     "PromotionSummary",
     "ReviewSummary",
+    "SummaryUnavailableSection",
 )

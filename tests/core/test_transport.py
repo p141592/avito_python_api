@@ -300,6 +300,49 @@ def test_transport_exposes_structured_error_fields() -> None:
     assert error.value.request_id == "req-123"
 
 
+def test_transport_preserves_retry_after_header_value() -> None:
+    transport = Transport(
+        make_settings(retry_policy=RetryPolicy(max_attempts=1)),
+        client=httpx.Client(
+            transport=httpx.MockTransport(
+                lambda request: httpx.Response(
+                    429,
+                    json={"message": "Слишком много запросов."},
+                    headers={"Retry-After": "0.01"},
+                )
+            ),
+            base_url="https://api.avito.ru",
+        ),
+        sleep=lambda _: None,
+    )
+
+    with pytest.raises(RateLimitError) as error:
+        transport.request_json("GET", "/limited", context=RequestContext("limited"))
+
+    assert error.value.retry_after == 0.01
+
+
+def test_transport_uses_half_second_retry_after_default_without_header() -> None:
+    transport = Transport(
+        make_settings(retry_policy=RetryPolicy(max_attempts=1)),
+        client=httpx.Client(
+            transport=httpx.MockTransport(
+                lambda request: httpx.Response(
+                    429,
+                    json={"message": "Слишком много запросов."},
+                )
+            ),
+            base_url="https://api.avito.ru",
+        ),
+        sleep=lambda _: None,
+    )
+
+    with pytest.raises(RateLimitError) as error:
+        transport.request_json("GET", "/limited", context=RequestContext("limited"))
+
+    assert error.value.retry_after == 0.5
+
+
 def test_transport_raises_mapping_error_for_invalid_json() -> None:
     transport = Transport(
         make_settings(),

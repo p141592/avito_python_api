@@ -27,6 +27,7 @@ from avito.summary import (
     OrderSummary,
     PromotionSummary,
     ReviewSummary,
+    SummaryUnavailableSection,
 )
 
 __all__ = (
@@ -50,6 +51,7 @@ __all__ = (
     "RateLimitError",
     "ResponseMappingError",
     "ReviewSummary",
+    "SummaryUnavailableSection",
     "TransportError",
     "UnsupportedOperationError",
     "UpstreamApiError",
