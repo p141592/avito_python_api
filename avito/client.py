@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from collections.abc import Iterable
+from collections.abc import Callable, Iterable
 from datetime import date, datetime
 from pathlib import Path
 from types import TracebackType
@@ -80,6 +80,16 @@ def _summary_unavailable_section(section: str, error: AvitoError) -> SummaryUnav
         retry_after=error.retry_after,
         message=error.message,
     )
+
+
+def _safe_summary[SummaryT](
+    section: str,
+    factory: Callable[[], SummaryT],
+) -> tuple[SummaryT | None, list[SummaryUnavailableSection]]:
+    try:
+        return factory(), []
+    except AvitoError as error:
+        return None, [_summary_unavailable_section(section, error)]
 
 
 class AvitoClient:
@@ -189,18 +199,43 @@ class AvitoClient:
             date_from=date_from,
             date_to=date_to,
         )
+        item_ids = [item.item_id for item in listings.items if item.item_id is not None]
+        chats, chats_unavailable = _safe_summary(
+            "chats",
+            lambda: self.chat_summary(user_id=resolved_user_id),
+        )
+        orders, orders_unavailable = _safe_summary("orders", self.order_summary)
+        reviews, reviews_unavailable = _safe_summary("reviews", self.review_summary)
+        promotion, promotion_unavailable = _safe_summary(
+            "promotion",
+            lambda: self.promotion_summary(item_ids=item_ids),
+        )
+        unavailable_sections = [
+            *listings.unavailable_sections,
+            *chats_unavailable,
+            *orders_unavailable,
+            *reviews_unavailable,
+            *promotion_unavailable,
+        ]
+        if chats is not None:
+            unavailable_sections.extend(chats.unavailable_sections)
+        if orders is not None:
+            unavailable_sections.extend(orders.unavailable_sections)
+        if reviews is not None:
+            unavailable_sections.extend(reviews.unavailable_sections)
+        if promotion is not None:
+            unavailable_sections.extend(promotion.unavailable_sections)
         return AccountHealthSummary(
             user_id=resolved_user_id,
             balance_total=balance.total,
             balance_real=balance.real,
             balance_bonus=balance.bonus,
             listings=listings,
-            chats=self.chat_summary(user_id=resolved_user_id),
-            orders=self.order_summary(),
-            reviews=self.review_summary(),
-            promotion=self.promotion_summary(
-                item_ids=[item.item_id for item in listings.items if item.item_id is not None]
-            ),
+            chats=chats,
+            orders=orders,
+            reviews=reviews,
+            promotion=promotion,
+            unavailable_sections=unavailable_sections,
         )
 
     def listing_health(
@@ -322,15 +357,36 @@ class AvitoClient:
     def review_summary(self) -> ReviewSummary:
         """Возвращает итоговую read-only сводку по отзывам."""
 
-        reviews = self.review().list()
+        reviews_error: AvitoError | None = None
+        try:
+            reviews = self.review().list()
+        except AvitoError as error:
+            reviews = None
+            reviews_error = error
         rating = self.rating_profile().get()
-        scores = [item.score for item in reviews.items if item.score is not None]
+        scores = [item.score for item in reviews.items if item.score is not None] if reviews else []
         average_score = sum(scores) / len(scores) if scores else None
+        unavailable_sections = (
+            [_summary_unavailable_section("reviews", reviews_error)]
+            if reviews_error is not None
+            else []
+        )
         return ReviewSummary(
-            total_reviews=reviews.total if reviews.total is not None else len(reviews.items),
-            average_score=average_score,
-            unanswered_reviews=sum(1 for item in reviews.items if item.can_answer is True),
+            total_reviews=(
+                reviews.total
+                if reviews is not None and reviews.total is not None
+                else rating.reviews_count
+                if reviews is None
+                else len(reviews.items)
+            ),
+            average_score=average_score if reviews is not None else rating.score,
+            unanswered_reviews=(
+                sum(1 for item in reviews.items if item.can_answer is True)
+                if reviews is not None
+                else None
+            ),
             rating_score=rating.score,
+            unavailable_sections=unavailable_sections,
         )
 
     def promotion_summary(self, *, item_ids: list[int] | None = None) -> PromotionSummary:

@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 from avito.ads.enums import ListingStatus
 from avito.core.serialization import SerializableModel
@@ -50,7 +50,7 @@ class ListingHealthSummary(SerializableModel):
     total_favorites: int | None
     total_calls: int | None
     total_spendings: float | None
-    unavailable_sections: list[SummaryUnavailableSection]
+    unavailable_sections: list[SummaryUnavailableSection] = field(default_factory=list)
 
 
 @dataclass(slots=True, frozen=True)
@@ -61,6 +61,7 @@ class ChatSummary(SerializableModel):
     total_chats: int
     unread_chats: int
     unread_messages: int
+    unavailable_sections: list[SummaryUnavailableSection] = field(default_factory=list)
 
 
 @dataclass(slots=True, frozen=True)
@@ -69,16 +70,18 @@ class OrderSummary(SerializableModel):
 
     total_orders: int
     active_orders: int
+    unavailable_sections: list[SummaryUnavailableSection] = field(default_factory=list)
 
 
 @dataclass(slots=True, frozen=True)
 class ReviewSummary(SerializableModel):
     """Итоговая read-only сводка по отзывам."""
 
-    total_reviews: int
+    total_reviews: int | None
     average_score: float | None
-    unanswered_reviews: int
+    unanswered_reviews: int | None
     rating_score: float | None
+    unavailable_sections: list[SummaryUnavailableSection] = field(default_factory=list)
 
 
 @dataclass(slots=True, frozen=True)
@@ -89,6 +92,7 @@ class PromotionSummary(SerializableModel):
     active_orders: int
     total_services: int
     available_services: int
+    unavailable_sections: list[SummaryUnavailableSection] = field(default_factory=list)
 
 
 @dataclass(slots=True, frozen=True)
@@ -104,6 +108,7 @@ class AccountHealthSummary(SerializableModel):
     orders: OrderSummary | None = None
     reviews: ReviewSummary | None = None
     promotion: PromotionSummary | None = None
+    unavailable_sections: list[SummaryUnavailableSection] = field(default_factory=list)
 
 
 @dataclass(slots=True, frozen=True)
