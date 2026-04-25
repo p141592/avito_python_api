@@ -10,6 +10,12 @@ class ListingStatus(str, Enum):
 
     UNKNOWN = "__unknown__"
     ACTIVE = "active"
+    REMOVED = "removed"
+    OLD = "old"
+    BLOCKED = "blocked"
+    REJECTED = "rejected"
+    NOT_FOUND = "not_found"
+    ANOTHER_USER = "another_user"
 
 
 class AdsActionStatus(str, Enum):

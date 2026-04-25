@@ -49,6 +49,7 @@ MODEL_MODULES = (
     "avito.promotion.models",
     "avito.ratings.models",
     "avito.realty.models",
+    "avito.summary.models",
     "avito.tariffs.models",
 )
 

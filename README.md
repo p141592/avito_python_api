@@ -131,7 +131,7 @@ with AvitoClient.from_env() as avito:
     stats = avito.ad_stats(item_id=42, user_id=123).get_item_stats()
 ```
 
-`user_id` можно передать явно, задать через `AVITO_USER_ID` или оставить пустым для read-only вызовов, где SDK может определить пользователя через `account().get_self()`. Если идентификатор не удалось определить, SDK поднимает `ValidationError` с подсказкой, как вызвать метод правильно.
+`user_id` можно передать явно, задать через `AVITO_USER_ID` или оставить пустым для read-only вызовов, где SDK может определить пользователя через `account().get_self()`. Если идентификатор не удалось определить, SDK поднимает `ValidationError` с подсказкой, как вызвать метод правильно. Для OAuth secret поддерживаются `AVITO_CLIENT_SECRET` и alias `AVITO_SECRET`.
 
 Статистические методы принимают `date`, `datetime` и ISO-строки, а в Avito API отправляют дату в формате `YYYY-MM-DD`. Модель `Listing` нормализует основные поля объявления: `title`, `price`, `status`, `description`, `url`, `category`, `city`, `published_at`, `updated_at`, `is_moderated`, `is_visible`.
 
@@ -270,7 +270,7 @@ with AvitoClient.from_env() as avito:
     tariff = avito.tariff().get_tariff_info()
 ```
 
-`review().list()` по умолчанию запрашивает первую страницу отзывов (`page=1`). Для явной пагинации передайте `ReviewsQuery(page=...)`.
+`review().list()` по умолчанию запрашивает первую страницу отзывов (`page=1`, `limit=50`). Для явной пагинации передайте `ReviewsQuery(page=..., limit=...)`.
 
 ## Пагинация
 
@@ -291,12 +291,14 @@ with AvitoClient.from_env() as avito:
 from avito import AvitoClient
 
 with AvitoClient.from_env() as avito:
-    items = avito.ad(user_id=123).list(status="active", limit=50)
+    items = avito.ad(user_id=123).list(status="active", limit=50, page_size=25)
 
     first = items[0]
     preview = items[:10]
     all_items = items.materialize()
 ```
+
+В `ad().list()` параметр `limit` ограничивает общий максимум элементов результата, а `page_size` задаёт размер страницы upstream API.
 
 ## Ошибки
 

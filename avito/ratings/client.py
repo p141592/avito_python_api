@@ -60,7 +60,10 @@ class RatingsClient:
         )
 
     def list_reviews(self, *, query: ReviewsQuery | None = None) -> ReviewsResult:
-        resolved_query = query or ReviewsQuery(page=1)
+        resolved_query = ReviewsQuery(
+            page=query.page if query is not None and query.page is not None else 1,
+            limit=query.limit if query is not None and query.limit is not None else 50,
+        )
         return self.transport.request_public_model(
             "GET",
             "/ratings/v1/reviews",

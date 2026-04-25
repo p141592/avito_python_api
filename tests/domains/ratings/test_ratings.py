@@ -36,6 +36,7 @@ def test_review_list_uses_working_default_page() -> None:
     def handler(request: httpx.Request) -> httpx.Response:
         assert request.url.path == "/ratings/v1/reviews"
         assert request.url.params["page"] == "1"
+        assert request.url.params["limit"] == "50"
         return httpx.Response(200, json={"reviews": []})
 
     review = Review(make_transport(httpx.MockTransport(handler)))

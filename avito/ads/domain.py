@@ -106,6 +106,7 @@ class Ad(DomainObject):
         *,
         status: ListingStatus | str | None = None,
         limit: int | None = None,
+        page_size: int | None = None,
         offset: int | None = None,
     ) -> PaginatedList[Listing]:
         """Получает список объявлений.
@@ -117,7 +118,11 @@ class Ad(DomainObject):
 
         user_id = self._resolve_user_id(self.user_id)
         return AdsClient(self.transport).list_items(
-            user_id=user_id, status=status, limit=limit, offset=offset
+            user_id=user_id,
+            status=status,
+            limit=limit,
+            page_size=page_size,
+            offset=offset,
         )
 
     def update_price(

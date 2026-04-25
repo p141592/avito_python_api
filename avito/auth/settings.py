@@ -16,7 +16,7 @@ class AuthSettings:
 
     ENV_ALIASES: ClassVar[dict[str, tuple[str, ...]]] = {
         "client_id": ("AVITO_CLIENT_ID",),
-        "client_secret": ("AVITO_CLIENT_SECRET",),
+        "client_secret": ("AVITO_CLIENT_SECRET", "AVITO_SECRET"),
         "scope": ("AVITO_SCOPE",),
         "refresh_token": ("AVITO_REFRESH_TOKEN",),
         "token_url": ("AVITO_TOKEN_URL",),

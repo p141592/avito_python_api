@@ -32,7 +32,7 @@ def test_ads_list_uses_lazy_pagination_with_list_like_items() -> None:
 
     ad = Ad(make_transport(httpx.MockTransport(handler)), user_id=7)
 
-    items = ad.list(status="active", limit=2)
+    items = ad.list(status="active", page_size=2)
 
     assert seen_offsets == ["0"]
     assert items[3].item_id == 104
@@ -45,6 +45,30 @@ def test_ads_list_uses_lazy_pagination_with_list_like_items() -> None:
         "Камера",
     ]
     assert seen_offsets == ["0", "2", "4"]
+
+
+def test_ads_list_limit_is_total_cap_not_page_size() -> None:
+    seen_limits: list[str] = []
+    seen_offsets: list[str] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        assert request.url.path == "/core/v1/items"
+        seen_limits.append(request.url.params["limit"])
+        offset = request.url.params["offset"]
+        seen_offsets.append(offset)
+        page_items = {
+            "0": [{"id": 101}, {"id": 102}],
+            "2": [{"id": 103}],
+        }
+        return httpx.Response(200, json={"items": page_items[offset], "total": 5})
+
+    ad = Ad(make_transport(httpx.MockTransport(handler)), user_id=7)
+
+    items = ad.list(limit=3, page_size=2)
+
+    assert [item.item_id for item in items.materialize()] == [101, 102, 103]
+    assert seen_limits == ["2", "1"]
+    assert seen_offsets == ["0", "2"]
 
 
 def test_ads_domain_covers_item_stats_spendings_and_promotion() -> None:
@@ -162,6 +186,32 @@ def test_ad_mapper_reads_nested_listing_fields() -> None:
     assert item.updated_at is not None
     assert item.is_moderated is True
     assert item.is_visible is True
+
+
+def test_ad_mapper_reads_wrapped_item_payload_and_full_status_set() -> None:
+    def handler(request: httpx.Request) -> httpx.Response:
+        assert request.url.path == "/core/v1/accounts/7/items/101/"
+        return httpx.Response(
+            200,
+            json={
+                "item": {
+                    "itemId": "101",
+                    "title": "Архивное объявление",
+                    "price": 100,
+                    "status": "removed",
+                    "link": "https://www.avito.ru/item",
+                }
+            },
+        )
+
+    ad = Ad(make_transport(httpx.MockTransport(handler)), item_id=101, user_id=7)
+
+    item = ad.get()
+
+    assert item.item_id == 101
+    assert item.title == "Архивное объявление"
+    assert item.status is ListingStatus.REMOVED
+    assert item.is_visible is False
 
 
 def test_ads_unknown_enum_maps_to_unknown_and_warns_once(caplog: pytest.LogCaptureFixture) -> None:

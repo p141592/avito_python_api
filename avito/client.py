@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from collections.abc import Iterable
+from datetime import date, datetime
 from pathlib import Path
 from types import TracebackType
 
@@ -9,6 +11,8 @@ import httpx
 
 from avito.accounts import Account, AccountHierarchy
 from avito.ads import Ad, AdPromotion, AdStats, AutoloadArchive, AutoloadProfile, AutoloadReport
+from avito.ads.enums import ListingStatus
+from avito.ads.models import CallStats, ListingStats, SpendingRecord
 from avito.auth import AlternateTokenClient, AuthProvider, TokenClient
 from avito.autoteka import (
     AutotekaMonitoring,
@@ -25,6 +29,7 @@ from avito.cpa import CallTrackingCall, CpaArchive, CpaCall, CpaChat, CpaLead
 from avito.jobs import Application, JobDictionary, JobWebhook, Resume, Vacancy
 from avito.messenger import Chat, ChatMedia, ChatMessage, ChatWebhook, SpecialOfferCampaign
 from avito.orders import DeliveryOrder, DeliveryTask, Order, OrderLabel, SandboxDelivery, Stock
+from avito.orders.enums import OrderStatus
 from avito.promotion import (
     AutostrategyCampaign,
     BbipPromotion,
@@ -33,9 +38,37 @@ from avito.promotion import (
     TargetActionPricing,
     TrxPromotion,
 )
+from avito.promotion.enums import PromotionStatus
 from avito.ratings import RatingProfile, Review, ReviewAnswer
 from avito.realty import RealtyAnalyticsReport, RealtyBooking, RealtyListing, RealtyPricing
+from avito.summary import (
+    AccountHealthSummary,
+    CapabilityDiscoveryResult,
+    CapabilityInfo,
+    ChatSummary,
+    ListingHealthItem,
+    ListingHealthSummary,
+    OrderSummary,
+    PromotionSummary,
+    ReviewSummary,
+)
 from avito.tariffs import Tariff
+
+SummaryDate = date | datetime | str
+
+
+def _sum_optional_int(values: Iterable[int | None]) -> int | None:
+    resolved = [value for value in values if value is not None]
+    if not resolved:
+        return None
+    return sum(resolved)
+
+
+def _sum_optional_float(values: Iterable[float | None]) -> float | None:
+    resolved = [value for value in values if value is not None]
+    if not resolved:
+        return None
+    return sum(resolved)
 
 
 class AvitoClient:
@@ -103,6 +136,275 @@ class AvitoClient:
 
         return self._require_transport().debug_info()
 
+    def business_summary(
+        self,
+        *,
+        user_id: int | str | None = None,
+        listing_limit: int = 50,
+        listing_page_size: int = 50,
+        date_from: SummaryDate | None = None,
+        date_to: SummaryDate | None = None,
+    ) -> AccountHealthSummary:
+        """Возвращает итоговую read-only сводку бизнеса.
+
+        Метод является совместимым именем для `account_health()` и не содержит отдельной логики.
+        """
+
+        return self.account_health(
+            user_id=user_id,
+            listing_limit=listing_limit,
+            listing_page_size=listing_page_size,
+            date_from=date_from,
+            date_to=date_to,
+        )
+
+    def account_health(
+        self,
+        *,
+        user_id: int | str | None = None,
+        listing_limit: int = 50,
+        listing_page_size: int = 50,
+        date_from: SummaryDate | None = None,
+        date_to: SummaryDate | None = None,
+    ) -> AccountHealthSummary:
+        """Возвращает итоговую read-only health-сводку аккаунта."""
+
+        resolved_user_id = self._resolve_user_id(user_id)
+        balance = self.account(resolved_user_id).get_balance()
+        listings = self.listing_health(
+            user_id=resolved_user_id,
+            limit=listing_limit,
+            page_size=listing_page_size,
+            date_from=date_from,
+            date_to=date_to,
+        )
+        return AccountHealthSummary(
+            user_id=resolved_user_id,
+            balance_total=balance.total,
+            balance_real=balance.real,
+            balance_bonus=balance.bonus,
+            listings=listings,
+            chats=self.chat_summary(user_id=resolved_user_id),
+            orders=self.order_summary(),
+            reviews=self.review_summary(),
+            promotion=self.promotion_summary(
+                item_ids=[item.item_id for item in listings.items if item.item_id is not None]
+            ),
+        )
+
+    def listing_health(
+        self,
+        *,
+        user_id: int | str | None = None,
+        limit: int = 50,
+        page_size: int = 50,
+        date_from: SummaryDate | None = None,
+        date_to: SummaryDate | None = None,
+    ) -> ListingHealthSummary:
+        """Возвращает health-сводку объявлений без ручного сопоставления статистики."""
+
+        resolved_user_id = self._resolve_user_id(user_id)
+        listings = self.ad(user_id=resolved_user_id).list(
+            limit=limit,
+            page_size=page_size,
+        ).materialize()
+        item_ids = [item.item_id for item in listings if item.item_id is not None]
+        stats_by_item_id: dict[int, ListingStats] = {}
+        calls_by_item_id: dict[int, CallStats] = {}
+        spendings_by_item_id: dict[int, SpendingRecord] = {}
+        if item_ids:
+            item_stats = self.ad_stats(user_id=resolved_user_id).get_item_stats(
+                item_ids=item_ids,
+                date_from=date_from,
+                date_to=date_to,
+            )
+            calls_stats = self.ad_stats(user_id=resolved_user_id).get_calls_stats(
+                item_ids=item_ids,
+                date_from=date_from,
+                date_to=date_to,
+            )
+            spendings = self.ad_stats(user_id=resolved_user_id).get_account_spendings(
+                item_ids=item_ids,
+                date_from=date_from,
+                date_to=date_to,
+            )
+            stats_by_item_id = {
+                stats.item_id: stats for stats in item_stats.items if stats.item_id is not None
+            }
+            calls_by_item_id = {
+                stats.item_id: stats for stats in calls_stats.items if stats.item_id is not None
+            }
+            spendings_by_item_id = {
+                item.item_id: item for item in spendings.items if item.item_id is not None
+            }
+        health_items = [
+            ListingHealthItem(
+                item_id=listing.item_id,
+                title=listing.title,
+                status=listing.status,
+                price=listing.price,
+                url=listing.url,
+                is_visible=listing.is_visible,
+                views=stats_by_item_id[listing.item_id].views
+                if listing.item_id in stats_by_item_id
+                else None,
+                contacts=stats_by_item_id[listing.item_id].contacts
+                if listing.item_id in stats_by_item_id
+                else None,
+                favorites=stats_by_item_id[listing.item_id].favorites
+                if listing.item_id in stats_by_item_id
+                else None,
+                calls=calls_by_item_id[listing.item_id].calls
+                if listing.item_id in calls_by_item_id
+                else None,
+                spendings=spendings_by_item_id[listing.item_id].amount
+                if listing.item_id in spendings_by_item_id
+                else None,
+            )
+            for listing in listings
+        ]
+        return ListingHealthSummary(
+            user_id=resolved_user_id,
+            items=health_items,
+            total_listings=len(health_items),
+            visible_listings=sum(1 for item in health_items if item.is_visible is True),
+            active_listings=sum(1 for item in health_items if item.status is ListingStatus.ACTIVE),
+            total_views=_sum_optional_int(item.views for item in health_items),
+            total_contacts=_sum_optional_int(item.contacts for item in health_items),
+            total_favorites=_sum_optional_int(item.favorites for item in health_items),
+            total_calls=_sum_optional_int(item.calls for item in health_items),
+            total_spendings=_sum_optional_float(item.spendings for item in health_items),
+        )
+
+    def chat_summary(self, *, user_id: int | str | None = None) -> ChatSummary:
+        """Возвращает итоговую read-only сводку по чатам."""
+
+        resolved_user_id = self._resolve_user_id(user_id)
+        result = self.chat(user_id=resolved_user_id).list()
+        unread_counts = [item.unread_count or 0 for item in result.items]
+        return ChatSummary(
+            user_id=resolved_user_id,
+            total_chats=result.total if result.total is not None else len(result.items),
+            unread_chats=sum(1 for count in unread_counts if count > 0),
+            unread_messages=sum(unread_counts),
+        )
+
+    def order_summary(self) -> OrderSummary:
+        """Возвращает итоговую read-only сводку по заказам."""
+
+        result = self.order().list()
+        return OrderSummary(
+            total_orders=result.total if result.total is not None else len(result.items),
+            active_orders=sum(
+                1
+                for item in result.items
+                if item.status is not None and item.status is not OrderStatus.UNKNOWN
+            ),
+        )
+
+    def review_summary(self) -> ReviewSummary:
+        """Возвращает итоговую read-only сводку по отзывам."""
+
+        reviews = self.review().list()
+        rating = self.rating_profile().get()
+        scores = [item.score for item in reviews.items if item.score is not None]
+        average_score = sum(scores) / len(scores) if scores else None
+        return ReviewSummary(
+            total_reviews=reviews.total if reviews.total is not None else len(reviews.items),
+            average_score=average_score,
+            unanswered_reviews=sum(1 for item in reviews.items if item.can_answer is True),
+            rating_score=rating.score,
+        )
+
+    def promotion_summary(self, *, item_ids: list[int] | None = None) -> PromotionSummary:
+        """Возвращает итоговую read-only сводку по продвижению."""
+
+        orders = self.promotion_order().list_orders(item_ids=item_ids)
+        services = self.promotion_order().list_services(item_ids=item_ids) if item_ids else None
+        service_items = services.items if services is not None else []
+        return PromotionSummary(
+            total_orders=len(orders.items),
+            active_orders=sum(
+                1
+                for item in orders.items
+                if item.status
+                in {
+                    PromotionStatus.APPLIED,
+                    PromotionStatus.AUTO,
+                    PromotionStatus.CREATED,
+                    PromotionStatus.MANUAL,
+                    PromotionStatus.PARTIAL,
+                    PromotionStatus.PROCESSED,
+                }
+            ),
+            total_services=len(service_items),
+            available_services=sum(
+                1 for item in service_items if item.status is PromotionStatus.AVAILABLE
+            ),
+        )
+
+    def capabilities(self) -> CapabilityDiscoveryResult:
+        """Возвращает справочник возможностей SDK и типовых причин отказов API."""
+
+        has_user_id = self.debug_info().user_id is not None
+        configured_reasons = ["Настроены OAuth client_id и client_secret."]
+        user_id_reasons = (
+            ["Настроен user_id или его можно получить через профиль."]
+            if has_user_id
+            else ["Для части операций SDK получит user_id через профиль или потребует явный аргумент."]
+        )
+        return CapabilityDiscoveryResult(
+            items=[
+                CapabilityInfo(
+                    operation="account_health",
+                    factory_method="account_health",
+                    is_available=True,
+                    reasons=configured_reasons + user_id_reasons,
+                    possible_error_codes=[400, 401, 403, 429],
+                ),
+                CapabilityInfo(
+                    operation="listing_health",
+                    factory_method="listing_health",
+                    is_available=True,
+                    reasons=user_id_reasons
+                    + ["400 возможен при неверном фильтре, 403 при недоступном аккаунте, 429 при лимите."],
+                    possible_error_codes=[400, 403, 429],
+                ),
+                CapabilityInfo(
+                    operation="chat_summary",
+                    factory_method="chat_summary",
+                    is_available=True,
+                    reasons=user_id_reasons
+                    + ["403 возможен без доступа к мессенджеру, 429 при лимите запросов."],
+                    possible_error_codes=[400, 403, 429],
+                ),
+                CapabilityInfo(
+                    operation="order_summary",
+                    factory_method="order_summary",
+                    is_available=True,
+                    reasons=["Операция использует read-only список заказов."],
+                    possible_error_codes=[400, 403, 429],
+                ),
+                CapabilityInfo(
+                    operation="review_summary",
+                    factory_method="review_summary",
+                    is_available=True,
+                    reasons=["Операция использует список отзывов и рейтинг профиля."],
+                    possible_error_codes=[400, 403, 429],
+                ),
+                CapabilityInfo(
+                    operation="promotion_summary",
+                    factory_method="promotion_summary",
+                    is_available=True,
+                    reasons=[
+                        "Сводка заявок доступна без item_ids; сводка услуг требует item_ids.",
+                        "403 возможен без доступа к продвижению, 429 при лимите запросов.",
+                    ],
+                    possible_error_codes=[400, 403, 429],
+                ),
+            ]
+        )
+
     def close(self) -> None:
         """Закрывает внутренние HTTP-клиенты SDK."""
 
@@ -161,6 +463,9 @@ class AvitoClient:
     def _require_transport(self) -> Transport:
         self._ensure_open()
         return self.transport
+
+    def _resolve_user_id(self, user_id: int | str | None = None) -> int:
+        return Account(self._require_transport(), user_id=user_id)._resolve_user_id(user_id)
 
     def account(self, user_id: int | str | None = None) -> Account:
         """Создает доменный объект аккаунта."""

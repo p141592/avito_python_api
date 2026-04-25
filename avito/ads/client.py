@@ -67,6 +67,14 @@ from avito.promotion.mappers import map_promotion_action
 from avito.promotion.models import PromotionActionResult
 
 
+def _bounded_total(total: int | None, max_items: int | None) -> int | None:
+    if max_items is None:
+        return total
+    if total is None:
+        return max_items
+    return min(total, max_items)
+
+
 @dataclass(slots=True, frozen=True)
 class AdsClient:
     """Выполняет HTTP-операции по разделу объявлений."""
@@ -90,11 +98,13 @@ class AdsClient:
         user_id: int | None = None,
         status: ListingStatus | str | None = None,
         limit: int | None = None,
+        page_size: int | None = None,
         offset: int | None = None,
     ) -> PaginatedList[Listing]:
         """Получает список объявлений пользователя."""
 
-        start_offset = offset if offset is not None else 0 if limit is not None else None
+        resolved_page_size = page_size or limit
+        start_offset = offset if offset is not None else 0 if resolved_page_size is not None else None
         result = request_public_model(
             self.transport,
             "GET",
@@ -104,16 +114,19 @@ class AdsClient:
             params={
                 "user_id": user_id,
                 "status": status,
-                "limit": limit,
+                "limit": resolved_page_size,
                 "offset": start_offset,
             },
         )
-        page_size = limit if limit and limit > 0 else len(result.items)
+        page_size = resolved_page_size if resolved_page_size and resolved_page_size > 0 else len(result.items)
+        max_items = limit if limit is not None and limit >= 0 else None
+        first_items = result.items[:max_items] if max_items is not None else result.items
+        total = _bounded_total(result.total, max_items)
         resolved_offset = start_offset or 0
         start_page = resolved_offset // page_size + 1 if page_size > 0 else 1
         first_page = JsonPage(
-            items=list(result.items),
-            total=result.total,
+            items=list(first_items),
+            total=total,
             page=start_page,
             per_page=page_size if page_size > 0 else None,
         )
@@ -123,6 +136,8 @@ class AdsClient:
                 user_id=user_id,
                 status=status,
                 page_size=page_size,
+                max_items=max_items,
+                base_offset=resolved_offset,
             )
         ).as_list(start_page=start_page, first_page=first_page)
 
@@ -133,11 +148,17 @@ class AdsClient:
         user_id: int | None,
         status: ListingStatus | str | None,
         page_size: int,
+        max_items: int | None,
+        base_offset: int,
     ) -> JsonPage[Listing]:
         if page is None:
             raise ValidationError("Для операции требуется `page`.")
 
         offset = (page - 1) * page_size
+        already_requested = max(offset - base_offset, 0)
+        remaining = max_items - already_requested if max_items is not None else None
+        if remaining is not None and remaining <= 0:
+            return JsonPage(items=[], total=max_items, page=page, per_page=page_size)
         result = request_public_model(
             self.transport,
             "GET",
@@ -147,13 +168,14 @@ class AdsClient:
             params={
                 "user_id": user_id,
                 "status": status,
-                "limit": page_size,
+                "limit": min(page_size, remaining) if remaining is not None else page_size,
                 "offset": offset,
             },
         )
+        items = result.items[:remaining] if remaining is not None else result.items
         return JsonPage(
-            items=list(result.items),
-            total=result.total,
+            items=list(items),
+            total=_bounded_total(result.total, max_items),
             page=page,
             per_page=page_size,
         )

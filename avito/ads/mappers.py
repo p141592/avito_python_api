@@ -107,6 +107,8 @@ def _int(payload: Payload, *keys: str) -> int | None:
             continue
         if isinstance(value, int):
             return value
+        if isinstance(value, str) and value.isdigit():
+            return int(value)
     return None
 
 
@@ -147,24 +149,25 @@ def map_ad_item(payload: object) -> Listing:
     """Преобразует объявление в dataclass."""
 
     data = _expect_mapping(payload)
+    source = _mapping(data, "item", "resource", "listing", "ad") or data
     return Listing(
-        item_id=_int(data, "id", "item_id", "itemId"),
-        user_id=_int(data, "user_id", "userId"),
-        title=_str(data, "title"),
-        description=_str(data, "description", "descriptionHtml"),
+        item_id=_int(source, "id", "item_id", "itemId", "itemID"),
+        user_id=_int(source, "user_id", "userId"),
+        title=_str(source, "title", "name"),
+        description=_str(source, "description", "descriptionHtml"),
         status=map_enum_or_unknown(
-            _nested_str(data, "status"),
+            _nested_str(source, "status", "state"),
             ListingStatus,
             enum_name="ads.listing_status",
         ),
-        price=_float(data, "price"),
-        url=_str(data, "url", "link"),
-        category=_nested_str(data, "category", "categoryName"),
-        city=_nested_str(data, "city", "location"),
-        published_at=_datetime(data, "published_at", "publishedAt", "created_at", "createdAt"),
-        updated_at=_datetime(data, "updated_at", "updatedAt"),
-        is_moderated=_bool(data, "is_moderated", "isModerated", "moderated"),
-        is_visible=_visibility(data),
+        price=_float(source, "price"),
+        url=_str(source, "url", "link", "uri"),
+        category=_nested_str(source, "category", "categoryName"),
+        city=_nested_str(source, "city", "location"),
+        published_at=_datetime(source, "published_at", "publishedAt", "created_at", "createdAt"),
+        updated_at=_datetime(source, "updated_at", "updatedAt"),
+        is_moderated=_bool(source, "is_moderated", "isModerated", "moderated"),
+        is_visible=_visibility(source),
     )
 
 

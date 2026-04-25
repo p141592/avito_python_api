@@ -8,11 +8,13 @@
 
 `user_id` можно передать явно или задать через `AVITO_USER_ID`. Если идентификатор не задан, SDK попробует получить его через `account().get_self()` и затем выполнит запрос объявлений.
 
+`limit` задаёт общий максимум элементов в результате, а `page_size` — размер страницы upstream API. Например, `limit=3, page_size=2` вернёт не больше трёх объявлений и сделает второй запрос только за одним оставшимся элементом.
+
 ```python
 from avito import AvitoClient
 
 with AvitoClient.from_env() as avito:
-    listings = avito.ad(user_id=7).list(status="active", limit=2)
+    listings = avito.ad(user_id=7).list(status="active", limit=3, page_size=2)
     items = listings.materialize()
 
 print(items[0].item_id)

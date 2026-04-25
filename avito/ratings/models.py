@@ -13,6 +13,7 @@ class ReviewsQuery:
     """Query-параметры списка отзывов."""
 
     page: int | None = None
+    limit: int | None = None
 
     def to_params(self) -> dict[str, int]:
         """Сериализует query-параметры списка отзывов."""
@@ -20,6 +21,8 @@ class ReviewsQuery:
         params: dict[str, int] = {}
         if self.page is not None:
             params["page"] = self.page
+        if self.limit is not None:
+            params["limit"] = self.limit
         return params
 
 

@@ -19,14 +19,14 @@ print(rating.reviews_count)
 
 ## Список отзывов
 
-Отзывы читаются через `review().list()`. Для перехода по страницам используйте `ReviewsQuery`.
+Отзывы читаются через `review().list()`. Дефолтный вызов запрашивает первую страницу с `limit=50`. Для перехода по страницам или другого размера страницы используйте `ReviewsQuery`.
 
 ```python
 from avito import AvitoClient
 from avito.ratings.models import ReviewsQuery
 
 with AvitoClient.from_env() as avito:
-    reviews = avito.review().list(query=ReviewsQuery(page=1))
+    reviews = avito.review().list(query=ReviewsQuery(page=1, limit=20))
 
 print(reviews.items[0].review_id)
 print(reviews.items[0].text)

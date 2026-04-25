@@ -15,6 +15,7 @@ ENV_KEYS = (
     "AVITO_USER_AGENT_SUFFIX",
     "AVITO_CLIENT_ID",
     "AVITO_CLIENT_SECRET",
+    "AVITO_SECRET",
     "AVITO_REFRESH_TOKEN",
 )
 
@@ -94,6 +95,25 @@ def test_avito_settings_from_env_requires_explicit_auth_values(
         AvitoSettings.from_env(env_file=write_env_file(tmp_path / ".env", "AVITO_CLIENT_ID=x"))
 
 
+def test_avito_settings_from_env_accepts_avito_secret_alias(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    clear_avito_env(monkeypatch)
+    env_file = write_env_file(
+        tmp_path / ".env",
+        "\n".join(
+            (
+                "AVITO_CLIENT_ID=client-id",
+                "AVITO_SECRET=legacy-secret",
+            )
+        ),
+    )
+
+    settings = AvitoSettings.from_env(env_file=env_file)
+
+    assert settings.auth.client_secret == "legacy-secret"
+
+
 def test_avito_settings_from_env_ignores_unsupported_generic_aliases(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
@@ -106,7 +126,6 @@ def test_avito_settings_from_env_ignores_unsupported_generic_aliases(
                 "USER_ID=77",
                 "CLIENT_ID=generic-client-id",
                 "SECRET=generic-client-secret",
-                "AVITO_SECRET=legacy-secret",
             )
         ),
     )

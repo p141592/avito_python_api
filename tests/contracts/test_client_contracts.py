@@ -31,7 +31,9 @@ from avito.promotion import (
 )
 from avito.ratings import RatingProfile, Review, ReviewAnswer
 from avito.realty import RealtyAnalyticsReport, RealtyBooking, RealtyListing, RealtyPricing
+from avito.summary import AccountHealthSummary, CapabilityDiscoveryResult, ListingHealthSummary
 from avito.tariffs import Tariff
+from tests.helpers.transport import make_transport
 
 
 def test_single_client_exposes_domain_factories() -> None:
@@ -88,6 +90,138 @@ def test_single_client_exposes_domain_factories() -> None:
     assert isinstance(client.review_answer(1), ReviewAnswer)
     assert isinstance(client.rating_profile(), RatingProfile)
     assert isinstance(client.tariff(1), Tariff)
+
+
+def test_client_exposes_read_only_summary_methods() -> None:
+    client = AvitoClient(
+        AvitoSettings(auth=AuthSettings(client_id="client-id", client_secret="client-secret"))
+    )
+
+    assert isinstance(client.capabilities(), CapabilityDiscoveryResult)
+    assert hasattr(client, "business_summary")
+    assert hasattr(client, "account_health")
+    assert hasattr(client, "listing_health")
+    assert hasattr(client, "chat_summary")
+    assert hasattr(client, "order_summary")
+    assert hasattr(client, "review_summary")
+    assert hasattr(client, "promotion_summary")
+
+    client.close()
+
+
+def test_listing_health_combines_listing_stats_calls_and_spendings() -> None:
+    def handler(request: httpx.Request) -> httpx.Response:
+        if request.url.path == "/core/v1/items":
+            assert request.url.params["user_id"] == "7"
+            return httpx.Response(
+                200,
+                json={
+                    "items": [
+                        {
+                            "id": 101,
+                            "title": "Смартфон",
+                            "status": "active",
+                            "price": 1000,
+                            "url": "https://www.avito.ru/item",
+                            "visible": True,
+                        }
+                    ],
+                    "total": 1,
+                },
+            )
+        if request.url.path == "/stats/v1/accounts/7/items":
+            return httpx.Response(
+                200,
+                json={"items": [{"item_id": 101, "views": 45, "contacts": 5, "favorites": 2}]},
+            )
+        if request.url.path == "/core/v1/accounts/7/calls/stats/":
+            return httpx.Response(200, json={"items": [{"item_id": 101, "calls": 3}]})
+        if request.url.path == "/stats/v2/accounts/7/spendings":
+            return httpx.Response(200, json={"items": [{"item_id": 101, "amount": 77.5}]})
+        raise AssertionError(request.url.path)
+
+    client = AvitoClient(
+        AvitoSettings(auth=AuthSettings(client_id="client-id", client_secret="client-secret"))
+    )
+    client.transport = make_transport(httpx.MockTransport(handler), user_id=7)
+
+    summary = client.listing_health()
+
+    assert isinstance(summary, ListingHealthSummary)
+    assert summary.total_listings == 1
+    assert summary.active_listings == 1
+    assert summary.visible_listings == 1
+    assert summary.total_views == 45
+    assert summary.total_calls == 3
+    assert summary.total_spendings == 77.5
+    assert summary.items[0].title == "Смартфон"
+    client.close()
+
+
+def test_account_health_builds_final_business_summary() -> None:
+    def handler(request: httpx.Request) -> httpx.Response:
+        path = request.url.path
+        if path == "/core/v1/accounts/7/balance/":
+            return httpx.Response(200, json={"user_id": 7, "real": 100, "bonus": 25, "total": 125})
+        if path == "/core/v1/items":
+            return httpx.Response(200, json={"items": [{"id": 101, "status": "active"}], "total": 1})
+        if path == "/stats/v1/accounts/7/items":
+            return httpx.Response(200, json={"items": [{"item_id": 101, "views": 10}]})
+        if path == "/core/v1/accounts/7/calls/stats/":
+            return httpx.Response(200, json={"items": [{"item_id": 101, "calls": 2}]})
+        if path == "/stats/v2/accounts/7/spendings":
+            return httpx.Response(200, json={"items": [{"item_id": 101, "amount": 15.5}]})
+        if path == "/messenger/v2/accounts/7/chats":
+            return httpx.Response(
+                200,
+                json={"chats": [{"id": "c1", "unreadCount": 4}, {"id": "c2", "unreadCount": 0}]},
+            )
+        if path == "/order-management/1/orders":
+            return httpx.Response(
+                200,
+                json={"orders": [{"id": "o1", "status": "new"}, {"id": "o2", "status": "unknown"}]},
+            )
+        if path == "/ratings/v1/reviews":
+            return httpx.Response(
+                200,
+                json={
+                    "total": 2,
+                    "reviews": [
+                        {"id": 1, "score": 5, "canAnswer": True},
+                        {"id": 2, "score": 3, "canAnswer": False},
+                    ],
+                },
+            )
+        if path == "/ratings/v1/info":
+            return httpx.Response(200, json={"isEnabled": True, "rating": {"score": 4.5}})
+        if path == "/promotion/v1/items/services/orders/get":
+            return httpx.Response(200, json={"orders": [{"orderId": "p1", "status": "applied"}]})
+        if path == "/promotion/v1/items/services/get":
+            return httpx.Response(
+                200,
+                json={"services": [{"itemId": 101, "status": "available"}]},
+            )
+        raise AssertionError(path)
+
+    client = AvitoClient(
+        AvitoSettings(auth=AuthSettings(client_id="client-id", client_secret="client-secret"))
+    )
+    client.transport = make_transport(httpx.MockTransport(handler), user_id=7)
+
+    summary = client.business_summary()
+
+    assert isinstance(summary, AccountHealthSummary)
+    assert summary.balance_total == 125
+    assert summary.listings.total_views == 10
+    assert summary.chats is not None
+    assert summary.chats.unread_messages == 4
+    assert summary.orders is not None
+    assert summary.orders.active_orders == 1
+    assert summary.reviews is not None
+    assert summary.reviews.average_score == 4
+    assert summary.promotion is not None
+    assert summary.promotion.available_services == 1
+    client.close()
 
 
 def test_package_exports_auth_settings_as_public_config_contract() -> None:
