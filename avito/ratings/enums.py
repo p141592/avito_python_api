@@ -10,6 +10,18 @@ class ReviewStage(str, Enum):
 
     UNKNOWN = "__unknown__"
     DONE = "done"
+    FELL_THROUGH = "fell_through"
+    NOT_AGREE = "not_agree"
+    NOT_COMMUNICATE = "not_communicate"
 
 
-__all__ = ("ReviewStage",)
+class ReviewAnswerStatus(str, Enum):
+    """Статус ответа на отзыв."""
+
+    UNKNOWN = "__unknown__"
+    MODERATION = "moderation"
+    PUBLISHED = "published"
+    REJECTED = "rejected"
+
+
+__all__ = ("ReviewAnswerStatus", "ReviewStage")

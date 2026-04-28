@@ -189,6 +189,9 @@ def test_process_environment_overrides_dotenv_and_parses_retry_options(
                 "AVITO_RETRY_RETRYABLE_METHODS=GET,POST,PATCH",
                 "AVITO_RETRY_RETRY_ON_RATE_LIMIT=false",
                 "AVITO_RETRY_MAX_RATE_LIMIT_WAIT_SECONDS=12.5",
+                "AVITO_RATE_LIMIT_ENABLED=true",
+                "AVITO_RATE_LIMIT_REQUESTS_PER_SECOND=3.5",
+                "AVITO_RATE_LIMIT_BURST=7",
             )
         ),
     )
@@ -209,6 +212,9 @@ def test_process_environment_overrides_dotenv_and_parses_retry_options(
     assert settings.retry_policy.retryable_methods == ("GET", "POST", "PATCH")
     assert settings.retry_policy.retry_on_rate_limit is False
     assert settings.retry_policy.max_rate_limit_wait_seconds == 12.5
+    assert settings.retry_policy.rate_limit_enabled is True
+    assert settings.retry_policy.rate_limit_requests_per_second == 3.5
+    assert settings.retry_policy.rate_limit_burst == 7
 
 
 def test_avito_settings_rejects_secret_like_user_agent_suffix() -> None:

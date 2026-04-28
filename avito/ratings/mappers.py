@@ -7,7 +7,7 @@ from typing import cast
 
 from avito.core.enums import map_enum_or_unknown
 from avito.core.exceptions import ResponseMappingError
-from avito.ratings.enums import ReviewStage
+from avito.ratings.enums import ReviewAnswerStatus, ReviewStage
 from avito.ratings.models import RatingProfileInfo, ReviewAnswerInfo, ReviewInfo, ReviewsResult
 
 Payload = Mapping[str, object]
@@ -81,6 +81,11 @@ def map_review_answer(payload: object) -> ReviewAnswerInfo:
         answer_id=_str(data, "id"),
         created_at=_int(data, "createdAt"),
         success=_bool(data, "success"),
+        status=map_enum_or_unknown(
+            _str(data, "status"),
+            ReviewAnswerStatus,
+            enum_name="ratings.review_answer_status",
+        ),
     )
 
 

@@ -8,7 +8,15 @@ from avito.ads.domain import (
     AutoloadProfile,
     AutoloadReport,
 )
-from avito.ads.enums import AdsActionStatus, AutoloadFieldType, AutoloadReportStatus, ListingStatus
+from avito.ads.enums import (
+    AdsActionStatus,
+    AutoloadAvitoStatus,
+    AutoloadFieldType,
+    AutoloadItemStatus,
+    AutoloadItemStatusDetail,
+    AutoloadReportStatus,
+    ListingStatus,
+)
 from avito.ads.models import (
     AccountSpendings,
     AdsActionResult,
@@ -48,6 +56,7 @@ __all__ = (
     "AdPromotion",
     "AdStats",
     "AutoloadArchive",
+    "AutoloadAvitoStatus",
     "AutoloadFieldType",
     "AutoloadFee",
     "AutoloadFeesResult",
@@ -56,6 +65,8 @@ __all__ = (
     "AutoloadProfile",
     "AutoloadProfileSettings",
     "AutoloadReport",
+    "AutoloadItemStatus",
+    "AutoloadItemStatusDetail",
     "AutoloadReportDetails",
     "AutoloadReportItem",
     "AutoloadReportItemsResult",

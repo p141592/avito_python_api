@@ -50,6 +50,18 @@ class SpecialOfferCampaignStatus(str, Enum):
     UNKNOWN = "__unknown__"
     DRAFT = "draft"
     CONFIRMED = "confirmed"
+    NOT_CREATED = "notCreated"
+    CREATED = "created"
+
+
+class SpecialOfferDispatchStatus(str, Enum):
+    """Статус рассылки спецпредложений."""
+
+    UNKNOWN = "__unknown__"
+    DRAFT = "draft"
+    CONFIRMED = "confirmed"
+    NOT_CREATED = "notCreated"
+    CREATED = "created"
 
 
 __all__ = (
@@ -57,6 +69,7 @@ __all__ = (
     "MessageDirection",
     "MessageType",
     "SpecialOfferCampaignStatus",
+    "SpecialOfferDispatchStatus",
     "SubscriptionStatus",
     "WebhookStatus",
 )

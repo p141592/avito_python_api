@@ -47,7 +47,8 @@
       "Bash(curl -s -o /dev/null -w \"%{http_code}\" --max-time 10 \"https://developers.avito.ru/swagger/messenger.yaml\")",
       "Bash(curl -s -o /dev/null -w \"%{http_code}\" --max-time 10 \"https://developers.avito.ru/api-catalog/messenger/swagger.json\")",
       "Bash(curl -s --max-time 10 \"https://developers.avito.ru/swagger/messenger.yaml\")",
-      "Bash(curl -s --max-time 10 \"https://developers.avito.ru/api-catalog/messenger/swagger.json\")"
+      "Bash(curl -s --max-time 10 \"https://developers.avito.ru/api-catalog/messenger/swagger.json\")",
+      "Bash(awk -F'|' '{print $15}')"
     ]
   }
 }

@@ -10,6 +10,8 @@ from avito.core.enums import map_enum_or_unknown
 from avito.core.exceptions import ResponseMappingError
 from avito.promotion.enums import (
     CampaignType,
+    PromotionOrderServiceStatus,
+    PromotionOrderStatus,
     PromotionStatus,
     TargetActionBudgetType,
     TargetActionSelectedType,
@@ -156,8 +158,8 @@ def map_promotion_services(payload: object) -> PromotionServicesResult:
                 price=_int(item, "price", "pricePenny"),
                 status=map_enum_or_unknown(
                     _str(item, "status"),
-                    PromotionStatus,
-                    enum_name="promotion.status",
+                    PromotionOrderServiceStatus,
+                    enum_name="promotion.order_service_status",
                 ),
             )
             for item in _items_payload(data)
@@ -177,8 +179,8 @@ def map_promotion_orders(payload: object) -> PromotionOrdersResult:
                 service_code=_str(item, "serviceCode", "code"),
                 status=map_enum_or_unknown(
                     _str(item, "status"),
-                    PromotionStatus,
-                    enum_name="promotion.status",
+                    PromotionOrderStatus,
+                    enum_name="promotion.order_status",
                 ),
                 created_at=_datetime(item, "createdAt", "created_at"),
             )
@@ -194,8 +196,8 @@ def map_promotion_order_status(payload: object) -> PromotionOrderStatusResult:
     order_id = _str(data, "orderId", "orderID", "id")
     status = map_enum_or_unknown(
         _str(data, "status"),
-        PromotionStatus,
-        enum_name="promotion.status",
+        PromotionOrderStatus,
+        enum_name="promotion.order_status",
     )
     if order_id is None or status is None:
         raise ResponseMappingError(
@@ -216,8 +218,8 @@ def map_promotion_order_status(payload: object) -> PromotionOrderStatusResult:
                 slug=_str(item, "slug"),
                 status=map_enum_or_unknown(
                     _str(item, "status"),
-                    PromotionStatus,
-                    enum_name="promotion.status",
+                    PromotionOrderServiceStatus,
+                    enum_name="promotion.order_service_status",
                 ),
                 error_reason=_str(item, "errorReason"),
             )

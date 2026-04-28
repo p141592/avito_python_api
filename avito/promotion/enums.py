@@ -9,9 +9,16 @@ class PromotionStatus(str, Enum):
     """Статус promotion-объекта или операции."""
 
     UNKNOWN = "__unknown__"
+    UPSTREAM_UNKNOWN = "unknown"
     AVAILABLE = "available"
+    ACTIVE = "active"
     CREATED = "created"
+    INITIALIZED = "initialized"
+    WAITING = "waiting"
+    IN_PROCESS = "in_process"
     PROCESSED = "processed"
+    CANCELED = "canceled"
+    ERROR = "error"
     REMOVED = "removed"
     AUTO = "auto"
     MANUAL = "manual"
@@ -19,6 +26,34 @@ class PromotionStatus(str, Enum):
     PARTIAL = "partial"
     FAILED = "failed"
     PREVIEW = "preview"
+
+
+class PromotionOrderStatus(str, Enum):
+    """Статус заявки на продвижение."""
+
+    UNKNOWN = "__unknown__"
+    UPSTREAM_UNKNOWN = "unknown"
+    APPLIED = "applied"
+    CREATED = "created"
+    AUTO = "auto"
+    MANUAL = "manual"
+    PARTIAL = "partial"
+    INITIALIZED = "initialized"
+    WAITING = "waiting"
+    IN_PROCESS = "in_process"
+    PROCESSED = "processed"
+
+
+class PromotionOrderServiceStatus(str, Enum):
+    """Статус услуги внутри заявки на продвижение."""
+
+    UNKNOWN = "__unknown__"
+    UPSTREAM_UNKNOWN = "unknown"
+    AVAILABLE = "available"
+    ACTIVE = "active"
+    ERROR = "error"
+    CANCELED = "canceled"
+    PROCESSED = "processed"
 
 
 class TargetActionBudgetType(str, Enum):
@@ -47,6 +82,8 @@ class CampaignType(str, Enum):
 
 __all__ = (
     "CampaignType",
+    "PromotionOrderServiceStatus",
+    "PromotionOrderStatus",
     "PromotionStatus",
     "TargetActionBudgetType",
     "TargetActionSelectedType",

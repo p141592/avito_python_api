@@ -38,7 +38,7 @@ from avito.promotion import (
     TargetActionPricing,
     TrxPromotion,
 )
-from avito.promotion.enums import PromotionStatus
+from avito.promotion.enums import PromotionOrderServiceStatus, PromotionOrderStatus
 from avito.ratings import RatingProfile, Review, ReviewAnswer
 from avito.realty import RealtyAnalyticsReport, RealtyBooking, RealtyListing, RealtyPricing
 from avito.summary import (
@@ -414,17 +414,26 @@ class AvitoClient:
                 for item in orders.items
                 if item.status
                 in {
-                    PromotionStatus.APPLIED,
-                    PromotionStatus.AUTO,
-                    PromotionStatus.CREATED,
-                    PromotionStatus.MANUAL,
-                    PromotionStatus.PARTIAL,
-                    PromotionStatus.PROCESSED,
+                    PromotionOrderStatus.INITIALIZED,
+                    PromotionOrderStatus.WAITING,
+                    PromotionOrderStatus.IN_PROCESS,
+                    PromotionOrderStatus.PROCESSED,
+                    PromotionOrderStatus.APPLIED,
+                    PromotionOrderStatus.AUTO,
+                    PromotionOrderStatus.CREATED,
+                    PromotionOrderStatus.MANUAL,
+                    PromotionOrderStatus.PARTIAL,
                 }
             ),
             total_services=len(service_items),
             available_services=sum(
-                1 for item in service_items if item.status is PromotionStatus.AVAILABLE
+                1
+                for item in service_items
+                if item.status
+                in {
+                    PromotionOrderServiceStatus.ACTIVE,
+                    PromotionOrderServiceStatus.AVAILABLE,
+                }
             ),
         )
 

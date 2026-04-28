@@ -12,7 +12,7 @@ from avito.messenger.enums import (
     MessageActionStatus,
     MessageDirection,
     MessageType,
-    SpecialOfferCampaignStatus,
+    SpecialOfferDispatchStatus,
     SubscriptionStatus,
     WebhookStatus,
 )
@@ -264,8 +264,8 @@ def map_multi_create_result(payload: object) -> MultiCreateSpecialOfferResult:
         campaign_id=_str(data, "campaign_id", "campaignId", "id"),
         status=map_enum_or_unknown(
             _str(data, "status"),
-            SpecialOfferCampaignStatus,
-            enum_name="messenger.special_offer_campaign_status",
+            SpecialOfferDispatchStatus,
+            enum_name="messenger.special_offer_dispatch_status",
         ),
     )
 

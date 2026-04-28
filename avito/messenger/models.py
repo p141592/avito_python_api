@@ -11,7 +11,7 @@ from avito.messenger.enums import (
     MessageActionStatus,
     MessageDirection,
     MessageType,
-    SpecialOfferCampaignStatus,
+    SpecialOfferDispatchStatus,
     SubscriptionStatus,
     WebhookStatus,
 )
@@ -276,7 +276,7 @@ class MultiCreateSpecialOfferResult(SerializableModel):
     """Результат создания рассылки."""
 
     campaign_id: str | None
-    status: SpecialOfferCampaignStatus | None
+    status: SpecialOfferDispatchStatus | None
 
 
 @dataclass(slots=True, frozen=True)

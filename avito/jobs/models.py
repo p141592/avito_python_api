@@ -5,7 +5,12 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from avito.core.serialization import SerializableModel
-from avito.jobs.enums import ApplicationStatus, JobActionStatus, VacancyStatus
+from avito.jobs.enums import (
+    ApplicationStatus,
+    JobActionStatus,
+    VacancyModerationStatus,
+    VacancyStatus,
+)
 
 
 @dataclass(slots=True, frozen=True)
@@ -296,6 +301,7 @@ class VacancyStatusInfo(SerializableModel):
     id: str | None
     uuid: str | None
     status: VacancyStatus | None
+    moderation_status: VacancyModerationStatus | None = None
 
 
 @dataclass(slots=True, frozen=True)

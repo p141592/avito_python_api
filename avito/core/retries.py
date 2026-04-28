@@ -33,6 +33,9 @@ class RetryPolicy:
         "retry_on_transport_error": ("AVITO_RETRY_RETRY_ON_TRANSPORT_ERROR",),
         "max_rate_limit_wait_seconds": ("AVITO_RETRY_MAX_RATE_LIMIT_WAIT_SECONDS",),
         "max_delay": ("AVITO_RETRY_MAX_DELAY",),
+        "rate_limit_enabled": ("AVITO_RATE_LIMIT_ENABLED",),
+        "rate_limit_requests_per_second": ("AVITO_RATE_LIMIT_REQUESTS_PER_SECOND",),
+        "rate_limit_burst": ("AVITO_RATE_LIMIT_BURST",),
     }
 
     max_attempts: int = 3
@@ -43,6 +46,9 @@ class RetryPolicy:
     retry_on_transport_error: bool = True
     max_rate_limit_wait_seconds: float = 30.0
     max_delay: float = 30.0
+    rate_limit_enabled: bool = False
+    rate_limit_requests_per_second: float = 8.0
+    rate_limit_burst: int = 8
     random_source: random_module.Random = field(
         default_factory=random_module.Random,
         repr=False,
@@ -63,17 +69,29 @@ class RetryPolicy:
         retry_on_transport_error = defaults.retry_on_transport_error
         max_rate_limit_wait_seconds = defaults.max_rate_limit_wait_seconds
         max_delay = defaults.max_delay
+        rate_limit_enabled = defaults.rate_limit_enabled
+        rate_limit_requests_per_second = defaults.rate_limit_requests_per_second
+        rate_limit_burst = defaults.rate_limit_burst
         for field_name, value in resolved_values.items():
             if field_name == "max_attempts":
                 max_attempts = parse_env_int(value, field_name=field_name)
-            elif field_name in {"backoff_factor", "max_rate_limit_wait_seconds", "max_delay"}:
+            elif field_name == "rate_limit_burst":
+                rate_limit_burst = parse_env_int(value, field_name=field_name)
+            elif field_name in {
+                "backoff_factor",
+                "max_rate_limit_wait_seconds",
+                "max_delay",
+                "rate_limit_requests_per_second",
+            }:
                 parsed_float = parse_env_float(value, field_name=field_name)
                 if field_name == "backoff_factor":
                     backoff_factor = parsed_float
                 elif field_name == "max_rate_limit_wait_seconds":
                     max_rate_limit_wait_seconds = parsed_float
-                else:
+                elif field_name == "max_delay":
                     max_delay = parsed_float
+                else:
+                    rate_limit_requests_per_second = parsed_float
             elif field_name == "retryable_methods":
                 retryable_methods = parse_env_str_tuple(value, field_name=field_name)
             else:
@@ -82,8 +100,10 @@ class RetryPolicy:
                     retry_on_rate_limit = parsed_bool
                 elif field_name == "retry_on_server_error":
                     retry_on_server_error = parsed_bool
-                else:
+                elif field_name == "retry_on_transport_error":
                     retry_on_transport_error = parsed_bool
+                else:
+                    rate_limit_enabled = parsed_bool
         return cls(
             max_attempts=max_attempts,
             backoff_factor=backoff_factor,
@@ -93,6 +113,9 @@ class RetryPolicy:
             retry_on_transport_error=retry_on_transport_error,
             max_rate_limit_wait_seconds=max_rate_limit_wait_seconds,
             max_delay=max_delay,
+            rate_limit_enabled=rate_limit_enabled,
+            rate_limit_requests_per_second=rate_limit_requests_per_second,
+            rate_limit_burst=rate_limit_burst,
         )
 
     def is_retryable_method(self, method: str, *, explicit_retry: bool = False) -> bool:

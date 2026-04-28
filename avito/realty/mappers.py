@@ -7,7 +7,7 @@ from typing import cast
 
 from avito.core.enums import map_enum_or_unknown
 from avito.core.exceptions import ResponseMappingError
-from avito.realty.enums import RealtyStatus
+from avito.realty.enums import RealtyBookingStatus, RealtyOperationStatus
 from avito.realty.models import (
     RealtyActionResult,
     RealtyAnalyticsInfo,
@@ -71,8 +71,8 @@ def map_action(payload: object) -> RealtyActionResult:
         success=_str(data, "result") == "success" or bool(data.get("success", False)),
         status=map_enum_or_unknown(
             _str(data, "result", "status"),
-            RealtyStatus,
-            enum_name="realty.status",
+            RealtyOperationStatus,
+            enum_name="realty.operation_status",
         ),
     )
 
@@ -110,8 +110,8 @@ def map_bookings(payload: object) -> RealtyBookingsResult:
                 ),
                 status=map_enum_or_unknown(
                     _str(item, "status"),
-                    RealtyStatus,
-                    enum_name="realty.status",
+                    RealtyBookingStatus,
+                    enum_name="realty.booking_status",
                 ),
             )
             for item in _list(data, "bookings", "items")

@@ -6,7 +6,15 @@ from collections.abc import Mapping
 from datetime import datetime
 from typing import cast
 
-from avito.ads.enums import AdsActionStatus, AutoloadFieldType, AutoloadReportStatus, ListingStatus
+from avito.ads.enums import (
+    AdsActionStatus,
+    AutoloadAvitoStatus,
+    AutoloadFieldType,
+    AutoloadItemStatus,
+    AutoloadItemStatusDetail,
+    AutoloadReportStatus,
+    ListingStatus,
+)
 from avito.ads.models import (
     AccountSpendings,
     AdsActionResult,
@@ -423,10 +431,20 @@ def map_autoload_report_items(payload: object) -> AutoloadReportItemsResult:
             avito_id=_int(item, "avito_id", "avitoId"),
             status=map_enum_or_unknown(
                 _str(item, "status"),
-                AutoloadReportStatus,
-                enum_name="ads.autoload_report_status",
+                AutoloadItemStatus,
+                enum_name="ads.autoload_item_status",
             ),
             title=_str(item, "title"),
+            status_detail=map_enum_or_unknown(
+                _str(item, "status_detail", "statusDetail"),
+                AutoloadItemStatusDetail,
+                enum_name="ads.autoload_item_status_detail",
+            ),
+            avito_status=map_enum_or_unknown(
+                _str(item, "avito_status", "avitoStatus"),
+                AutoloadAvitoStatus,
+                enum_name="ads.autoload_avito_status",
+            ),
         )
         for item in _list(data, "items", "result")
     ]

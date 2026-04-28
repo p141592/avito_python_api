@@ -11,6 +11,10 @@ class AutotekaStatus(str, Enum):
     UNKNOWN = "__unknown__"
     PROCESSING = "processing"
     SUCCESS = "success"
+    NOT_FOUND = "notFound"
+    INCOMPLETE = "incomplete"
+    OK = "ok"
+    WARNING = "warning"
 
 
 __all__ = ("AutotekaStatus",)

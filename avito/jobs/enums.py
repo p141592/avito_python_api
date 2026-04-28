@@ -32,6 +32,50 @@ class VacancyStatus(str, Enum):
     ACTIVE = "active"
     CREATED = "created"
     UPDATED = "updated"
+    ACTIVATED = "activated"
+    ARCHIVED = "archived"
+    BLOCKED = "blocked"
+    CLOSED = "closed"
+    EXPIRED = "expired"
+    REJECTED = "rejected"
+    UNBLOCKED = "unblocked"
 
 
-__all__ = ("ApplicationStatus", "JobActionStatus", "VacancyStatus")
+class VacancyModerationStatus(str, Enum):
+    """Статус модерации вакансии."""
+
+    UNKNOWN = "__unknown__"
+    IN_PROGRESS = "in_progress"
+    ALLOWED = "allowed"
+    BLOCKED = "blocked"
+    REJECTED = "rejected"
+
+
+class JobEnrichmentStatus(str, Enum):
+    """Статус обогащения параметров вакансии."""
+
+    UNKNOWN = "__unknown__"
+    IN_PROGRESS = "in_progress"
+    NOT_COMPLETED = "not_completed"
+    COMPLETED_NO_CRITERIA = "completed_no_criteria"
+    COMPLETED_MATCHED = "completed_matched"
+    COMPLETED_MISMATCHED = "completed_mismatched"
+
+
+class JobMatchingStatus(str, Enum):
+    """Статус сопоставления критерия вакансии."""
+
+    UNKNOWN = "__unknown__"
+    NO_CRITERIA = "no_criteria"
+    MATCHED = "matched"
+    MISMATCHED = "mismatched"
+
+
+__all__ = (
+    "ApplicationStatus",
+    "JobActionStatus",
+    "JobEnrichmentStatus",
+    "JobMatchingStatus",
+    "VacancyModerationStatus",
+    "VacancyStatus",
+)

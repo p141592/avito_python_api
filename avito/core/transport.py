@@ -4,10 +4,13 @@ from __future__ import annotations
 
 import importlib.metadata as importlib_metadata
 import json
+import logging
 import platform
 import time
 from collections.abc import Callable, Mapping, Sequence
+from datetime import UTC, datetime
 from email.message import Message
+from email.utils import parsedate_to_datetime
 from io import BytesIO
 from typing import TYPE_CHECKING, cast
 from urllib.parse import quote
@@ -27,6 +30,7 @@ from avito.core.exceptions import (
     UpstreamApiError,
     ValidationError,
 )
+from avito.core.rate_limit import RateLimiter
 from avito.core.retries import RetryDecision
 from avito.core.types import (
     ApiTimeouts,
@@ -53,6 +57,7 @@ FileValue = (
 )
 RequestFiles = Mapping[str, FileValue]
 _MIN_RETRY_AFTER_SECONDS = 0.5
+_LOGGER = logging.getLogger("avito.transport")
 
 
 def build_httpx_timeout(timeouts: ApiTimeouts) -> httpx.Timeout:
@@ -85,6 +90,7 @@ class Transport:
             timeout=build_httpx_timeout(settings.timeouts),
         )
         self._sleep = sleep
+        self._rate_limiter = RateLimiter(settings.retry_policy, sleep=sleep)
         self._user_agent = self._build_user_agent()
 
     def debug_info(self) -> TransportDebugInfo:
@@ -141,6 +147,17 @@ class Transport:
 
         while True:
             attempt += 1
+            limiter_delay = self._rate_limiter.acquire()
+            if limiter_delay > 0.0:
+                _LOGGER.info(
+                    "transport rate limit delay",
+                    extra={
+                        "operation": context.operation_name,
+                        "attempt": attempt,
+                        "delay_ms": int(limiter_delay * 1000),
+                        "reason": "client_rate_limit",
+                    },
+                )
             try:
                 response = self._client.request(
                     method=method,
@@ -153,6 +170,9 @@ class Transport:
                     content=content,
                     timeout=timeout,
                 )
+                self._rate_limiter.observe_response(
+                    headers=response.headers,
+                )
             except (httpx.TimeoutException, httpx.NetworkError) as exc:
                 decision = self._decide_transport_retry(
                     method=method,
@@ -162,6 +182,12 @@ class Transport:
                     idempotency_key=idempotency_key,
                 )
                 if decision.should_retry:
+                    self._log_retry(
+                        operation=context.operation_name,
+                        attempt=attempt,
+                        status=None,
+                        decision=decision,
+                    )
                     self._sleep(decision.delay_seconds)
                     continue
                 raise TransportError(
@@ -195,6 +221,12 @@ class Transport:
                     idempotency_key=idempotency_key,
                 )
                 if decision.should_retry:
+                    self._log_retry(
+                        operation=context.operation_name,
+                        attempt=attempt,
+                        status=response.status_code,
+                        decision=decision,
+                    )
                     self._sleep(decision.delay_seconds)
                     continue
                 raise self._map_http_error(response, operation=context.operation_name)
@@ -208,6 +240,12 @@ class Transport:
                     idempotency_key=idempotency_key,
                 )
                 if decision.should_retry:
+                    self._log_retry(
+                        operation=context.operation_name,
+                        attempt=attempt,
+                        status=response.status_code,
+                        decision=decision,
+                    )
                     self._sleep(decision.delay_seconds)
                     continue
                 raise self._map_http_error(response, operation=context.operation_name)
@@ -434,6 +472,8 @@ class Transport:
             if not self._retry_policy.retry_on_rate_limit:
                 return RetryDecision(False)
             delay = self._get_retry_after_seconds(response.headers)
+            if response.headers.get("retry-after") is None:
+                delay = self._retry_policy.compute_backoff(attempt)
             if delay > self._retry_policy.max_rate_limit_wait_seconds:
                 return RetryDecision(False)
             return RetryDecision(True, reason="rate_limit", delay_seconds=delay)
@@ -640,7 +680,32 @@ class Transport:
         try:
             return max(float(raw_value), 0.0)
         except ValueError:
-            return _MIN_RETRY_AFTER_SECONDS
+            try:
+                retry_at = parsedate_to_datetime(raw_value)
+            except (TypeError, ValueError):
+                return _MIN_RETRY_AFTER_SECONDS
+            if retry_at.tzinfo is None:
+                retry_at = retry_at.replace(tzinfo=UTC)
+            return max((retry_at - datetime.now(UTC)).total_seconds(), 0.0)
+
+    def _log_retry(
+        self,
+        *,
+        operation: str,
+        attempt: int,
+        status: int | None,
+        decision: RetryDecision,
+    ) -> None:
+        _LOGGER.info(
+            "transport retry",
+            extra={
+                "operation": operation,
+                "attempt": attempt,
+                "status": status,
+                "delay_ms": int(decision.delay_seconds * 1000),
+                "reason": decision.reason,
+            },
+        )
 
     def _extract_filename(self, content_disposition: str | None) -> str | None:
         if content_disposition is None:
