@@ -35,13 +35,12 @@ poetry run python scripts/download_avito_api_specs.py
 
 1. Запустить `poetry run python scripts/download_avito_api_specs.py`, чтобы `docs/avito/api/*.json` отражали актуальный источник API-контрактов.
 2. Проверить diff Swagger-файлов и зафиксировать, если изменилось число операций, `operation_id`, `deprecated`, paths, параметры или схемы.
-3. Обновить `docs/avito/inventory.md` по актуальным операциям, если скачанные спецификации расходятся с текущей инвентаризацией.
-4. Реализовать `avito/core/swagger.py` с `SwaggerOperationBinding` и `@swagger_operation(...)`.
-5. Расставить class-level metadata и decorators на публичных domain methods без дублирования Swagger-контракта.
-6. Реализовать `scripts/lint_swagger_bindings.py` и `make swagger-lint`.
-7. Добавить `make swagger-lint` в общий quality gate.
-8. Добавить unit-тесты декоратора, линтера и contract tests через `SwaggerFakeTransport`.
-9. Завершить проверкой:
+3. Реализовать `avito/core/swagger.py` с `SwaggerOperationBinding` и `@swagger_operation(...)`.
+4. Расставить class-level metadata и decorators на публичных domain methods без дублирования Swagger-контракта.
+5. Реализовать `scripts/lint_swagger_bindings.py` и `make swagger-lint`.
+6. Добавить `make swagger-lint` в общий quality gate.
+7. Добавить unit-тесты декоратора, линтера и contract tests через `SwaggerFakeTransport`.
+8. Завершить проверкой:
 
 ```bash
 make check

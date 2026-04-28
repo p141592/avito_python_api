@@ -3,7 +3,7 @@
 [![CI](https://github.com/p141592/avito_python_api/actions/workflows/ci.yml/badge.svg)](https://github.com/p141592/avito_python_api/actions/workflows/ci.yml)
 [![Coverage Status](https://coveralls.io/repos/github/p141592/avito_python_api/badge.svg?branch=main)](https://coveralls.io/github/p141592/avito_python_api?branch=main)
 [![PyPI Downloads](https://img.shields.io/pypi/dm/avito-py.svg)](https://pypi.org/project/avito-py/)
-[![API coverage](https://img.shields.io/badge/API%20coverage-204%2F204-success)](docs/avito/inventory.md)
+[![API coverage](https://img.shields.io/badge/API%20coverage-204%2F204-success)](docs/site/reference/coverage.md)
 [![Docs](https://img.shields.io/badge/docs-latest-blue)](https://p141592.github.io/avito_python_api/)
 
 `avito-py` — синхронный Python SDK для работы с Avito API через единый объектный фасад `AvitoClient`.
@@ -374,4 +374,4 @@ git push origin v1.0.2
 ## Документация репозитория
 
 - [STYLEGUIDE.md](STYLEGUIDE.md) — нормативные архитектурные правила
-- [docs/avito/inventory.md](docs/avito/inventory.md) — матрица соответствия swagger-операций и публичного API SDK
+- [docs/site/reference](docs/site/reference) — справочник публичного API SDK

@@ -704,7 +704,7 @@ What is not tested:
 - That a function returns `None` when the input is `None`.
 - That importing a module does not raise an exception.
 - Logic fully implemented by a third-party library without customization.
-- Code-to-documentation consistency: a test must not verify that a README, inventory, docstring, or comment describes the current behavior. Documentation is not a contract — it describes code, not the other way around. If documentation is outdated, update it; do not write a test to track it.
+- Code-to-documentation consistency: a test must not verify that a README, docstring, or comment describes the current behavior. Documentation is not a contract — it describes code, not the other way around. If documentation is outdated, update it; do not write a test to track it.
 - The presence of a specific method or attribute via `hasattr`. That is a syntax check, not a behavior check. If a method is renamed, the calling code will break, not a `hasattr` test.
 
 Criterion: if a test cannot be broken without violating a public contract or technical decision, the test is not needed.

@@ -7,25 +7,22 @@ from pathlib import Path
 
 import mkdocs_gen_files
 
-from scripts.parse_inventory import InventoryRow, parse_inventory
-from scripts.public_sdk_surface import public_method_name
+from avito.core.domain import DomainObject
 
 EXCLUDED_PACKAGES = {"auth", "core", "testing"}
+PACKAGE_ROOT = Path("avito")
 
 
-def public_domain_packages(rows: list[InventoryRow]) -> list[str]:
+def public_domain_packages() -> list[str]:
     return sorted(
-        {
-            row.sdk_package
-            for row in rows
-            if row.sdk_package and row.sdk_package not in EXCLUDED_PACKAGES
-        }
+        path.parent.name
+        for path in PACKAGE_ROOT.glob("*/domain.py")
+        if path.parent.name not in EXCLUDED_PACKAGES
     )
 
 
-def package_title(package: str, rows: list[InventoryRow]) -> str:
-    documents = sorted({row.document for row in rows if row.sdk_package == package})
-    return ", ".join(documents) if documents else package
+def package_title(package: str) -> str:
+    return package
 
 
 def public_enums(package: str) -> list[type[Enum]]:
@@ -39,15 +36,41 @@ def public_enums(package: str) -> list[type[Enum]]:
     return enums
 
 
-def write_domain_pages(rows: list[InventoryRow]) -> list[str]:
+def public_domain_classes(package: str) -> list[type[DomainObject]]:
+    module = importlib.import_module(f"avito.{package}")
+    names = getattr(module, "__all__", ())
+    classes: list[type[DomainObject]] = []
+    for name in names:
+        value = getattr(module, name, None)
+        if (
+            inspect.isclass(value)
+            and issubclass(value, DomainObject)
+            and value is not DomainObject
+            and value.__module__.startswith(f"avito.{package}.")
+        ):
+            classes.append(value)
+    return classes
+
+
+def public_domain_methods(domain_class: type[DomainObject]) -> list[str]:
+    methods: list[str] = []
+    for name, value in inspect.getmembers(domain_class, predicate=inspect.isfunction):
+        if name.startswith("_"):
+            continue
+        if value.__qualname__.startswith(f"{domain_class.__name__}."):
+            methods.append(name)
+    return methods
+
+
+def write_domain_pages(packages: list[str]) -> list[str]:
     pages: list[str] = []
-    for package in public_domain_packages(rows):
+    for package in packages:
         page = f"reference/domains/{package}.md"
         pages.append(page)
         enums = public_enums(package)
         with mkdocs_gen_files.open(page, "w") as file:
             file.write(f"# {package}\n\n")
-            file.write(f"Источник API: {package_title(package, rows)}.\n\n")
+            file.write(f"Публичный доменный пакет SDK: `{package_title(package)}`.\n\n")
             if enums:
                 file.write("## Enum\n\n")
                 for enum_class in enums:
@@ -58,30 +81,22 @@ def write_domain_pages(rows: list[InventoryRow]) -> list[str]:
     return pages
 
 
-def write_operations(rows: list[InventoryRow]) -> None:
+def write_operations(packages: list[str]) -> None:
     with mkdocs_gen_files.open("reference/operations.md", "w") as file:
-        file.write("# Операции API\n\n")
+        file.write("# Методы API\n\n")
         file.write(
-            "Таблица строится из `docs/avito/inventory.md` и связывает HTTP-операции "
-            "с публичными методами SDK.\n\n"
+            "Страница перечисляет публичные доменные методы SDK. Подробные сигнатуры, "
+            "модели и docstring-контракты находятся на страницах доменных пакетов.\n\n"
         )
-        file.write(
-            "| Описание | HTTP | SDK | Тип ответа | Deprecated |\n"
-            "|---|---|---|---|---|\n"
-        )
-        for row in rows:
-            method_name = public_method_name(row)
-            sdk = f"`avito.{row.sdk_package}.{row.domain_object}.{method_name}()`"
-            http = f"`{row.method} {row.path}`"
-            deprecated = "нет"
-            if row.deprecated:
-                deprecated = "да"
-                if row.replacement:
-                    deprecated += f"; замена `{row.replacement}`"
-            file.write(
-                f"| {row.description} | {http}<br>`{row.document}` | "
-                f"{sdk} | `{row.response_type}` | {deprecated} |\n"
-            )
+        file.write("| Пакет | Доменный объект | Метод |\n")
+        file.write("|---|---|---|\n")
+        for package in packages:
+            for domain_class in public_domain_classes(package):
+                for method_name in public_domain_methods(domain_class):
+                    file.write(
+                        f"| `{package}` | `{domain_class.__name__}` | "
+                        f"`{domain_class.__name__}.{method_name}()` |\n"
+                    )
 
 
 def write_enums(packages: list[str]) -> None:
@@ -126,10 +141,9 @@ def ensure_debug_info_exists() -> None:
 
 def main() -> None:
     ensure_debug_info_exists()
-    rows = parse_inventory()
-    packages = public_domain_packages(rows)
-    domain_pages = write_domain_pages(rows)
-    write_operations(rows)
+    packages = public_domain_packages()
+    domain_pages = write_domain_pages(packages)
+    write_operations(packages)
     write_enums(packages)
     write_summary(domain_pages)
 

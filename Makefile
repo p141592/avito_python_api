@@ -53,8 +53,6 @@ docs-strict:
 docs-build: docs-strict
 
 docs-report:
-	poetry run python scripts/check_inventory_coverage.py --output inventory-coverage-report.json
-	poetry run python scripts/check_spec_inventory_sync.py --output spec-inventory-report.json
 	poetry run python scripts/check_reference_public_surface.py --output reference-public-report.json
 	poetry run python scripts/check_public_docstrings.py --output docstring-contract-report.json
 	poetry run python scripts/check_changelog_sections.py --output changelog-sections-report.json
