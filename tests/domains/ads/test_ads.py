@@ -19,24 +19,24 @@ def test_ads_list_uses_lazy_pagination_with_list_like_items() -> None:
         assert request.url.path == "/core/v1/items"
         assert request.url.params["user_id"] == "7"
         assert request.url.params["status"] == "active"
-        assert request.url.params["limit"] == "2"
+        assert request.url.params["per_page"] == "2"
 
-        offset = request.url.params["offset"]
-        seen_offsets.append(offset)
+        page = request.url.params["page"]
+        seen_offsets.append(page)
         page_items = {
-            "0": [{"id": 101, "title": "Смартфон"}, {"id": 102, "title": "Ноутбук"}],
+            "1": [{"id": 101, "title": "Смартфон"}, {"id": 102, "title": "Ноутбук"}],
             "2": [{"id": 103, "title": "Планшет"}, {"id": 104, "title": "Наушники"}],
-            "4": [{"id": 105, "title": "Камера"}],
+            "3": [{"id": 105, "title": "Камера"}],
         }
-        return httpx.Response(200, json={"items": page_items[offset], "total": 5})
+        return httpx.Response(200, json={"items": page_items[page], "total": 5})
 
     ad = Ad(make_transport(httpx.MockTransport(handler)), user_id=7)
 
     items = ad.list(status="active", page_size=2)
 
-    assert seen_offsets == ["0"]
+    assert seen_offsets == ["1"]
     assert items[3].item_id == 104
-    assert seen_offsets == ["0", "2"]
+    assert seen_offsets == ["1", "2"]
     assert [item.title for item in items.materialize()] == [
         "Смартфон",
         "Ноутбук",
@@ -44,7 +44,7 @@ def test_ads_list_uses_lazy_pagination_with_list_like_items() -> None:
         "Наушники",
         "Камера",
     ]
-    assert seen_offsets == ["0", "2", "4"]
+    assert seen_offsets == ["1", "2", "3"]
 
 
 def test_ads_list_limit_is_total_cap_not_page_size() -> None:
@@ -53,14 +53,14 @@ def test_ads_list_limit_is_total_cap_not_page_size() -> None:
 
     def handler(request: httpx.Request) -> httpx.Response:
         assert request.url.path == "/core/v1/items"
-        seen_limits.append(request.url.params["limit"])
-        offset = request.url.params["offset"]
-        seen_offsets.append(offset)
+        seen_limits.append(request.url.params["per_page"])
+        page = request.url.params["page"]
+        seen_offsets.append(page)
         page_items = {
-            "0": [{"id": 101}, {"id": 102}],
+            "1": [{"id": 101}, {"id": 102}],
             "2": [{"id": 103}],
         }
-        return httpx.Response(200, json={"items": page_items[offset], "total": 5})
+        return httpx.Response(200, json={"items": page_items[page], "total": 5})
 
     ad = Ad(make_transport(httpx.MockTransport(handler)), user_id=7)
 
@@ -68,7 +68,25 @@ def test_ads_list_limit_is_total_cap_not_page_size() -> None:
 
     assert [item.item_id for item in items.materialize()] == [101, 102, 103]
     assert seen_limits == ["2", "1"]
-    assert seen_offsets == ["0", "2"]
+    assert seen_offsets == ["1", "2"]
+
+
+def test_ads_list_does_not_treat_limit_as_total_when_api_omits_total() -> None:
+    def handler(request: httpx.Request) -> httpx.Response:
+        assert request.url.path == "/core/v1/items"
+        assert request.url.params["per_page"] == "50"
+        assert request.url.params["page"] == "1"
+        return httpx.Response(200, json={"items": [{"id": item_id} for item_id in range(101, 126)]})
+
+    ad = Ad(make_transport(httpx.MockTransport(handler)), user_id=7)
+
+    items = ad.list(limit=50)
+
+    assert len(items) == 25
+    assert items.loaded_count == 25
+    assert items.known_total is None
+    assert items.source_total is None
+    assert [item.item_id for item in items.materialize()] == list(range(101, 126))
 
 
 def test_ads_domain_covers_item_stats_spendings_and_promotion() -> None:

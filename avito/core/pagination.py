@@ -30,6 +30,7 @@ class PaginatedList[ItemT](list[ItemT]):
         super().__init__()
         self._fetch_page = fetch_page
         self._known_total: int | None = None
+        self._source_total: int | None = None
         self._next_page_number: int | None = start_page
         self._next_cursor: str | None = None
         self._exhausted = False
@@ -93,6 +94,18 @@ class PaginatedList[ItemT](list[ItemT]):
         return super().__len__()
 
     @property
+    def known_total(self) -> int | None:
+        """Общее количество элементов, если API вернул достоверный total."""
+
+        return self._known_total
+
+    @property
+    def source_total(self) -> int | None:
+        """Общий total из API без ограничения локальным limit."""
+
+        return self._source_total
+
+    @property
     def is_materialized(self) -> bool:
         """Показывает, загружены ли все страницы коллекции."""
 
@@ -140,6 +153,8 @@ class PaginatedList[ItemT](list[ItemT]):
     def _consume_page(self, page: JsonPage[ItemT]) -> None:
         super().extend(page.items)
         self._known_total = page.total
+        if page.source_total is not None:
+            self._source_total = page.source_total
 
         if not page.has_next:
             self._exhausted = True

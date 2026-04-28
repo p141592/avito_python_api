@@ -35,7 +35,19 @@
       "Bash(grep -n \"^\\\\`\\\\`\\\\`\" /Users/n.baryshnikov/Projects/avito_python_api/docs/site/how-to/security-practices.md)",
       "Bash(pip show *)",
       "Bash(awk -F'|' '{gsub\\(/^ +| +$/,\"\",$2\\); gsub\\(/^ +| +$/,\"\",$6\\); print $2 \":\" $6}')",
-      "Bash(make qa-docs *)"
+      "Bash(make qa-docs *)",
+      "WebFetch(domain:developers.avito.ru)",
+      "Bash(curl -s -L --max-time 30 -A \"Mozilla/5.0 \\(Macintosh; Intel Mac OS X 10_15_7\\) AppleWebKit/537.36 \\(KHTML, like Gecko\\) Chrome/120.0.0.0 Safari/537.36\" \"https://developers.avito.ru/api-catalog\")",
+      "Bash(curl -s -L --max-time 30 -A \"Mozilla/5.0 \\(Macintosh; Intel Mac OS X 10_15_7\\) AppleWebKit/537.36 \\(KHTML, like Gecko\\) Chrome/120.0.0.0 Safari/537.36\" \"https://developers.avito.ru/dstatic/build/open-api-dev-portal.16ee9b7cf4f5ce68f019.js\")",
+      "Bash(grep -oE '\"\\(/[a-z0-9_-]+\\){2,}/[a-z0-9_-]+\"')",
+      "Bash(curl -s -L --max-time 30 -A \"Mozilla/5.0 \\(Macintosh; Intel Mac OS X 10_15_7\\) AppleWebKit/537.36 \\(KHTML, like Gecko\\) Chrome/120.0.0.0 Safari/537.36\" \"https://developers.avito.ru/web/1/openapi/list\")",
+      "Bash(curl -s -L --max-time 30 -A \"Mozilla/5.0 \\(Macintosh; Intel Mac OS X 10_15_7\\) AppleWebKit/537.36 \\(KHTML, like Gecko\\) Chrome/120.0.0.0 Safari/537.36\" \"https://developers.avito.ru/web/1/openapi/info/messenger\")",
+      "Bash(curl -s -L --max-time 30 -A \"Mozilla/5.0 \\(Macintosh; Intel Mac OS X 10_15_7\\) AppleWebKit/537.36 \\(KHTML, like Gecko\\) Chrome/120.0.0.0 Safari/537.36\" \"https://developers.avito.ru/web/1/openapi/info/auth\")",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" --max-time 10 \"https://api.avito.ru/docs/public/messenger.yaml\")",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" --max-time 10 \"https://developers.avito.ru/swagger/messenger.yaml\")",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" --max-time 10 \"https://developers.avito.ru/api-catalog/messenger/swagger.json\")",
+      "Bash(curl -s --max-time 10 \"https://developers.avito.ru/swagger/messenger.yaml\")",
+      "Bash(curl -s --max-time 10 \"https://developers.avito.ru/api-catalog/messenger/swagger.json\")"
     ]
   }
 }

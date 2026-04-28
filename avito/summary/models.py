@@ -42,7 +42,10 @@ class ListingHealthSummary(SerializableModel):
 
     user_id: int
     items: list[ListingHealthItem]
-    total_listings: int
+    loaded_listings: int
+    total_listings: int | None
+    listing_limit: int | None
+    is_complete: bool
     visible_listings: int
     active_listings: int
     total_views: int | None

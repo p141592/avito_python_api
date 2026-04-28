@@ -71,8 +71,26 @@ def _bounded_total(total: int | None, max_items: int | None) -> int | None:
     if max_items is None:
         return total
     if total is None:
-        return max_items
+        return None
     return min(total, max_items)
+
+
+def _has_next_ads_page(
+    *,
+    page_item_count: int,
+    collected_count: int,
+    page_size: int,
+    total: int | None,
+    max_items: int | None,
+    already_collected: int,
+) -> bool:
+    if page_item_count == 0 or page_size <= 0:
+        return False
+    if max_items is not None and already_collected + collected_count >= max_items:
+        return False
+    if total is not None:
+        return already_collected + collected_count < min(total, max_items or total)
+    return page_item_count >= page_size
 
 
 @dataclass(slots=True, frozen=True)
@@ -104,7 +122,12 @@ class AdsClient:
         """Получает список объявлений пользователя."""
 
         resolved_page_size = page_size or limit
-        start_offset = offset if offset is not None else 0 if resolved_page_size is not None else None
+        start_offset = offset or 0
+        first_page_number = (
+            start_offset // resolved_page_size + 1
+            if resolved_page_size is not None and resolved_page_size > 0
+            else 1
+        )
         result = request_public_model(
             self.transport,
             "GET",
@@ -114,21 +137,30 @@ class AdsClient:
             params={
                 "user_id": user_id,
                 "status": status,
-                "limit": resolved_page_size,
-                "offset": start_offset,
+                "per_page": resolved_page_size,
+                "page": first_page_number,
             },
         )
         page_size = resolved_page_size if resolved_page_size and resolved_page_size > 0 else len(result.items)
         max_items = limit if limit is not None and limit >= 0 else None
-        first_items = result.items[:max_items] if max_items is not None else result.items
+        page_offset = start_offset % page_size if page_size > 0 else 0
+        available_items = result.items[page_offset:]
+        first_items = available_items[:max_items] if max_items is not None else available_items
         total = _bounded_total(result.total, max_items)
-        resolved_offset = start_offset or 0
-        start_page = resolved_offset // page_size + 1 if page_size > 0 else 1
         first_page = JsonPage(
             items=list(first_items),
             total=total,
-            page=start_page,
+            source_total=result.total,
+            page=first_page_number,
             per_page=page_size if page_size > 0 else None,
+            has_next_page=_has_next_ads_page(
+                page_item_count=len(result.items),
+                collected_count=len(first_items),
+                page_size=page_size,
+                total=result.total,
+                max_items=max_items,
+                already_collected=0,
+            ),
         )
         return Paginator(
             lambda page, cursor: self._fetch_ads_page(
@@ -137,9 +169,9 @@ class AdsClient:
                 status=status,
                 page_size=page_size,
                 max_items=max_items,
-                base_offset=resolved_offset,
+                first_page_number=first_page_number,
             )
-        ).as_list(start_page=start_page, first_page=first_page)
+        ).as_list(start_page=first_page_number, first_page=first_page)
 
     def _fetch_ads_page(
         self,
@@ -149,14 +181,13 @@ class AdsClient:
         status: ListingStatus | str | None,
         page_size: int,
         max_items: int | None,
-        base_offset: int,
+        first_page_number: int,
     ) -> JsonPage[Listing]:
         if page is None:
             raise ValidationError("Для операции требуется `page`.")
 
-        offset = (page - 1) * page_size
-        already_requested = max(offset - base_offset, 0)
-        remaining = max_items - already_requested if max_items is not None else None
+        already_collected = max(page - first_page_number, 0) * page_size
+        remaining = max_items - already_collected if max_items is not None else None
         if remaining is not None and remaining <= 0:
             return JsonPage(items=[], total=max_items, page=page, per_page=page_size)
         result = request_public_model(
@@ -168,16 +199,25 @@ class AdsClient:
             params={
                 "user_id": user_id,
                 "status": status,
-                "limit": min(page_size, remaining) if remaining is not None else page_size,
-                "offset": offset,
+                "per_page": min(page_size, remaining) if remaining is not None else page_size,
+                "page": page,
             },
         )
         items = result.items[:remaining] if remaining is not None else result.items
         return JsonPage(
             items=list(items),
             total=_bounded_total(result.total, max_items),
+            source_total=result.total,
             page=page,
             per_page=page_size,
+            has_next_page=_has_next_ads_page(
+                page_item_count=len(result.items),
+                collected_count=len(items),
+                page_size=page_size,
+                total=result.total,
+                max_items=max_items,
+                already_collected=already_collected,
+            ),
         )
 
     def update_price(

@@ -176,7 +176,11 @@ def map_ads_list(payload: object) -> AdsListResult:
 
     data = _expect_mapping(payload)
     items = [map_ad_item(item) for item in _list(data, "items", "result", "resources")]
-    return AdsListResult(items=items, total=_int(data, "total", "count"))
+    meta = _mapping(data, "meta")
+    total = _int(data, "total", "count")
+    if total is None and meta is not None:
+        total = _int(meta, "total", "count")
+    return AdsListResult(items=items, total=total)
 
 
 def map_update_price_result(payload: object) -> UpdatePriceResult:
