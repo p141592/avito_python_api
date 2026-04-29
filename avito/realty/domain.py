@@ -6,6 +6,7 @@ from dataclasses import dataclass
 
 from avito.core import ValidationError
 from avito.core.domain import DomainObject
+from avito.core.swagger import swagger_operation
 from avito.realty.client import RealtyAnalyticsClient, ShortTermRentClient
 from avito.realty.models import (
     RealtyActionResult,
@@ -22,9 +23,20 @@ from avito.realty.models import (
 class RealtyListing(DomainObject):
     """Доменный объект объявления краткосрочной аренды."""
 
+    __swagger_domain__ = "realty"
+    __sdk_factory__ = "realty_listing"
+    __sdk_factory_args__ = {"item_id": "path.item_id", "user_id": "path.user_id"}
+
     item_id: int | str | None = None
     user_id: int | str | None = None
 
+    @swagger_operation(
+        "POST",
+        "/realty/v1/items/intervals",
+        spec="Краткосрочнаяаренда.json",
+        operation_id="putIntervals",
+        method_args={"intervals": "body.intervals", "item_id": "body.item_id"},
+    )
     def get_intervals(
         self,
         *,
@@ -43,6 +55,13 @@ class RealtyListing(DomainObject):
             intervals=intervals,
         )
 
+    @swagger_operation(
+        "POST",
+        "/realty/v1/items/{item_id}/base",
+        spec="Краткосрочнаяаренда.json",
+        operation_id="postBaseParams",
+        method_args={"min_stay_days": "body.min_stay_days"},
+    )
     def update_base_params(
         self, *, min_stay_days: int, item_id: int | str | None = None
     ) -> RealtyActionResult:
@@ -68,9 +87,20 @@ class RealtyListing(DomainObject):
 class RealtyBooking(DomainObject):
     """Доменный объект бронирований недвижимости."""
 
+    __swagger_domain__ = "realty"
+    __sdk_factory__ = "realty_booking"
+    __sdk_factory_args__ = {"item_id": "path.item_id", "user_id": "path.user_id"}
+
     item_id: int | str | None = None
     user_id: int | str | None = None
 
+    @swagger_operation(
+        "POST",
+        "/core/v1/accounts/{user_id}/items/{item_id}/bookings",
+        spec="Краткосрочнаяаренда.json",
+        operation_id="putBookingsInfo",
+        method_args={"blocked_dates": "body.blocked_dates"},
+    )
     def update_bookings_info(
         self,
         *,
@@ -91,6 +121,13 @@ class RealtyBooking(DomainObject):
             blocked_dates=blocked_dates,
         )
 
+    @swagger_operation(
+        "GET",
+        "/realty/v1/accounts/{user_id}/items/{item_id}/bookings",
+        spec="Краткосрочнаяаренда.json",
+        operation_id="getRealtyBookings",
+        method_args={"date_start": "query.date_start", "date_end": "query.date_end"},
+    )
     def list_realty_bookings(
         self,
         *,
@@ -132,9 +169,20 @@ class RealtyBooking(DomainObject):
 class RealtyPricing(DomainObject):
     """Доменный объект цен краткосрочной аренды."""
 
+    __swagger_domain__ = "realty"
+    __sdk_factory__ = "realty_pricing"
+    __sdk_factory_args__ = {"item_id": "path.item_id", "user_id": "path.user_id"}
+
     item_id: int | str | None = None
     user_id: int | str | None = None
 
+    @swagger_operation(
+        "POST",
+        "/realty/v1/accounts/{user_id}/items/{item_id}/prices",
+        spec="Краткосрочнаяаренда.json",
+        operation_id="postRealtyPrices",
+        method_args={"periods": "body.periods"},
+    )
     def update_realty_prices(
         self,
         *,
@@ -170,9 +218,20 @@ class RealtyPricing(DomainObject):
 class RealtyAnalyticsReport(DomainObject):
     """Доменный объект аналитики по недвижимости."""
 
+    __swagger_domain__ = "realty"
+    __sdk_factory__ = "realty_analytics_report"
+    __sdk_factory_args__ = {"item_id": "path.item_id", "user_id": "path.user_id"}
+
     item_id: int | str | None = None
     user_id: int | str | None = None
 
+    @swagger_operation(
+        "GET",
+        "/realty/v1/marketPriceCorrespondence/{itemId}/{price}",
+        spec="Аналитикапонедвижимости.json",
+        operation_id="market_price_correspondence_v1",
+        method_args={"price": "path.price"},
+    )
     def get_market_price_correspondence(
         self,
         *,
@@ -191,6 +250,12 @@ class RealtyAnalyticsReport(DomainObject):
             price=price,
         )
 
+    @swagger_operation(
+        "POST",
+        "/realty/v1/report/create/{itemId}",
+        spec="Аналитикапонедвижимости.json",
+        operation_id="CreateReportForClassified",
+    )
     def get_report_for_classified(self, *, item_id: int | str | None = None) -> RealtyAnalyticsInfo:
         """Выполняет публичную операцию `RealtyAnalyticsReport.get_report_for_classified` и возвращает типизированную SDK-модель.
 

@@ -658,6 +658,7 @@ Rules:
 - Public classes and methods must have short docstrings describing the contract.
 - A public method docstring must describe the returned SDK model and behavior on nullable/empty cases.
 - A public method docstring must also document: every supported per-operation override, whether the method is idempotent, and the exception types the method raises on the most common failure modes.
+- Every new or changed public method that corresponds to an Avito API operation must have a docstring suitable for generated reference documentation. The docstring must identify the business action, public arguments, return model, pagination behavior if any, dry-run/idempotency behavior if any, and the common SDK exceptions.
 - Docstrings must not reference the shape of the raw upstream JSON, transport classes, or internal mapper objects.
 - Comments are used only where the intent cannot be expressed in code.
 - Comments must not duplicate what is obvious.
@@ -677,6 +678,8 @@ Rules:
 
 - Every public domain must have at least one how-to snippet in the README.
 - Every new public contract must land with its reference stub and, when non-obvious, an explanation note.
+- Every new public API method must be visible in generated reference documentation through its public signature and docstring. If the method introduces a new workflow, pagination shape, dry-run behavior, idempotency behavior, deprecation behavior, or testing utility, add or update a page in `docs/site/how-to/` or `docs/site/explanations/`.
+- The Swagger binding subsystem is documented in `docs/site/explanations/swagger-binding-subsystem.md`. Changes to binding discovery, strict lint, JSON report format, `SwaggerFakeTransport`, deprecated/legacy policy, or multi-operation binding policy must update that page in the same change.
 - A CHANGELOG.md entry is mandatory for every public-facing change and references the affected contract sections.
 
 ## Testing
@@ -803,6 +806,15 @@ Rules:
 - nested models serialize recursively;
 - the result passes `json.dumps()` without exceptions.
 
+**Swagger binding coverage** — must cover for every public method corresponding to an Avito API operation:
+
+- the method has exactly one binding to its upstream Swagger operation unless it is an explicitly justified multi-operation SDK method;
+- every Swagger operation has exactly one discovered binding in strict mode;
+- `spec`, method, path and optional `operation_id` match `docs/avito/api/`;
+- `factory_args` and `method_args` match public factory/method signatures and use only allowed expressions;
+- deprecated Swagger operations have `deprecated=True`, `legacy=True`, and runtime `DeprecationWarning`;
+- `SwaggerFakeTransport` can invoke representative read/write/deprecated bindings without real HTTP.
+
 ## API Documentation and Contract Coverage
 
 Avito API specifications are stored in the `docs/avito/api/` directory as Swagger/OpenAPI files. This is the authoritative source of truth for all API contracts.
@@ -811,11 +823,38 @@ Rules:
 
 - Before implementing any new method or model, consult the specification in `docs/avito/api/`.
 - The SDK must cover **all** API methods described in `docs/avito/api/`. A method absent from the SDK but present in the specification is a defect.
+- Every public SDK method that corresponds to an Avito API operation must have an explicit `@swagger_operation(...)` binding on the public domain method. The binding may contain only SDK-to-Swagger addressability and contract-test invocation metadata: `method`, `path`, optional `spec`, optional `operation_id`, optional `factory`, `factory_args`, `method_args`, `deprecated`, and `legacy`.
+- Swagger bindings must not duplicate the API contract. Decorators and binding metadata must not contain request/response schemas, status lists, content types, response models, request models, error models, required fields, path parameter definitions, or query parameter definitions.
+- Public domain classes that expose bound methods should declare class-level metadata (`__swagger_domain__`, `__swagger_spec__`, `__sdk_factory__`, and when needed `__sdk_factory_args__`) so discovery can resolve bindings without creating `AvitoClient`, reading required environment variables, or doing network work.
+- The canonical coverage map is generated from Swagger registry plus discovered `@swagger_operation` bindings. Markdown inventory files and hand-written coverage tables must not be used as source of truth.
+- Each Swagger operation must resolve to exactly one discovered binding in strict mode. One public SDK method may have multiple bindings only for an explicit multi-operation policy case, using stacked decorators and visible `__swagger_bindings__` metadata.
 - Public method signatures, model field names and types, allowed enum values, and nullable behavior must exactly match the contract in `docs/avito/api/`.
 - When there is a discrepancy between code and the specification in `docs/avito/api/`, the specification takes priority.
 - If the upstream API adds a new endpoint or changes an existing one, a corresponding SDK change is mandatory.
 - Fields marked as required in the specification cannot be `T | None` in the public model without explicit justification.
 - Enum values in the SDK must match the allowed values from the specification — arbitrary extension is forbidden.
+
+Required checks for API-related changes:
+
+```bash
+make swagger-lint
+poetry run pytest tests/core/test_swagger*.py tests/contracts/test_swagger_contracts.py
+poetry run pytest tests/domains/<domain>/
+poetry run mypy avito
+poetry run ruff check .
+```
+
+Before merging a complete API-surface change, run the full gate:
+
+```bash
+make check
+```
+
+If the change affects generated docs, coverage pages, or documentation snippets, also run:
+
+```bash
+make docs-strict
+```
 
 ## Deprecation Policy and Backward Compatibility
 
@@ -863,6 +902,10 @@ Rules:
 - Dead code: unused symbols, aliases, and imports.
 - Internal-layer request objects in public domain method signatures.
 - `**kwargs` on public methods: every accepted argument must be explicitly declared.
+- Public API methods without generated-reference-ready docstrings.
+- Public API methods corresponding to Avito API operations without `@swagger_operation(...)` bindings.
+- Swagger binding decorators that duplicate upstream contract data such as schemas, statuses, content types, request models, response models, error models, path params, or query params.
+- API coverage sources based on markdown inventory files instead of Swagger registry plus discovered bindings.
 - Positional passing of optional parameters: all optional parameters on public methods and the client constructor must be keyword-only.
 - Mutating a live `AvitoClient` (changing `base_url`, `auth`, timeouts, retry policy after construction).
 - Silent breaking changes: renaming or removing a public symbol without a deprecation period, a warning, and a `CHANGELOG.md` entry.

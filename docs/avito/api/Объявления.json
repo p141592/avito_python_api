@@ -1375,7 +1375,7 @@
   },
   "openapi": "3.0.0",
   "paths": {
-    "/core/v1/accounts/{userId}/vas/prices": {
+    "/core/v1/accounts/{user_id}/vas/prices": {
       "parameters": [
         {
           "$ref": "#/components/parameters/pathUserId"
@@ -2009,7 +2009,7 @@
         ]
       }
     },
-    "/core/v2/items/{itemId}/vas/": {
+    "/core/v2/items/{item_id}/vas/": {
       "parameters": [
         {
           "$ref": "#/components/parameters/pathItemId"

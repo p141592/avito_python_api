@@ -8,5 +8,6 @@ nav:
   - dry-run-and-idempotency.md
   - testing-strategy.md
   - api-coverage-and-deprecations.md
+  - swagger-binding-subsystem.md
   - config-resolution.md
   - security-and-redaction.md

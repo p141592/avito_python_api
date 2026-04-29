@@ -2,12 +2,14 @@
 
 from __future__ import annotations
 
+import builtins
 from collections.abc import Mapping
 from dataclasses import dataclass
 from datetime import datetime
 
 from avito.core import ValidationError
 from avito.core.domain import DomainObject
+from avito.core.swagger import swagger_operation
 from avito.core.validation import (
     validate_non_empty,
     validate_non_empty_string,
@@ -82,8 +84,18 @@ def _validate_optional_datetime(name: str, value: datetime | None) -> None:
 class PromotionOrder(DomainObject):
     """Доменный объект заявок и словарей promotion API."""
 
+    __swagger_domain__ = "promotion"
+    __sdk_factory__ = "promotion_order"
+    __sdk_factory_args__ = {"order_id": "path.order_id"}
+
     order_id: int | str | None = None
 
+    @swagger_operation(
+        "POST",
+        "/promotion/v1/items/services/dict",
+        spec="Продвижение.json",
+        operation_id="get_dict_of_services_v1",
+    )
     def get_service_dictionary(self) -> PromotionServiceDictionary:
         """Получает словарь услуг продвижения.
 
@@ -92,6 +104,13 @@ class PromotionOrder(DomainObject):
 
         return PromotionClient(self.transport).get_service_dictionary()
 
+    @swagger_operation(
+        "POST",
+        "/promotion/v1/items/services/get",
+        spec="Продвижение.json",
+        operation_id="get_services_by_items_v1",
+        method_args={"item_ids": "body.item_ids"},
+    )
     def list_services(self, *, item_ids: list[int]) -> PromotionServicesResult:
         """Получает список услуг продвижения по объявлениям.
 
@@ -102,6 +121,12 @@ class PromotionOrder(DomainObject):
 
         return PromotionClient(self.transport).list_services(item_ids=item_ids)
 
+    @swagger_operation(
+        "POST",
+        "/promotion/v1/items/services/orders/get",
+        spec="Продвижение.json",
+        operation_id="list_orders_by_user_v1",
+    )
     def list_orders(
         self,
         *,
@@ -120,6 +145,12 @@ class PromotionOrder(DomainObject):
             order_ids=order_ids,
         )
 
+    @swagger_operation(
+        "POST",
+        "/promotion/v1/items/services/orders/status",
+        spec="Продвижение.json",
+        operation_id="get_order_status_v1",
+    )
     def get_order_status(self, *, order_ids: list[str] | None = None) -> PromotionOrderStatusResult:
         """Получает статусы заявок на продвижение.
 
@@ -138,9 +169,20 @@ class PromotionOrder(DomainObject):
 class BbipPromotion(DomainObject):
     """Доменный объект BBIP-продвижения."""
 
+    __swagger_domain__ = "promotion"
+    __sdk_factory__ = "bbip_promotion"
+    __sdk_factory_args__ = {"item_id": "path.item_id"}
+
     item_id: int | str | None = None
     user_id: int | str | None = None
 
+    @swagger_operation(
+        "POST",
+        "/promotion/v1/items/services/bbip/forecasts/get",
+        spec="Продвижение.json",
+        operation_id="get_bbip_forecasts_by_items_v1",
+        method_args={"items": "body.items"},
+    )
     def get_forecasts(self, *, items: list[BbipItemInput]) -> BbipForecastsResult:
         """Получает прогнозы BBIP.
 
@@ -158,6 +200,13 @@ class BbipPromotion(DomainObject):
         ]
         return BbipClient(self.transport).get_forecasts(items=bbip_items)
 
+    @swagger_operation(
+        "PUT",
+        "/promotion/v1/items/services/bbip/orders/create",
+        spec="Продвижение.json",
+        operation_id="create_bbip_order_for_items_v1",
+        method_args={"items": "body.items"},
+    )
     def create_order(
         self,
         *,
@@ -202,6 +251,12 @@ class BbipPromotion(DomainObject):
             idempotency_key=idempotency_key,
         )
 
+    @swagger_operation(
+        "POST",
+        "/promotion/v1/items/services/bbip/suggests/get",
+        spec="Продвижение.json",
+        operation_id="get_bbip_suggests_by_items_v1",
+    )
     def get_suggests(self, *, item_ids: list[int] | None = None) -> BbipSuggestsResult:
         """Получает варианты бюджета BBIP.
 
@@ -221,9 +276,20 @@ class BbipPromotion(DomainObject):
 class TrxPromotion(DomainObject):
     """Доменный объект TrxPromo."""
 
+    __swagger_domain__ = "promotion"
+    __sdk_factory__ = "trx_promotion"
+    __sdk_factory_args__ = {"item_id": "path.item_id"}
+
     item_id: int | str | None = None
     user_id: int | str | None = None
 
+    @swagger_operation(
+        "POST",
+        "/trx-promo/1/apply",
+        spec="TrxPromo.json",
+        operation_id="api_trx_promo_open_api_apply",
+        method_args={"items": "body.items"},
+    )
     def apply(
         self,
         *,
@@ -264,6 +330,12 @@ class TrxPromotion(DomainObject):
             idempotency_key=idempotency_key,
         )
 
+    @swagger_operation(
+        "POST",
+        "/trx-promo/1/cancel",
+        spec="TrxPromo.json",
+        operation_id="api_trx_promo_open_api_cancel",
+    )
     def delete(
         self,
         *,
@@ -291,6 +363,12 @@ class TrxPromotion(DomainObject):
             idempotency_key=idempotency_key,
         )
 
+    @swagger_operation(
+        "GET",
+        "/trx-promo/1/commissions",
+        spec="TrxPromo.json",
+        operation_id="api_trx_promo_open_api_commissions",
+    )
     def get_commissions(self, *, item_ids: list[int] | None = None) -> TrxCommissionsResult:
         """Получает доступные комиссии TrxPromo.
 
@@ -311,8 +389,18 @@ class TrxPromotion(DomainObject):
 class CpaAuction(DomainObject):
     """Доменный объект CPA-аукциона."""
 
+    __swagger_domain__ = "promotion"
+    __sdk_factory__ = "cpa_auction"
+    __sdk_factory_args__ = {"item_id": "path.item_id"}
+
     item_id: int | str | None = None
 
+    @swagger_operation(
+        "GET",
+        "/auction/1/bids",
+        spec="CPA-аукцион.json",
+        operation_id="getUserBids",
+    )
     def get_user_bids(
         self,
         *,
@@ -329,6 +417,13 @@ class CpaAuction(DomainObject):
             batch_size=batch_size,
         )
 
+    @swagger_operation(
+        "POST",
+        "/auction/1/bids",
+        spec="CPA-аукцион.json",
+        operation_id="saveItemBids",
+        method_args={"items": "body.items"},
+    )
     def create_item_bids(
         self,
         *,
@@ -356,9 +451,19 @@ class CpaAuction(DomainObject):
 class TargetActionPricing(DomainObject):
     """Доменный объект цены целевого действия."""
 
+    __swagger_domain__ = "promotion"
+    __sdk_factory__ = "target_action_pricing"
+    __sdk_factory_args__ = {"item_id": "path.item_id"}
+
     item_id: int | str | None = None
     user_id: int | str | None = None
 
+    @swagger_operation(
+        "GET",
+        "/cpxpromo/1/getBids/{itemId}",
+        spec="Настройкаценыцелевогодействия.json",
+        operation_id="getBids",
+    )
     def get_bids(self, *, item_id: int | None = None) -> TargetActionGetBidsResult:
         """Получает детализированные цены и бюджеты.
 
@@ -369,6 +474,12 @@ class TargetActionPricing(DomainObject):
             item_id=item_id or self._require_item_id()
         )
 
+    @swagger_operation(
+        "POST",
+        "/cpxpromo/1/getPromotionsByItemIds",
+        spec="Настройкаценыцелевогодействия.json",
+        operation_id="getPromotionsByItemIds",
+    )
     def get_promotions_by_item_ids(
         self, *, item_ids: list[int] | None = None
     ) -> TargetActionPromotionsByItemIdsResult:
@@ -382,6 +493,12 @@ class TargetActionPricing(DomainObject):
             item_ids=resolved_item_ids
         )
 
+    @swagger_operation(
+        "POST",
+        "/cpxpromo/1/remove",
+        spec="Настройкаценыцелевогодействия.json",
+        operation_id="removePromotion",
+    )
     def delete(
         self,
         *,
@@ -409,6 +526,17 @@ class TargetActionPricing(DomainObject):
             idempotency_key=idempotency_key,
         )
 
+    @swagger_operation(
+        "POST",
+        "/cpxpromo/1/setAuto",
+        spec="Настройкаценыцелевогодействия.json",
+        operation_id="saveAutoBid",
+        method_args={
+            "action_type_id": "body.action_type_id",
+            "budget_penny": "body.budget_penny",
+            "budget_type": "body.budget_type",
+        },
+    )
     def update_auto(
         self,
         *,
@@ -454,6 +582,13 @@ class TargetActionPricing(DomainObject):
             idempotency_key=idempotency_key,
         )
 
+    @swagger_operation(
+        "POST",
+        "/cpxpromo/1/setManual",
+        spec="Настройкаценыцелевогодействия.json",
+        operation_id="saveManualBid",
+        method_args={"action_type_id": "body.action_type_id", "bid_penny": "body.bid_penny"},
+    )
     def update_manual(
         self,
         *,
@@ -510,9 +645,20 @@ class TargetActionPricing(DomainObject):
 class AutostrategyCampaign(DomainObject):
     """Доменный объект кампаний автостратегии."""
 
+    __swagger_domain__ = "promotion"
+    __sdk_factory__ = "autostrategy_campaign"
+    __sdk_factory_args__ = {"campaign_id": "path.campaign_id"}
+
     campaign_id: int | str | None = None
     user_id: int | str | None = None
 
+    @swagger_operation(
+        "POST",
+        "/autostrategy/v1/budget",
+        spec="Автостратегия.json",
+        operation_id="getAutostrategyBudget",
+        method_args={"campaign_type": "body.campaign_type"},
+    )
     def create_budget(
         self,
         *,
@@ -535,6 +681,13 @@ class AutostrategyCampaign(DomainObject):
             items=items,
         )
 
+    @swagger_operation(
+        "POST",
+        "/autostrategy/v1/campaign/create",
+        spec="Автостратегия.json",
+        operation_id="createAutostrategyCampaign",
+        method_args={"campaign_type": "body.campaign_type", "title": "body.title"},
+    )
     def create(
         self,
         *,
@@ -573,6 +726,13 @@ class AutostrategyCampaign(DomainObject):
             idempotency_key=idempotency_key,
         )
 
+    @swagger_operation(
+        "POST",
+        "/autostrategy/v1/campaign/edit",
+        spec="Автостратегия.json",
+        operation_id="editAutostrategyCampaign",
+        method_args={"version": "body.version"},
+    )
     def update(
         self,
         *,
@@ -609,6 +769,13 @@ class AutostrategyCampaign(DomainObject):
             idempotency_key=idempotency_key,
         )
 
+    @swagger_operation(
+        "POST",
+        "/autostrategy/v1/campaign/info",
+        spec="Автостратегия.json",
+        operation_id="getAutostrategyCampaignInfo",
+        method_args={"campaign_id": "body.campaign_id"},
+    )
     def get(self, *, campaign_id: int | None = None) -> CampaignDetailsResult:
         """Получает полную информацию о кампании.
 
@@ -619,6 +786,13 @@ class AutostrategyCampaign(DomainObject):
             campaign_id=campaign_id or self._require_campaign_id()
         )
 
+    @swagger_operation(
+        "POST",
+        "/autostrategy/v1/campaign/stop",
+        spec="Автостратегия.json",
+        operation_id="stopAutostrategyCampaign",
+        method_args={"version": "body.version"},
+    )
     def delete(
         self,
         *,
@@ -639,13 +813,19 @@ class AutostrategyCampaign(DomainObject):
             idempotency_key=idempotency_key,
         )
 
+    @swagger_operation(
+        "POST",
+        "/autostrategy/v1/campaigns",
+        spec="Автостратегия.json",
+        operation_id="getAutostrategyCampaigns",
+    )
     def list(
         self,
         *,
         limit: int = 100,
         offset: int | None = None,
-        status_id: list[int] | None = None,
-        order_by: list[tuple[str, str]] | None = None,
+        status_id: builtins.list[int] | None = None,
+        order_by: builtins.list[tuple[str, str]] | None = None,
         updated_from: datetime | None = None,
         updated_to: datetime | None = None,
     ) -> CampaignsResult:
@@ -679,6 +859,12 @@ class AutostrategyCampaign(DomainObject):
             filter=filter_payload,
         )
 
+    @swagger_operation(
+        "POST",
+        "/autostrategy/v1/stat",
+        spec="Автостратегия.json",
+        operation_id="getAutostrategyStat",
+    )
     def get_stat(self, *, campaign_id: int | None = None) -> AutostrategyStat:
         """Получает статистику кампании.
 

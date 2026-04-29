@@ -7,8 +7,8 @@
 |---|---|
 | [AvitoClient](client.md) | Инициализация, контекстный менеджер, фабричные методы, `debug_info()` |
 | [Конфигурация](config.md) | `AvitoSettings`, `AuthSettings`, env-переменные, per-operation overrides |
-| [Покрытие API](coverage.md) | 23 Swagger/OpenAPI-документа и карта покрытия |
-| [Методы API](operations.md) | Индекс публичных доменных методов SDK |
+| [Покрытие API](coverage.md) | 204/204 Swagger operations из binding report |
+| [Методы API](operations.md) | Карта Swagger operation → публичный SDK-метод |
 | Домены | Публичные объекты и модели каждого доменного пакета |
 | [Enum](enums.md) | Все публичные перечисления доменных пакетов |
 | [Модели](models.md) | Сериализация, dataclass-контракт, публичные модели |

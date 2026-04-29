@@ -39,6 +39,7 @@ from avito.ads.models import (
 from avito.core import PaginatedList, ValidationError
 from avito.core.deprecation import deprecated_method
 from avito.core.domain import DomainObject
+from avito.core.swagger import swagger_operation
 from avito.core.validation import (
     validate_non_empty_string,
     validate_string_items,
@@ -89,9 +90,19 @@ def _serialize_stats_date(value: StatsDate | None) -> str | None:
 class Ad(DomainObject):
     """Доменный объект объявления."""
 
+    __swagger_domain__ = "ads"
+    __sdk_factory__ = "ad"
+    __sdk_factory_args__ = {"item_id": "path.item_id", "user_id": "path.user_id"}
+
     item_id: int | str | None = None
     user_id: int | str | None = None
 
+    @swagger_operation(
+        "GET",
+        "/core/v1/accounts/{user_id}/items/{item_id}",
+        spec="Объявления.json",
+        operation_id="getItemInfo",
+    )
     def get(self) -> Listing:
         """Получает объявление по `item_id`.
 
@@ -101,6 +112,12 @@ class Ad(DomainObject):
         item_id, user_id = self._require_ids()
         return AdsClient(self.transport).get_item(user_id=user_id, item_id=item_id)
 
+    @swagger_operation(
+        "GET",
+        "/core/v1/items",
+        spec="Объявления.json",
+        operation_id="getItemsInfo",
+    )
     def list(
         self,
         *,
@@ -125,6 +142,13 @@ class Ad(DomainObject):
             offset=offset,
         )
 
+    @swagger_operation(
+        "POST",
+        "/core/v1/items/{item_id}/update_price",
+        spec="Объявления.json",
+        operation_id="updatePrice",
+        method_args={"price": "body.price"},
+    )
     def update_price(
         self,
         *,
@@ -160,9 +184,19 @@ class Ad(DomainObject):
 class AdStats(DomainObject):
     """Доменный объект статистики объявлений."""
 
+    __swagger_domain__ = "ads"
+    __sdk_factory__ = "ad_stats"
+    __sdk_factory_args__ = {"item_id": "path.item_id", "user_id": "path.user_id"}
+
     item_id: int | str | None = None
     user_id: int | str | None = None
 
+    @swagger_operation(
+        "POST",
+        "/core/v1/accounts/{user_id}/calls/stats",
+        spec="Объявления.json",
+        operation_id="postCallsStats",
+    )
     def get_calls_stats(
         self,
         *,
@@ -184,6 +218,12 @@ class AdStats(DomainObject):
             date_to=_serialize_stats_date(date_to),
         )
 
+    @swagger_operation(
+        "POST",
+        "/stats/v1/accounts/{user_id}/items",
+        spec="Объявления.json",
+        operation_id="itemStatsShallow",
+    )
     def get_item_stats(
         self,
         *,
@@ -207,6 +247,12 @@ class AdStats(DomainObject):
             fields=fields or [],
         )
 
+    @swagger_operation(
+        "POST",
+        "/stats/v2/accounts/{user_id}/items",
+        spec="Объявления.json",
+        operation_id="itemAnalytics",
+    )
     def get_item_analytics(
         self,
         *,
@@ -230,6 +276,12 @@ class AdStats(DomainObject):
             fields=fields or [],
         )
 
+    @swagger_operation(
+        "POST",
+        "/stats/v2/accounts/{user_id}/spendings",
+        spec="Объявления.json",
+        operation_id="accountSpendings",
+    )
     def get_account_spendings(
         self,
         *,
@@ -261,9 +313,20 @@ class AdStats(DomainObject):
 class AdPromotion(DomainObject):
     """Доменный объект продвижения объявления."""
 
+    __swagger_domain__ = "ads"
+    __sdk_factory__ = "ad_promotion"
+    __sdk_factory_args__ = {"item_id": "path.item_id", "user_id": "path.user_id"}
+
     item_id: int | str | None = None
     user_id: int | str | None = None
 
+    @swagger_operation(
+        "POST",
+        "/core/v1/accounts/{user_id}/vas/prices",
+        spec="Объявления.json",
+        operation_id="vasPrices",
+        method_args={"item_ids": "body.item_ids"},
+    )
     def get_vas_prices(
         self, *, item_ids: list[int], location_id: int | None = None
     ) -> VasPricesResult:
@@ -279,6 +342,13 @@ class AdPromotion(DomainObject):
             location_id=location_id,
         )
 
+    @swagger_operation(
+        "PUT",
+        "/core/v1/accounts/{user_id}/items/{item_id}/vas",
+        spec="Объявления.json",
+        operation_id="putItemVas",
+        method_args={"codes": "body.codes"},
+    )
     def apply_vas(
         self,
         *,
@@ -312,6 +382,13 @@ class AdPromotion(DomainObject):
             idempotency_key=idempotency_key,
         )
 
+    @swagger_operation(
+        "PUT",
+        "/core/v2/accounts/{user_id}/items/{item_id}/vas_packages",
+        spec="Объявления.json",
+        operation_id="putItemVasPackageV2",
+        method_args={"package_code": "body.package_code"},
+    )
     def apply_vas_package(
         self,
         *,
@@ -345,6 +422,13 @@ class AdPromotion(DomainObject):
             idempotency_key=idempotency_key,
         )
 
+    @swagger_operation(
+        "PUT",
+        "/core/v2/items/{item_id}/vas",
+        spec="Объявления.json",
+        operation_id="applyVas",
+        method_args={"codes": "body.codes"},
+    )
     def apply_vas_direct(
         self,
         *,
@@ -391,8 +475,18 @@ class AdPromotion(DomainObject):
 class AutoloadProfile(DomainObject):
     """Доменный объект профиля автозагрузки."""
 
+    __swagger_domain__ = "ads"
+    __sdk_factory__ = "autoload_profile"
+    __sdk_factory_args__ = {"user_id": "path.user_id"}
+
     user_id: int | str | None = None
 
+    @swagger_operation(
+        "GET",
+        "/autoload/v2/profile",
+        spec="Автозагрузка.json",
+        operation_id="getProfileV2",
+    )
     def get(self) -> AutoloadProfileSettings:
         """Получает профиль автозагрузки.
 
@@ -401,6 +495,12 @@ class AutoloadProfile(DomainObject):
 
         return AutoloadClient(self.transport).get_profile()
 
+    @swagger_operation(
+        "POST",
+        "/autoload/v2/profile",
+        spec="Автозагрузка.json",
+        operation_id="createOrUpdateProfileV2",
+    )
     def save(
         self,
         *,
@@ -423,6 +523,13 @@ class AutoloadProfile(DomainObject):
             idempotency_key=idempotency_key,
         )
 
+    @swagger_operation(
+        "POST",
+        "/autoload/v1/upload",
+        spec="Автозагрузка.json",
+        operation_id="upload",
+        method_args={"url": "constant.url"},
+    )
     def upload_by_url(self, *, url: str, idempotency_key: str | None = None) -> UploadResult:
         """Загружает файл по ссылке.
 
@@ -436,6 +543,12 @@ class AutoloadProfile(DomainObject):
             idempotency_key=idempotency_key,
         )
 
+    @swagger_operation(
+        "GET",
+        "/autoload/v1/user-docs/tree",
+        spec="Автозагрузка.json",
+        operation_id="userDocsTree",
+    )
     def get_tree(self) -> AutoloadTreeResult:
         """Получает дерево категорий.
 
@@ -444,6 +557,13 @@ class AutoloadProfile(DomainObject):
 
         return AutoloadClient(self.transport).get_tree()
 
+    @swagger_operation(
+        "GET",
+        "/autoload/v1/user-docs/node/{node_slug}/fields",
+        spec="Автозагрузка.json",
+        operation_id="userDocsNodeFields",
+        method_args={"node_slug": "path.node_slug"},
+    )
     def get_node_fields(self, *, node_slug: str) -> AutoloadFieldsResult:
         """Получает поля категории.
 
@@ -457,8 +577,18 @@ class AutoloadProfile(DomainObject):
 class AutoloadReport(DomainObject):
     """Доменный объект отчета автозагрузки."""
 
+    __swagger_domain__ = "ads"
+    __sdk_factory__ = "autoload_report"
+    __sdk_factory_args__ = {"report_id": "path.report_id"}
+
     report_id: int | str | None = None
 
+    @swagger_operation(
+        "GET",
+        "/autoload/v3/reports/{report_id}",
+        spec="Автозагрузка.json",
+        operation_id="getReportByIdV3",
+    )
     def get(self) -> AutoloadReportDetails:
         """Получает конкретный отчет v3.
 
@@ -468,6 +598,12 @@ class AutoloadReport(DomainObject):
         report_id = self._require_report_id()
         return AutoloadClient(self.transport).get_report(report_id=report_id)
 
+    @swagger_operation(
+        "GET",
+        "/autoload/v2/reports",
+        spec="Автозагрузка.json",
+        operation_id="getReportsV2",
+    )
     def list(
         self, *, limit: int | None = None, offset: int | None = None
     ) -> PaginatedList[AutoloadReportSummary]:
@@ -480,6 +616,12 @@ class AutoloadReport(DomainObject):
 
         return AutoloadClient(self.transport).list_reports(limit=limit, offset=offset)
 
+    @swagger_operation(
+        "GET",
+        "/autoload/v3/reports/last_completed_report",
+        spec="Автозагрузка.json",
+        operation_id="getLastCompletedReportV3",
+    )
     def get_last_completed(self) -> AutoloadReportDetails:
         """Получает последний завершенный отчет.
 
@@ -488,6 +630,12 @@ class AutoloadReport(DomainObject):
 
         return AutoloadClient(self.transport).get_last_completed_report()
 
+    @swagger_operation(
+        "GET",
+        "/autoload/v2/reports/{report_id}/items",
+        spec="Автозагрузка.json",
+        operation_id="getReportItemsById",
+    )
     def get_items(self) -> AutoloadReportItemsResult:
         """Получает объявления из отчета.
 
@@ -499,6 +647,12 @@ class AutoloadReport(DomainObject):
         report_id = self._require_report_id()
         return AutoloadClient(self.transport).get_report_items(report_id=report_id)
 
+    @swagger_operation(
+        "GET",
+        "/autoload/v2/reports/{report_id}/items/fees",
+        spec="Автозагрузка.json",
+        operation_id="getReportItemsFeesById",
+    )
     def get_fees(self) -> AutoloadFeesResult:
         """Получает списания по объявлениям отчета.
 
@@ -508,6 +662,13 @@ class AutoloadReport(DomainObject):
         report_id = self._require_report_id()
         return AutoloadClient(self.transport).get_report_fees(report_id=report_id)
 
+    @swagger_operation(
+        "GET",
+        "/autoload/v2/items/ad_ids",
+        spec="Автозагрузка.json",
+        operation_id="getAdIdsByAvitoIds",
+        method_args={"avito_ids": "query.query"},
+    )
     def get_ad_ids_by_avito_ids(self, *, avito_ids: Sequence[int]) -> IdMappingResult:
         """Получает ad ids по avito ids.
 
@@ -516,6 +677,13 @@ class AutoloadReport(DomainObject):
 
         return AutoloadClient(self.transport).get_ad_ids_by_avito_ids(avito_ids=list(avito_ids))
 
+    @swagger_operation(
+        "GET",
+        "/autoload/v2/items/avito_ids",
+        spec="Автозагрузка.json",
+        operation_id="getAvitoIdsByAdIds",
+        method_args={"ad_ids": "query.query"},
+    )
     def get_avito_ids_by_ad_ids(self, *, ad_ids: Sequence[int]) -> IdMappingResult:
         """Получает avito ids по ad ids.
 
@@ -524,6 +692,13 @@ class AutoloadReport(DomainObject):
 
         return AutoloadClient(self.transport).get_avito_ids_by_ad_ids(ad_ids=list(ad_ids))
 
+    @swagger_operation(
+        "GET",
+        "/autoload/v2/reports/items",
+        spec="Автозагрузка.json",
+        operation_id="getAutoloadItemsInfoV2",
+        method_args={"item_ids": "query.query"},
+    )
     def get_items_info(self, *, item_ids: Sequence[int]) -> AutoloadReportItemsResult:
         """Получает информацию по объявлениям автозагрузки.
 
@@ -542,8 +717,20 @@ class AutoloadReport(DomainObject):
 class AutoloadArchive(DomainObject):
     """Доменный объект архивных операций автозагрузки."""
 
+    __swagger_domain__ = "ads"
+    __sdk_factory__ = "autoload_archive"
+    __sdk_factory_args__ = {"report_id": "path.report_id"}
+
     report_id: int | str | None = None
 
+    @swagger_operation(
+        "GET",
+        "/autoload/v1/profile",
+        spec="Автозагрузка.json",
+        operation_id="getProfile",
+        deprecated=True,
+        legacy=True,
+    )
     @deprecated_method(
         symbol="AutoloadArchive.get_profile",
         replacement="autoload_profile().get",
@@ -560,6 +747,14 @@ class AutoloadArchive(DomainObject):
 
         return AutoloadArchiveClient(self.transport).get_profile()
 
+    @swagger_operation(
+        "POST",
+        "/autoload/v1/profile",
+        spec="Автозагрузка.json",
+        operation_id="createOrUpdateProfile",
+        deprecated=True,
+        legacy=True,
+    )
     @deprecated_method(
         symbol="AutoloadArchive.save_profile",
         replacement="autoload_profile().save",
@@ -590,6 +785,14 @@ class AutoloadArchive(DomainObject):
             idempotency_key=idempotency_key,
         )
 
+    @swagger_operation(
+        "GET",
+        "/autoload/v2/reports/last_completed_report",
+        spec="Автозагрузка.json",
+        operation_id="getLastCompletedReport",
+        deprecated=True,
+        legacy=True,
+    )
     @deprecated_method(
         symbol="AutoloadArchive.get_last_completed_report",
         replacement="autoload_report().get_last_completed",
@@ -606,6 +809,14 @@ class AutoloadArchive(DomainObject):
 
         return AutoloadArchiveClient(self.transport).get_last_completed_report()
 
+    @swagger_operation(
+        "GET",
+        "/autoload/v2/reports/{report_id}",
+        spec="Автозагрузка.json",
+        operation_id="getReportByIdV2",
+        deprecated=True,
+        legacy=True,
+    )
     @deprecated_method(
         symbol="AutoloadArchive.get_report",
         replacement="autoload_report().get",

@@ -4,7 +4,7 @@ export
 REGISTRY=10.11.0.9:5000
 MKDOCS_ENV=DISABLE_MKDOCS_2_WARNING=true NO_MKDOCS_2_WARNING=1
 
-check: test typecheck lint build
+check: test typecheck lint swagger-lint build
 
 build: clean
 	poetry build
@@ -30,6 +30,9 @@ fmt:
 lint:
 	poetry run ruff check .
 
+swagger-lint:
+	poetry run python scripts/lint_swagger_bindings.py --strict
+
 minor: check
 	poetry version minor
 
@@ -47,18 +50,13 @@ docs-serve:
 
 docs-strict:
 	$(MKDOCS_ENV) poetry run mkdocs build --strict
-	poetry run python scripts/check_readme_domain_coverage.py
+	poetry run python scripts/lint_swagger_bindings.py --strict
 	poetry run pytest tests/docs/
 
 docs-build: docs-strict
 
 docs-report:
-	poetry run python scripts/check_reference_public_surface.py --output reference-public-report.json
-	poetry run python scripts/check_public_docstrings.py --output docstring-contract-report.json
-	poetry run python scripts/check_changelog_sections.py --output changelog-sections-report.json
-	poetry run python scripts/check_docs_examples.py --output reference-explanation-examples-report.json
-	poetry run bandit -r avito -lll -f json -o bandit-report.json
-	poetry run python scripts/build_docs_quality_report.py
+	poetry run python scripts/lint_swagger_bindings.py --json --strict --output swagger-bindings-report.json
 
 docs-check: docs-strict
 	ln -sfn . site/avito_python_api
