@@ -58,7 +58,7 @@ class ReviewAnswer(DomainObject):
         "/ratings/v1/answers",
         spec="Рейтингииотзывы.json",
         operation_id="createReviewAnswerV1",
-        method_args={"review_id": "body.review_id", "text": "body.text"},
+        method_args={"review_id": "body.review_id", "text": "body.message"},
     )
     def create(
         self,

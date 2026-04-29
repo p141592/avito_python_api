@@ -13,6 +13,8 @@ HTTP_METHODS = frozenset({"delete", "get", "head", "options", "patch", "post", "
 DEFAULT_SWAGGER_API_DIR = Path("docs/avito/api")
 
 _PATH_PARAMETER_RE = re.compile(r"{([A-Za-z_][A-Za-z0-9_]*)}")
+_FIRST_CAP_RE = re.compile("(.)([A-Z][a-z]+)")
+_ALL_CAP_RE = re.compile("([a-z0-9])([A-Z])")
 
 JsonObject = dict[str, object]
 
@@ -41,10 +43,12 @@ class SwaggerParameter:
 
 @dataclass(frozen=True, slots=True)
 class SwaggerRequestBody:
-    """Минимальная metadata request body для будущей validation binding expressions."""
+    """Metadata request body для validation binding expressions."""
 
     required: bool
     content_types: tuple[str, ...]
+    field_names: tuple[str, ...]
+    schema_extracted: bool
 
 
 @dataclass(frozen=True, slots=True)
@@ -222,7 +226,10 @@ def _load_spec(path: Path, errors: list[SwaggerValidationError]) -> SwaggerSpec:
                     operation_id=_optional_string(operation.get("operationId")),
                     deprecated=operation.get("deprecated") is True,
                     parameters=parameters,
-                    request_body=_extract_request_body(operation.get("requestBody")),
+                    request_body=_extract_request_body(
+                        spec=spec,
+                        raw_request_body=operation.get("requestBody"),
+                    ),
                     responses=_extract_responses(operation.get("responses")),
                 )
             )
@@ -251,14 +258,50 @@ def _extract_parameters(
     return tuple(extracted)
 
 
-def _extract_request_body(raw_request_body: object) -> SwaggerRequestBody | None:
+def _extract_request_body(
+    *,
+    spec: Mapping[str, object],
+    raw_request_body: object,
+) -> SwaggerRequestBody | None:
     if raw_request_body is None:
         return None
-    request_body = _require_mapping(raw_request_body, "requestBody")
+    request_body = _resolve_component_ref(
+        spec=spec,
+        raw_value=raw_request_body,
+        source="requestBody",
+        component_name="requestBodies",
+    )
     content = _require_mapping(request_body.get("content"), "requestBody.content")
+    field_names: set[str] = set()
+    schema_extracted = True
+    schema_count = 0
+    for content_type, raw_media_type in content.items():
+        media_type = _require_mapping(
+            raw_media_type,
+            f"requestBody.content.{content_type}",
+        )
+        raw_schema = media_type.get("schema")
+        if raw_schema is None:
+            schema_extracted = False
+            continue
+        schema_count += 1
+        extracted = _extract_schema_field_names(
+            spec=spec,
+            raw_schema=raw_schema,
+            source=f"requestBody.content.{content_type}.schema",
+            seen_refs=frozenset(),
+        )
+        if extracted is None:
+            schema_extracted = False
+            continue
+        field_names.update(extracted)
+    if schema_count == 0:
+        schema_extracted = False
     return SwaggerRequestBody(
         required=request_body.get("required") is True,
         content_types=tuple(sorted(str(content_type) for content_type in content)),
+        field_names=tuple(sorted(field_names)),
+        schema_extracted=schema_extracted,
     )
 
 
@@ -333,18 +376,123 @@ def _validate_unique_operation_keys(
 
 
 def _resolve_ref(spec: Mapping[str, object], raw_value: object, source: str) -> Mapping[str, object]:
+    return _resolve_component_ref(
+        spec=spec,
+        raw_value=raw_value,
+        source=source,
+        component_name="parameters",
+    )
+
+
+def _resolve_component_ref(
+    *,
+    spec: Mapping[str, object],
+    raw_value: object,
+    source: str,
+    component_name: str,
+) -> Mapping[str, object]:
     value = _require_mapping(raw_value, source)
     raw_ref = value.get("$ref")
     if raw_ref is None:
         return value
     ref = _required_string(raw_ref, f"{source}.$ref")
-    prefix = "#/components/parameters/"
+    prefix = f"#/components/{component_name}/"
     if not ref.startswith(prefix):
-        raise SwaggerRegistryError(f"{source}: поддерживаются только локальные parameter refs.")
-    parameter_name = ref.removeprefix(prefix)
+        raise SwaggerRegistryError(
+            f"{source}: поддерживаются только локальные refs components/{component_name}."
+        )
+    object_name = ref.removeprefix(prefix)
     components = _require_mapping(spec.get("components"), "components")
-    parameters = _require_mapping(components.get("parameters"), "components.parameters")
-    return _require_mapping(parameters.get(parameter_name), ref)
+    component = _require_mapping(components.get(component_name), f"components.{component_name}")
+    return _require_mapping(component.get(object_name), ref)
+
+
+def _extract_schema_field_names(
+    *,
+    spec: Mapping[str, object],
+    raw_schema: object,
+    source: str,
+    seen_refs: frozenset[str],
+) -> set[str] | None:
+    schema = _require_mapping(raw_schema, source)
+    raw_ref = schema.get("$ref")
+    if raw_ref is not None:
+        ref = _required_string(raw_ref, f"{source}.$ref")
+        if ref in seen_refs:
+            return None
+        prefix = "#/components/schemas/"
+        if not ref.startswith(prefix):
+            return None
+        schema_name = ref.removeprefix(prefix)
+        components = _require_mapping(spec.get("components"), "components")
+        schemas = _require_mapping(components.get("schemas"), "components.schemas")
+        resolved = _require_mapping(schemas.get(schema_name), ref)
+        return _extract_schema_field_names(
+            spec=spec,
+            raw_schema=resolved,
+            source=ref,
+            seen_refs=seen_refs | frozenset({ref}),
+        )
+
+    fields: set[str] = set()
+    properties = schema.get("properties")
+    if isinstance(properties, Mapping):
+        for field_name in properties:
+            fields.update(_field_name_aliases(str(field_name)))
+
+    composed_fields = _extract_composed_schema_field_names(
+        spec=spec,
+        schema=schema,
+        source=source,
+        seen_refs=seen_refs,
+    )
+    if composed_fields is None:
+        return None
+    fields.update(composed_fields)
+
+    if fields:
+        return fields
+    if schema.get("type") == "object" and isinstance(properties, Mapping):
+        return fields
+    return None
+
+
+def _extract_composed_schema_field_names(
+    *,
+    spec: Mapping[str, object],
+    schema: Mapping[str, object],
+    source: str,
+    seen_refs: frozenset[str],
+) -> set[str] | None:
+    fields: set[str] = set()
+    for keyword in ("allOf", "oneOf", "anyOf"):
+        raw_items = schema.get(keyword)
+        if raw_items is None:
+            continue
+        if not isinstance(raw_items, list):
+            return None
+        for index, raw_item in enumerate(raw_items):
+            extracted = _extract_schema_field_names(
+                spec=spec,
+                raw_schema=raw_item,
+                source=f"{source}.{keyword}[{index}]",
+                seen_refs=seen_refs,
+            )
+            if extracted is None:
+                return None
+            fields.update(extracted)
+    return fields
+
+
+def _field_name_aliases(field_name: str) -> set[str]:
+    aliases = {field_name}
+    normalized_field_name = field_name.replace("IDs", "Ids")
+    snake_case = _ALL_CAP_RE.sub(
+        r"\1_\2",
+        _FIRST_CAP_RE.sub(r"\1_\2", normalized_field_name),
+    ).lower()
+    aliases.add(snake_case)
+    return aliases
 
 
 def _optional_sequence(value: object, source: str) -> tuple[object, ...]:

@@ -60,7 +60,7 @@ class RealtyListing(DomainObject):
         "/realty/v1/items/{item_id}/base",
         spec="Краткосрочнаяаренда.json",
         operation_id="postBaseParams",
-        method_args={"min_stay_days": "body.min_stay_days"},
+        method_args={"min_stay_days": "body.minimal_duration"},
     )
     def update_base_params(
         self, *, min_stay_days: int, item_id: int | str | None = None
@@ -99,7 +99,7 @@ class RealtyBooking(DomainObject):
         "/core/v1/accounts/{user_id}/items/{item_id}/bookings",
         spec="Краткосрочнаяаренда.json",
         operation_id="putBookingsInfo",
-        method_args={"blocked_dates": "body.blocked_dates"},
+        method_args={"blocked_dates": "body.bookings"},
     )
     def update_bookings_info(
         self,
@@ -181,7 +181,7 @@ class RealtyPricing(DomainObject):
         "/realty/v1/accounts/{user_id}/items/{item_id}/prices",
         spec="Краткосрочнаяаренда.json",
         operation_id="postRealtyPrices",
-        method_args={"periods": "body.periods"},
+        method_args={"periods": "body.prices"},
     )
     def update_realty_prices(
         self,

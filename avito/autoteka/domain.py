@@ -52,7 +52,7 @@ class AutotekaVehicle(DomainObject):
         "/autoteka/v1/catalogs/resolve",
         spec="Автотека.json",
         operation_id="catalogsResolve",
-        method_args={"brand_id": "body.brand_id"},
+        method_args={"brand_id": "body.fields_value_ids"},
     )
     def resolve_catalog(self, *, brand_id: int) -> CatalogResolveResult:
         """Актуализирует параметры автокаталога.
@@ -493,7 +493,7 @@ class AutotekaMonitoring(DomainObject):
         "/autoteka/v1/monitoring/bucket/add",
         spec="Автотека.json",
         operation_id="monitoringBucketAdd",
-        method_args={"vehicles": "body.vehicles"},
+        method_args={"vehicles": "body.data"},
     )
     def create_monitoring_bucket_add(
         self, *, vehicles: list[str], idempotency_key: str | None = None
@@ -533,7 +533,7 @@ class AutotekaMonitoring(DomainObject):
         "/autoteka/v1/monitoring/bucket/remove",
         spec="Автотека.json",
         operation_id="monitoringBucketRemove",
-        method_args={"vehicles": "body.vehicles"},
+        method_args={"vehicles": "body.data"},
     )
     def remove_bucket(
         self, *, vehicles: list[str], idempotency_key: str | None = None
@@ -644,7 +644,7 @@ class AutotekaValuation(DomainObject):
         "/autoteka/v1/valuation/by-specification",
         spec="Автотека.json",
         operation_id="valuationBySpecification",
-        method_args={"specification_id": "body.specification_id", "mileage": "body.mileage"},
+        method_args={"specification_id": "body.specification", "mileage": "body.mileage"},
     )
     def get_valuation_by_specification(
         self, *, specification_id: int, mileage: int

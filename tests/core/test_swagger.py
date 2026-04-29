@@ -9,7 +9,7 @@ from typing import cast
 import pytest
 
 import avito.core.swagger
-from avito.core import SwaggerOperationBinding, swagger_operation
+from avito.core import ConfigurationError, SwaggerOperationBinding, swagger_operation
 
 
 @contextmanager
@@ -98,6 +98,15 @@ def test_swagger_operation_rejects_forbidden_kwargs_by_signature() -> None:
             "/items",
             response_model="Forbidden",
         )
+
+
+def test_swagger_operation_rejects_stacked_bindings() -> None:
+    with pytest.raises(ConfigurationError):
+
+        @swagger_operation("GET", "/items")
+        @swagger_operation("POST", "/items")
+        def sync_items() -> str:
+            return "ok"
 
 
 def test_swagger_module_does_not_read_swagger_files_on_import() -> None:

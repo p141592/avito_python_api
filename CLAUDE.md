@@ -57,9 +57,10 @@ Core invariant:
 
 ```text
 each Swagger operation -> exactly one discovered binding
+each discovered SDK method -> exactly one Swagger operation
 ```
 
-One public SDK method may have multiple bindings only for an explicit multi-operation policy case, using stacked `@swagger_operation(...)` decorators.
+Multiple Swagger bindings on one public SDK method are forbidden. If one public scenario covers different upstream modes, expose separate documented SDK methods and keep compatibility wrappers unbound.
 
 When adding or changing a public method that corresponds to Avito API:
 

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Sequence
 from dataclasses import dataclass
 
 from avito.core import ValidationError
@@ -94,7 +95,7 @@ class Chat(DomainObject):
         "/messenger/v2/accounts/{user_id}/blacklist",
         spec="Мессенджер.json",
         operation_id="postBlacklistV2",
-        method_args={"blacklisted_user_id": "body.blacklisted_user_id"},
+        method_args={"blacklisted_user_id": "body.users"},
     )
     def blacklist(
         self,
@@ -349,20 +350,27 @@ class ChatMedia(DomainObject):
         spec="Мессенджер.json",
         operation_id="getVoiceFiles",
     )
-    def get_voice_files(self) -> VoiceFilesResult:
+    def get_voice_files(
+        self,
+        *,
+        voice_ids: Sequence[str] | None = None,
+    ) -> VoiceFilesResult:
         """Получает голосовые сообщения.
 
         Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
         """
 
-        return MediaClient(self.transport).get_voice_files(user_id=self._require_user_id())
+        return MediaClient(self.transport).get_voice_files(
+            user_id=self._require_user_id(),
+            voice_ids=voice_ids,
+        )
 
     @swagger_operation(
         "POST",
         "/messenger/v1/accounts/{user_id}/uploadImages",
         spec="Мессенджер.json",
         operation_id="uploadImages",
-        method_args={"files": "body.files"},
+        method_args={"files": "body.uploadfile[]"},
     )
     def upload_images(
         self,
@@ -420,7 +428,7 @@ class SpecialOfferCampaign(DomainObject):
         "/special-offers/v1/multiCreate",
         spec="Рассылкаскидокиспецпредложенийвмессенджере.json",
         operation_id="openApiMultiCreate",
-        method_args={"item_ids": "body.item_ids", "message": "body.message"},
+        method_args={"item_ids": "body.item_ids", "message": "body.item_ids"},
     )
     def create_multi(
         self,

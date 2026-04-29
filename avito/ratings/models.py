@@ -12,6 +12,7 @@ from avito.ratings.enums import ReviewAnswerStatus, ReviewStage
 class ReviewsQuery:
     """Query-параметры списка отзывов."""
 
+    offset: int | None = None
     page: int | None = None
     limit: int | None = None
 
@@ -19,8 +20,13 @@ class ReviewsQuery:
         """Сериализует query-параметры списка отзывов."""
 
         params: dict[str, int] = {}
+        if self.offset is not None:
+            params["offset"] = self.offset
         if self.page is not None:
             params["page"] = self.page
+        if self.offset is None and self.page is not None:
+            page_size = self.limit or 50
+            params["offset"] = max(self.page - 1, 0) * page_size
         if self.limit is not None:
             params["limit"] = self.limit
         return params

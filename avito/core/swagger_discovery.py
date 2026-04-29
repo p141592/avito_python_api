@@ -54,6 +54,7 @@ class SwaggerBindingDiscovery:
     """Result of scanning SDK domain modules for Swagger operation bindings."""
 
     bindings: tuple[DiscoveredSwaggerBinding, ...]
+    legacy_binding_methods: tuple[str, ...] = ()
 
     @property
     def canonical_map(self) -> Mapping[str, DiscoveredSwaggerBinding]:
@@ -77,12 +78,16 @@ def discover_swagger_bindings(
     non_domain_modules = tuple(
         importlib.import_module(name) for name in _NON_DOMAIN_BINDING_MODULES
     )
-    bindings = tuple(
-        binding
-        for module in (*domain_modules, *non_domain_modules)
-        for binding in _discover_module_bindings(module, registry)
+    bindings: list[DiscoveredSwaggerBinding] = []
+    legacy_binding_methods: list[str] = []
+    for module in (*domain_modules, *non_domain_modules):
+        module_bindings, module_legacy_methods = _discover_module_bindings(module, registry)
+        bindings.extend(module_bindings)
+        legacy_binding_methods.extend(module_legacy_methods)
+    return SwaggerBindingDiscovery(
+        bindings=tuple(bindings),
+        legacy_binding_methods=tuple(sorted(set(legacy_binding_methods))),
     )
-    return SwaggerBindingDiscovery(bindings=bindings)
 
 
 def _iter_domain_modules(package: ModuleType, package_name: str) -> tuple[ModuleType, ...]:
@@ -104,8 +109,9 @@ def _iter_domain_modules(package: ModuleType, package_name: str) -> tuple[Module
 def _discover_module_bindings(
     module: ModuleType,
     registry: SwaggerRegistry | None,
-) -> tuple[DiscoveredSwaggerBinding, ...]:
+) -> tuple[tuple[DiscoveredSwaggerBinding, ...], tuple[str, ...]]:
     bindings: list[DiscoveredSwaggerBinding] = []
+    legacy_binding_methods: list[str] = []
     for _, cls in inspect.getmembers(module, inspect.isclass):
         if cls.__module__ != module.__name__:
             continue
@@ -116,7 +122,11 @@ def _discover_module_bindings(
         for method_name, func in inspect.getmembers(cls, inspect.isfunction):
             if method_name.startswith("_"):
                 continue
-            for raw_binding in _method_bindings(func):
+            sdk_method = f"{module.__name__}.{cls.__name__}.{method_name}"
+            if hasattr(func, "__swagger_bindings__"):
+                legacy_binding_methods.append(sdk_method)
+            raw_binding = _method_binding(func)
+            if raw_binding is not None:
                 bindings.append(
                     _build_effective_binding(
                         module=module,
@@ -126,7 +136,7 @@ def _discover_module_bindings(
                         registry=registry,
                     )
                 )
-    return tuple(bindings)
+    return tuple(bindings), tuple(legacy_binding_methods)
 
 
 def _is_discoverable_binding_class(cls: type[object]) -> bool:
@@ -135,18 +145,11 @@ def _is_discoverable_binding_class(cls: type[object]) -> bool:
     return _optional_string(getattr(cls, "__swagger_domain__", None)) is not None
 
 
-def _method_bindings(func: object) -> tuple[SwaggerOperationBinding, ...]:
+def _method_binding(func: object) -> SwaggerOperationBinding | None:
     raw_binding = getattr(func, "__swagger_binding__", None)
-    raw_bindings = getattr(func, "__swagger_bindings__", None)
-    if isinstance(raw_bindings, tuple) and all(
-        isinstance(binding, SwaggerOperationBinding) for binding in raw_bindings
-    ):
-        if isinstance(raw_binding, SwaggerOperationBinding) and raw_binding not in raw_bindings:
-            return (raw_binding,)
-        return raw_bindings
     if isinstance(raw_binding, SwaggerOperationBinding):
-        return (raw_binding,)
-    return ()
+        return raw_binding
+    return None
 
 
 def _build_effective_binding(

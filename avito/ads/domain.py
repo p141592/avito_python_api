@@ -347,7 +347,7 @@ class AdPromotion(DomainObject):
         "/core/v1/accounts/{user_id}/items/{item_id}/vas",
         spec="Объявления.json",
         operation_id="putItemVas",
-        method_args={"codes": "body.codes"},
+        method_args={"codes": "body.vas_id"},
     )
     def apply_vas(
         self,
@@ -387,7 +387,7 @@ class AdPromotion(DomainObject):
         "/core/v2/accounts/{user_id}/items/{item_id}/vas_packages",
         spec="Объявления.json",
         operation_id="putItemVasPackageV2",
-        method_args={"package_code": "body.package_code"},
+        method_args={"package_code": "body.package_id"},
     )
     def apply_vas_package(
         self,
@@ -427,7 +427,7 @@ class AdPromotion(DomainObject):
         "/core/v2/items/{item_id}/vas",
         spec="Объявления.json",
         operation_id="applyVas",
-        method_args={"codes": "body.codes"},
+        method_args={"codes": "body.slugs"},
     )
     def apply_vas_direct(
         self,

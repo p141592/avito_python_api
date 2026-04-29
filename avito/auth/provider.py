@@ -79,7 +79,7 @@ class AuthProvider:
         token = self._autoteka_access_token
         now = datetime.now(UTC)
         if token is None or token.is_expired(now):
-            token_response = self._get_autoteka_token_client().request_client_credentials_token(
+            token_response = self._get_autoteka_token_client().request_autoteka_client_credentials_token(
                 ClientCredentialsRequest(
                     client_id=self.settings.autoteka_client_id or self.settings.client_id or "",
                     client_secret=self.settings.autoteka_client_secret
@@ -208,13 +208,6 @@ class TokenClient:
     @swagger_operation(
         "POST",
         "/token",
-        spec="Автотека.json",
-        operation_id="getAccessToken",
-        method_args={"request": "query.grant_type"},
-    )
-    @swagger_operation(
-        "POST",
-        "/token",
         spec="Авторизация.json",
         operation_id="getAccessToken",
         method_args={"request": "body"},
@@ -233,6 +226,21 @@ class TokenClient:
         if request.scope is not None:
             payload["scope"] = request.scope
         return self._request_token(payload)
+
+    @swagger_operation(
+        "POST",
+        "/token",
+        spec="Автотека.json",
+        operation_id="getAccessToken",
+        method_args={"request": "query.grant_type"},
+    )
+    def request_autoteka_client_credentials_token(
+        self,
+        request: ClientCredentialsRequest,
+    ) -> TokenResponse:
+        """Запрашивает access token по отдельному flow Автотеки."""
+
+        return self.request_client_credentials_token(request)
 
     def request_refresh_token(self, request: RefreshTokenRequest) -> TokenResponse:
         """Запрашивает новый access token по flow `refresh_token`."""

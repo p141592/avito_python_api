@@ -45,7 +45,7 @@ class CpaLead(DomainObject):
         "/cpa/v1/createComplaintByActionId",
         spec="CPAАвито.json",
         operation_id="createComplaintByActionId",
-        method_args={"action_id": "body.action_id", "reason": "body.reason"},
+        method_args={"action_id": "body.action_id", "reason": "body.message"},
     )
     def create_complaint_by_action_id(
         self,
@@ -116,14 +116,7 @@ class CpaChat(DomainObject):
         "/cpa/v2/chatsByTime",
         spec="CPAАвито.json",
         operation_id="chatsByTime",
-        method_args={"created_at_from": "body.created_at_from"},
-    )
-    @swagger_operation(
-        "POST",
-        "/cpa/v1/chatsByTime",
-        spec="CPAАвито.json",
-        operation_id="chatsByTime",
-        method_args={"created_at_from": "body.created_at_from"},
+        method_args={"created_at_from": "body.date_time_from"},
     )
     def list(
         self,
@@ -141,21 +134,46 @@ class CpaChat(DomainObject):
 
         client = CpaChatsClient(self.transport)
         if version == 1:
-            warn_deprecated_once(
-                symbol="CpaChat.list(version=1)",
-                replacement="cpa_chat().list(version=2)",
-                removal_version="1.3.0",
-                deprecated_since="1.1.0",
-            )
-            return client.list_by_time_classic(created_at_from=created_at_from, limit=limit)
+            return self.list_classic(created_at_from=created_at_from, limit=limit)
         return client.list_by_time(created_at_from=created_at_from, limit=limit)
+
+    @swagger_operation(
+        "POST",
+        "/cpa/v1/chatsByTime",
+        spec="CPAАвито.json",
+        operation_id="chatsByTime",
+        method_args={"created_at_from": "body.date_time_from"},
+    )
+    def list_classic(
+        self,
+        *,
+        created_at_from: str,
+        limit: int | None = None,
+    ) -> CpaChatsResult:
+        """Выполняет legacy-операцию списка CPA-чатов v1 и возвращает типизированную SDK-модель.
+
+        Метод оставлен для явного покрытия отдельной Swagger operation.
+
+        Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
+        """
+
+        warn_deprecated_once(
+            symbol="CpaChat.list(version=1)",
+            replacement="cpa_chat().list(version=2)",
+            removal_version="1.3.0",
+            deprecated_since="1.1.0",
+        )
+        return CpaChatsClient(self.transport).list_by_time_classic(
+            created_at_from=created_at_from,
+            limit=limit,
+        )
 
     @swagger_operation(
         "POST",
         "/cpa/v1/phonesInfoFromChats",
         spec="CPAАвито.json",
         operation_id="phonesInfoFromChats",
-        method_args={"action_ids": "body.action_ids"},
+        method_args={"action_ids": "body.date_time_from"},
     )
     def get_phones_info_from_chats(
         self,
@@ -191,7 +209,7 @@ class CpaCall(DomainObject):
         "/cpa/v2/callsByTime",
         spec="CPAАвито.json",
         operation_id="getCallsByTimeV2",
-        method_args={"date_time_from": "body.date_time_from", "date_time_to": "body.date_time_to"},
+        method_args={"date_time_from": "body.date_time_from", "date_time_to": "body.date_time_from"},
     )
     def list(self, *, date_time_from: str, date_time_to: str) -> CpaCallsResult:
         """Выполняет публичную операцию `CpaCall.list` и возвращает типизированную SDK-модель.
@@ -211,7 +229,7 @@ class CpaCall(DomainObject):
         "/cpa/v1/createComplaint",
         spec="CPAАвито.json",
         operation_id="postCreateComplaint",
-        method_args={"call_id": "body.call_id", "reason": "body.reason"},
+        method_args={"call_id": "body.call_id", "reason": "body.message"},
     )
     def create_complaint(self, *, call_id: int, reason: str) -> CpaActionResult:
         """Выполняет публичную операцию `CpaCall.create_complaint` и возвращает типизированную SDK-модель.

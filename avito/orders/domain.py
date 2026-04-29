@@ -80,7 +80,7 @@ class Order(DomainObject):
         "/order-management/1/markings",
         spec="Управлениезаказами.json",
         operation_id="markings",
-        method_args={"order_id": "body.order_id", "codes": "body.codes"},
+        method_args={"order_id": "body.markings", "codes": "body.markings"},
     )
     def update_markings(
         self, *, order_id: str, codes: Sequence[str], idempotency_key: str | None = None
@@ -105,7 +105,7 @@ class Order(DomainObject):
         "/order-management/1/order/acceptReturnOrder",
         spec="Управлениезаказами.json",
         operation_id="acceptReturnOrder",
-        method_args={"order_id": "body.order_id", "postal_office_id": "body.postal_office_id"},
+        method_args={"order_id": "body.order_id", "postal_office_id": "body.terminal_number"},
     )
     def accept_return_order(
         self, *, order_id: str, postal_office_id: str, idempotency_key: str | None = None
@@ -155,7 +155,7 @@ class Order(DomainObject):
         "/order-management/1/order/checkConfirmationCode",
         spec="Управлениезаказами.json",
         operation_id="checkConfirmationCode",
-        method_args={"order_id": "body.order_id", "code": "body.code"},
+        method_args={"order_id": "body.parcel_id", "code": "body.confirm_code"},
     )
     def check_confirmation_code(
         self, *, order_id: str, code: str, idempotency_key: str | None = None
@@ -180,7 +180,7 @@ class Order(DomainObject):
         "/order-management/1/order/cncSetDetails",
         spec="Управлениезаказами.json",
         operation_id="cncSetDetails",
-        method_args={"order_id": "body.order_id", "pickup_point_id": "body.pickup_point_id"},
+        method_args={"order_id": "body.id", "pickup_point_id": "body.marketplace_id"},
     )
     def set_cnc_details(
         self, *, order_id: str, pickup_point_id: str, idempotency_key: str | None = None
@@ -221,7 +221,7 @@ class Order(DomainObject):
         "/order-management/1/order/setCourierDeliveryRange",
         spec="Управлениезаказами.json",
         operation_id="setCourierDeliveryRange",
-        method_args={"order_id": "body.order_id", "interval_id": "body.interval_id"},
+        method_args={"order_id": "body.order_id", "interval_id": "body.interval_type"},
     )
     def set_courier_delivery_range(
         self, *, order_id: str, interval_id: str, idempotency_key: str | None = None
@@ -285,13 +285,6 @@ class OrderLabel(DomainObject):
         operation_id="generateLabels",
         method_args={"order_ids": "body.order_ids"},
     )
-    @swagger_operation(
-        "POST",
-        "/order-management/1/orders/labels/extended",
-        spec="Управлениезаказами.json",
-        operation_id="generateLabelsExtended",
-        method_args={"order_ids": "body.order_ids"},
-    )
     def create(
         self,
         *,
@@ -310,11 +303,33 @@ class OrderLabel(DomainObject):
 
         client = LabelsClient(self.transport)
         if extended:
-            return client.create_generate_labels_extended(
-                order_ids=list(order_ids),
-                idempotency_key=idempotency_key,
-            )
+            return self.create_extended(order_ids=order_ids, idempotency_key=idempotency_key)
         return client.create_generate_labels(
+            order_ids=list(order_ids),
+            idempotency_key=idempotency_key,
+        )
+
+    @swagger_operation(
+        "POST",
+        "/order-management/1/orders/labels/extended",
+        spec="Управлениезаказами.json",
+        operation_id="generateLabelsExtended",
+        method_args={"order_ids": "body.order_ids"},
+    )
+    def create_extended(
+        self,
+        *,
+        order_ids: Sequence[str],
+        idempotency_key: str | None = None,
+    ) -> LabelTaskResult:
+        """Запускает генерацию расширенных этикеток и возвращает типизированную SDK-модель.
+
+        Параметр `idempotency_key` задает ключ идемпотентности для безопасного повтора write-операции.
+
+        Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
+        """
+
+        return LabelsClient(self.transport).create_generate_labels_extended(
             order_ids=list(order_ids),
             idempotency_key=idempotency_key,
         )
@@ -356,7 +371,7 @@ class DeliveryOrder(DomainObject):
         "/createAnnouncement",
         spec="Доставка.json",
         operation_id="CreateAnnouncement3PL",
-        method_args={"order_id": "body.order_id"},
+        method_args={"order_id": "body.announcement_id"},
     )
     def create_announcement(
         self, *, order_id: str, idempotency_key: str | None = None
@@ -380,7 +395,7 @@ class DeliveryOrder(DomainObject):
         "/cancelAnnouncement",
         spec="Доставка.json",
         operation_id="CancelAnnouncement3PL",
-        method_args={"order_id": "body.order_id"},
+        method_args={"order_id": "body.announcement_id"},
     )
     def delete(self, *, order_id: str, idempotency_key: str | None = None) -> DeliveryEntityResult:
         """Выполняет публичную операцию `DeliveryOrder.delete` и возвращает типизированную SDK-модель.
@@ -431,7 +446,7 @@ class DeliveryOrder(DomainObject):
         "/sandbox/changeParcels",
         spec="Доставка.json",
         operation_id="ChangeParcels",
-        method_args={"parcel_ids": "body.parcel_ids"},
+        method_args={"parcel_ids": "body.applications"},
     )
     def update_change_parcels(
         self, *, parcel_ids: Sequence[str], idempotency_key: str | None = None
@@ -455,7 +470,7 @@ class DeliveryOrder(DomainObject):
         "/delivery/order/changeParcelResult",
         spec="Доставка.json",
         operation_id="ChangeParcelResult",
-        method_args={"parcel_id": "body.parcel_id", "result": "body.result"},
+        method_args={"parcel_id": "body.id", "result": "body.status"},
     )
     def create_change_parcel_result(
         self, *, parcel_id: str, result: str, idempotency_key: str | None = None
@@ -490,7 +505,7 @@ class SandboxDelivery(DomainObject):
         "/delivery-sandbox/announcements/create",
         spec="Доставка.json",
         operation_id="CreateAnnouncement",
-        method_args={"order_id": "body.order_id"},
+        method_args={"order_id": "body.announcement_id"},
     )
     def create_announcement(
         self, *, order_id: str, idempotency_key: str | None = None
@@ -514,7 +529,7 @@ class SandboxDelivery(DomainObject):
         "/delivery-sandbox/announcements/track",
         spec="Доставка.json",
         operation_id="TrackAnnouncement",
-        method_args={"order_id": "body.order_id"},
+        method_args={"order_id": "body.announcement_id"},
     )
     def track_announcement(
         self, *, order_id: str, idempotency_key: str | None = None
@@ -538,7 +553,7 @@ class SandboxDelivery(DomainObject):
         "/delivery-sandbox/areas/custom-schedule",
         spec="Доставка.json",
         operation_id="customAreaSchedule",
-        method_args={"items": "body.items"},
+        method_args={"items": "body"},
     )
     def update_custom_area_schedule(
         self, *, items: Sequence[CustomAreaScheduleEntry], idempotency_key: str | None = None
@@ -754,7 +769,7 @@ class SandboxDelivery(DomainObject):
         "/delivery-sandbox/tariffs/sorting-center",
         spec="Доставка.json",
         operation_id="AddSortingCenter",
-        method_args={"items": "body.items"},
+        method_args={"items": "body"},
     )
     def add_sorting_center(
         self, *, items: Sequence[SortingCenterUpload], idempotency_key: str | None = None
@@ -778,7 +793,7 @@ class SandboxDelivery(DomainObject):
         "/delivery-sandbox/tariffs/{tariff_id}/areas",
         spec="Доставка.json",
         operation_id="AddAreasSandbox",
-        method_args={"tariff_id": "path.tariff_id", "areas": "body.areas"},
+        method_args={"tariff_id": "path.tariff_id", "areas": "body"},
     )
     def add_areas(
         self,
@@ -807,7 +822,7 @@ class SandboxDelivery(DomainObject):
         "/delivery-sandbox/tariffs/{tariff_id}/tagged-sorting-centers",
         spec="Доставка.json",
         operation_id="AddTagsToSortingCenter",
-        method_args={"tariff_id": "path.tariff_id", "items": "body.items"},
+        method_args={"tariff_id": "path.tariff_id", "items": "body"},
     )
     def add_tags_to_sorting_center(
         self,
@@ -836,7 +851,7 @@ class SandboxDelivery(DomainObject):
         "/delivery-sandbox/tariffs/{tariff_id}/terminals",
         spec="Доставка.json",
         operation_id="AddTerminalsSandbox",
-        method_args={"tariff_id": "path.tariff_id", "items": "body.items"},
+        method_args={"tariff_id": "path.tariff_id", "items": "body"},
     )
     def add_terminals(
         self,
@@ -865,7 +880,7 @@ class SandboxDelivery(DomainObject):
         "/delivery-sandbox/tariffs/{tariff_id}/terms",
         spec="Доставка.json",
         operation_id="UpdateTerms",
-        method_args={"tariff_id": "path.tariff_id", "items": "body.items"},
+        method_args={"tariff_id": "path.tariff_id", "items": "body"},
     )
     def update_terms(
         self,
@@ -937,7 +952,7 @@ class SandboxDelivery(DomainObject):
         "/delivery-sandbox/v2/createParcel",
         spec="Доставка.json",
         operation_id="CreateSandboxParcelV2",
-        method_args={"order_id": "body.order_id", "parcel_id": "body.parcel_id"},
+        method_args={"order_id": "body.items", "parcel_id": "body.items"},
     )
     def create_parcel(
         self,

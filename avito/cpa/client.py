@@ -39,6 +39,16 @@ from avito.cpa.models import (
     CpaPhonesResult,
 )
 
+_CPA_HEADERS = {"X-Source": "avito-py"}
+
+
+def _cpa_context(operation_name: str, *, allow_retry: bool = False) -> RequestContext:
+    return RequestContext(
+        operation_name,
+        allow_retry=allow_retry,
+        headers=_CPA_HEADERS,
+    )
+
 
 @dataclass(slots=True, frozen=True)
 class CpaChatsClient:
@@ -51,7 +61,7 @@ class CpaChatsClient:
             self.transport,
             "GET",
             f"/cpa/v1/chatByActionId/{action_id}",
-            context=RequestContext("cpa.chats.get_by_action_id"),
+            context=_cpa_context("cpa.chats.get_by_action_id"),
             mapper=map_chat_item,
         )
 
@@ -60,7 +70,7 @@ class CpaChatsClient:
             self.transport,
             "POST",
             "/cpa/v1/chatsByTime",
-            context=RequestContext("cpa.chats.list_by_time_classic", allow_retry=True),
+            context=_cpa_context("cpa.chats.list_by_time_classic", allow_retry=True),
             mapper=map_chats,
             json_body=CpaChatsByTimeRequest(
                 created_at_from=created_at_from,
@@ -73,7 +83,7 @@ class CpaChatsClient:
             self.transport,
             "POST",
             "/cpa/v2/chatsByTime",
-            context=RequestContext("cpa.chats.list_by_time", allow_retry=True),
+            context=_cpa_context("cpa.chats.list_by_time", allow_retry=True),
             mapper=map_chats,
             json_body=CpaChatsByTimeRequest(
                 created_at_from=created_at_from,
@@ -86,7 +96,7 @@ class CpaChatsClient:
             self.transport,
             "POST",
             "/cpa/v1/phonesInfoFromChats",
-            context=RequestContext("cpa.chats.get_phones_info", allow_retry=True),
+            context=_cpa_context("cpa.chats.get_phones_info", allow_retry=True),
             mapper=map_phones,
             json_body=CpaPhonesFromChatsRequest(action_ids=action_ids).to_payload(),
         )
@@ -103,7 +113,7 @@ class CpaCallsClient:
             self.transport,
             "POST",
             "/cpa/v2/callsByTime",
-            context=RequestContext("cpa.calls.list_by_time", allow_retry=True),
+            context=_cpa_context("cpa.calls.list_by_time", allow_retry=True),
             mapper=map_calls,
             json_body=CpaCallsByTimeRequest(
                 date_time_from=date_time_from,
@@ -122,7 +132,10 @@ class CpaCallsClient:
             self.transport,
             "POST",
             "/cpa/v1/createComplaint",
-            context=RequestContext("cpa.calls.create_complaint", allow_retry=idempotency_key is not None),
+            context=_cpa_context(
+                "cpa.calls.create_complaint",
+                allow_retry=idempotency_key is not None,
+            ),
             mapper=map_cpa_action,
             json_body=CpaCallComplaintRequest(call_id=call_id, reason=reason).to_payload(),
             idempotency_key=idempotency_key,
@@ -146,7 +159,7 @@ class CpaLeadsClient:
             self.transport,
             "POST",
             "/cpa/v1/createComplaintByActionId",
-            context=RequestContext(
+            context=_cpa_context(
                 "cpa.leads.create_complaint_by_action_id",
                 allow_retry=idempotency_key is not None,
             ),
@@ -160,7 +173,7 @@ class CpaLeadsClient:
             self.transport,
             "POST",
             "/cpa/v3/balanceInfo",
-            context=RequestContext("cpa.leads.get_balance_info", allow_retry=True),
+            context=_cpa_context("cpa.leads.get_balance_info", allow_retry=True),
             mapper=map_balance,
             json_body={},
         )
@@ -175,7 +188,7 @@ class CpaArchiveClient:
     def get_record(self, *, call_id: int | str) -> CpaAudioRecord:
         binary = self.transport.download_binary(
             f"/cpa/v1/call/{call_id}",
-            context=RequestContext("cpa.archive.get_record"),
+            context=_cpa_context("cpa.archive.get_record"),
         )
         return CpaAudioRecord(binary)
 
@@ -184,7 +197,7 @@ class CpaArchiveClient:
             self.transport,
             "POST",
             "/cpa/v2/balanceInfo",
-            context=RequestContext("cpa.archive.get_balance_info", allow_retry=True),
+            context=_cpa_context("cpa.archive.get_balance_info", allow_retry=True),
             mapper=map_balance,
             json_body={},
         )
@@ -194,7 +207,7 @@ class CpaArchiveClient:
             self.transport,
             "POST",
             "/cpa/v2/callById",
-            context=RequestContext("cpa.archive.get_call_by_id", allow_retry=True),
+            context=_cpa_context("cpa.archive.get_call_by_id", allow_retry=True),
             mapper=map_call_item,
             json_body=CpaCallByIdRequest(call_id=call_id).to_payload(),
         )

@@ -55,13 +55,6 @@ class Vacancy(DomainObject):
         operation_id="vacancyCreateV2",
         method_args={"title": "body.title"},
     )
-    @swagger_operation(
-        "POST",
-        "/job/v1/vacancies",
-        spec="АвитоРабота.json",
-        operation_id="vacancyCreate",
-        method_args={"title": "body.title"},
-    )
     def create(
         self,
         *,
@@ -80,21 +73,39 @@ class Vacancy(DomainObject):
 
         client = VacanciesClient(self.transport)
         if version == 1:
-            return client.create_classic(title=title, idempotency_key=idempotency_key)
+            return self.create_classic(title=title, idempotency_key=idempotency_key)
         return client.create(title=title, idempotency_key=idempotency_key)
+
+    @swagger_operation(
+        "POST",
+        "/job/v1/vacancies",
+        spec="АвитоРабота.json",
+        operation_id="vacancyCreate",
+        method_args={"title": "body.name"},
+    )
+    def create_classic(
+        self,
+        *,
+        title: str,
+        idempotency_key: str | None = None,
+    ) -> JobActionResult:
+        """Создаёт вакансию через legacy v1 operation и возвращает типизированную SDK-модель.
+
+        Параметр `idempotency_key` задает ключ идемпотентности для безопасного повтора write-операции.
+
+        Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
+        """
+
+        return VacanciesClient(self.transport).create_classic(
+            title=title,
+            idempotency_key=idempotency_key,
+        )
 
     @swagger_operation(
         "POST",
         "/job/v2/vacancies/update/{vacancy_uuid}",
         spec="АвитоРабота.json",
         operation_id="vacancyUpdateV2",
-        method_args={"title": "body.title"},
-    )
-    @swagger_operation(
-        "PUT",
-        "/job/v1/vacancies/{vacancy_id}",
-        spec="АвитоРабота.json",
-        operation_id="vacancyUpdate",
         method_args={"title": "body.title"},
     )
     def update(
@@ -117,13 +128,40 @@ class Vacancy(DomainObject):
 
         client = VacanciesClient(self.transport)
         if version == 1:
-            return client.update_classic(
+            return self.update_classic(
                 vacancy_id=vacancy_id or self._require_vacancy_id(),
                 title=title,
                 idempotency_key=idempotency_key,
             )
         return client.update(
             vacancy_uuid=vacancy_uuid or self._require_vacancy_id(),
+            title=title,
+            idempotency_key=idempotency_key,
+        )
+
+    @swagger_operation(
+        "PUT",
+        "/job/v1/vacancies/{vacancy_id}",
+        spec="АвитоРабота.json",
+        operation_id="vacancyUpdate",
+        method_args={"title": "body.name"},
+    )
+    def update_classic(
+        self,
+        *,
+        title: str,
+        vacancy_id: int | str | None = None,
+        idempotency_key: str | None = None,
+    ) -> JobActionResult:
+        """Обновляет вакансию через legacy v1 operation и возвращает типизированную SDK-модель.
+
+        Параметр `idempotency_key` задает ключ идемпотентности для безопасного повтора write-операции.
+
+        Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
+        """
+
+        return VacanciesClient(self.transport).update_classic(
+            vacancy_id=vacancy_id or self._require_vacancy_id(),
             title=title,
             idempotency_key=idempotency_key,
         )
@@ -330,18 +368,6 @@ class Application(DomainObject):
             idempotency_key=idempotency_key,
         )
 
-    @swagger_operation(
-        "GET",
-        "/job/v1/applications/get_ids",
-        spec="АвитоРабота.json",
-        operation_id="applicationsGetIds",
-    )
-    @swagger_operation(
-        "POST",
-        "/job/v1/applications/get_by_ids",
-        spec="АвитоРабота.json",
-        operation_id="applicationsGetByIds",
-    )
     def list(
         self,
         *,
@@ -355,12 +381,42 @@ class Application(DomainObject):
         Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
         """
 
-        client = ApplicationsClient(self.transport)
         if ids is not None:
-            return client.get_by_ids(ids=list(ids))
+            return self.get_by_ids(ids=ids)
         if query is None:
             raise ValidationError("Для операции требуется `query` или `ids`.")
-        return client.get_ids(query=query)
+        return self.get_ids(query=query)
+
+    @swagger_operation(
+        "POST",
+        "/job/v1/applications/get_by_ids",
+        spec="АвитоРабота.json",
+        operation_id="applicationsGetByIds",
+        method_args={"ids": "body.ids"},
+    )
+    def get_by_ids(self, *, ids: Sequence[str]) -> ApplicationsResult:
+        """Возвращает отклики по идентификаторам и возвращает типизированную SDK-модель.
+
+        Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
+        """
+
+        return ApplicationsClient(self.transport).get_by_ids(ids=list(ids))
+
+    @swagger_operation(
+        "GET",
+        "/job/v1/applications/get_ids",
+        spec="АвитоРабота.json",
+        operation_id="applicationsGetIds",
+    )
+    def get_ids(self, *, query: ApplicationIdsQuery | None = None) -> ApplicationIdsResult:
+        """Возвращает идентификаторы откликов по фильтру и возвращает типизированную SDK-модель.
+
+        Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
+        """
+
+        if query is None:
+            raise ValidationError("Для операции требуется `query`.")
+        return ApplicationsClient(self.transport).get_ids(query=query)
 
     @swagger_operation(
         "GET",

@@ -51,9 +51,117 @@ def test_load_swagger_registry_extracts_operation_contract_metadata() -> None:
     assert [parameter.name for parameter in operation.header_parameters] == ["Authorization"]
     assert operation.request_body is not None
     assert operation.request_body.content_types == ("application/json",)
+    assert operation.request_body.schema_extracted is True
+    assert "message" in operation.request_body.field_names
     assert [(response.status_code, response.content_types) for response in operation.responses] == [
         ("200", ("application/json",)),
     ]
+
+
+def test_load_swagger_registry_extracts_inline_request_body_properties(tmp_path: Path) -> None:
+    spec_path = tmp_path / "Inline.json"
+    spec_path.write_text(
+        json.dumps(
+            {
+                "openapi": "3.0.0",
+                "paths": {
+                    "/items": {
+                        "post": {
+                            "requestBody": {
+                                "content": {
+                                    "application/json": {
+                                        "schema": {
+                                            "type": "object",
+                                            "properties": {"itemId": {"type": "integer"}},
+                                        }
+                                    }
+                                }
+                            },
+                            "responses": {"200": {"description": "ok"}},
+                        }
+                    }
+                },
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    operation = load_swagger_registry(tmp_path).operations[0]
+
+    assert operation.request_body is not None
+    assert operation.request_body.schema_extracted is True
+    assert operation.request_body.field_names == ("itemId", "item_id")
+
+
+def test_load_swagger_registry_extracts_ref_request_body_properties(tmp_path: Path) -> None:
+    spec_path = tmp_path / "Ref.json"
+    spec_path.write_text(
+        json.dumps(
+            {
+                "openapi": "3.0.0",
+                "components": {
+                    "schemas": {
+                        "Payload": {
+                            "type": "object",
+                            "properties": {"orderIDs": {"type": "array"}},
+                        }
+                    }
+                },
+                "paths": {
+                    "/labels": {
+                        "post": {
+                            "requestBody": {
+                                "content": {
+                                    "application/json": {
+                                        "schema": {"$ref": "#/components/schemas/Payload"}
+                                    }
+                                }
+                            },
+                            "responses": {"200": {"description": "ok"}},
+                        }
+                    }
+                },
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    operation = load_swagger_registry(tmp_path).operations[0]
+
+    assert operation.request_body is not None
+    assert operation.request_body.field_names == ("orderIDs", "order_ids")
+
+
+def test_load_swagger_registry_records_unsupported_request_body_schema(tmp_path: Path) -> None:
+    spec_path = tmp_path / "Unsupported.json"
+    spec_path.write_text(
+        json.dumps(
+            {
+                "openapi": "3.0.0",
+                "paths": {
+                    "/items": {
+                        "post": {
+                            "requestBody": {
+                                "content": {
+                                    "application/json": {
+                                        "schema": {"type": "array", "items": {"type": "string"}}
+                                    }
+                                }
+                            },
+                            "responses": {"200": {"description": "ok"}},
+                        }
+                    }
+                },
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    operation = load_swagger_registry(tmp_path).operations[0]
+
+    assert operation.request_body is not None
+    assert operation.request_body.schema_extracted is False
+    assert operation.request_body.field_names == ()
 
 
 def test_normalize_swagger_path_removes_trailing_slash() -> None:

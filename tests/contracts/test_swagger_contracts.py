@@ -1,8 +1,12 @@
 from __future__ import annotations
 
+import warnings
+from collections.abc import Iterator
+
 import pytest
 
 from avito.accounts.models import AccountProfile, EmployeeItem
+from avito.core.deprecation import _WARNED_SYMBOLS
 from avito.core.exceptions import (
     AuthenticationError,
     AuthorizationError,
@@ -15,8 +19,70 @@ from avito.core.exceptions import (
 )
 from avito.core.pagination import PaginatedList
 from avito.core.swagger_discovery import DiscoveredSwaggerBinding, discover_swagger_bindings
-from avito.core.swagger_registry import SwaggerRegistry, load_swagger_registry
+from avito.core.swagger_registry import SwaggerOperation, SwaggerRegistry, load_swagger_registry
 from avito.testing import SwaggerFakeTransport, error_payload
+
+_REGISTRY = load_swagger_registry()
+_DISCOVERY = discover_swagger_bindings(registry=_REGISTRY)
+_BINDINGS = _DISCOVERY.bindings
+_BINDING_BY_OPERATION = _DISCOVERY.canonical_map
+
+
+def _binding_id(binding: DiscoveredSwaggerBinding) -> str:
+    return binding.operation_key or binding.sdk_method
+
+
+def _error_status_cases() -> tuple[
+    tuple[SwaggerOperation, DiscoveredSwaggerBinding, int, type[Exception]],
+    ...,
+]:
+    cases: list[tuple[SwaggerOperation, DiscoveredSwaggerBinding, int, type[Exception]]] = []
+    for operation in _REGISTRY.operations:
+        binding = _BINDING_BY_OPERATION[operation.key]
+        for response in operation.error_responses:
+            if response.status_code.isdigit():
+                status_code = int(response.status_code)
+                cases.append(
+                    (
+                        operation,
+                        binding,
+                        status_code,
+                        _expected_exception_type(status_code, binding),
+                    )
+                )
+    return tuple(cases)
+
+
+def _error_status_id(
+    case: tuple[SwaggerOperation, DiscoveredSwaggerBinding, int, type[Exception]],
+) -> str:
+    operation, _binding, status_code, _expected_error = case
+    return f"{operation.key} {status_code}"
+
+
+def _expected_exception_type(
+    status_code: int,
+    binding: DiscoveredSwaggerBinding,
+) -> type[Exception]:
+    if binding.domain == "auth":
+        return AuthenticationError
+    if status_code == 400:
+        return ValidationError
+    if status_code == 401:
+        return AuthenticationError
+    if status_code == 403:
+        return AuthorizationError
+    if status_code == 404:
+        return NotFoundError
+    if status_code == 409:
+        return ConflictError
+    if status_code == 422:
+        return ValidationError
+    if status_code == 429:
+        return RateLimitError
+    if status_code >= 500:
+        return ServerError
+    return UpstreamApiError
 
 
 def _binding(registry: SwaggerRegistry, operation_key: str) -> DiscoveredSwaggerBinding:
@@ -24,6 +90,73 @@ def _binding(registry: SwaggerRegistry, operation_key: str) -> DiscoveredSwagger
     matches = [binding for binding in discovery.bindings if binding.operation_key == operation_key]
     assert len(matches) == 1
     return matches[0]
+
+
+def test_swagger_contract_coverage_matches_discovered_bindings() -> None:
+    assert len(_BINDINGS) == len(_REGISTRY.operations) == 204
+    assert len(_BINDING_BY_OPERATION) == len(_REGISTRY.operations)
+
+
+@pytest.mark.parametrize("binding", _BINDINGS, ids=_binding_id)
+def test_swagger_fake_transport_invokes_every_discovered_binding(
+    binding: DiscoveredSwaggerBinding,
+) -> None:
+    fake = SwaggerFakeTransport(registry=_REGISTRY)
+    fake.add_success_operation(binding.operation_key or "")
+
+    warning_context: Iterator[object]
+    if binding.deprecated:
+        _WARNED_SYMBOLS.clear()
+        warning_context = pytest.warns(DeprecationWarning)
+    else:
+        warning_context = warnings.catch_warnings()
+    with warning_context:
+        if not binding.deprecated:
+            warnings.simplefilter("ignore", DeprecationWarning)
+        fake.invoke_binding(binding)
+
+    assert fake.count() >= 1
+
+
+def test_swagger_error_contract_coverage_matches_numeric_error_responses() -> None:
+    cases = _error_status_cases()
+    expected_count = sum(
+        1
+        for operation in _REGISTRY.operations
+        for response in operation.error_responses
+        if response.status_code.isdigit()
+    )
+
+    assert len(cases) == expected_count == 639
+
+
+@pytest.mark.parametrize("case", _error_status_cases(), ids=_error_status_id)
+def test_swagger_fake_transport_maps_every_declared_error_status(
+    case: tuple[SwaggerOperation, DiscoveredSwaggerBinding, int, type[Exception]],
+) -> None:
+    operation, binding, status_code, expected_error = case
+    fake = SwaggerFakeTransport(registry=_REGISTRY)
+    fake.add_operation(operation.key, error_payload(status_code), status_code=status_code)
+
+    with pytest.raises(expected_error) as exc_info:
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", DeprecationWarning)
+            fake.invoke_binding(binding)
+
+    assert exc_info.value.args[0] == f"Ошибка {status_code}"
+
+
+def test_swagger_deprecated_contract_covers_all_deprecated_operations() -> None:
+    deprecated_bindings = tuple(binding for binding in _BINDINGS if binding.deprecated)
+
+    assert len(deprecated_bindings) == len(_REGISTRY.deprecated_operations) == 7
+    for binding in deprecated_bindings:
+        _WARNED_SYMBOLS.clear()
+        fake = SwaggerFakeTransport(registry=_REGISTRY)
+        fake.add_success_operation(binding.operation_key or "")
+
+        with pytest.warns(DeprecationWarning):
+            fake.invoke_binding(binding)
 
 
 def test_swagger_fake_transport_invokes_generated_read_call_and_validates_path() -> None:
@@ -62,7 +195,7 @@ def test_swagger_fake_transport_invokes_generated_write_call_and_validates_json_
     assert request.method == "POST"
     assert request.path == "/listItemsByEmployeeIdV1"
     assert request.headers["content-type"] == "application/json"
-    assert request.json_body == {"employeeId": 10, "limit": 25, "offset": 0}
+    assert request.json_body == {"employeeId": 10, "limit": 2, "offset": 0}
     assert isinstance(result, PaginatedList)
     assert isinstance(result[0], EmployeeItem)
 
@@ -193,6 +326,7 @@ def test_swagger_fake_transport_invokes_deprecated_legacy_operation_with_runtime
         {"user_id": 7, "is_enabled": True, "upload_url": "https://example.test/upload"},
     )
 
+    _WARNED_SYMBOLS.clear()
     with pytest.warns(DeprecationWarning):
         result = fake.invoke_binding(binding)
 

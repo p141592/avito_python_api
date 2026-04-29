@@ -55,7 +55,7 @@ __sdk_factory_args__: Mapping[str, str]
 2. Значения из class-level metadata.
 3. Auto-resolve через registry, только если `method + normalized_path` совпадает ровно с одной Swagger operation во всём corpus.
 
-Decorator записывает metadata в `func.__swagger_binding__` и, для явно разрешённых multi-operation SDK methods, в `func.__swagger_bindings__`. Он не меняет поведение метода и не читает Swagger-файлы на import time.
+Decorator записывает metadata в `func.__swagger_binding__`. Он не меняет поведение метода и не читает Swagger-файлы на import time. Повторная разметка того же SDK method запрещена, а legacy metadata `__swagger_bindings__` считается ошибкой совместимости.
 
 ## Operation identity
 
@@ -90,7 +90,7 @@ spec + method + normalized_path
 
 Expressions не являются Python-кодом. Произвольные callables, dotted paths вне whitelist и transport/request DTO запрещены.
 
-Текущая реализация валидирует `path.*`, `query.*`, `header.*`, наличие `requestBody` для `body`/`body.*` и наличие `constant.*` в test constants registry. Если требуется строгая field-level проверка `body.<field>` против JSON schema properties, registry должен дополнительно извлекать request body schema metadata.
+Текущая реализация валидирует `path.*`, `query.*`, `header.*`, наличие `requestBody` для `body`, field-level `body.<field>` против top-level request body schema properties и наличие `constant.*` в test constants registry. Для Swagger properties с camelCase/Pascal acronym naming registry также хранит SDK-style snake_case aliases, чтобы binding мог ссылаться на публичные Python-имена без потери schema-aware проверки.
 
 ## Discovery
 
@@ -152,11 +152,10 @@ The strict invariant is:
 
 ```text
 each Swagger operation -> exactly one discovered binding
+each discovered SDK method -> exactly one Swagger operation
 ```
 
-One SDK method may have multiple bindings only when one public method intentionally covers multiple upstream operations or modes. Such cases must be explicit through stacked `@swagger_operation(...)` decorators and must remain visible to discovery through `__swagger_bindings__`.
-
-This exception is narrow. It must not be used to hide duplicate public methods or to bind unrelated operations to a generic method.
+One SDK method must not have multiple Swagger bindings. When a user-facing scenario has several upstream modes, the canonical bindings belong to separate documented SDK methods; compatibility wrappers may delegate to those methods but must not carry additional bindings.
 
 ## Contract tests
 
@@ -172,6 +171,14 @@ This exception is narrow. It must not be used to hide duplicate public methods o
 
 Contract tests must stay network-free. They are not a replacement for domain tests, but they catch binding drift: a method can be present in docs yet still fail contract invocation if factory args, method args, path, body or status handling are wrong.
 
+The contract suite is exhaustive over the Swagger binding map:
+
+- one request-contract case per discovered binding;
+- one error-contract case per numeric Swagger error response;
+- deprecated operation bindings are included in the request set and additionally checked for runtime `DeprecationWarning`.
+
+`SwaggerFakeTransport` provides deterministic generated SDK arguments and success payloads. The default success payload is the minimal JSON object accepted by most SDK mappers; operations whose mappers require a domain-specific response shape are listed in the controlled payload registry in `avito/testing/swagger_fake_transport.py`. Missing generated arguments or unsupported payload shapes are contract failures, not allowlisted gaps.
+
 ## API method change checklist
 
 When adding or changing a public API method that corresponds to Avito API:
@@ -183,7 +190,7 @@ When adding or changing a public API method that corresponds to Avito API:
 5. Document the public method through docstring so generated reference explains arguments, return model, pagination/dry-run/idempotency behavior and common exceptions.
 6. Add focused domain tests with `FakeTransport`.
 7. Add or adjust mapper/model tests when response or serialization changes.
-8. Ensure the binding is exercised by strict `make swagger-lint` and, when needed, `SwaggerFakeTransport` contract tests.
+8. Ensure the binding is exercised by strict `make swagger-lint` and the exhaustive `SwaggerFakeTransport` contract tests.
 9. Update user-facing docs when the method creates a new workflow, changes behavior, or introduces a non-obvious contract.
 
 Minimum local verification for API-surface changes:

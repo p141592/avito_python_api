@@ -808,12 +808,13 @@ Rules:
 
 **Swagger binding coverage** — must cover for every public method corresponding to an Avito API operation:
 
-- the method has exactly one binding to its upstream Swagger operation unless it is an explicitly justified multi-operation SDK method;
+- the method has exactly one binding to its upstream Swagger operation;
 - every Swagger operation has exactly one discovered binding in strict mode;
 - `spec`, method, path and optional `operation_id` match `docs/avito/api/`;
 - `factory_args` and `method_args` match public factory/method signatures and use only allowed expressions;
 - deprecated Swagger operations have `deprecated=True`, `legacy=True`, and runtime `DeprecationWarning`;
-- `SwaggerFakeTransport` can invoke representative read/write/deprecated bindings without real HTTP.
+- `SwaggerFakeTransport` invokes every discovered binding without real HTTP;
+- contract tests cover every numeric Swagger error response and verify SDK exception mapping.
 
 ## API Documentation and Contract Coverage
 
@@ -827,7 +828,7 @@ Rules:
 - Swagger bindings must not duplicate the API contract. Decorators and binding metadata must not contain request/response schemas, status lists, content types, response models, request models, error models, required fields, path parameter definitions, or query parameter definitions.
 - Public domain classes that expose bound methods should declare class-level metadata (`__swagger_domain__`, `__swagger_spec__`, `__sdk_factory__`, and when needed `__sdk_factory_args__`) so discovery can resolve bindings without creating `AvitoClient`, reading required environment variables, or doing network work.
 - The canonical coverage map is generated from Swagger registry plus discovered `@swagger_operation` bindings. Markdown inventory files and hand-written coverage tables must not be used as source of truth.
-- Each Swagger operation must resolve to exactly one discovered binding in strict mode. One public SDK method may have multiple bindings only for an explicit multi-operation policy case, using stacked decorators and visible `__swagger_bindings__` metadata.
+- Each Swagger operation must resolve to exactly one discovered binding in strict mode. One public SDK method must not have more than one Swagger binding. Stacked `@swagger_operation(...)` decorators and `__swagger_bindings__` metadata are forbidden.
 - Public method signatures, model field names and types, allowed enum values, and nullable behavior must exactly match the contract in `docs/avito/api/`.
 - When there is a discrepancy between code and the specification in `docs/avito/api/`, the specification takes priority.
 - If the upstream API adds a new endpoint or changes an existing one, a corresponding SDK change is mandatory.

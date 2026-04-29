@@ -534,7 +534,7 @@ class AutoloadClient:
             "/autoload/v2/items/ad_ids",
             context=RequestContext("ads.autoload.get_ad_ids_by_avito_ids"),
             mapper=map_id_mapping,
-            params={"avito_ids": ",".join(str(item) for item in avito_ids)},
+            params={"query": ",".join(str(item) for item in avito_ids)},
         )
 
     def get_avito_ids_by_ad_ids(self, *, ad_ids: list[int]) -> IdMappingResult:
@@ -546,7 +546,7 @@ class AutoloadClient:
             "/autoload/v2/items/avito_ids",
             context=RequestContext("ads.autoload.get_avito_ids_by_ad_ids"),
             mapper=map_id_mapping,
-            params={"ad_ids": ",".join(str(item) for item in ad_ids)},
+            params={"query": ",".join(str(item) for item in ad_ids)},
         )
 
     def list_reports(
@@ -586,7 +586,7 @@ class AutoloadClient:
             "/autoload/v2/reports/items",
             context=RequestContext("ads.autoload.get_items_info"),
             mapper=map_autoload_report_items,
-            params={"item_ids": ",".join(str(item) for item in item_ids)},
+            params={"query": ",".join(str(item) for item in item_ids)},
         )
 
     def get_report(self, *, report_id: int) -> AutoloadReportDetails:

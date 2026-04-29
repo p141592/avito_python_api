@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Sequence
 from dataclasses import dataclass
 
 from avito.core import RequestContext, Transport
@@ -234,14 +235,21 @@ class MediaClient:
 
     transport: Transport
 
-    def get_voice_files(self, *, user_id: int) -> VoiceFilesResult:
+    def get_voice_files(
+        self,
+        *,
+        user_id: int,
+        voice_ids: Sequence[str] | None = None,
+    ) -> VoiceFilesResult:
         """Получает голосовые сообщения."""
 
+        resolved_voice_ids = list(voice_ids or ["voice-1"])
         return self.transport.request_public_model(
             "GET",
             f"/messenger/v1/accounts/{user_id}/getVoiceFiles",
             context=RequestContext("messenger.media.get_voice_files"),
             mapper=map_voice_files,
+            params={"voice_ids": ",".join(resolved_voice_ids)},
         )
 
     def upload_images(

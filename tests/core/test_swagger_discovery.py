@@ -107,6 +107,27 @@ def test_discover_swagger_bindings_auto_resolves_spec_from_registry() -> None:
     assert discovery.canonical_map[discovered.operation_key] == discovered
 
 
+def test_discover_swagger_bindings_reports_legacy_stacked_metadata() -> None:
+    original_binding = getattr(Account.get_self, "__swagger_binding__", None)
+    original_bindings = getattr(Account.get_self, "__swagger_bindings__", None)
+    binding = SwaggerOperationBinding(method="GET", path="/core/v1/accounts/self")
+    Account.get_self.__swagger_binding__ = binding  # type: ignore[attr-defined]
+    Account.get_self.__swagger_bindings__ = (binding,)  # type: ignore[attr-defined]
+    try:
+        discovery = discover_swagger_bindings()
+    finally:
+        if original_binding is None:
+            delattr(Account.get_self, "__swagger_binding__")
+        else:
+            Account.get_self.__swagger_binding__ = original_binding  # type: ignore[attr-defined]
+        if original_bindings is None:
+            delattr(Account.get_self, "__swagger_bindings__")
+        else:
+            Account.get_self.__swagger_bindings__ = original_bindings  # type: ignore[attr-defined]
+
+    assert "avito.accounts.domain.Account.get_self" in discovery.legacy_binding_methods
+
+
 def _find_binding(bindings: object, sdk_method: str) -> object:
     for binding in bindings:
         if binding.sdk_method == sdk_method:

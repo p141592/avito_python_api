@@ -52,6 +52,8 @@ def lint_swagger_bindings(
     spec_names = {spec.name for spec in registry.specs}
     errors: list[SwaggerReportError] = []
 
+    errors.extend(_validate_legacy_stacked_binding_metadata(discovery))
+    errors.extend(_validate_single_binding_per_sdk_method(discovery.bindings))
     errors.extend(_validate_duplicate_bindings(discovery.bindings))
     if strict:
         errors.extend(_validate_complete_bindings(registry.operations, discovery.bindings))
@@ -69,6 +71,49 @@ def lint_swagger_bindings(
         errors.extend(_validate_factory(binding))
         errors.extend(_validate_sdk_method_signature(binding, sdk_method))
 
+    return tuple(errors)
+
+
+def _validate_legacy_stacked_binding_metadata(
+    discovery: SwaggerBindingDiscovery,
+) -> tuple[SwaggerReportError, ...]:
+    return tuple(
+        SwaggerReportError(
+            code="SWAGGER_BINDING_METHOD_MULTIPLE",
+            message=f"{sdk_method}: legacy metadata `__swagger_bindings__` запрещена.",
+            operation_key=None,
+            sdk_method=sdk_method,
+        )
+        for sdk_method in discovery.legacy_binding_methods
+    )
+
+
+def _validate_single_binding_per_sdk_method(
+    bindings: Sequence[DiscoveredSwaggerBinding],
+) -> tuple[SwaggerReportError, ...]:
+    grouped: defaultdict[str, list[DiscoveredSwaggerBinding]] = defaultdict(list)
+    for binding in bindings:
+        grouped[binding.sdk_method].append(binding)
+
+    errors: list[SwaggerReportError] = []
+    for sdk_method, method_bindings in sorted(grouped.items()):
+        if len(method_bindings) < 2:
+            continue
+        operation_keys = ", ".join(
+            binding.operation_key or "<ambiguous>" for binding in method_bindings
+        )
+        for binding in method_bindings:
+            errors.append(
+                SwaggerReportError(
+                    code="SWAGGER_BINDING_METHOD_MULTIPLE",
+                    message=(
+                        f"{sdk_method}: один SDK method связан с несколькими Swagger "
+                        f"operations: {operation_keys}."
+                    ),
+                    operation_key=binding.operation_key,
+                    sdk_method=sdk_method,
+                )
+            )
     return tuple(errors)
 
 
@@ -404,7 +449,8 @@ def _validate_expression(
             location="header",
         )
     if prefix == "body":
-        if operation.request_body is None:
+        request_body = operation.request_body
+        if request_body is None:
             return (
                 _expression_error(
                     binding=binding,
@@ -412,6 +458,30 @@ def _validate_expression(
                     message=(
                         f"{binding.sdk_method}: {subject}.{argument_name} указывает на "
                         f"`{expression}`, но Swagger operation не содержит requestBody."
+                    ),
+                ),
+            )
+        if not request_body.schema_extracted:
+            return (
+                _expression_error(
+                    binding=binding,
+                    code="SWAGGER_BINDING_BODY_SCHEMA_UNSUPPORTED",
+                    message=(
+                        f"{binding.sdk_method}: {subject}.{argument_name} указывает на "
+                        f"`{expression}`, но requestBody schema не поддержана для "
+                        "field-level validation."
+                    ),
+                ),
+            )
+        if field_name not in request_body.field_names:
+            return (
+                _expression_error(
+                    binding=binding,
+                    code="SWAGGER_BINDING_BODY_FIELD_NOT_FOUND",
+                    message=(
+                        f"{binding.sdk_method}: {subject}.{argument_name} указывает на "
+                        f"`{expression}`, но Swagger requestBody не содержит поле "
+                        f"`{field_name}`."
                     ),
                 ),
             )

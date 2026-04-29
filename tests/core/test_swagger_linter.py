@@ -6,9 +6,20 @@ from contextlib import contextmanager
 from avito.accounts.domain import Account, AccountHierarchy
 from avito.ads.domain import AutoloadArchive
 from avito.core.swagger import SwaggerOperationBinding
-from avito.core.swagger_discovery import discover_swagger_bindings
+from avito.core.swagger_discovery import (
+    DiscoveredSwaggerBinding,
+    SwaggerBindingDiscovery,
+    discover_swagger_bindings,
+)
 from avito.core.swagger_linter import lint_swagger_bindings
-from avito.core.swagger_registry import load_swagger_registry
+from avito.core.swagger_registry import (
+    SwaggerOperation,
+    SwaggerRegistry,
+    SwaggerRequestBody,
+    SwaggerResponse,
+    SwaggerSpec,
+    load_swagger_registry,
+)
 
 
 @contextmanager
@@ -135,6 +146,53 @@ def test_lint_swagger_bindings_rejects_duplicate_operation_bindings() -> None:
     ]
 
 
+def test_lint_swagger_bindings_rejects_one_sdk_method_bound_to_multiple_operations() -> None:
+    registry = load_swagger_registry()
+    discovery = discover_swagger_bindings(registry=registry)
+    first = discovery.bindings[0]
+    duplicate_sdk_method = type(first)(
+        module=first.module,
+        class_name=first.class_name,
+        method_name=first.method_name,
+        domain=first.domain,
+        operation_key="Информацияопользователе.json GET /core/v1/accounts/{user_id}/balance",
+        spec="Информацияопользователе.json",
+        method="GET",
+        path="/core/v1/accounts/{user_id}/balance",
+        operation_id="getUserBalance",
+        factory=first.factory,
+        factory_args=first.factory_args,
+        method_args=first.method_args,
+        deprecated=first.deprecated,
+        legacy=first.legacy,
+    )
+    patched_discovery = type(discovery)(
+        bindings=(first, duplicate_sdk_method),
+        legacy_binding_methods=(),
+    )
+
+    errors = lint_swagger_bindings(registry, patched_discovery)
+
+    assert _codes_for(errors, first.sdk_method, exclude={"SWAGGER_BINDING_DUPLICATE"}) == [
+        "SWAGGER_BINDING_METHOD_MULTIPLE",
+        "SWAGGER_BINDING_METHOD_MULTIPLE",
+    ]
+
+
+def test_lint_swagger_bindings_rejects_legacy_stacked_metadata() -> None:
+    registry = load_swagger_registry()
+    discovery = type(discover_swagger_bindings(registry=registry))(
+        bindings=(),
+        legacy_binding_methods=("avito.accounts.domain.Account.get_self",),
+    )
+
+    errors = lint_swagger_bindings(registry, discovery)
+
+    assert _codes_for(errors, "avito.accounts.domain.Account.get_self") == [
+        "SWAGGER_BINDING_METHOD_MULTIPLE"
+    ]
+
+
 def test_lint_swagger_bindings_rejects_metadata_mismatches() -> None:
     registry = load_swagger_registry()
     binding = SwaggerOperationBinding(
@@ -184,7 +242,7 @@ def test_lint_swagger_bindings_validates_factory_and_method_signatures() -> None
         path="/linkItemsV1",
         spec="ИерархияАккаунтов.json",
         factory_args={"unknown": "constant.value"},
-        method_args={"employee_id": "body.employee_id", "unknown": "body.unknown"},
+        method_args={"employee_id": "body.employee_id", "unknown": "constant.value"},
     )
 
     with _temporary_binding(
@@ -298,7 +356,7 @@ def test_lint_swagger_bindings_allows_valid_body_and_constant_expressions() -> N
     binding = SwaggerOperationBinding(
         method="POST",
         path="/core/v1/accounts/operations_history",
-        method_args={"limit": "body.limit"},
+        method_args={"date_from": "body.date_time_from"},
         factory_args={"user_id": "constant.user_id"},
     )
 
@@ -312,6 +370,60 @@ def test_lint_swagger_bindings_allows_valid_body_and_constant_expressions() -> N
         "avito.accounts.domain.Account.get_operations_history",
         exclude={"SWAGGER_BINDING_DUPLICATE"},
     ) == []
+
+
+def test_lint_swagger_bindings_rejects_unknown_body_field() -> None:
+    registry, discovery = _single_body_field_discovery(
+        expression="body.missing",
+        request_body=SwaggerRequestBody(
+            required=True,
+            content_types=("application/json",),
+            field_names=("employeeId", "employee_id"),
+            schema_extracted=True,
+        ),
+    )
+
+    errors = lint_swagger_bindings(registry, discovery)
+
+    assert _codes_for(errors, "avito.accounts.domain.AccountHierarchy.link_items") == [
+        "SWAGGER_BINDING_BODY_FIELD_NOT_FOUND"
+    ]
+
+
+def test_lint_swagger_bindings_rejects_unsupported_body_schema_for_field_expression() -> None:
+    registry, discovery = _single_body_field_discovery(
+        expression="body.employee_id",
+        item_ids_expression="body",
+        request_body=SwaggerRequestBody(
+            required=True,
+            content_types=("application/json",),
+            field_names=(),
+            schema_extracted=False,
+        ),
+    )
+
+    errors = lint_swagger_bindings(registry, discovery)
+
+    assert _codes_for(errors, "avito.accounts.domain.AccountHierarchy.link_items") == [
+        "SWAGGER_BINDING_BODY_SCHEMA_UNSUPPORTED"
+    ]
+
+
+def test_lint_swagger_bindings_allows_whole_body_expression_with_unsupported_schema() -> None:
+    registry, discovery = _single_body_field_discovery(
+        expression="body",
+        item_ids_expression="body",
+        request_body=SwaggerRequestBody(
+            required=True,
+            content_types=("application/json",),
+            field_names=(),
+            schema_extracted=False,
+        ),
+    )
+
+    errors = lint_swagger_bindings(registry, discovery)
+
+    assert _codes_for(errors, "avito.accounts.domain.AccountHierarchy.link_items") == []
 
 
 def test_lint_swagger_bindings_requires_legacy_for_deprecated_operation() -> None:
@@ -383,3 +495,49 @@ def _codes_for(
         for error in errors
         if error.sdk_method == sdk_method and error.code not in excluded
     ]
+
+
+def _single_body_field_discovery(
+    *,
+    expression: str,
+    item_ids_expression: str = "body.employee_id",
+    request_body: SwaggerRequestBody,
+) -> tuple[SwaggerRegistry, SwaggerBindingDiscovery]:
+    operation = SwaggerOperation(
+        spec="ИерархияАккаунтов.json",
+        method="POST",
+        path="/linkItemsV1",
+        operation_id="linkItemsV1",
+        deprecated=False,
+        parameters=(),
+        request_body=request_body,
+        responses=(SwaggerResponse(status_code="204", content_types=()),),
+    )
+    registry = SwaggerRegistry(
+        specs=(
+            SwaggerSpec(
+                name="ИерархияАккаунтов.json",
+                path=load_swagger_registry().specs[0].path,
+                operations=(operation,),
+            ),
+        )
+    )
+    discovery = SwaggerBindingDiscovery(
+        bindings=(
+            DiscoveredSwaggerBinding(
+                module="avito.accounts.domain",
+                class_name="AccountHierarchy",
+                method_name="link_items",
+                domain="accounts",
+                operation_key=operation.key,
+                spec=operation.spec,
+                method=operation.method,
+                path=operation.path,
+                operation_id=operation.operation_id,
+                factory="account_hierarchy",
+                factory_args={},
+                method_args={"employee_id": expression, "item_ids": item_ids_expression},
+            ),
+        )
+    )
+    return registry, discovery
