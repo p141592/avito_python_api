@@ -71,6 +71,7 @@ spec + method + normalized_path
 - `method` приводится к uppercase;
 - trailing slash удаляется, кроме `/`;
 - path хранится в Swagger format: `/path/{param}`;
+- path parameter aliases, отличающиеся только стилем записи (`userId`/`user_id`), нормализуются к имени описанного Swagger parameter;
 - path остаётся case-sensitive;
 - syntax path parameter кроме `{name}` запрещён.
 

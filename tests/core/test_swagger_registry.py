@@ -170,6 +170,39 @@ def test_normalize_swagger_path_removes_trailing_slash() -> None:
     )
 
 
+def test_load_swagger_registry_normalizes_camel_case_path_parameter_aliases(
+    tmp_path: Path,
+) -> None:
+    spec_path = tmp_path / "Alias.json"
+    spec_path.write_text(
+        json.dumps(
+            {
+                "openapi": "3.0.0",
+                "paths": {
+                    "/items/{itemId}": {
+                        "get": {
+                            "operationId": "getItem",
+                            "parameters": [
+                                {
+                                    "name": "item_id",
+                                    "in": "path",
+                                    "required": True,
+                                }
+                            ],
+                            "responses": {"200": {"description": "ok"}},
+                        }
+                    }
+                },
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    registry = load_swagger_registry(tmp_path, strict=True)
+
+    assert registry.operations[0].key == "Alias.json GET /items/{item_id}"
+
+
 def test_load_swagger_registry_rejects_path_parameter_mismatch(tmp_path: Path) -> None:
     spec_path = tmp_path / "Broken.json"
     spec_path.write_text(

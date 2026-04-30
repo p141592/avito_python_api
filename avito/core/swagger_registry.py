@@ -211,6 +211,10 @@ def _load_spec(path: Path, errors: list[SwaggerValidationError]) -> SwaggerSpec:
             )
             normalized_path = normalize_swagger_path(raw_path)
             parameters = (*path_parameters, *operation_parameters)
+            normalized_path = _normalize_path_parameter_aliases(
+                path=normalized_path,
+                parameters=parameters,
+            )
             _validate_path_parameters(
                 spec_name=path.name,
                 method=normalize_swagger_method(raw_method),
@@ -351,6 +355,41 @@ def _validate_path_parameters(
                 operation_key=operation_key,
             )
         )
+
+
+def _normalize_path_parameter_aliases(
+    *,
+    path: str,
+    parameters: tuple[SwaggerParameter, ...],
+) -> str:
+    """Normalizes path placeholders to described path parameter names."""
+
+    described_path_parameters = tuple(
+        parameter for parameter in parameters if parameter.location == "path"
+    )
+    if not described_path_parameters:
+        return path
+
+    described_by_token: dict[str, str | None] = {}
+    for parameter in described_path_parameters:
+        token = _parameter_name_token(parameter.name)
+        if token in described_by_token:
+            described_by_token[token] = None
+        else:
+            described_by_token[token] = parameter.name
+
+    def replace(match: re.Match[str]) -> str:
+        raw_name = match.group(1)
+        described_name = described_by_token.get(_parameter_name_token(raw_name))
+        if described_name is None:
+            return match.group(0)
+        return f"{{{described_name}}}"
+
+    return _PATH_PARAMETER_RE.sub(replace, path)
+
+
+def _parameter_name_token(name: str) -> str:
+    return name.replace("_", "").lower()
 
 
 def _validate_unique_operation_keys(
