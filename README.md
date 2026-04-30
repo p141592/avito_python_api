@@ -3,10 +3,10 @@
 [![CI](https://github.com/p141592/avito_python_api/actions/workflows/ci.yml/badge.svg)](https://github.com/p141592/avito_python_api/actions/workflows/ci.yml)
 [![Coverage Status](https://coveralls.io/repos/github/p141592/avito_python_api/badge.svg?branch=main)](https://coveralls.io/github/p141592/avito_python_api?branch=main)
 [![PyPI Downloads](https://img.shields.io/pypi/dm/avito-py.svg)](https://pypi.org/project/avito-py/)
-[![API coverage](https://img.shields.io/badge/API%20coverage-204%2F204-brightgreen)](https://p141592.github.io/avito_python_api/reference/api-report/)
-[![Swagger specs](https://img.shields.io/badge/Swagger%20specs-23-blue)](https://p141592.github.io/avito_python_api/reference/api-report/)
-[![Swagger contract](https://img.shields.io/badge/Swagger%20contract-strict%20%2B%20complete-brightgreen)](https://p141592.github.io/avito_python_api/reference/api-report/)
 [![Docs](https://img.shields.io/badge/docs-latest-blue)](https://p141592.github.io/avito_python_api/)
+[![Покрытие доменов](https://img.shields.io/badge/%D0%94%D0%BE%D0%BC%D0%B5%D0%BD%D1%8B-11%2F11-brightgreen)](https://p141592.github.io/avito_python_api/reference/api-report/)
+[![Покрытие методов](https://img.shields.io/badge/%D0%9C%D0%B5%D1%82%D0%BE%D0%B4%D1%8B-204%2F204-brightgreen)](https://p141592.github.io/avito_python_api/reference/api-report/)
+[![Покрытие структуры запроса и ответа](https://img.shields.io/badge/Request%2Fresponse-204%2F204-brightgreen)](https://p141592.github.io/avito_python_api/reference/api-report/)
 
 `avito-py` — синхронный Python SDK для работы с Avito API через единый объектный фасад `AvitoClient`.
 
