@@ -37,6 +37,9 @@ jobs:
           TAG_VERSION="${GITHUB_REF_NAME#v}"
           poetry version "$TAG_VERSION"
 
+      - name: Run strict Swagger coverage gate
+        run: make swagger-coverage
+
       - name: Run quality gate
         run: make check
 

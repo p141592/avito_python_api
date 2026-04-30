@@ -4,7 +4,7 @@ export
 REGISTRY=10.11.0.9:5000
 MKDOCS_ENV=DISABLE_MKDOCS_2_WARNING=true NO_MKDOCS_2_WARNING=1
 
-check: test typecheck lint swagger-lint build
+check: test typecheck lint swagger-coverage build
 
 build: clean
 	poetry build
@@ -30,8 +30,14 @@ fmt:
 lint:
 	poetry run ruff check .
 
-swagger-lint:
+swagger-update:
+	poetry run python scripts/download_avito_api_specs.py --clean
+
+swagger-lint: swagger-update
 	poetry run python scripts/lint_swagger_bindings.py --strict
+
+swagger-coverage: swagger-lint
+	poetry run pytest tests/core/test_swagger.py tests/core/test_swagger_discovery.py tests/core/test_swagger_linter.py tests/core/test_swagger_report.py tests/core/test_swagger_registry.py tests/contracts/test_swagger_contracts.py
 
 minor: check
 	poetry version minor

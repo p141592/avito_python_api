@@ -87,9 +87,23 @@ def save_spec(spec: object, destination: Path) -> None:
     )
 
 
-def download_specs(output_dir: Path, dry_run: bool) -> int:
+def remove_stale_specs(output_dir: Path, expected_files: set[Path]) -> int:
+    removed_count = 0
+    for path in output_dir.glob("*.json"):
+        if path not in expected_files:
+            path.unlink()
+            print(f"Удалена устаревшая спецификация: {path}")
+            removed_count += 1
+    return removed_count
+
+
+def download_specs(output_dir: Path, dry_run: bool, clean: bool) -> int:
     catalog = fetch_catalog()
     output_dir.mkdir(parents=True, exist_ok=True)
+    expected_files = {output_dir / normalize_filename(item.title) for item in catalog}
+
+    if clean and not dry_run:
+        remove_stale_specs(output_dir, expected_files)
 
     saved_count = 0
     for item in catalog:
@@ -121,13 +135,18 @@ def parse_args() -> argparse.Namespace:
         action="store_true",
         help="Показать целевые имена файлов без скачивания спецификаций.",
     )
+    parser.add_argument(
+        "--clean",
+        action="store_true",
+        help="Удалить локальные JSON-файлы, которых больше нет в upstream catalog.",
+    )
     return parser.parse_args()
 
 
 def main() -> int:
     args = parse_args()
     try:
-        saved_count = download_specs(args.output_dir, args.dry_run)
+        saved_count = download_specs(args.output_dir, args.dry_run, args.clean)
     except RuntimeError as exc:
         print(exc, file=sys.stderr)
         return 1
