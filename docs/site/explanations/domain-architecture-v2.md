@@ -1,9 +1,9 @@
 # Целевая структура доменов
 
-Эта страница фиксирует целевую архитектуру доменных пакетов SDK. Домены
-`tariffs`, `accounts` и `ratings` являются эталонной реализацией v2: публичные
-методы находятся в `domain.py`, HTTP-контракты в `operations.py`, а модели,
-enum-ы и payload mapping принадлежат `models.py`.
+Эта страница фиксирует архитектуру доменных пакетов SDK. Все API-домены SDK
+используют v2 layout: публичные методы находятся в `domain.py`, HTTP-контракты
+в `operations.py` или `operations/`, а модели, enum-ы и payload mapping
+принадлежат `models.py` или `models/`.
 
 ## Основной принцип
 
@@ -17,9 +17,9 @@ enum-ы и payload mapping принадлежат `models.py`.
 - сериализацию request/query моделей через `to_payload()` и `to_params()`;
 - enum-ы, относящиеся к этой модели или группе моделей.
 
-Отдельные mapper-функции не должны быть способом преобразования JSON для
-переведённых API-доменов. При переводе домена legacy `client.py`, `mappers.py`
-и standalone `enums.py` удаляются в том же изменении.
+Отдельные mapper-функции не являются способом преобразования JSON для
+API-доменов. Domain-level `client.py`, `mappers.py` и standalone `enums.py`
+в API-доменах запрещены.
 
 ## Структура простого домена
 
@@ -39,7 +39,8 @@ avito/ratings/
 | `operations.py` | Внутренние `OperationSpec`: HTTP method, path, operation context, retry policy и response/request model classes |
 | `models.py` | Dataclass-модели, enum-ы, `from_payload()`, `to_payload()`, `to_params()` и нормализация |
 
-В простом домене не нужны отдельные `client.py`, `mappers.py` и `enums.py`.
+В простом домене не используются отдельные `client.py`, `mappers.py` и
+`enums.py`.
 
 ## Структура большого домена
 
@@ -226,8 +227,10 @@ class ReviewAnswer(DomainObject):
 ## Инварианты
 
 - Каждый публичный API-метод остаётся привязан к ровно одной Swagger operation через `@swagger_operation(...)`.
-- Один `OperationSpec` описывает один transport-вызов.
+- Каждый публичный API-метод исполняет ровно один `OperationSpec`.
+- Один `OperationSpec` описывает один transport-вызов, а его HTTP method/path
+  совпадают с привязанной Swagger operation.
 - JSON-маппинг response payload находится в `ResponseModel.from_payload()`.
 - JSON-маппинг request/query payload находится в request dataclass.
 - Enum-ы находятся в `models.py` или в подпакете `models/`, рядом с моделями.
-- `client.py`, `mappers.py` и standalone `enums.py` отсутствуют в переведённых API-доменах.
+- `client.py`, `mappers.py` и standalone `enums.py` отсутствуют в API-доменах.

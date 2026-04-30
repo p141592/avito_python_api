@@ -99,8 +99,11 @@ Rules:
 - `domain.py` contains public `DomainObject` classes, explicit public methods, reference-ready docstrings, `@swagger_operation(...)` bindings, business validation, and construction of internal request models.
 - `operations.py` or `operations/` contains internal `OperationSpec` definitions: HTTP method, path, operation name, retry policy, path rendering, request model class, response model class, and pagination/binary/multipart strategy when applicable.
 - `models.py` or `models/` contains public response dataclasses, internal request/query dataclasses, colocated enum types, `from_payload()`, `to_payload()`, `to_params()`, and normalization logic.
-- New or converted API domains must not introduce `client.py`, `mappers.py`, or standalone `enums.py` unless the architecture note for the change explains why the target layout is insufficient.
-- Once an API domain is converted to v2, legacy `client.py`, `mappers.py`, standalone `enums.py`, compatibility adapters, and compatibility exports are forbidden for that domain.
+- API domains must not introduce `client.py`, `mappers.py`, or standalone
+  `enums.py` unless the architecture note for the change explains why the target
+  layout is insufficient.
+- Domain-level `client.py`, `mappers.py`, standalone `enums.py`, compatibility
+  adapters, and compatibility exports are forbidden for API domains.
 
 ## Public API
 
@@ -197,7 +200,8 @@ Rules:
 - One class, one explicit area of responsibility.
 - Classes must not simultaneously handle HTTP, authorization, logging, and model transformation.
 - "God object" classes containing logic for all API sections are forbidden.
-- `SectionClient` and standalone `Mapper` modules are legacy migration layers for domains that have not yet moved to v2. Converted domains must execute through `OperationSpec` and model-owned mapping only.
+- API domains execute through `OperationSpec` and model-owned mapping only.
+  Domain-level section clients and standalone mapper modules are forbidden.
 
 ## Dataclasses and Models
 
@@ -302,7 +306,8 @@ Fields with a fixed set of allowed values from the upstream specification must b
 Rules:
 
 - Every field whose set of allowed values is defined by the API specification in `docs/avito/api/` must be represented by a public `Enum` colocated with the models that use it: in `avito/<domain>/models.py` for simple domains or `avito/<domain>/models/*.py` for large domains.
-- Existing `avito/<domain>/enums.py` modules may remain as compatibility re-export modules during migration, but new enum definitions belong next to their models.
+- API-domain enum definitions belong next to their models. Domain-level
+  `enums.py` compatibility re-export modules are forbidden.
 - Enums are declared with string values matching the wire format exactly, so serialization is a direct dump without extra conversion.
 - Enums must be forward-compatible: an unknown upstream value must not crash mapping. Map unknown values to a designated `UNKNOWN` member or a typed fallback and log at `warning` level once per process.
 - Public method arguments that accept an enum may also accept the corresponding `str` literal for ergonomics, but the public method signature type annotation must be the enum type (optionally unioned with `Literal[...]`).
@@ -488,7 +493,8 @@ Rules:
 - Transformation of transport responses into public SDK models must be centralized in the model class or a model-local helper.
 - The same resource must always map to the same public type, regardless of upstream payload variations within the allowed range.
 - Public docstrings and signatures must not require knowledge of the upstream JSON shape.
-- Temporary `mappers.py` modules are allowed only as migration adapters and should delegate to `Model.from_payload()`.
+- Standalone API-domain `mappers.py` modules are forbidden. Model parsing belongs
+  in `Model.from_payload()` or model-local helpers.
 
 Recommendation:
 

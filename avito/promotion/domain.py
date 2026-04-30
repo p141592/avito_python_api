@@ -553,7 +553,7 @@ class TargetActionPricing(DomainObject):
 
         return self._execute(
             GET_TARGET_ACTION_BIDS,
-            path_params={"item_id": item_id or self._require_item_id()},
+            path_params={"itemId": item_id or self._require_item_id()},
         )  # type: ignore[return-value]
 
     @swagger_operation(

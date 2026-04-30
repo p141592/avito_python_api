@@ -131,7 +131,7 @@ CREATE_CPA_AUCTION_BIDS = OperationSpec(
 GET_TARGET_ACTION_BIDS = OperationSpec(
     name="promotion.target_action.get_bids",
     method="GET",
-    path="/cpxpromo/1/getBids/{item_id}",
+    path="/cpxpromo/1/getBids/{itemId}",
     response_model=TargetActionGetBidsResult,
 )
 GET_TARGET_ACTION_PROMOTIONS = OperationSpec(

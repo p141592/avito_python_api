@@ -1,15 +1,17 @@
 # Transport и retry
 
-`Transport` — единственный слой, который работает с `httpx`, таймаутами, retry и mapping HTTP-ошибок. Домены и section clients не повторяют эту логику, иначе публичное поведение разных разделов начало бы расходиться.
+`Transport` — единственный слой, который работает с `httpx`, таймаутами, retry
+и mapping HTTP-ошибок. Домены и `OperationExecutor` не повторяют эту логику,
+иначе публичное поведение разных разделов начало бы расходиться.
 
 ```mermaid
 flowchart TD
-    call[SectionClient request] --> auth{Нужен токен?}
+    call[OperationExecutor request] --> auth{Нужен токен?}
     auth -- да --> token[AuthProvider]
     auth -- нет --> send[httpx request]
     token --> send
     send --> status{Ответ}
-    status -- 2xx --> map[JSON или binary mapper]
+    status -- 2xx --> map[JSON, empty или binary response]
     status -- 401 --> refresh[Инвалидация токена]
     refresh --> retry401{Можно повторить?}
     retry401 -- да --> token
@@ -23,7 +25,10 @@ flowchart TD
 
 ## Что повторяется
 
-Retry применяется только там, где операция помечена как безопасная для повтора. Read/list/probe операции обычно допускают retry. Write-операции получают retry только при явной идемпотентности, например через `idempotency_key`, или когда конкретный section client помечает операцию как безопасную.
+Retry применяется только там, где операция помечена как безопасная для повтора.
+Read/list/probe операции обычно допускают retry. Write-операции получают retry
+только при явной идемпотентности, например через `idempotency_key`, или когда
+конкретный `OperationSpec` помечает операцию как безопасную.
 
 `429` учитывает `Retry-After`, если upstream его вернул. Если `Retry-After` отсутствует, transport использует обычный exponential backoff с jitter. Для `5xx` используется retry-политика transport-слоя. Ошибки маппинга не повторяются: если JSON уже получен, но не соответствует контракту модели, это `ResponseMappingError`, а не сетевой сбой.
 

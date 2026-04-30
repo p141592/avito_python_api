@@ -5,6 +5,7 @@ from contextlib import contextmanager
 
 from avito.accounts.domain import Account, AccountHierarchy
 from avito.ads.domain import AutoloadArchive
+from avito.core import OperationSpec
 from avito.core.swagger import SwaggerOperationBinding
 from avito.core.swagger_discovery import (
     DiscoveredSwaggerBinding,
@@ -370,6 +371,46 @@ def test_lint_swagger_bindings_allows_valid_body_and_constant_expressions() -> N
         "avito.accounts.domain.Account.get_operations_history",
         exclude={"SWAGGER_BINDING_DUPLICATE"},
     ) == []
+
+
+def test_lint_swagger_bindings_validates_operation_spec_method_and_path_in_strict_mode() -> None:
+    registry = load_swagger_registry()
+    discovery = discover_swagger_bindings(registry=registry)
+    original_spec = Account.get_self.__globals__["GET_SELF"]
+    Account.get_self.__globals__["GET_SELF"] = OperationSpec(
+        name="accounts.get_self",
+        method="POST",
+        path="/wrong",
+    )
+    try:
+        errors = lint_swagger_bindings(registry, discovery, strict=True)
+    finally:
+        Account.get_self.__globals__["GET_SELF"] = original_spec
+
+    assert _codes_for(errors, "avito.accounts.domain.Account.get_self") == [
+        "SWAGGER_OPERATION_SPEC_METHOD_MISMATCH",
+        "SWAGGER_OPERATION_SPEC_PATH_MISMATCH",
+    ]
+
+
+def test_lint_swagger_bindings_rejects_unbound_operation_spec_in_strict_mode() -> None:
+    import avito.tariffs.operations as tariff_operations
+
+    registry = load_swagger_registry()
+    discovery = discover_swagger_bindings(registry=registry)
+    tariff_operations.EXTRA_TEST_SPEC = OperationSpec(
+        name="tariffs.extra",
+        method="GET",
+        path="/tariff/info/1",
+    )
+    try:
+        errors = lint_swagger_bindings(registry, discovery, strict=True)
+    finally:
+        del tariff_operations.EXTRA_TEST_SPEC
+
+    assert [error.code for error in errors if error.sdk_method is None] == [
+        "SWAGGER_OPERATION_SPEC_UNBOUND"
+    ]
 
 
 def test_lint_swagger_bindings_rejects_unknown_body_field() -> None:

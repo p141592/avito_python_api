@@ -718,6 +718,12 @@ Expected:
 
 Цель: сделать v2 не только реализованной, но и постоянно проверяемой.
 
+Статус: выполнено. `lint_swagger_bindings --strict` проверяет полноту 204/204
+Swagger bindings, duplicate/missing/unbound состояния, соответствие
+`@swagger_operation(...)` реальному `OperationSpec`, отсутствие лишних
+API-domain `OperationSpec` без публичного binding, а также совпадение
+HTTP method/path между Swagger operation и исполняемым `OperationSpec`.
+
 Actions:
 
 - расширить `scripts/lint_swagger_bindings.py` или добавить отдельную проверку, что each public API method has matching `OperationSpec`;
@@ -749,6 +755,10 @@ make architecture-lint
 ## Phase 8. Documentation and reference
 
 Цель: документация должна описывать фактическую v2 implementation, а не migration path.
+
+Статус: выполнено. Обновлены architecture explanations, v2 domain architecture,
+Swagger binding subsystem, testing/transport explanations и `STYLEGUIDE.md`;
+`make docs-strict` проходит.
 
 Actions:
 

@@ -84,7 +84,7 @@ CREATE_PREVIEW_BY_REG_NUMBER = OperationSpec(
 GET_PREVIEW = OperationSpec(
     name="autoteka.preview.get",
     method="GET",
-    path="/autoteka/v1/previews/{preview_id}",
+    path="/autoteka/v1/previews/{previewId}",
     response_model=AutotekaPreviewInfo,
     requires_auth=False,
 )
@@ -206,7 +206,7 @@ CREATE_SPECIFICATION_BY_VEHICLE_ID = OperationSpec(
 GET_SPECIFICATION_BY_ID = OperationSpec(
     name="autoteka.specification.get_by_id",
     method="GET",
-    path="/autoteka/v1/specifications/specification/{specification_id}",
+    path="/autoteka/v1/specifications/specification/{specificationID}",
     response_model=AutotekaSpecificationInfo,
     requires_auth=False,
 )

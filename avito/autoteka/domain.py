@@ -165,7 +165,7 @@ class AutotekaVehicle(DomainObject):
 
         return self._execute(
             GET_PREVIEW,
-            path_params={"preview_id": preview_id or self._require_vehicle_id("preview_id")},
+            path_params={"previewId": preview_id or self._require_vehicle_id("preview_id")},
             headers=_autoteka_headers(self.transport),
         )  # type: ignore[return-value]
 
@@ -324,7 +324,7 @@ class AutotekaVehicle(DomainObject):
         return self._execute(
             GET_SPECIFICATION_BY_ID,
             path_params={
-                "specification_id": specification_id
+                "specificationID": specification_id
                 or self._require_vehicle_id("specification_id")
             },
             headers=_autoteka_headers(self.transport),

@@ -2,17 +2,42 @@
 
 from __future__ import annotations
 
+import ast
 import importlib
 import inspect
+import pkgutil
+import textwrap
 from collections import defaultdict
 from collections.abc import Callable, Mapping, Sequence
+from types import ModuleType
 
 from avito.client import AvitoClient
 from avito.core.deprecation import DeprecatedSdkSymbol
+from avito.core.operations import OperationSpec
 from avito.core.swagger_discovery import DiscoveredSwaggerBinding, SwaggerBindingDiscovery
-from avito.core.swagger_registry import SwaggerOperation, SwaggerRegistry
+from avito.core.swagger_registry import (
+    SwaggerOperation,
+    SwaggerRegistry,
+    normalize_swagger_method,
+    normalize_swagger_path,
+)
 from avito.core.swagger_report import SwaggerReportError
 
+_API_DOMAINS = frozenset(
+    {
+        "accounts",
+        "ads",
+        "autoteka",
+        "cpa",
+        "jobs",
+        "messenger",
+        "orders",
+        "promotion",
+        "ratings",
+        "realty",
+        "tariffs",
+    }
+)
 _TEST_CONSTANTS = frozenset(
     {
         "account_id",
@@ -57,6 +82,7 @@ def lint_swagger_bindings(
     errors.extend(_validate_duplicate_bindings(discovery.bindings))
     if strict:
         errors.extend(_validate_complete_bindings(registry.operations, discovery.bindings))
+        errors.extend(_validate_operation_spec_coverage(registry, discovery.bindings))
     for binding in discovery.bindings:
         operation = _resolve_bound_operation(
             binding=binding,
@@ -71,6 +97,95 @@ def lint_swagger_bindings(
         errors.extend(_validate_factory(binding))
         errors.extend(_validate_sdk_method_signature(binding, sdk_method))
 
+    return tuple(errors)
+
+
+def _validate_operation_spec_coverage(
+    registry: SwaggerRegistry,
+    bindings: Sequence[DiscoveredSwaggerBinding],
+) -> tuple[SwaggerReportError, ...]:
+    operations_by_key = {operation.key: operation for operation in registry.operations}
+    used_specs: set[int] = set()
+    errors: list[SwaggerReportError] = []
+
+    for binding in bindings:
+        if binding.domain not in _API_DOMAINS:
+            continue
+        operation = operations_by_key.get(binding.operation_key or "")
+        sdk_method = _load_sdk_method(binding)
+        specs = _operation_specs_for_sdk_method(sdk_method)
+        if len(specs) != 1:
+            errors.append(
+                SwaggerReportError(
+                    code="SWAGGER_OPERATION_SPEC_MISSING",
+                    message=(
+                        f"{binding.sdk_method}: public API method должен исполнять "
+                        "ровно один OperationSpec через `_execute(...)`."
+                    ),
+                    operation_key=binding.operation_key,
+                    sdk_method=binding.sdk_method,
+                )
+            )
+            continue
+
+        spec = specs[0]
+        used_specs.add(id(spec))
+        if operation is not None:
+            errors.extend(_validate_operation_spec_matches_binding(binding, operation, spec))
+
+    errors.extend(_validate_no_unbound_operation_specs(used_specs))
+    return tuple(errors)
+
+
+def _validate_operation_spec_matches_binding(
+    binding: DiscoveredSwaggerBinding,
+    operation: SwaggerOperation,
+    spec: OperationSpec,
+) -> tuple[SwaggerReportError, ...]:
+    errors: list[SwaggerReportError] = []
+    if normalize_swagger_method(spec.method) != operation.method:
+        errors.append(
+            SwaggerReportError(
+                code="SWAGGER_OPERATION_SPEC_METHOD_MISMATCH",
+                message=(
+                    f"{binding.sdk_method}: OperationSpec method `{spec.method}` "
+                    f"не совпадает со Swagger method `{operation.method}`."
+                ),
+                operation_key=operation.key,
+                sdk_method=binding.sdk_method,
+            )
+        )
+    if normalize_swagger_path(spec.path) != operation.path:
+        errors.append(
+            SwaggerReportError(
+                code="SWAGGER_OPERATION_SPEC_PATH_MISMATCH",
+                message=(
+                    f"{binding.sdk_method}: OperationSpec path `{spec.path}` "
+                    f"не совпадает со Swagger path `{operation.path}`."
+                ),
+                operation_key=operation.key,
+                sdk_method=binding.sdk_method,
+            )
+        )
+    return tuple(errors)
+
+
+def _validate_no_unbound_operation_specs(used_specs: set[int]) -> tuple[SwaggerReportError, ...]:
+    errors: list[SwaggerReportError] = []
+    for module_name, spec_name, spec in _iter_api_domain_operation_specs():
+        if id(spec) in used_specs:
+            continue
+        errors.append(
+            SwaggerReportError(
+                code="SWAGGER_OPERATION_SPEC_UNBOUND",
+                message=(
+                    f"{module_name}.{spec_name}: OperationSpec не связан с публичным "
+                    "Swagger binding."
+                ),
+                operation_key=None,
+                sdk_method=None,
+            )
+        )
     return tuple(errors)
 
 
@@ -336,6 +451,84 @@ def _validate_sdk_method_signature(
         subject="SDK method",
         code_prefix="SWAGGER_BINDING_METHOD",
     )
+
+
+def _operation_specs_for_sdk_method(
+    sdk_method: Callable[..., object] | None,
+) -> tuple[OperationSpec, ...]:
+    if sdk_method is None:
+        return ()
+    unwrapped_method = inspect.unwrap(sdk_method)
+    try:
+        source = inspect.getsource(unwrapped_method)
+    except (OSError, TypeError):
+        return ()
+    tree = ast.parse(textwrap.dedent(source))
+    specs: list[OperationSpec] = []
+    for node in ast.walk(tree):
+        if not isinstance(node, ast.Call) or not _is_execute_call(node):
+            continue
+        if not node.args:
+            continue
+        spec_name = _name(node.args[0])
+        if spec_name is None:
+            continue
+        spec = unwrapped_method.__globals__.get(spec_name)
+        if isinstance(spec, OperationSpec):
+            specs.append(spec)
+    return tuple(specs)
+
+
+def _iter_api_domain_operation_specs() -> tuple[tuple[str, str, OperationSpec], ...]:
+    specs: list[tuple[str, str, OperationSpec]] = []
+    for domain in sorted(_API_DOMAINS):
+        for module in _iter_domain_operation_modules(domain):
+            for name, value in vars(module).items():
+                if isinstance(value, OperationSpec):
+                    specs.append((module.__name__, name, value))
+    return tuple(specs)
+
+
+def _iter_domain_operation_modules(domain: str) -> tuple[ModuleType, ...]:
+    root_module_name = f"avito.{domain}.operations"
+    module = importlib.import_module(root_module_name)
+    modules: list[ModuleType] = [module]
+    module_path = getattr(module, "__path__", None)
+    if module_path is None:
+        return tuple(modules)
+    for info in pkgutil.walk_packages(module_path, prefix=f"{root_module_name}."):
+        modules.append(importlib.import_module(info.name))
+    return tuple(modules)
+
+
+def _is_execute_call(node: ast.Call) -> bool:
+    name = _call_name(node.func)
+    return name in {"self._execute", "_execute"} or name.endswith("._execute")
+
+
+def _name(node: ast.AST) -> str | None:
+    if isinstance(node, ast.Name):
+        return node.id
+    return None
+
+
+def _call_name(node: ast.AST) -> str:
+    if isinstance(node, ast.Name):
+        return node.id
+    if isinstance(node, ast.Attribute):
+        return _attribute_name(node)
+    return ""
+
+
+def _attribute_name(node: ast.Attribute) -> str:
+    parts = [node.attr]
+    value = node.value
+    while isinstance(value, ast.Attribute):
+        parts.append(value.attr)
+        value = value.value
+    if isinstance(value, ast.Name):
+        parts.append(value.id)
+    return ".".join(reversed(parts))
 
 
 def _validate_binding_expressions(
