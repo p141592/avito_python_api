@@ -8,7 +8,7 @@ import httpx
 import pytest
 
 from avito.ads import Ad, AdPromotion, AdStats
-from avito.ads._enums import ListingStatus
+from avito.ads.models import ListingStatus
 from tests.helpers.transport import make_transport
 
 

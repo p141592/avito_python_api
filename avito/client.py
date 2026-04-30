@@ -11,8 +11,7 @@ import httpx
 
 from avito.accounts import Account, AccountHierarchy
 from avito.ads import Ad, AdPromotion, AdStats, AutoloadArchive, AutoloadProfile, AutoloadReport
-from avito.ads._enums import ListingStatus
-from avito.ads.models import CallStats, ListingStats, SpendingRecord
+from avito.ads.models import CallStats, ListingStats, ListingStatus, SpendingRecord
 from avito.auth import AlternateTokenClient, AuthProvider, TokenClient
 from avito.autoteka import (
     AutotekaMonitoring,
@@ -38,7 +37,7 @@ from avito.promotion import (
     TargetActionPricing,
     TrxPromotion,
 )
-from avito.promotion._enums import PromotionOrderServiceStatus, PromotionOrderStatus
+from avito.promotion.models import PromotionOrderServiceStatus, PromotionOrderStatus
 from avito.ratings import RatingProfile, Review, ReviewAnswer
 from avito.realty import RealtyAnalyticsReport, RealtyBooking, RealtyListing, RealtyPricing
 from avito.summary import (

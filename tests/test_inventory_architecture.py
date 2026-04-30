@@ -11,7 +11,7 @@ def test_build_inventory_report_captures_phase_zero_baseline() -> None:
     summary = report["summary"]
     assert isinstance(summary, dict)
     assert summary["api_domain_count"] == 11
-    assert summary["legacy_file_count"] == 12
+    assert summary["legacy_file_count"] == 3
     assert summary["swagger_total_operation_count"] == 204
     assert summary["swagger_operation_count"] == 200
 

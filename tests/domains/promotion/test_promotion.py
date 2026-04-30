@@ -17,13 +17,11 @@ from avito.promotion import (
     TargetActionPricing,
     TrxPromotion,
 )
-from avito.promotion._enums import (
+from avito.promotion.models import (
+    BbipItem,
     PromotionOrderServiceStatus,
     TargetActionBudgetType,
     TargetActionSelectedType,
-)
-from avito.promotion.models import (
-    BbipItem,
 )
 from tests.helpers.transport import make_transport
 

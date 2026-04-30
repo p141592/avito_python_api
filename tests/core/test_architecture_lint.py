@@ -32,6 +32,33 @@ def test_lint_architecture_allows_legacy_files_for_migration_domain(tmp_path: Pa
     assert errors == ()
 
 
+def test_lint_architecture_rejects_underscore_prefixed_legacy_files(tmp_path: Path) -> None:
+    _write(tmp_path / "avito/tariffs/_client.py", "")
+    _write(tmp_path / "avito/tariffs/_mapping.py", "")
+    _write(tmp_path / "avito/tariffs/_enums.py", "")
+
+    errors = lint_architecture(tmp_path, allowlisted_domains=())
+
+    paths = sorted(error.path for error in errors if error.code == "ARCH_LEGACY_FILE")
+    assert paths == [
+        "avito/tariffs/_client.py",
+        "avito/tariffs/_enums.py",
+        "avito/tariffs/_mapping.py",
+    ]
+
+
+def test_lint_architecture_rejects_underscore_prefixed_legacy_imports(tmp_path: Path) -> None:
+    _write(
+        tmp_path / "avito/summary/models.py",
+        "from avito.tariffs._enums import TariffLevel\n",
+    )
+
+    errors = lint_architecture(tmp_path, allowlisted_domains=())
+
+    codes = [error.code for error in errors]
+    assert "ARCH_LEGACY_IMPORT" in codes
+
+
 def test_lint_architecture_rejects_legacy_import_and_usage(tmp_path: Path) -> None:
     legacy_call = "request_" + "public_model"
     legacy_mapper = "mapper" + "="

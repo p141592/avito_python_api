@@ -15,8 +15,6 @@ from avito.core.validation import (
     validate_non_empty_string,
     validate_positive_int,
 )
-from avito.promotion import _mapping
-from avito.promotion._enums import CampaignType, PromotionStatus, TargetActionBudgetType
 from avito.promotion.models import (
     AutostrategyBudget,
     AutostrategyStat,
@@ -30,6 +28,7 @@ from avito.promotion.models import (
     CampaignListFilter,
     CampaignOrderBy,
     CampaignsResult,
+    CampaignType,
     CampaignUpdateTimeFilter,
     CancelTrxPromotionRequest,
     CpaAuctionBidsResult,
@@ -54,7 +53,9 @@ from avito.promotion.models import (
     PromotionOrderStatusResult,
     PromotionServiceDictionary,
     PromotionServicesResult,
+    PromotionStatus,
     StopAutostrategyCampaignRequest,
+    TargetActionBudgetType,
     TargetActionGetBidsResult,
     TargetActionPromotionsByItemIdsResult,
     TrxCommissionsResult,
@@ -294,7 +295,7 @@ class BbipPromotion(DomainObject):
             request=CreateBbipOrderRequest(items=bbip_items),
             idempotency_key=idempotency_key,
         )
-        return _mapping.map_promotion_action(
+        return PromotionActionResult.from_action_payload(
             payload,
             action="create_order",
             target=target,
@@ -384,7 +385,7 @@ class TrxPromotion(DomainObject):
             headers=TRX_HEADERS,
             idempotency_key=idempotency_key,
         )
-        return _mapping.map_promotion_action(
+        return PromotionActionResult.from_action_payload(
             payload,
             action="apply",
             target=target,
@@ -425,7 +426,7 @@ class TrxPromotion(DomainObject):
             headers=TRX_HEADERS,
             idempotency_key=idempotency_key,
         )
-        return _mapping.map_promotion_action(
+        return PromotionActionResult.from_action_payload(
             payload,
             action="delete",
             target=target,
@@ -519,7 +520,7 @@ class CpaAuction(DomainObject):
             request=request,
             idempotency_key=idempotency_key,
         )
-        return _mapping.map_promotion_action(
+        return PromotionActionResult.from_action_payload(
             payload,
             action="create_item_bids",
             target={"item_ids": [item.item_id for item in bids]},
@@ -608,7 +609,7 @@ class TargetActionPricing(DomainObject):
             request=DeletePromotionRequest(item_id=resolved_item_id),
             idempotency_key=idempotency_key,
         )
-        return _mapping.map_promotion_action(
+        return PromotionActionResult.from_action_payload(
             payload,
             action="delete",
             target=target,
@@ -673,7 +674,7 @@ class TargetActionPricing(DomainObject):
             ),
             idempotency_key=idempotency_key,
         )
-        return _mapping.map_promotion_action(
+        return PromotionActionResult.from_action_payload(
             payload,
             action="update_auto",
             target=target,
@@ -735,7 +736,7 @@ class TargetActionPricing(DomainObject):
             ),
             idempotency_key=idempotency_key,
         )
-        return _mapping.map_promotion_action(
+        return PromotionActionResult.from_action_payload(
             payload,
             action="update_manual",
             target=target,

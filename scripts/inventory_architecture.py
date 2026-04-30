@@ -25,7 +25,15 @@ API_DOMAINS = (
     "realty",
     "tariffs",
 )
-LEGACY_FILENAMES = ("client.py", "mappers.py", "enums.py")
+LEGACY_FILENAMES = (
+    "client.py",
+    "mappers.py",
+    "enums.py",
+    "_client.py",
+    "_mappers.py",
+    "_mapping.py",
+    "_enums.py",
+)
 LEGACY_USAGE_PATTERNS = ("request_public_model", "mapper=")
 PAGINATION_QUERY_NAMES = frozenset(
     {

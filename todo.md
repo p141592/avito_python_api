@@ -112,7 +112,7 @@ poetry run python scripts/lint_swagger_bindings.py --json --strict --output swag
 | autoteka | 0 | 26 | 26 | 26 | pagination | done |
 | promotion | 0 | 24 | 24 | 24 | empty_response | done |
 | ads | 0 | 28 | 28 | 28 | empty_response, pagination | done |
-| orders | 0 | 45 | 45 | 45 | binary, pagination | partial: legacy files removed, OperationSpec migration remains |
+| orders | 3 | 45 | 45 | 45 | binary, pagination | partial: `_client.py`/`_enums.py`/`_mapping.py` retained, OperationSpec migration not started |
 
 ## Phase 1. Implement v2 core MVP
 
@@ -282,6 +282,10 @@ Migration allowlist уменьшен после перевода `tariffs`, `acc
 - запрещены `avito/<api-domain>/client.py`;
 - запрещены `avito/<api-domain>/mappers.py`;
 - запрещены `avito/<api-domain>/enums.py`;
+- запрещены underscore-prefixed варианты тех же файлов:
+  `_client.py`, `_mappers.py`, `_mapping.py`, `_enums.py` —
+  чтобы переименование не давало обхода checks (Phase 2 follow-up);
+- запрещены imports из таких underscore-prefixed модулей;
 - не запрещать `avito/client.py`;
 - не запрещать `avito/core/enums.py`;
 - не запрещать `avito/auth/enums.py`, если auth остаётся не API-доменом.
@@ -826,6 +830,7 @@ v2 core готов, когда:
 - отсутствие API-domain `client.py`;
 - отсутствие API-domain `mappers.py`;
 - отсутствие API-domain `enums.py`;
+- отсутствие API-domain `_client.py`, `_mappers.py`, `_mapping.py`, `_enums.py`;
 - отсутствие `mapper=`;
 - отсутствие `request_public_model`;
 - отсутствие legacy imports;

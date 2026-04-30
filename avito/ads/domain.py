@@ -7,7 +7,6 @@ from dataclasses import dataclass
 from datetime import date, datetime
 from typing import cast
 
-from avito.ads._enums import ListingStatus
 from avito.ads.models import (
     AccountSpendings,
     AdsActionResult,
@@ -31,6 +30,7 @@ from avito.ads.models import (
     ItemStatsResult,
     LegacyAutoloadReport,
     Listing,
+    ListingStatus,
     UpdatePriceRequest,
     UpdatePriceResult,
     UploadByUrlRequest,
@@ -76,9 +76,7 @@ from avito.core.validation import (
     validate_non_empty_string,
     validate_string_items,
 )
-from avito.promotion import _mapping as promotion_mapping
-from avito.promotion._enums import PromotionStatus
-from avito.promotion.models import PromotionActionResult
+from avito.promotion.models import PromotionActionResult, PromotionStatus
 
 
 def _preview_result(
@@ -544,7 +542,7 @@ class AdPromotion(DomainObject):
             request=ApplyVasRequest(codes=codes),
             idempotency_key=idempotency_key,
         )
-        return promotion_mapping.map_promotion_action(
+        return PromotionActionResult.from_action_payload(
             payload,
             action="apply_vas",
             target=target,
@@ -590,7 +588,7 @@ class AdPromotion(DomainObject):
             request=ApplyVasPackageRequest(package_code=package_code),
             idempotency_key=idempotency_key,
         )
-        return promotion_mapping.map_promotion_action(
+        return PromotionActionResult.from_action_payload(
             payload,
             action="apply_vas_package",
             target=target,
@@ -634,7 +632,7 @@ class AdPromotion(DomainObject):
             request=ApplyVasRequest(codes=codes),
             idempotency_key=idempotency_key,
         )
-        return promotion_mapping.map_promotion_action(
+        return PromotionActionResult.from_action_payload(
             payload,
             action="apply_vas_direct",
             target=target,
