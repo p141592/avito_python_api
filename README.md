@@ -340,6 +340,7 @@ make fmt
 make lint
 make typecheck
 make test
+make quality
 make build
 ```
 
@@ -347,7 +348,7 @@ make build
 
 Для репозитория настроены два workflow:
 
-- `CI` запускается на каждый `push` в `main`/`master` и на каждый `pull_request`, выполняет `make check`.
+- `CI` запускается на каждый `push` в `main`/`master` и на каждый `pull_request`, выполняет `make quality`, docs-gates и один полный pytest-прогон через coverage.
 - `Release` запускается при пуше тега вида `v*`, выставляет версию пакета из тега, повторно выполняет `make check`, публикует пакет на PyPI и создаёт GitHub Release.
 
 Для публикации релиза нужно добавить secret:

@@ -137,7 +137,7 @@ class PromotionOrder(DomainObject):
         Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
         """
 
-        return self._execute(GET_SERVICE_DICTIONARY)  # type: ignore[return-value]
+        return self._execute(GET_SERVICE_DICTIONARY)
 
     @swagger_operation(
         "POST",
@@ -157,7 +157,7 @@ class PromotionOrder(DomainObject):
         return self._execute(
             LIST_SERVICES,
             request=ListPromotionServicesRequest(item_ids=item_ids),
-        )  # type: ignore[return-value]
+        )
 
     @swagger_operation(
         "POST",
@@ -181,7 +181,7 @@ class PromotionOrder(DomainObject):
         return self._execute(
             LIST_ORDERS,
             request=ListPromotionOrdersRequest(item_ids=item_ids, order_ids=order_ids),
-        )  # type: ignore[return-value]
+        )
 
     @swagger_operation(
         "POST",
@@ -203,7 +203,7 @@ class PromotionOrder(DomainObject):
         return self._execute(
             GET_ORDER_STATUS,
             request=GetPromotionOrderStatusRequest(order_ids=resolved_order_ids),
-        )  # type: ignore[return-value]
+        )
 
 
 @dataclass(slots=True, frozen=True)
@@ -242,7 +242,7 @@ class BbipPromotion(DomainObject):
         return self._execute(
             GET_BBIP_FORECASTS,
             request=CreateBbipForecastsRequest(items=bbip_items),
-        )  # type: ignore[return-value]
+        )
 
     @swagger_operation(
         "PUT",
@@ -318,7 +318,7 @@ class BbipPromotion(DomainObject):
         return self._execute(
             GET_BBIP_SUGGESTS,
             request=CreateBbipSuggestsRequest(item_ids=resolved_item_ids),
-        )  # type: ignore[return-value]
+        )
 
     def _resource_item_ids(self) -> list[int]:
         if self.item_id is None:
@@ -450,7 +450,7 @@ class TrxPromotion(DomainObject):
             GET_TRX_COMMISSIONS,
             query={"itemIDs": ",".join(str(item_id) for item_id in resolved_item_ids)},
             headers=TRX_HEADERS,
-        )  # type: ignore[return-value]
+        )
 
     def _resource_item_ids(self) -> list[int]:
         if self.item_id is None:
@@ -488,7 +488,7 @@ class CpaAuction(DomainObject):
         return self._execute(
             GET_CPA_AUCTION_BIDS,
             query={"fromItemID": from_item_id, "batchSize": batch_size},
-        )  # type: ignore[return-value]
+        )
 
     @swagger_operation(
         "POST",
@@ -554,7 +554,7 @@ class TargetActionPricing(DomainObject):
         return self._execute(
             GET_TARGET_ACTION_BIDS,
             path_params={"itemId": item_id or self._require_item_id()},
-        )  # type: ignore[return-value]
+        )
 
     @swagger_operation(
         "POST",
@@ -574,7 +574,7 @@ class TargetActionPricing(DomainObject):
         return self._execute(
             GET_TARGET_ACTION_PROMOTIONS,
             request=GetPromotionsByItemIdsRequest(item_ids=resolved_item_ids),
-        )  # type: ignore[return-value]
+        )
 
     @swagger_operation(
         "POST",
@@ -790,7 +790,7 @@ class AutostrategyCampaign(DomainObject):
                 finish_time=finish_time,
                 items=items,
             ),
-        )  # type: ignore[return-value]
+        )
 
     @swagger_operation(
         "POST",
@@ -838,7 +838,7 @@ class AutostrategyCampaign(DomainObject):
                 start_time=start_time,
             ),
             idempotency_key=idempotency_key,
-        )  # type: ignore[return-value]
+        )
 
     @swagger_operation(
         "POST",
@@ -884,7 +884,7 @@ class AutostrategyCampaign(DomainObject):
                 title=title,
             ),
             idempotency_key=idempotency_key,
-        )  # type: ignore[return-value]
+        )
 
     @swagger_operation(
         "POST",
@@ -904,7 +904,7 @@ class AutostrategyCampaign(DomainObject):
             request=GetAutostrategyCampaignInfoRequest(
                 campaign_id=campaign_id or self._require_campaign_id()
             ),
-        )  # type: ignore[return-value]
+        )
 
     @swagger_operation(
         "POST",
@@ -934,7 +934,7 @@ class AutostrategyCampaign(DomainObject):
                 version=version,
             ),
             idempotency_key=idempotency_key,
-        )  # type: ignore[return-value]
+        )
 
     @swagger_operation(
         "POST",
@@ -983,7 +983,7 @@ class AutostrategyCampaign(DomainObject):
                 order_by=order_by_payload,
                 filter=filter_payload,
             ),
-        )  # type: ignore[return-value]
+        )
 
     @swagger_operation(
         "POST",
@@ -1002,7 +1002,7 @@ class AutostrategyCampaign(DomainObject):
             request=GetAutostrategyStatRequest(
                 campaign_id=campaign_id or self._require_campaign_id()
             ),
-        )  # type: ignore[return-value]
+        )
 
     def _require_campaign_id(self) -> int:
         if self.campaign_id is None:

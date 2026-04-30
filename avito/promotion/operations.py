@@ -80,7 +80,7 @@ GET_BBIP_FORECASTS = OperationSpec(
     response_model=BbipForecastsResult,
     retry_mode="enabled",
 )
-CREATE_BBIP_ORDER = OperationSpec(
+CREATE_BBIP_ORDER: OperationSpec[object] = OperationSpec(
     name="promotion.bbip.create_order",
     method="PUT",
     path="/promotion/v1/items/services/bbip/orders/create",
@@ -95,14 +95,14 @@ GET_BBIP_SUGGESTS = OperationSpec(
     response_model=BbipSuggestsResult,
     retry_mode="enabled",
 )
-APPLY_TRX = OperationSpec(
+APPLY_TRX: OperationSpec[object] = OperationSpec(
     name="promotion.trx.apply",
     method="POST",
     path="/trx-promo/1/apply",
     request_model=CreateTrxPromotionApplyRequest,
     retry_mode="enabled",
 )
-CANCEL_TRX = OperationSpec(
+CANCEL_TRX: OperationSpec[object] = OperationSpec(
     name="promotion.trx.cancel",
     method="POST",
     path="/trx-promo/1/cancel",
@@ -121,7 +121,7 @@ GET_CPA_AUCTION_BIDS = OperationSpec(
     path="/auction/1/bids",
     response_model=CpaAuctionBidsResult,
 )
-CREATE_CPA_AUCTION_BIDS = OperationSpec(
+CREATE_CPA_AUCTION_BIDS: OperationSpec[object] = OperationSpec(
     name="promotion.cpa_auction.create_item_bids",
     method="POST",
     path="/auction/1/bids",
@@ -142,21 +142,21 @@ GET_TARGET_ACTION_PROMOTIONS = OperationSpec(
     response_model=TargetActionPromotionsByItemIdsResult,
     retry_mode="enabled",
 )
-DELETE_TARGET_ACTION_PROMOTION = OperationSpec(
+DELETE_TARGET_ACTION_PROMOTION: OperationSpec[object] = OperationSpec(
     name="promotion.target_action.delete_promotion",
     method="POST",
     path="/cpxpromo/1/remove",
     request_model=DeletePromotionRequest,
     retry_mode="enabled",
 )
-UPDATE_TARGET_ACTION_AUTO = OperationSpec(
+UPDATE_TARGET_ACTION_AUTO: OperationSpec[object] = OperationSpec(
     name="promotion.target_action.update_auto_bid",
     method="POST",
     path="/cpxpromo/1/setAuto",
     request_model=UpdateAutoBidRequest,
     retry_mode="enabled",
 )
-UPDATE_TARGET_ACTION_MANUAL = OperationSpec(
+UPDATE_TARGET_ACTION_MANUAL: OperationSpec[object] = OperationSpec(
     name="promotion.target_action.update_manual_bid",
     method="POST",
     path="/cpxpromo/1/setManual",

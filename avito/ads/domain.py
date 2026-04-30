@@ -5,12 +5,10 @@ from __future__ import annotations
 from collections.abc import Sequence
 from dataclasses import dataclass
 from datetime import date, datetime
-from typing import cast
 
 from avito.ads.models import (
     AccountSpendings,
     AdsActionResult,
-    AdsListResult,
     ApplyVasPackageRequest,
     ApplyVasRequest,
     AutoloadFeesResult,
@@ -19,7 +17,6 @@ from avito.ads.models import (
     AutoloadProfileUpdateRequest,
     AutoloadReportDetails,
     AutoloadReportItemsResult,
-    AutoloadReportsResult,
     AutoloadReportSummary,
     AutoloadTreeResult,
     CallsStatsRequest,
@@ -170,7 +167,7 @@ class Ad(DomainObject):
         return self._execute(
             GET_ITEM,
             path_params={"user_id": user_id, "item_id": item_id},
-        )  # type: ignore[return-value]
+        )
 
     @swagger_operation(
         "GET",
@@ -210,7 +207,7 @@ class Ad(DomainObject):
                 "page": first_page_number,
             },
         )
-        list_result = cast(AdsListResult, result)
+        list_result = result
         page_size = (
             resolved_page_size
             if resolved_page_size and resolved_page_size > 0
@@ -272,7 +269,7 @@ class Ad(DomainObject):
             path_params={"item_id": item_id},
             request=UpdatePriceRequest(price=price),
             idempotency_key=idempotency_key,
-        )  # type: ignore[return-value]
+        )
 
     def _fetch_ads_page(
         self,
@@ -300,7 +297,7 @@ class Ad(DomainObject):
                 "page": page,
             },
         )
-        list_result = cast(AdsListResult, result)
+        list_result = result
         items = list_result.items[:remaining] if remaining is not None else list_result.items
         return JsonPage(
             items=list(items),
@@ -368,7 +365,7 @@ class AdStats(DomainObject):
                 date_from=_serialize_stats_date(date_from),
                 date_to=_serialize_stats_date(date_to),
             ),
-        )  # type: ignore[return-value]
+        )
 
     @swagger_operation(
         "POST",
@@ -400,7 +397,7 @@ class AdStats(DomainObject):
                 date_to=_serialize_stats_date(date_to),
                 fields=fields or [],
             ),
-        )  # type: ignore[return-value]
+        )
 
     @swagger_operation(
         "POST",
@@ -432,7 +429,7 @@ class AdStats(DomainObject):
                 date_to=_serialize_stats_date(date_to),
                 fields=fields or [],
             ),
-        )  # type: ignore[return-value]
+        )
 
     @swagger_operation(
         "POST",
@@ -464,7 +461,7 @@ class AdStats(DomainObject):
                 date_to=_serialize_stats_date(date_to),
                 fields=fields or [],
             ),
-        )  # type: ignore[return-value]
+        )
 
     def _require_user_id(self) -> int:
         return self._resolve_user_id(self.user_id)
@@ -501,7 +498,7 @@ class AdPromotion(DomainObject):
             GET_VAS_PRICES,
             path_params={"user_id": user_id},
             request=VasPricesRequest(item_ids=item_ids, location_id=location_id),
-        )  # type: ignore[return-value]
+        )
 
     @swagger_operation(
         "PUT",
@@ -673,7 +670,7 @@ class AutoloadProfile(DomainObject):
         Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
         """
 
-        return self._execute(GET_AUTOLOAD_PROFILE)  # type: ignore[return-value]
+        return self._execute(GET_AUTOLOAD_PROFILE)
 
     @swagger_operation(
         "POST",
@@ -704,7 +701,7 @@ class AutoloadProfile(DomainObject):
                 callback_url=callback_url,
             ),
             idempotency_key=idempotency_key,
-        )  # type: ignore[return-value]
+        )
 
     @swagger_operation(
         "POST",
@@ -725,7 +722,7 @@ class AutoloadProfile(DomainObject):
             UPLOAD_BY_URL,
             request=UploadByUrlRequest(url=url),
             idempotency_key=idempotency_key,
-        )  # type: ignore[return-value]
+        )
 
     @swagger_operation(
         "GET",
@@ -739,7 +736,7 @@ class AutoloadProfile(DomainObject):
         Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
         """
 
-        return self._execute(GET_AUTOLOAD_TREE)  # type: ignore[return-value]
+        return self._execute(GET_AUTOLOAD_TREE)
 
     @swagger_operation(
         "GET",
@@ -757,7 +754,7 @@ class AutoloadProfile(DomainObject):
         return self._execute(
             GET_AUTOLOAD_NODE_FIELDS,
             path_params={"node_slug": node_slug},
-        )  # type: ignore[return-value]
+        )
 
 
 @dataclass(slots=True, frozen=True)
@@ -786,7 +783,7 @@ class AutoloadReport(DomainObject):
         return self._execute(
             GET_AUTOLOAD_REPORT,
             path_params={"report_id": report_id},
-        )  # type: ignore[return-value]
+        )
 
     @swagger_operation(
         "GET",
@@ -814,7 +811,7 @@ class AutoloadReport(DomainObject):
                 LIST_AUTOLOAD_REPORTS,
                 query={"limit": page_size, "offset": current_offset},
             )
-            reports = cast(AutoloadReportsResult, result)
+            reports = result
             return JsonPage(
                 items=reports.items,
                 total=reports.total,
@@ -836,7 +833,7 @@ class AutoloadReport(DomainObject):
         Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
         """
 
-        return self._execute(GET_AUTOLOAD_LAST_COMPLETED_REPORT)  # type: ignore[return-value]
+        return self._execute(GET_AUTOLOAD_LAST_COMPLETED_REPORT)
 
     @swagger_operation(
         "GET",
@@ -856,7 +853,7 @@ class AutoloadReport(DomainObject):
         return self._execute(
             GET_AUTOLOAD_REPORT_ITEMS,
             path_params={"report_id": report_id},
-        )  # type: ignore[return-value]
+        )
 
     @swagger_operation(
         "GET",
@@ -874,7 +871,7 @@ class AutoloadReport(DomainObject):
         return self._execute(
             GET_AUTOLOAD_REPORT_FEES,
             path_params={"report_id": report_id},
-        )  # type: ignore[return-value]
+        )
 
     @swagger_operation(
         "GET",
@@ -892,7 +889,7 @@ class AutoloadReport(DomainObject):
         return self._execute(
             GET_AD_IDS_BY_AVITO_IDS,
             query={"query": ",".join(str(item) for item in avito_ids)},
-        )  # type: ignore[return-value]
+        )
 
     @swagger_operation(
         "GET",
@@ -910,7 +907,7 @@ class AutoloadReport(DomainObject):
         return self._execute(
             GET_AVITO_IDS_BY_AD_IDS,
             query={"query": ",".join(str(item) for item in ad_ids)},
-        )  # type: ignore[return-value]
+        )
 
     @swagger_operation(
         "GET",
@@ -928,7 +925,7 @@ class AutoloadReport(DomainObject):
         return self._execute(
             GET_AUTOLOAD_ITEMS_INFO,
             query={"query": ",".join(str(item) for item in item_ids)},
-        )  # type: ignore[return-value]
+        )
 
     def _require_report_id(self) -> int:
         if self.report_id is None:
@@ -968,7 +965,7 @@ class AutoloadArchive(DomainObject):
         Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
         """
 
-        return self._execute(GET_ARCHIVE_PROFILE)  # type: ignore[return-value]
+        return self._execute(GET_ARCHIVE_PROFILE)
 
     @swagger_operation(
         "POST",
@@ -1009,7 +1006,7 @@ class AutoloadArchive(DomainObject):
                 callback_url=callback_url,
             ),
             idempotency_key=idempotency_key,
-        )  # type: ignore[return-value]
+        )
 
     @swagger_operation(
         "GET",
@@ -1033,7 +1030,7 @@ class AutoloadArchive(DomainObject):
         Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
         """
 
-        return self._execute(GET_ARCHIVE_LAST_COMPLETED_REPORT)  # type: ignore[return-value]
+        return self._execute(GET_ARCHIVE_LAST_COMPLETED_REPORT)
 
     @swagger_operation(
         "GET",
@@ -1061,7 +1058,7 @@ class AutoloadArchive(DomainObject):
         return self._execute(
             GET_ARCHIVE_REPORT,
             path_params={"report_id": report_id},
-        )  # type: ignore[return-value]
+        )
 
     def _require_report_id(self) -> int:
         if self.report_id is None:

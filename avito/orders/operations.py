@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from avito.core import OperationSpec
+from avito.core import BinaryResponse, OperationSpec
 from avito.orders.models import (
     AddSortingCentersRequest,
     AddTariffV2Request,
@@ -134,7 +134,7 @@ CREATE_LABELS_EXTENDED = OperationSpec(
     response_model=LabelTaskResult,
     retry_mode="enabled",
 )
-DOWNLOAD_LABEL = OperationSpec(
+DOWNLOAD_LABEL: OperationSpec[BinaryResponse] = OperationSpec(
     name="orders.labels.download",
     method="GET",
     path="/order-management/1/orders/labels/{taskID}/download",

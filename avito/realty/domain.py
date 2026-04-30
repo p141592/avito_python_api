@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import cast
 
 from avito.core import ValidationError
 from avito.core.domain import DomainObject
@@ -63,16 +62,13 @@ class RealtyListing(DomainObject):
         Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
         """
 
-        return cast(
-            RealtyActionResult,
-            self._execute(
+        return self._execute(
                 GET_INTERVALS,
                 request=RealtyIntervalsRequest(
                     item_id=item_id or int(self._require_item_id()),
                     intervals=intervals,
                 ),
-            ),
-        )
+            )
 
     @swagger_operation(
         "POST",
@@ -91,14 +87,11 @@ class RealtyListing(DomainObject):
         Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
         """
 
-        return cast(
-            RealtyActionResult,
-            self._execute(
+        return self._execute(
                 UPDATE_BASE_PARAMS,
                 path_params={"item_id": item_id or self._require_item_id()},
                 request=RealtyBaseParamsUpdateRequest(min_stay_days=min_stay_days),
-            ),
-        )
+            )
 
     def _require_item_id(self) -> str:
         if self.item_id is None:
@@ -138,17 +131,14 @@ class RealtyBooking(DomainObject):
         Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
         """
 
-        return cast(
-            RealtyActionResult,
-            self._execute(
+        return self._execute(
                 UPDATE_BOOKINGS_INFO,
                 path_params={
                     "user_id": user_id or self._require_user_id(),
                     "item_id": item_id or self._require_item_id(),
                 },
                 request=RealtyBookingsUpdateRequest(blocked_dates=blocked_dates),
-            ),
-        )
+            )
 
     @swagger_operation(
         "GET",
@@ -173,9 +163,7 @@ class RealtyBooking(DomainObject):
         Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
         """
 
-        return cast(
-            RealtyBookingsResult,
-            self._execute(
+        return self._execute(
                 LIST_REALTY_BOOKINGS,
                 path_params={
                     "user_id": user_id or self._require_user_id(),
@@ -186,8 +174,7 @@ class RealtyBooking(DomainObject):
                     date_end=date_end,
                     with_unpaid=with_unpaid,
                 ),
-            ),
-        )
+            )
 
     def _require_item_id(self) -> str:
         if self.item_id is None:
@@ -232,17 +219,14 @@ class RealtyPricing(DomainObject):
         Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
         """
 
-        return cast(
-            RealtyActionResult,
-            self._execute(
+        return self._execute(
                 UPDATE_REALTY_PRICES,
                 path_params={
                     "user_id": user_id or self._require_user_id(),
                     "item_id": item_id or self._require_item_id(),
                 },
                 request=RealtyPricesUpdateRequest(periods=periods),
-            ),
-        )
+            )
 
     def _require_item_id(self) -> str:
         if self.item_id is None:
@@ -286,16 +270,13 @@ class RealtyAnalyticsReport(DomainObject):
         Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
         """
 
-        return cast(
-            RealtyMarketPriceInfo,
-            self._execute(
+        return self._execute(
                 GET_MARKET_PRICE_CORRESPONDENCE,
                 path_params={
                     "itemId": item_id or self._require_item_id(),
                     "price": price,
                 },
-            ),
-        )
+            )
 
     @swagger_operation(
         "POST",
@@ -311,13 +292,10 @@ class RealtyAnalyticsReport(DomainObject):
         Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
         """
 
-        return cast(
-            RealtyAnalyticsInfo,
-            self._execute(
+        return self._execute(
                 GET_REPORT_FOR_CLASSIFIED,
                 path_params={"itemId": item_id or self._require_item_id()},
-            ),
-        )
+            )
 
     def _require_item_id(self) -> str:
         if self.item_id is None:

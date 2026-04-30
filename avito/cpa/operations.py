@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from avito.core import OperationSpec
+from avito.core import BinaryResponse, OperationSpec
 from avito.cpa.models import (
     CallTrackingCallResponse,
     CallTrackingCallsRequest,
@@ -86,7 +86,7 @@ GET_CPA_BALANCE = OperationSpec(
     response_model=CpaBalanceInfo,
     retry_mode="enabled",
 )
-GET_CPA_ARCHIVE_RECORD = OperationSpec(
+GET_CPA_ARCHIVE_RECORD: OperationSpec[BinaryResponse] = OperationSpec(
     name="cpa.archive.get_record",
     method="GET",
     path="/cpa/v1/call/{call_id}",
@@ -123,7 +123,7 @@ GET_CALLTRACKING_CALLS = OperationSpec(
     response_model=CallTrackingCallsResult,
     retry_mode="enabled",
 )
-GET_CALLTRACKING_RECORD = OperationSpec(
+GET_CALLTRACKING_RECORD: OperationSpec[BinaryResponse] = OperationSpec(
     name="cpa.calltracking.get_record_by_call_id",
     method="GET",
     path="/calltracking/v1/getRecordByCallId/",

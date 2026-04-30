@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import cast
 
 from avito.core import ValidationError
 from avito.core.domain import DomainObject
@@ -51,7 +50,7 @@ class Review(DomainObject):
             page=query.page if query is not None and query.page is not None else 1,
             limit=query.limit if query is not None and query.limit is not None else 50,
         )
-        return cast(ReviewsResult, self._execute(LIST_REVIEWS, query=resolved_query))
+        return self._execute(LIST_REVIEWS, query=resolved_query)
 
 
 @dataclass(slots=True, frozen=True)
@@ -88,14 +87,11 @@ class ReviewAnswer(DomainObject):
         Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
         """
 
-        return cast(
-            ReviewAnswerInfo,
-            self._execute(
+        return self._execute(
                 CREATE_REVIEW_ANSWER,
                 request=CreateReviewAnswerRequest(review_id=review_id, text=text),
                 idempotency_key=idempotency_key,
-            ),
-        )
+            )
 
     @swagger_operation(
         "DELETE",
@@ -118,14 +114,11 @@ class ReviewAnswer(DomainObject):
         Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
         """
 
-        return cast(
-            ReviewAnswerInfo,
-            self._execute(
+        return self._execute(
                 DELETE_REVIEW_ANSWER,
                 path_params={"answer_id": answer_id or self._require_answer_id()},
                 idempotency_key=idempotency_key,
-            ),
-        )
+            )
 
     def _require_answer_id(self) -> str:
         if self.answer_id is None:
@@ -156,7 +149,7 @@ class RatingProfile(DomainObject):
         Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
         """
 
-        return cast(RatingProfileInfo, self._execute(GET_RATINGS_INFO))
+        return self._execute(GET_RATINGS_INFO)
 
 
 __all__ = ("RatingProfile", "Review", "ReviewAnswer")

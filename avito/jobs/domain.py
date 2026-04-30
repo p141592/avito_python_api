@@ -4,7 +4,6 @@ from __future__ import annotations
 
 from collections.abc import Sequence
 from dataclasses import dataclass
-from typing import cast
 
 from avito.core import ValidationError
 from avito.core.domain import DomainObject
@@ -104,14 +103,11 @@ class Vacancy(DomainObject):
 
         if version == 1:
             return self.create_classic(title=title, idempotency_key=idempotency_key)
-        return cast(
-            JobActionResult,
-            self._execute(
+        return self._execute(
                 CREATE_VACANCY,
                 request=VacancyCreateRequest(title=title),
                 idempotency_key=idempotency_key,
-            ),
-        )
+            )
 
     @swagger_operation(
         "POST",
@@ -133,14 +129,11 @@ class Vacancy(DomainObject):
         Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
         """
 
-        return cast(
-            JobActionResult,
-            self._execute(
+        return self._execute(
                 CREATE_VACANCY_CLASSIC,
                 request=VacancyCreateRequest(title=title),
                 idempotency_key=idempotency_key,
-            ),
-        )
+            )
 
     @swagger_operation(
         "POST",
@@ -173,15 +166,12 @@ class Vacancy(DomainObject):
                 title=title,
                 idempotency_key=idempotency_key,
             )
-        return cast(
-            JobActionResult,
-            self._execute(
+        return self._execute(
                 UPDATE_VACANCY,
                 path_params={"vacancy_uuid": vacancy_uuid or self._require_vacancy_id()},
                 request=VacancyUpdateRequest(title=title),
                 idempotency_key=idempotency_key,
-            ),
-        )
+            )
 
     @swagger_operation(
         "PUT",
@@ -204,15 +194,12 @@ class Vacancy(DomainObject):
         Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
         """
 
-        return cast(
-            JobActionResult,
-            self._execute(
+        return self._execute(
                 UPDATE_VACANCY_CLASSIC,
                 path_params={"vacancy_id": vacancy_id or self._require_vacancy_id()},
                 request=VacancyUpdateRequest(title=title),
                 idempotency_key=idempotency_key,
-            ),
-        )
+            )
 
     @swagger_operation(
         "PUT",
@@ -237,15 +224,12 @@ class Vacancy(DomainObject):
         Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
         """
 
-        return cast(
-            JobActionResult,
-            self._execute(
+        return self._execute(
                 ARCHIVE_VACANCY,
                 path_params={"vacancy_id": vacancy_id or self._require_vacancy_id()},
                 request=VacancyArchiveRequest(employee_id=employee_id),
                 idempotency_key=idempotency_key,
-            ),
-        )
+            )
 
     @swagger_operation(
         "POST",
@@ -270,15 +254,12 @@ class Vacancy(DomainObject):
         Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
         """
 
-        return cast(
-            JobActionResult,
-            self._execute(
+        return self._execute(
                 PROLONGATE_VACANCY,
                 path_params={"vacancy_id": vacancy_id or self._require_vacancy_id()},
                 request=VacancyProlongateRequest(billing_type=billing_type),
                 idempotency_key=idempotency_key,
-            ),
-        )
+            )
 
     @swagger_operation(
         "GET",
@@ -294,7 +275,7 @@ class Vacancy(DomainObject):
         Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
         """
 
-        return cast(VacanciesResult, self._execute(LIST_VACANCIES, query=query))
+        return self._execute(LIST_VACANCIES, query=query)
 
     @swagger_operation(
         "GET",
@@ -312,14 +293,11 @@ class Vacancy(DomainObject):
         Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
         """
 
-        return cast(
-            VacancyInfo,
-            self._execute(
+        return self._execute(
                 GET_VACANCY,
                 path_params={"vacancy_id": vacancy_id or self._require_vacancy_id()},
                 query=query,
-            ),
-        )
+            )
 
     @swagger_operation(
         "POST",
@@ -336,10 +314,7 @@ class Vacancy(DomainObject):
         Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
         """
 
-        return cast(
-            VacanciesResult,
-            self._execute(GET_VACANCIES_BY_IDS, request=VacancyIdsRequest(ids=list(ids))),
-        )
+        return self._execute(GET_VACANCIES_BY_IDS, request=VacancyIdsRequest(ids=list(ids)))
 
     @swagger_operation(
         "POST",
@@ -356,10 +331,7 @@ class Vacancy(DomainObject):
         Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
         """
 
-        return cast(
-            VacancyStatusesResult,
-            self._execute(GET_VACANCY_STATUSES, request=VacancyIdsRequest(ids=list(ids))),
-        )
+        return self._execute(GET_VACANCY_STATUSES, request=VacancyIdsRequest(ids=list(ids)))
 
     @swagger_operation(
         "PUT",
@@ -384,15 +356,12 @@ class Vacancy(DomainObject):
         Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
         """
 
-        return cast(
-            JobActionResult,
-            self._execute(
+        return self._execute(
                 UPDATE_VACANCY_AUTO_RENEWAL,
                 path_params={"vacancy_uuid": vacancy_uuid or self._require_vacancy_id()},
                 request=VacancyAutoRenewalRequest(auto_renewal=auto_renewal),
                 idempotency_key=idempotency_key,
-            ),
-        )
+            )
 
     def _require_vacancy_id(self) -> str:
         if self.vacancy_id is None:
@@ -432,14 +401,11 @@ class Application(DomainObject):
         Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
         """
 
-        return cast(
-            JobActionResult,
-            self._execute(
+        return self._execute(
                 APPLY_APPLICATION_ACTIONS,
                 request=ApplicationActionRequest(ids=list(ids), action=action),
                 idempotency_key=idempotency_key,
-            ),
-        )
+            )
 
     def list(
         self,
@@ -473,10 +439,7 @@ class Application(DomainObject):
         Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
         """
 
-        return cast(
-            ApplicationsResult,
-            self._execute(GET_APPLICATIONS_BY_IDS, request=ApplicationIdsRequest(ids=list(ids))),
-        )
+        return self._execute(GET_APPLICATIONS_BY_IDS, request=ApplicationIdsRequest(ids=list(ids)))
 
     @swagger_operation(
         "GET",
@@ -492,7 +455,7 @@ class Application(DomainObject):
 
         if query is None:
             raise ValidationError("Для операции требуется `query`.")
-        return cast(ApplicationIdsResult, self._execute(GET_APPLICATION_IDS, query=query))
+        return self._execute(GET_APPLICATION_IDS, query=query)
 
     @swagger_operation(
         "GET",
@@ -508,7 +471,7 @@ class Application(DomainObject):
         Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
         """
 
-        return cast(ApplicationStatesResult, self._execute(GET_APPLICATION_STATES))
+        return self._execute(GET_APPLICATION_STATES)
 
     @swagger_operation(
         "POST",
@@ -532,14 +495,11 @@ class Application(DomainObject):
         Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
         """
 
-        return cast(
-            JobActionResult,
-            self._execute(
+        return self._execute(
                 SET_APPLICATIONS_IS_VIEWED,
                 request=ApplicationViewedRequest(applies=list(applies)),
                 idempotency_key=idempotency_key,
-            ),
-        )
+            )
 
 
 @dataclass(slots=True, frozen=True)
@@ -567,7 +527,7 @@ class Resume(DomainObject):
         Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
         """
 
-        return cast(ResumesResult, self._execute(SEARCH_RESUMES, query=query))
+        return self._execute(SEARCH_RESUMES, query=query)
 
     @swagger_operation(
         "GET",
@@ -583,13 +543,10 @@ class Resume(DomainObject):
         Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
         """
 
-        return cast(
-            ResumeInfo,
-            self._execute(
+        return self._execute(
                 GET_RESUME,
                 path_params={"resume_id": str(resume_id or self._require_resume_id())},
-            ),
-        )
+            )
 
     @swagger_operation(
         "GET",
@@ -605,13 +562,10 @@ class Resume(DomainObject):
         Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
         """
 
-        return cast(
-            ResumeContactInfo,
-            self._execute(
+        return self._execute(
                 GET_RESUME_CONTACTS,
                 path_params={"resume_id": str(resume_id or self._require_resume_id())},
-            ),
-        )
+            )
 
     def _require_resume_id(self) -> str:
         if self.resume_id is None:
@@ -642,7 +596,7 @@ class JobWebhook(DomainObject):
         Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
         """
 
-        return cast(JobWebhookInfo, self._execute(GET_JOB_WEBHOOK))
+        return self._execute(GET_JOB_WEBHOOK)
 
     @swagger_operation(
         "GET",
@@ -658,7 +612,7 @@ class JobWebhook(DomainObject):
         Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
         """
 
-        return cast(JobWebhooksResult, self._execute(LIST_JOB_WEBHOOKS))
+        return self._execute(LIST_JOB_WEBHOOKS)
 
     @swagger_operation(
         "PUT",
@@ -677,14 +631,11 @@ class JobWebhook(DomainObject):
         Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
         """
 
-        return cast(
-            JobWebhookInfo,
-            self._execute(
+        return self._execute(
                 UPDATE_JOB_WEBHOOK,
                 request=JobWebhookUpdateRequest(url=url),
                 idempotency_key=idempotency_key,
-            ),
-        )
+            )
 
     @swagger_operation(
         "DELETE",
@@ -704,14 +655,11 @@ class JobWebhook(DomainObject):
         Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
         """
 
-        return cast(
-            JobActionResult,
-            self._execute(
+        return self._execute(
                 DELETE_JOB_WEBHOOK,
                 query={"url": url} if url is not None else None,
                 idempotency_key=idempotency_key,
-            ),
-        )
+            )
 
 
 @dataclass(slots=True, frozen=True)
@@ -739,7 +687,7 @@ class JobDictionary(DomainObject):
         Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
         """
 
-        return cast(JobDictionariesResult, self._execute(LIST_JOB_DICTIONARIES))
+        return self._execute(LIST_JOB_DICTIONARIES)
 
     @swagger_operation(
         "GET",
@@ -755,13 +703,10 @@ class JobDictionary(DomainObject):
         Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
         """
 
-        return cast(
-            JobDictionaryValuesResult,
-            self._execute(
+        return self._execute(
                 GET_JOB_DICTIONARY,
                 path_params={"dictionary_id": dictionary_id or self._require_dictionary_id()},
-            ),
-        )
+            )
 
     def _require_dictionary_id(self) -> str:
         if self.dictionary_id is None:

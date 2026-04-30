@@ -100,7 +100,7 @@ class AutotekaVehicle(DomainObject):
             CATALOG_RESOLVE,
             request=CatalogResolveRequest(brand_id=brand_id),
             headers=_autoteka_headers(self.transport),
-        )  # type: ignore[return-value]
+        )
 
     @swagger_operation(
         "POST",
@@ -121,7 +121,7 @@ class AutotekaVehicle(DomainObject):
             GET_LEADS,
             request=LeadsRequest(limit=limit),
             headers=_autoteka_headers(self.transport),
-        )  # type: ignore[return-value]
+        )
 
     @swagger_operation(
         "POST",
@@ -147,7 +147,7 @@ class AutotekaVehicle(DomainObject):
             request=VinRequest(vin=vin),
             headers=_autoteka_headers(self.transport),
             idempotency_key=idempotency_key,
-        )  # type: ignore[return-value]
+        )
 
     @swagger_operation(
         "GET",
@@ -167,7 +167,7 @@ class AutotekaVehicle(DomainObject):
             GET_PREVIEW,
             path_params={"previewId": preview_id or self._require_vehicle_id("preview_id")},
             headers=_autoteka_headers(self.transport),
-        )  # type: ignore[return-value]
+        )
 
     @swagger_operation(
         "POST",
@@ -197,7 +197,7 @@ class AutotekaVehicle(DomainObject):
             request=ExternalItemPreviewRequest(item_id=item_id, site=site),
             headers=_autoteka_headers(self.transport),
             idempotency_key=idempotency_key,
-        )  # type: ignore[return-value]
+        )
 
     @swagger_operation(
         "POST",
@@ -223,7 +223,7 @@ class AutotekaVehicle(DomainObject):
             request=ItemIdRequest(item_id=item_id),
             headers=_autoteka_headers(self.transport),
             idempotency_key=idempotency_key,
-        )  # type: ignore[return-value]
+        )
 
     @swagger_operation(
         "POST",
@@ -249,7 +249,7 @@ class AutotekaVehicle(DomainObject):
             request=RegNumberRequest(reg_number=reg_number),
             headers=_autoteka_headers(self.transport),
             idempotency_key=idempotency_key,
-        )  # type: ignore[return-value]
+        )
 
     @swagger_operation(
         "POST",
@@ -275,7 +275,7 @@ class AutotekaVehicle(DomainObject):
             request=PlateNumberRequest(plate_number=plate_number),
             headers=_autoteka_headers(self.transport),
             idempotency_key=idempotency_key,
-        )  # type: ignore[return-value]
+        )
 
     @swagger_operation(
         "POST",
@@ -301,7 +301,7 @@ class AutotekaVehicle(DomainObject):
             request=VehicleIdRequest(vehicle_id=vehicle_id),
             headers=_autoteka_headers(self.transport),
             idempotency_key=idempotency_key,
-        )  # type: ignore[return-value]
+        )
 
     @swagger_operation(
         "GET",
@@ -328,7 +328,7 @@ class AutotekaVehicle(DomainObject):
                 or self._require_vehicle_id("specification_id")
             },
             headers=_autoteka_headers(self.transport),
-        )  # type: ignore[return-value]
+        )
 
     @swagger_operation(
         "POST",
@@ -354,7 +354,7 @@ class AutotekaVehicle(DomainObject):
             request=TeaserCreateRequest(vehicle_id=vehicle_id),
             headers=_autoteka_headers(self.transport),
             idempotency_key=idempotency_key,
-        )  # type: ignore[return-value]
+        )
 
     @swagger_operation(
         "GET",
@@ -374,7 +374,7 @@ class AutotekaVehicle(DomainObject):
             GET_TEASER,
             path_params={"teaser_id": teaser_id or self._require_vehicle_id("teaser_id")},
             headers=_autoteka_headers(self.transport),
-        )  # type: ignore[return-value]
+        )
 
     def _require_vehicle_id(self, field_name: str) -> str:
         if self.vehicle_id is None:
@@ -410,7 +410,7 @@ class AutotekaReport(DomainObject):
         return self._execute(
             GET_ACTIVE_PACKAGE,
             headers=_autoteka_headers(self.transport),
-        )  # type: ignore[return-value]
+        )
 
     @swagger_operation(
         "POST",
@@ -436,7 +436,7 @@ class AutotekaReport(DomainObject):
             request=PreviewReportRequest(preview_id=preview_id),
             headers=_autoteka_headers(self.transport),
             idempotency_key=idempotency_key,
-        )  # type: ignore[return-value]
+        )
 
     @swagger_operation(
         "POST",
@@ -462,7 +462,7 @@ class AutotekaReport(DomainObject):
             request=VehicleIdRequest(vehicle_id=vehicle_id),
             headers=_autoteka_headers(self.transport),
             idempotency_key=idempotency_key,
-        )  # type: ignore[return-value]
+        )
 
     @swagger_operation(
         "GET",
@@ -481,7 +481,7 @@ class AutotekaReport(DomainObject):
         return self._execute(
             LIST_REPORTS,
             headers=_autoteka_headers(self.transport),
-        )  # type: ignore[return-value]
+        )
 
     @swagger_operation(
         "GET",
@@ -501,7 +501,7 @@ class AutotekaReport(DomainObject):
             GET_REPORT,
             path_params={"report_id": report_id or self._require_report_id()},
             headers=_autoteka_headers(self.transport),
-        )  # type: ignore[return-value]
+        )
 
     @swagger_operation(
         "POST",
@@ -527,7 +527,7 @@ class AutotekaReport(DomainObject):
             request=RegNumberRequest(reg_number=reg_number),
             headers=_autoteka_headers(self.transport),
             idempotency_key=idempotency_key,
-        )  # type: ignore[return-value]
+        )
 
     @swagger_operation(
         "POST",
@@ -553,7 +553,7 @@ class AutotekaReport(DomainObject):
             request=VinRequest(vin=vin),
             headers=_autoteka_headers(self.transport),
             idempotency_key=idempotency_key,
-        )  # type: ignore[return-value]
+        )
 
     def _require_report_id(self) -> str:
         if self.report_id is None:
@@ -594,7 +594,7 @@ class AutotekaMonitoring(DomainObject):
             request=MonitoringBucketRequest(vehicles=vehicles),
             headers=_autoteka_headers(self.transport),
             idempotency_key=idempotency_key,
-        )  # type: ignore[return-value]
+        )
 
     @swagger_operation(
         "POST",
@@ -614,7 +614,7 @@ class AutotekaMonitoring(DomainObject):
             DELETE_MONITORING_BUCKET,
             headers=_autoteka_headers(self.transport),
             idempotency_key=idempotency_key,
-        )  # type: ignore[return-value]
+        )
 
     @swagger_operation(
         "POST",
@@ -638,7 +638,7 @@ class AutotekaMonitoring(DomainObject):
             request=MonitoringBucketRequest(vehicles=vehicles),
             headers=_autoteka_headers(self.transport),
             idempotency_key=idempotency_key,
-        )  # type: ignore[return-value]
+        )
 
     @swagger_operation(
         "GET",
@@ -662,7 +662,7 @@ class AutotekaMonitoring(DomainObject):
             GET_MONITORING_REG_ACTIONS,
             query=query,
             headers=_autoteka_headers(self.transport),
-        )  # type: ignore[return-value]
+        )
 
 
 @dataclass(slots=True, frozen=True)
@@ -700,7 +700,7 @@ class AutotekaScoring(DomainObject):
             request=VehicleIdRequest(vehicle_id=vehicle_id),
             headers=_autoteka_headers(self.transport),
             idempotency_key=idempotency_key,
-        )  # type: ignore[return-value]
+        )
 
     @swagger_operation(
         "GET",
@@ -720,7 +720,7 @@ class AutotekaScoring(DomainObject):
             GET_SCORING_BY_ID,
             path_params={"scoring_id": scoring_id or self._require_scoring_id()},
             headers=_autoteka_headers(self.transport),
-        )  # type: ignore[return-value]
+        )
 
     def _require_scoring_id(self) -> str:
         if self.scoring_id is None:
@@ -761,7 +761,7 @@ class AutotekaValuation(DomainObject):
                 mileage=mileage,
             ),
             headers=_autoteka_headers(self.transport),
-        )  # type: ignore[return-value]
+        )
 
 
 __all__ = (

@@ -5,7 +5,6 @@ from __future__ import annotations
 from collections.abc import Sequence
 from dataclasses import dataclass
 from datetime import datetime
-from typing import cast
 
 from avito.accounts.models import (
     AccountActionResult,
@@ -16,11 +15,9 @@ from avito.accounts.models import (
     EmployeeItem,
     EmployeeItemLinkRequest,
     EmployeeItemsRequest,
-    EmployeeItemsResult,
     EmployeesResult,
     OperationRecord,
     OperationsHistoryRequest,
-    OperationsHistoryResult,
 )
 from avito.accounts.operations import (
     GET_AH_USER_STATUS,
@@ -63,7 +60,7 @@ class Account(DomainObject):
         Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
         """
 
-        return cast(AccountProfile, self._execute(GET_SELF))
+        return self._execute(GET_SELF)
 
     @swagger_operation(
         "GET",
@@ -78,10 +75,7 @@ class Account(DomainObject):
         """
 
         resolved_user_id = self._resolve_account_user_id(user_id)
-        return cast(
-            AccountBalance,
-            self._execute(GET_BALANCE, path_params={"user_id": resolved_user_id}),
-        )
+        return self._execute(GET_BALANCE, path_params={"user_id": resolved_user_id})
 
     @swagger_operation(
         "POST",
@@ -110,9 +104,7 @@ class Account(DomainObject):
         def fetch_page(page: int | None, _cursor: str | None) -> JsonPage[OperationRecord]:
             current_page = page or 1
             current_offset = base_offset + (current_page - 1) * page_size
-            result = cast(
-                OperationsHistoryResult,
-                self._execute(
+            result = self._execute(
                     GET_OPERATIONS_HISTORY,
                     request=OperationsHistoryRequest(
                         date_from=_serialize_datetime(date_from),
@@ -120,8 +112,7 @@ class Account(DomainObject):
                         limit=page_size,
                         offset=current_offset,
                     ),
-                ),
-            )
+                )
             return JsonPage(
                 items=result.operations,
                 total=result.total,
@@ -165,7 +156,7 @@ class AccountHierarchy(DomainObject):
         Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
         """
 
-        return cast(AhUserStatus, self._execute(GET_AH_USER_STATUS))
+        return self._execute(GET_AH_USER_STATUS)
 
     @swagger_operation(
         "GET",
@@ -181,7 +172,7 @@ class AccountHierarchy(DomainObject):
         Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
         """
 
-        return cast(EmployeesResult, self._execute(LIST_EMPLOYEES))
+        return self._execute(LIST_EMPLOYEES)
 
     @swagger_operation(
         "GET",
@@ -197,7 +188,7 @@ class AccountHierarchy(DomainObject):
         Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
         """
 
-        return cast(CompanyPhonesResult, self._execute(LIST_COMPANY_PHONES))
+        return self._execute(LIST_COMPANY_PHONES)
 
     @swagger_operation(
         "POST",
@@ -221,9 +212,7 @@ class AccountHierarchy(DomainObject):
         Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
         """
 
-        return cast(
-            AccountActionResult,
-            self._execute(
+        return self._execute(
                 LINK_ITEMS,
                 request=EmployeeItemLinkRequest(
                     employee_id=employee_id,
@@ -231,8 +220,7 @@ class AccountHierarchy(DomainObject):
                     source_employee_id=source_employee_id,
                 ),
                 idempotency_key=idempotency_key,
-            ),
-        )
+            )
 
     @swagger_operation(
         "POST",
@@ -261,17 +249,14 @@ class AccountHierarchy(DomainObject):
         def fetch_page(page: int | None, _cursor: str | None) -> JsonPage[EmployeeItem]:
             current_page = page or 1
             current_offset = base_offset + (current_page - 1) * page_size
-            result = cast(
-                EmployeeItemsResult,
-                self._execute(
+            result = self._execute(
                     LIST_ITEMS_BY_EMPLOYEE,
                     request=EmployeeItemsRequest(
                         employee_id=employee_id,
                         limit=page_size,
                         offset=current_offset,
                     ),
-                ),
-            )
+                )
             return JsonPage(
                 items=result.items,
                 total=result.total,

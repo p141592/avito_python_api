@@ -140,7 +140,7 @@ def _validate_operation_spec_coverage(
 def _validate_operation_spec_matches_binding(
     binding: DiscoveredSwaggerBinding,
     operation: SwaggerOperation,
-    spec: OperationSpec,
+    spec: OperationSpec[object],
 ) -> tuple[SwaggerReportError, ...]:
     errors: list[SwaggerReportError] = []
     if normalize_swagger_method(spec.method) != operation.method:
@@ -455,7 +455,7 @@ def _validate_sdk_method_signature(
 
 def _operation_specs_for_sdk_method(
     sdk_method: Callable[..., object] | None,
-) -> tuple[OperationSpec, ...]:
+) -> tuple[OperationSpec[object], ...]:
     if sdk_method is None:
         return ()
     unwrapped_method = inspect.unwrap(sdk_method)
@@ -464,7 +464,7 @@ def _operation_specs_for_sdk_method(
     except (OSError, TypeError):
         return ()
     tree = ast.parse(textwrap.dedent(source))
-    specs: list[OperationSpec] = []
+    specs: list[OperationSpec[object]] = []
     for node in ast.walk(tree):
         if not isinstance(node, ast.Call) or not _is_execute_call(node):
             continue
@@ -479,8 +479,8 @@ def _operation_specs_for_sdk_method(
     return tuple(specs)
 
 
-def _iter_api_domain_operation_specs() -> tuple[tuple[str, str, OperationSpec], ...]:
-    specs: list[tuple[str, str, OperationSpec]] = []
+def _iter_api_domain_operation_specs() -> tuple[tuple[str, str, OperationSpec[object]], ...]:
+    specs: list[tuple[str, str, OperationSpec[object]]] = []
     for domain in sorted(_API_DOMAINS):
         for module in _iter_domain_operation_modules(domain):
             for name, value in vars(module).items():

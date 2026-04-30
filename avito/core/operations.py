@@ -16,6 +16,7 @@ from avito.core.types import BinaryResponse, HttpMethod, RequestContext
 ResponseKind = Literal["json", "empty", "binary"]
 RetryMode = Literal["default", "enabled", "disabled"]
 ModelT = TypeVar("ModelT", covariant=True)
+ResponseT = TypeVar("ResponseT", covariant=True)
 
 
 class ResponseModel(Protocol[ModelT]):
@@ -84,7 +85,7 @@ class EmptyResponse:
 
 
 @dataclass(slots=True, frozen=True)
-class OperationSpec:
+class OperationSpec[ResponseT]:
     """HTTP contract metadata for a single SDK operation."""
 
     name: str
@@ -92,7 +93,7 @@ class OperationSpec:
     path: str
     query_model: type[object] | None = None
     request_model: type[object] | None = None
-    response_model: type[ResponseModel[object]] | None = None
+    response_model: type[ResponseModel[ResponseT]] | None = None
     response_kind: ResponseKind = "json"
     content_type: str | None = None
     requires_auth: bool = True
@@ -107,7 +108,7 @@ class OperationExecutor:
 
     def execute(
         self,
-        spec: OperationSpec,
+        spec: OperationSpec[ResponseT],
         *,
         path_params: Mapping[str, object] | None = None,
         query: object | Mapping[str, object] | None = None,
@@ -116,7 +117,7 @@ class OperationExecutor:
         idempotency_key: str | None = None,
         data: Mapping[str, object] | None = None,
         files: Mapping[str, object] | None = None,
-    ) -> object:
+    ) -> ResponseT:
         """Execute operation spec and return typed response object."""
 
         path = render_path(spec.path, path_params or {})
@@ -130,14 +131,17 @@ class OperationExecutor:
         )
 
         if spec.response_kind == "binary":
-            return _request_binary(
-                self._transport,
-                spec=spec,
-                path=path,
-                context=context,
-                params=params,
-                headers=request_headers,
-                idempotency_key=idempotency_key,
+            return cast(
+                ResponseT,
+                _request_binary(
+                    self._transport,
+                    spec=spec,
+                    path=path,
+                    context=context,
+                    params=params,
+                    headers=request_headers,
+                    idempotency_key=idempotency_key,
+                ),
             )
         if spec.response_kind == "empty":
             response = self._transport.request(
@@ -151,9 +155,12 @@ class OperationExecutor:
                 headers=request_headers,
                 idempotency_key=idempotency_key,
             )
-            return EmptyResponse(
-                status_code=response.status_code,
-                headers=dict(response.headers),
+            return cast(
+                ResponseT,
+                EmptyResponse(
+                    status_code=response.status_code,
+                    headers=dict(response.headers),
+                ),
             )
 
         payload = self._transport.request_json(
@@ -168,7 +175,7 @@ class OperationExecutor:
             idempotency_key=idempotency_key,
         )
         if spec.response_model is None:
-            return payload
+            return cast(ResponseT, payload)
         return spec.response_model.from_payload(payload)
 
 
@@ -181,8 +188,8 @@ def render_path(path_template: str, path_params: Mapping[str, object]) -> str:
     return path
 
 
-def _serialize_query(
-    spec: OperationSpec,
+def _serialize_query[SpecResponseT](
+    spec: OperationSpec[SpecResponseT],
     query: object | Mapping[str, object] | None,
 ) -> Mapping[str, object] | None:
     if query is None:
@@ -196,8 +203,8 @@ def _serialize_query(
     raise TypeError("Query object не поддерживает сериализацию.")
 
 
-def _serialize_request(
-    spec: OperationSpec,
+def _serialize_request[SpecResponseT](
+    spec: OperationSpec[SpecResponseT],
     request: object | Mapping[str, object] | None,
 ) -> object | None:
     if request is None:
@@ -222,10 +229,10 @@ def _merge_content_type(
     return merged
 
 
-def _request_binary(
+def _request_binary[SpecResponseT](
     transport: OperationTransport,
     *,
-    spec: OperationSpec,
+    spec: OperationSpec[SpecResponseT],
     path: str,
     context: RequestContext,
     params: Mapping[str, object] | None,

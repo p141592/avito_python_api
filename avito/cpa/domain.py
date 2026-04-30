@@ -4,9 +4,8 @@ from __future__ import annotations
 
 from collections.abc import Sequence
 from dataclasses import dataclass
-from typing import cast
 
-from avito.core import BinaryResponse, ValidationError
+from avito.core import ValidationError
 from avito.core.deprecation import deprecated_method, warn_deprecated_once
 from avito.core.domain import DomainObject
 from avito.core.swagger import swagger_operation
@@ -79,14 +78,11 @@ class CpaLead(DomainObject):
         Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
         """
 
-        return cast(
-            CpaActionResult,
-            self._execute(
+        return self._execute(
                 CREATE_CPA_LEAD_COMPLAINT,
                 request=CpaLeadComplaintRequest(action_id=action_id, reason=reason),
                 headers=CPA_HEADERS,
-            ),
-        )
+            )
 
     @swagger_operation(
         "POST",
@@ -102,10 +98,7 @@ class CpaLead(DomainObject):
         Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
         """
 
-        return cast(
-            CpaBalanceInfo,
-            self._execute(GET_CPA_BALANCE, request={}, headers=CPA_HEADERS),
-        )
+        return self._execute(GET_CPA_BALANCE, request={}, headers=CPA_HEADERS)
 
 
 @dataclass(slots=True, frozen=True)
@@ -133,14 +126,11 @@ class CpaChat(DomainObject):
         Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
         """
 
-        return cast(
-            CpaChatInfo,
-            self._execute(
+        return self._execute(
                 GET_CPA_CHAT_BY_ACTION_ID,
                 path_params={"actionId": action_id or self._require_action_id()},
                 headers=CPA_HEADERS,
-            ),
-        )
+            )
 
     @swagger_operation(
         "POST",
@@ -165,17 +155,14 @@ class CpaChat(DomainObject):
 
         if version == 1:
             return self.list_classic(created_at_from=created_at_from, limit=limit)
-        return cast(
-            CpaChatsResult,
-            self._execute(
+        return self._execute(
                 LIST_CPA_CHATS,
                 request=CpaChatsByTimeRequest(
                     created_at_from=created_at_from,
                     limit=limit,
                 ),
                 headers=CPA_HEADERS,
-            ),
-        )
+            )
 
     @swagger_operation(
         "POST",
@@ -203,17 +190,14 @@ class CpaChat(DomainObject):
             removal_version="1.3.0",
             deprecated_since="1.1.0",
         )
-        return cast(
-            CpaChatsResult,
-            self._execute(
+        return self._execute(
                 LIST_CPA_CHATS_CLASSIC,
                 request=CpaChatsByTimeRequest(
                     created_at_from=created_at_from,
                     limit=limit,
                 ),
                 headers=CPA_HEADERS,
-            ),
-        )
+            )
 
     @swagger_operation(
         "POST",
@@ -234,14 +218,11 @@ class CpaChat(DomainObject):
         Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
         """
 
-        return cast(
-            CpaPhonesResult,
-            self._execute(
+        return self._execute(
                 GET_CPA_PHONES_INFO,
                 request=CpaPhonesFromChatsRequest(action_ids=list(action_ids)),
                 headers=CPA_HEADERS,
-            ),
-        )
+            )
 
     def _require_action_id(self) -> str:
         if self.action_id is None:
@@ -273,17 +254,14 @@ class CpaCall(DomainObject):
         Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
         """
 
-        return cast(
-            CpaCallsResult,
-            self._execute(
+        return self._execute(
                 LIST_CPA_CALLS,
                 request=CpaCallsByTimeRequest(
                     date_time_from=date_time_from,
                     date_time_to=date_time_to,
                 ),
                 headers=CPA_HEADERS,
-            ),
-        )
+            )
 
     @swagger_operation(
         "POST",
@@ -300,14 +278,11 @@ class CpaCall(DomainObject):
         Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
         """
 
-        return cast(
-            CpaActionResult,
-            self._execute(
+        return self._execute(
                 CREATE_CPA_CALL_COMPLAINT,
                 request=CpaCallComplaintRequest(call_id=call_id, reason=reason),
                 headers=CPA_HEADERS,
-            ),
-        )
+            )
 
 
 @dataclass(slots=True, frozen=True)
@@ -344,14 +319,11 @@ class CpaArchive(DomainObject):
         """
 
         return CpaAudioRecord(
-            cast(
-                BinaryResponse,
-                self._execute(
+            self._execute(
                     GET_CPA_ARCHIVE_RECORD,
                     path_params={"call_id": call_id or self._require_call_id()},
                     headers=CPA_HEADERS,
-                ),
-            )
+                )
         )
 
     @swagger_operation(
@@ -376,10 +348,7 @@ class CpaArchive(DomainObject):
         Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
         """
 
-        return cast(
-            CpaBalanceInfo,
-            self._execute(GET_CPA_ARCHIVE_BALANCE, request={}, headers=CPA_HEADERS),
-        )
+        return self._execute(GET_CPA_ARCHIVE_BALANCE, request={}, headers=CPA_HEADERS)
 
     @swagger_operation(
         "POST",
@@ -404,14 +373,11 @@ class CpaArchive(DomainObject):
         Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
         """
 
-        return cast(
-            CpaCallInfo,
-            self._execute(
+        return self._execute(
                 GET_CPA_ARCHIVE_CALL_BY_ID,
                 request=CpaCallByIdRequest(call_id=call_id),
                 headers=CPA_HEADERS,
-            ),
-        )
+            )
 
     def _require_call_id(self) -> str:
         if self.call_id is None:
@@ -447,13 +413,10 @@ class CallTrackingCall(DomainObject):
         resolved_call_id = call_id or (int(self.call_id) if self.call_id is not None else None)
         if resolved_call_id is None:
             raise ValidationError("Для операции требуется `call_id`.")
-        return cast(
-            CallTrackingCallResponse,
-            self._execute(
+        return self._execute(
                 GET_CALLTRACKING_CALL_BY_ID,
                 request=CallTrackingGetCallByIdRequest(call_id=resolved_call_id),
-            ),
-        )
+            )
 
     @swagger_operation(
         "POST",
@@ -477,9 +440,7 @@ class CallTrackingCall(DomainObject):
         Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
         """
 
-        return cast(
-            CallTrackingCallsResult,
-            self._execute(
+        return self._execute(
                 GET_CALLTRACKING_CALLS,
                 request=CallTrackingCallsRequest(
                     date_time_from=date_time_from,
@@ -487,8 +448,7 @@ class CallTrackingCall(DomainObject):
                     limit=limit,
                     offset=offset,
                 ),
-            ),
-        )
+            )
 
     @swagger_operation(
         "GET",
@@ -506,13 +466,10 @@ class CallTrackingCall(DomainObject):
         """
 
         return CallTrackingRecord(
-            cast(
-                BinaryResponse,
-                self._execute(
+            self._execute(
                     GET_CALLTRACKING_RECORD,
                     query={"callId": call_id or self._require_call_id()},
-                ),
-            )
+                )
         )
 
     def _require_call_id(self) -> str:

@@ -32,7 +32,7 @@ class Tariff(DomainObject):
         Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
         """
 
-        return self._execute(GET_TARIFF_INFO)  # type: ignore[return-value]
+        return self._execute(GET_TARIFF_INFO)
 
 
 __all__ = ("Tariff",)

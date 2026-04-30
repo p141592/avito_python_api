@@ -4,9 +4,8 @@ from __future__ import annotations
 
 from collections.abc import Sequence
 from dataclasses import dataclass
-from typing import cast
 
-from avito.core import BinaryResponse, ValidationError
+from avito.core import ValidationError
 from avito.core.domain import DomainObject
 from avito.core.swagger import swagger_operation
 from avito.orders.models import (
@@ -149,7 +148,7 @@ class Order(DomainObject):
         Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
         """
 
-        return self._execute(LIST_ORDERS)  # type: ignore[return-value]
+        return self._execute(LIST_ORDERS)
 
     @swagger_operation(
         "POST",
@@ -174,7 +173,7 @@ class Order(DomainObject):
             UPDATE_MARKINGS,
             request=OrderMarkingsRequest(order_id=order_id, codes=list(codes)),
             idempotency_key=idempotency_key,
-        )  # type: ignore[return-value]
+        )
 
     @swagger_operation(
         "POST",
@@ -202,7 +201,7 @@ class Order(DomainObject):
                 postal_office_id=postal_office_id,
             ),
             idempotency_key=idempotency_key,
-        )  # type: ignore[return-value]
+        )
 
     @swagger_operation(
         "POST",
@@ -227,7 +226,7 @@ class Order(DomainObject):
             APPLY_TRANSITION,
             request=OrderApplyTransitionRequest(order_id=order_id, transition=transition),
             idempotency_key=idempotency_key,
-        )  # type: ignore[return-value]
+        )
 
     @swagger_operation(
         "POST",
@@ -252,7 +251,7 @@ class Order(DomainObject):
             CHECK_CONFIRMATION_CODE,
             request=OrderConfirmationCodeRequest(order_id=order_id, code=code),
             idempotency_key=idempotency_key,
-        )  # type: ignore[return-value]
+        )
 
     @swagger_operation(
         "POST",
@@ -277,7 +276,7 @@ class Order(DomainObject):
             SET_CNC_DETAILS,
             request=OrderCncDetailsRequest(order_id=order_id, pickup_point_id=pickup_point_id),
             idempotency_key=idempotency_key,
-        )  # type: ignore[return-value]
+        )
 
     @swagger_operation(
         "GET",
@@ -296,7 +295,7 @@ class Order(DomainObject):
         return self._execute(
             GET_COURIER_DELIVERY_RANGE,
             query={"orderId": "order-1"},
-        )  # type: ignore[return-value]
+        )
 
     @swagger_operation(
         "POST",
@@ -321,7 +320,7 @@ class Order(DomainObject):
             SET_COURIER_DELIVERY_RANGE,
             request=OrderCourierRangeRequest(order_id=order_id, interval_id=interval_id),
             idempotency_key=idempotency_key,
-        )  # type: ignore[return-value]
+        )
 
     @swagger_operation(
         "POST",
@@ -349,7 +348,7 @@ class Order(DomainObject):
                 tracking_number=tracking_number,
             ),
             idempotency_key=idempotency_key,
-        )  # type: ignore[return-value]
+        )
 
 
 @dataclass(slots=True, frozen=True)
@@ -392,7 +391,7 @@ class OrderLabel(DomainObject):
             CREATE_LABELS,
             request=OrderLabelsRequest(order_ids=list(order_ids)),
             idempotency_key=idempotency_key,
-        )  # type: ignore[return-value]
+        )
 
     @swagger_operation(
         "POST",
@@ -418,7 +417,7 @@ class OrderLabel(DomainObject):
             CREATE_LABELS_EXTENDED,
             request=OrderLabelsRequest(order_ids=list(order_ids)),
             idempotency_key=idempotency_key,
-        )  # type: ignore[return-value]
+        )
 
     @swagger_operation(
         "GET",
@@ -439,7 +438,7 @@ class OrderLabel(DomainObject):
             DOWNLOAD_LABEL,
             path_params={"taskID": resolved_task_id},
         )
-        return LabelPdfResult(binary=cast(BinaryResponse, binary))
+        return LabelPdfResult(binary=binary)
 
     def _require_task_id(self) -> str:
         if self.task_id is None:
@@ -479,7 +478,7 @@ class DeliveryOrder(DomainObject):
             DELIVERY_CREATE_ANNOUNCEMENT,
             request=DeliveryAnnouncementRequest(order_id=order_id),
             idempotency_key=idempotency_key,
-        )  # type: ignore[return-value]
+        )
 
     @swagger_operation(
         "POST",
@@ -502,7 +501,7 @@ class DeliveryOrder(DomainObject):
             DELIVERY_CANCEL_ANNOUNCEMENT,
             request=DeliveryAnnouncementRequest(order_id=order_id),
             idempotency_key=idempotency_key,
-        )  # type: ignore[return-value]
+        )
 
     @swagger_operation(
         "POST",
@@ -531,7 +530,7 @@ class DeliveryOrder(DomainObject):
             DELIVERY_CREATE_PARCEL,
             request=DeliveryParcelRequest(order_id=order_id, parcel_id=parcel_id),
             idempotency_key=idempotency_key,
-        )  # type: ignore[return-value]
+        )
 
     @swagger_operation(
         "POST",
@@ -556,7 +555,7 @@ class DeliveryOrder(DomainObject):
             DELIVERY_UPDATE_CHANGE_PARCELS,
             request=DeliveryParcelIdsRequest(parcel_ids=list(parcel_ids)),
             idempotency_key=idempotency_key,
-        )  # type: ignore[return-value]
+        )
 
     @swagger_operation(
         "POST",
@@ -581,7 +580,7 @@ class DeliveryOrder(DomainObject):
             DELIVERY_CHANGE_PARCEL_RESULT,
             request=DeliveryParcelResultRequest(parcel_id=parcel_id, result=result),
             idempotency_key=idempotency_key,
-        )  # type: ignore[return-value]
+        )
 
 
 @dataclass(slots=True, frozen=True)
@@ -616,7 +615,7 @@ class SandboxDelivery(DomainObject):
             SANDBOX_CREATE_ANNOUNCEMENT,
             request=DeliveryAnnouncementRequest(order_id=order_id),
             idempotency_key=idempotency_key,
-        )  # type: ignore[return-value]
+        )
 
     @swagger_operation(
         "POST",
@@ -641,7 +640,7 @@ class SandboxDelivery(DomainObject):
             SANDBOX_TRACK_ANNOUNCEMENT,
             request=DeliveryAnnouncementRequest(order_id=order_id),
             idempotency_key=idempotency_key,
-        )  # type: ignore[return-value]
+        )
 
     @swagger_operation(
         "POST",
@@ -666,7 +665,7 @@ class SandboxDelivery(DomainObject):
             SANDBOX_UPDATE_CUSTOM_AREA_SCHEDULE,
             request=CustomAreaScheduleRequest(items=list(items)),
             idempotency_key=idempotency_key,
-        )  # type: ignore[return-value]
+        )
 
     @swagger_operation(
         "POST",
@@ -691,7 +690,7 @@ class SandboxDelivery(DomainObject):
             SANDBOX_CANCEL_PARCEL,
             request=CancelParcelRequest(parcel_id=parcel_id, actor=actor),
             idempotency_key=idempotency_key,
-        )  # type: ignore[return-value]
+        )
 
     @swagger_operation(
         "POST",
@@ -719,7 +718,7 @@ class SandboxDelivery(DomainObject):
                 confirm_code=confirm_code,
             ),
             idempotency_key=idempotency_key,
-        )  # type: ignore[return-value]
+        )
 
     @swagger_operation(
         "POST",
@@ -748,7 +747,7 @@ class SandboxDelivery(DomainObject):
             SANDBOX_SET_ORDER_PROPERTIES,
             request=SetOrderPropertiesRequest(order_id=order_id, properties=properties),
             idempotency_key=idempotency_key,
-        )  # type: ignore[return-value]
+        )
 
     @swagger_operation(
         "POST",
@@ -773,7 +772,7 @@ class SandboxDelivery(DomainObject):
             SANDBOX_SET_ORDER_REAL_ADDRESS,
             request=SetOrderRealAddressRequest(order_id=order_id, address=address),
             idempotency_key=idempotency_key,
-        )  # type: ignore[return-value]
+        )
 
     @swagger_operation(
         "POST",
@@ -824,7 +823,7 @@ class SandboxDelivery(DomainObject):
                 options=options,
             ),
             idempotency_key=idempotency_key,
-        )  # type: ignore[return-value]
+        )
 
     @swagger_operation(
         "POST",
@@ -849,7 +848,7 @@ class SandboxDelivery(DomainObject):
             SANDBOX_PROHIBIT_ORDER_ACCEPTANCE,
             request=ProhibitOrderAcceptanceRequest(order_id=order_id),
             idempotency_key=idempotency_key,
-        )  # type: ignore[return-value]
+        )
 
     @swagger_operation(
         "GET",
@@ -868,7 +867,7 @@ class SandboxDelivery(DomainObject):
         return self._execute(
             SANDBOX_LIST_SORTING_CENTER,
             query={"deliveryProviders": "pochta"},
-        )  # type: ignore[return-value]
+        )
 
     @swagger_operation(
         "POST",
@@ -893,7 +892,7 @@ class SandboxDelivery(DomainObject):
             SANDBOX_ADD_SORTING_CENTER,
             request=AddSortingCentersRequest(items=list(items)),
             idempotency_key=idempotency_key,
-        )  # type: ignore[return-value]
+        )
 
     @swagger_operation(
         "POST",
@@ -923,7 +922,7 @@ class SandboxDelivery(DomainObject):
             path_params={"tariff_id": tariff_id},
             request=SandboxAreasRequest(areas=list(areas)),
             idempotency_key=idempotency_key,
-        )  # type: ignore[return-value]
+        )
 
     @swagger_operation(
         "POST",
@@ -953,7 +952,7 @@ class SandboxDelivery(DomainObject):
             path_params={"tariff_id": tariff_id},
             request=TaggedSortingCentersRequest(items=list(items)),
             idempotency_key=idempotency_key,
-        )  # type: ignore[return-value]
+        )
 
     @swagger_operation(
         "POST",
@@ -983,7 +982,7 @@ class SandboxDelivery(DomainObject):
             path_params={"tariff_id": tariff_id},
             request=AddTerminalsRequest(items=list(items)),
             idempotency_key=idempotency_key,
-        )  # type: ignore[return-value]
+        )
 
     @swagger_operation(
         "POST",
@@ -1013,7 +1012,7 @@ class SandboxDelivery(DomainObject):
             path_params={"tariff_id": tariff_id},
             request=UpdateTermsRequest(items=list(items)),
             idempotency_key=idempotency_key,
-        )  # type: ignore[return-value]
+        )
 
     @swagger_operation(
         "POST",
@@ -1059,7 +1058,7 @@ class SandboxDelivery(DomainObject):
                 tariff_type=tariff_type,
             ),
             idempotency_key=idempotency_key,
-        )  # type: ignore[return-value]
+        )
 
     @swagger_operation(
         "POST",
@@ -1088,7 +1087,7 @@ class SandboxDelivery(DomainObject):
             SANDBOX_CREATE_PARCEL,
             request=DeliveryParcelRequest(order_id=order_id, parcel_id=parcel_id),
             idempotency_key=idempotency_key,
-        )  # type: ignore[return-value]
+        )
 
     @swagger_operation(
         "POST",
@@ -1126,7 +1125,7 @@ class SandboxDelivery(DomainObject):
                 options=options,
             ),
             idempotency_key=idempotency_key,
-        )  # type: ignore[return-value]
+        )
 
     @swagger_operation(
         "POST",
@@ -1155,7 +1154,7 @@ class SandboxDelivery(DomainObject):
             SANDBOX_CANCEL_SANDBOX_PARCEL,
             request=CancelSandboxParcelRequest(parcel_id=parcel_id, options=options),
             idempotency_key=idempotency_key,
-        )  # type: ignore[return-value]
+        )
 
     @swagger_operation(
         "POST",
@@ -1191,7 +1190,7 @@ class SandboxDelivery(DomainObject):
                 options=options,
             ),
             idempotency_key=idempotency_key,
-        )  # type: ignore[return-value]
+        )
 
     @swagger_operation(
         "POST",
@@ -1244,7 +1243,7 @@ class SandboxDelivery(DomainObject):
                 options=options,
             ),
             idempotency_key=idempotency_key,
-        )  # type: ignore[return-value]
+        )
 
     @swagger_operation(
         "POST",
@@ -1269,7 +1268,7 @@ class SandboxDelivery(DomainObject):
             SANDBOX_GET_ANNOUNCEMENT_EVENT,
             request=SandboxGetAnnouncementEventRequest(announcement_id=announcement_id),
             idempotency_key=idempotency_key,
-        )  # type: ignore[return-value]
+        )
 
     @swagger_operation(
         "POST",
@@ -1294,7 +1293,7 @@ class SandboxDelivery(DomainObject):
             SANDBOX_GET_CHANGE_PARCEL_INFO,
             request=GetChangeParcelInfoRequest(application_id=application_id),
             idempotency_key=idempotency_key,
-        )  # type: ignore[return-value]
+        )
 
     @swagger_operation(
         "POST",
@@ -1319,7 +1318,7 @@ class SandboxDelivery(DomainObject):
             SANDBOX_GET_PARCEL_INFO,
             request=GetSandboxParcelInfoRequest(parcel_id=parcel_id),
             idempotency_key=idempotency_key,
-        )  # type: ignore[return-value]
+        )
 
     @swagger_operation(
         "POST",
@@ -1344,7 +1343,7 @@ class SandboxDelivery(DomainObject):
             SANDBOX_GET_REGISTERED_PARCEL_ID,
             request=GetRegisteredParcelIdRequest(order_id=order_id),
             idempotency_key=idempotency_key,
-        )  # type: ignore[return-value]
+        )
 
 
 @dataclass(slots=True, frozen=True)
@@ -1376,7 +1375,7 @@ class DeliveryTask(DomainObject):
         return self._execute(
             GET_DELIVERY_TASK,
             path_params={"task_id": resolved_task_id},
-        )  # type: ignore[return-value]
+        )
 
     def _require_task_id(self) -> str:
         if self.task_id is None:
@@ -1410,7 +1409,7 @@ class Stock(DomainObject):
         return self._execute(
             GET_STOCK_INFO,
             request=StockInfoRequest(item_ids=list(item_ids)),
-        )  # type: ignore[return-value]
+        )
 
     @swagger_operation(
         "PUT",
@@ -1437,7 +1436,7 @@ class Stock(DomainObject):
             UPDATE_STOCKS,
             request=StockUpdateRequest(stocks=list(stocks)),
             idempotency_key=idempotency_key,
-        )  # type: ignore[return-value]
+        )
 
 
 __all__ = (

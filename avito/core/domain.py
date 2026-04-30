@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from collections.abc import Mapping
 from dataclasses import dataclass
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, TypeVar
 
 from avito.core.exceptions import ValidationError
 from avito.core.operations import OperationExecutor, OperationSpec
@@ -12,6 +12,8 @@ from avito.core.types import RequestContext
 
 if TYPE_CHECKING:
     from avito.core.transport import Transport
+
+ResponseT = TypeVar("ResponseT")
 
 
 @dataclass(slots=True, frozen=True)
@@ -22,7 +24,7 @@ class DomainObject:
 
     def _execute(
         self,
-        spec: OperationSpec,
+        spec: OperationSpec[ResponseT],
         *,
         path_params: Mapping[str, object] | None = None,
         query: object | Mapping[str, object] | None = None,
@@ -31,7 +33,7 @@ class DomainObject:
         idempotency_key: str | None = None,
         data: Mapping[str, object] | None = None,
         files: Mapping[str, object] | None = None,
-    ) -> object:
+    ) -> ResponseT:
         """Выполняет v2 operation spec через общий executor."""
 
         return OperationExecutor(self.transport).execute(
