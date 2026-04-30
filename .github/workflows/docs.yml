@@ -40,21 +40,7 @@ jobs:
         run: make docs-strict
 
       - name: Build docs reports
-        run: |
-          poetry run python scripts/check_inventory_coverage.py --output inventory-coverage-report.json
-          poetry run python scripts/check_spec_inventory_sync.py --output spec-inventory-report.json
-          poetry run python scripts/check_reference_public_surface.py --output reference-public-report.json
-          poetry run python scripts/check_public_docstrings.py --output docstring-contract-report.json
-          poetry run python scripts/check_changelog_sections.py --output changelog-sections-report.json
-          poetry run bandit -r avito -lll -f json -o bandit-report.json
-          poetry run python scripts/build_docs_quality_report.py \
-            --inventory-report inventory-coverage-report.json \
-            --spec-report spec-inventory-report.json \
-            --reference-report reference-public-report.json \
-            --docstring-report docstring-contract-report.json \
-            --changelog-report changelog-sections-report.json \
-            --bandit-report bandit-report.json \
-            --output docs-quality-report.json
+        run: make docs-report
 
       - name: Prepare local docs root for link checking
         run: ln -s . site/avito_python_api
@@ -64,13 +50,7 @@ jobs:
         with:
           name: docs-contract-reports
           path: |
-            inventory-coverage-report.json
-            spec-inventory-report.json
-            reference-public-report.json
-            docstring-contract-report.json
-            changelog-sections-report.json
-            bandit-report.json
-            docs-quality-report.json
+            swagger-bindings-report.json
 
       - name: Check links
         uses: lycheeverse/lychee-action@v2

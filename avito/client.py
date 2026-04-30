@@ -38,7 +38,7 @@ from avito.promotion import (
     TargetActionPricing,
     TrxPromotion,
 )
-from avito.promotion.enums import PromotionStatus
+from avito.promotion.enums import PromotionOrderServiceStatus, PromotionOrderStatus
 from avito.ratings import RatingProfile, Review, ReviewAnswer
 from avito.realty import RealtyAnalyticsReport, RealtyBooking, RealtyListing, RealtyPricing
 from avito.summary import (
@@ -250,10 +250,11 @@ class AvitoClient:
         """Возвращает health-сводку объявлений без ручного сопоставления статистики."""
 
         resolved_user_id = self._resolve_user_id(user_id)
-        listings = self.ad(user_id=resolved_user_id).list(
+        listing_collection = self.ad(user_id=resolved_user_id).list(
             limit=limit,
             page_size=page_size,
-        ).materialize()
+        )
+        listings = listing_collection.materialize()
         item_ids = [item.item_id for item in listings if item.item_id is not None]
         stats_by_item_id: dict[int, ListingStats] = {}
         calls_by_item_id: dict[int, CallStats] = {}
@@ -314,10 +315,21 @@ class AvitoClient:
             )
             for listing in listings
         ]
+        loaded_listings = len(health_items)
+        total_listings = listing_collection.source_total
+        listing_limit = limit if limit >= 0 else None
+        expected_loaded = (
+            min(total_listings, listing_limit)
+            if total_listings is not None and listing_limit is not None
+            else total_listings
+        )
         return ListingHealthSummary(
             user_id=resolved_user_id,
             items=health_items,
-            total_listings=len(health_items),
+            loaded_listings=loaded_listings,
+            total_listings=total_listings,
+            listing_limit=listing_limit,
+            is_complete=expected_loaded is not None and loaded_listings >= expected_loaded,
             visible_listings=sum(1 for item in health_items if item.is_visible is True),
             active_listings=sum(1 for item in health_items if item.status is ListingStatus.ACTIVE),
             total_views=_sum_optional_int(item.views for item in health_items),
@@ -402,17 +414,26 @@ class AvitoClient:
                 for item in orders.items
                 if item.status
                 in {
-                    PromotionStatus.APPLIED,
-                    PromotionStatus.AUTO,
-                    PromotionStatus.CREATED,
-                    PromotionStatus.MANUAL,
-                    PromotionStatus.PARTIAL,
-                    PromotionStatus.PROCESSED,
+                    PromotionOrderStatus.INITIALIZED,
+                    PromotionOrderStatus.WAITING,
+                    PromotionOrderStatus.IN_PROCESS,
+                    PromotionOrderStatus.PROCESSED,
+                    PromotionOrderStatus.APPLIED,
+                    PromotionOrderStatus.AUTO,
+                    PromotionOrderStatus.CREATED,
+                    PromotionOrderStatus.MANUAL,
+                    PromotionOrderStatus.PARTIAL,
                 }
             ),
             total_services=len(service_items),
             available_services=sum(
-                1 for item in service_items if item.status is PromotionStatus.AVAILABLE
+                1
+                for item in service_items
+                if item.status
+                in {
+                    PromotionOrderServiceStatus.ACTIVE,
+                    PromotionOrderServiceStatus.AVAILABLE,
+                }
             ),
         )
 

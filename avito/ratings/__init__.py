@@ -1,7 +1,7 @@
 """Пакет ratings."""
 
 from avito.ratings.domain import RatingProfile, Review, ReviewAnswer
-from avito.ratings.enums import ReviewStage
+from avito.ratings.enums import ReviewAnswerStatus, ReviewStage
 from avito.ratings.models import RatingProfileInfo, ReviewAnswerInfo, ReviewInfo, ReviewsResult
 
 __all__ = (
@@ -10,6 +10,7 @@ __all__ = (
     "Review",
     "ReviewAnswer",
     "ReviewAnswerInfo",
+    "ReviewAnswerStatus",
     "ReviewInfo",
     "ReviewStage",
     "ReviewsResult",

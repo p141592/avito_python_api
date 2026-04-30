@@ -2,10 +2,12 @@
 
 from __future__ import annotations
 
+from collections.abc import Sequence
 from dataclasses import dataclass
 
 from avito.core import ValidationError
 from avito.core.domain import DomainObject
+from avito.core.swagger import swagger_operation
 from avito.messenger.client import MediaClient, MessengerClient, SpecialOffersClient, WebhookClient
 from avito.messenger.models import (
     ChatInfo,
@@ -28,9 +30,19 @@ from avito.messenger.models import (
 class Chat(DomainObject):
     """Доменный объект чата."""
 
+    __swagger_domain__ = "messenger"
+    __sdk_factory__ = "chat"
+    __sdk_factory_args__ = {"chat_id": "path.chat_id", "user_id": "path.user_id"}
+
     chat_id: int | str | None = None
     user_id: int | str | None = None
 
+    @swagger_operation(
+        "GET",
+        "/messenger/v2/accounts/{user_id}/chats/{chat_id}",
+        spec="Мессенджер.json",
+        operation_id="getChatByIdV2",
+    )
     def get(self) -> ChatInfo:
         """Получает чат по `chat_id`.
 
@@ -42,6 +54,12 @@ class Chat(DomainObject):
             chat_id=self._require_chat_id(),
         )
 
+    @swagger_operation(
+        "GET",
+        "/messenger/v2/accounts/{user_id}/chats",
+        spec="Мессенджер.json",
+        operation_id="getChatsV2",
+    )
     def list(self) -> ChatsResult:
         """Получает список чатов пользователя.
 
@@ -52,6 +70,12 @@ class Chat(DomainObject):
 
         return MessengerClient(self.transport).list_chats(user_id=self._require_user_id())
 
+    @swagger_operation(
+        "POST",
+        "/messenger/v1/accounts/{user_id}/chats/{chat_id}/read",
+        spec="Мессенджер.json",
+        operation_id="chatRead",
+    )
     def mark_read(self, *, idempotency_key: str | None = None) -> MessageActionResult:
         """Помечает чат как прочитанный.
 
@@ -66,6 +90,13 @@ class Chat(DomainObject):
             idempotency_key=idempotency_key,
         )
 
+    @swagger_operation(
+        "POST",
+        "/messenger/v2/accounts/{user_id}/blacklist",
+        spec="Мессенджер.json",
+        operation_id="postBlacklistV2",
+        method_args={"blacklisted_user_id": "body.users"},
+    )
     def blacklist(
         self,
         *,
@@ -100,10 +131,24 @@ class Chat(DomainObject):
 class ChatMessage(DomainObject):
     """Доменный объект сообщения чата."""
 
+    __swagger_domain__ = "messenger"
+    __sdk_factory__ = "chat_message"
+    __sdk_factory_args__ = {
+        "message_id": "path.message_id",
+        "chat_id": "path.chat_id",
+        "user_id": "path.user_id",
+    }
+
     chat_id: int | str | None = None
     message_id: int | str | None = None
     user_id: int | str | None = None
 
+    @swagger_operation(
+        "GET",
+        "/messenger/v3/accounts/{user_id}/chats/{chat_id}/messages",
+        spec="Мессенджер.json",
+        operation_id="getMessagesV3",
+    )
     def list(self, *, chat_id: str | None = None) -> MessagesResult:
         """Получает список сообщений V3.
 
@@ -117,6 +162,13 @@ class ChatMessage(DomainObject):
             chat_id=chat_id or self._require_chat_id(),
         )
 
+    @swagger_operation(
+        "POST",
+        "/messenger/v1/accounts/{user_id}/chats/{chat_id}/messages",
+        spec="Мессенджер.json",
+        operation_id="postSendMessage",
+        method_args={"message": "body.message"},
+    )
     def send_message(
         self,
         *,
@@ -138,6 +190,13 @@ class ChatMessage(DomainObject):
             idempotency_key=idempotency_key,
         )
 
+    @swagger_operation(
+        "POST",
+        "/messenger/v1/accounts/{user_id}/chats/{chat_id}/messages/image",
+        spec="Мессенджер.json",
+        operation_id="postSendImageMessage",
+        method_args={"image_id": "body.image_id"},
+    )
     def send_image(
         self,
         *,
@@ -161,6 +220,12 @@ class ChatMessage(DomainObject):
             idempotency_key=idempotency_key,
         )
 
+    @swagger_operation(
+        "POST",
+        "/messenger/v1/accounts/{user_id}/chats/{chat_id}/messages/{message_id}",
+        spec="Мессенджер.json",
+        operation_id="deleteMessage",
+    )
     def delete(
         self,
         *,
@@ -203,8 +268,17 @@ class ChatMessage(DomainObject):
 class ChatWebhook(DomainObject):
     """Доменный объект webhook мессенджера."""
 
+    __swagger_domain__ = "messenger"
+    __sdk_factory__ = "chat_webhook"
+
     user_id: int | str | None = None
 
+    @swagger_operation(
+        "POST",
+        "/messenger/v1/subscriptions",
+        spec="Мессенджер.json",
+        operation_id="getSubscriptions",
+    )
     def list(self) -> SubscriptionsResult:
         """Получает список webhook-подписок.
 
@@ -215,6 +289,13 @@ class ChatWebhook(DomainObject):
 
         return WebhookClient(self.transport).get_subscriptions()
 
+    @swagger_operation(
+        "POST",
+        "/messenger/v1/webhook/unsubscribe",
+        spec="Мессенджер.json",
+        operation_id="postWebhookUnsubscribe",
+        method_args={"url": "body.url"},
+    )
     def unsubscribe(self, *, url: str, idempotency_key: str | None = None) -> WebhookActionResult:
         """Отключает webhook.
 
@@ -225,6 +306,13 @@ class ChatWebhook(DomainObject):
 
         return WebhookClient(self.transport).unsubscribe(url=url, idempotency_key=idempotency_key)
 
+    @swagger_operation(
+        "POST",
+        "/messenger/v3/webhook",
+        spec="Мессенджер.json",
+        operation_id="postWebhookV3",
+        method_args={"url": "body.url"},
+    )
     def subscribe(
         self,
         *,
@@ -250,16 +338,40 @@ class ChatWebhook(DomainObject):
 class ChatMedia(DomainObject):
     """Доменный объект media-функций мессенджера."""
 
+    __swagger_domain__ = "messenger"
+    __sdk_factory__ = "chat_media"
+    __sdk_factory_args__ = {"user_id": "path.user_id"}
+
     user_id: int | str | None = None
 
-    def get_voice_files(self) -> VoiceFilesResult:
+    @swagger_operation(
+        "GET",
+        "/messenger/v1/accounts/{user_id}/getVoiceFiles",
+        spec="Мессенджер.json",
+        operation_id="getVoiceFiles",
+    )
+    def get_voice_files(
+        self,
+        *,
+        voice_ids: Sequence[str] | None = None,
+    ) -> VoiceFilesResult:
         """Получает голосовые сообщения.
 
         Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
         """
 
-        return MediaClient(self.transport).get_voice_files(user_id=self._require_user_id())
+        return MediaClient(self.transport).get_voice_files(
+            user_id=self._require_user_id(),
+            voice_ids=voice_ids,
+        )
 
+    @swagger_operation(
+        "POST",
+        "/messenger/v1/accounts/{user_id}/uploadImages",
+        spec="Мессенджер.json",
+        operation_id="uploadImages",
+        method_args={"files": "body.uploadfile[]"},
+    )
     def upload_images(
         self,
         *,
@@ -289,9 +401,20 @@ class ChatMedia(DomainObject):
 class SpecialOfferCampaign(DomainObject):
     """Доменный объект рассылки скидок и спецпредложений."""
 
+    __swagger_domain__ = "messenger"
+    __sdk_factory__ = "special_offer_campaign"
+    __sdk_factory_args__ = {"campaign_id": "path.campaign_id"}
+
     campaign_id: int | str | None = None
     user_id: int | str | None = None
 
+    @swagger_operation(
+        "POST",
+        "/special-offers/v1/available",
+        spec="Рассылкаскидокиспецпредложенийвмессенджере.json",
+        operation_id="openApiAvailable",
+        method_args={"item_ids": "body.item_ids"},
+    )
     def get_available(self, *, item_ids: list[int]) -> SpecialOfferAvailableResult:
         """Получает объявления, доступные для рассылки.
 
@@ -300,6 +423,13 @@ class SpecialOfferCampaign(DomainObject):
 
         return SpecialOffersClient(self.transport).get_available(item_ids=item_ids)
 
+    @swagger_operation(
+        "POST",
+        "/special-offers/v1/multiCreate",
+        spec="Рассылкаскидокиспецпредложенийвмессенджере.json",
+        operation_id="openApiMultiCreate",
+        method_args={"item_ids": "body.item_ids", "message": "body.item_ids"},
+    )
     def create_multi(
         self,
         *,
@@ -322,6 +452,12 @@ class SpecialOfferCampaign(DomainObject):
             idempotency_key=idempotency_key,
         )
 
+    @swagger_operation(
+        "POST",
+        "/special-offers/v1/multiConfirm",
+        spec="Рассылкаскидокиспецпредложенийвмессенджере.json",
+        operation_id="openApiMultiConfirm",
+    )
     def confirm_multi(
         self,
         *,
@@ -340,6 +476,12 @@ class SpecialOfferCampaign(DomainObject):
             idempotency_key=idempotency_key,
         )
 
+    @swagger_operation(
+        "POST",
+        "/special-offers/v1/stats",
+        spec="Рассылкаскидокиспецпредложенийвмессенджере.json",
+        operation_id="openApiStats",
+    )
     def get_stats(self, *, campaign_id: str | None = None) -> SpecialOfferStatsResult:
         """Получает статистику рассылки.
 
@@ -350,6 +492,12 @@ class SpecialOfferCampaign(DomainObject):
             campaign_id=campaign_id or self._require_campaign_id()
         )
 
+    @swagger_operation(
+        "POST",
+        "/special-offers/v1/tariffInfo",
+        spec="Рассылкаскидокиспецпредложенийвмессенджере.json",
+        operation_id="openApiTariffInfo",
+    )
     def get_tariff_info(self) -> TariffInfo:
         """Получает информацию о тарифе спецпредложений.
 

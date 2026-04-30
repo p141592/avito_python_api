@@ -5,13 +5,14 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from avito.core.serialization import SerializableModel
-from avito.ratings.enums import ReviewStage
+from avito.ratings.enums import ReviewAnswerStatus, ReviewStage
 
 
 @dataclass(slots=True, frozen=True)
 class ReviewsQuery:
     """Query-параметры списка отзывов."""
 
+    offset: int | None = None
     page: int | None = None
     limit: int | None = None
 
@@ -19,8 +20,13 @@ class ReviewsQuery:
         """Сериализует query-параметры списка отзывов."""
 
         params: dict[str, int] = {}
+        if self.offset is not None:
+            params["offset"] = self.offset
         if self.page is not None:
             params["page"] = self.page
+        if self.offset is None and self.page is not None:
+            page_size = self.limit or 50
+            params["offset"] = max(self.page - 1, 0) * page_size
         if self.limit is not None:
             params["limit"] = self.limit
         return params
@@ -67,6 +73,7 @@ class ReviewAnswerInfo(SerializableModel):
     answer_id: str | None = None
     created_at: int | None = None
     success: bool | None = None
+    status: ReviewAnswerStatus | None = None
 
 
 @dataclass(slots=True, frozen=True)

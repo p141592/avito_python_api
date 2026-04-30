@@ -83,14 +83,18 @@ class JsonPage[ItemT]:
 
     items: list[ItemT]
     total: int | None = None
+    source_total: int | None = None
     page: int | None = None
     per_page: int | None = None
     next_cursor: str | None = None
+    has_next_page: bool | None = None
 
     @property
     def has_next(self) -> bool:
         """Показывает, есть ли следующая страница или курсор."""
 
+        if self.has_next_page is not None:
+            return self.has_next_page
         if self.next_cursor:
             return True
         if self.total is None or self.page is None or self.per_page is None:

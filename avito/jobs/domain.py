@@ -7,6 +7,7 @@ from dataclasses import dataclass
 
 from avito.core import ValidationError
 from avito.core.domain import DomainObject
+from avito.core.swagger import swagger_operation
 from avito.jobs.client import (
     ApplicationsClient,
     DictionariesClient,
@@ -40,9 +41,20 @@ from avito.jobs.models import (
 class Vacancy(DomainObject):
     """Доменный объект вакансий."""
 
+    __swagger_domain__ = "jobs"
+    __sdk_factory__ = "vacancy"
+    __sdk_factory_args__ = {"vacancy_id": "path.vacancy_id"}
+
     vacancy_id: int | str | None = None
     user_id: int | str | None = None
 
+    @swagger_operation(
+        "POST",
+        "/job/v2/vacancies",
+        spec="АвитоРабота.json",
+        operation_id="vacancyCreateV2",
+        method_args={"title": "body.title"},
+    )
     def create(
         self,
         *,
@@ -61,9 +73,41 @@ class Vacancy(DomainObject):
 
         client = VacanciesClient(self.transport)
         if version == 1:
-            return client.create_classic(title=title, idempotency_key=idempotency_key)
+            return self.create_classic(title=title, idempotency_key=idempotency_key)
         return client.create(title=title, idempotency_key=idempotency_key)
 
+    @swagger_operation(
+        "POST",
+        "/job/v1/vacancies",
+        spec="АвитоРабота.json",
+        operation_id="vacancyCreate",
+        method_args={"title": "body.name"},
+    )
+    def create_classic(
+        self,
+        *,
+        title: str,
+        idempotency_key: str | None = None,
+    ) -> JobActionResult:
+        """Создаёт вакансию через legacy v1 operation и возвращает типизированную SDK-модель.
+
+        Параметр `idempotency_key` задает ключ идемпотентности для безопасного повтора write-операции.
+
+        Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
+        """
+
+        return VacanciesClient(self.transport).create_classic(
+            title=title,
+            idempotency_key=idempotency_key,
+        )
+
+    @swagger_operation(
+        "POST",
+        "/job/v2/vacancies/update/{vacancy_uuid}",
+        spec="АвитоРабота.json",
+        operation_id="vacancyUpdateV2",
+        method_args={"title": "body.title"},
+    )
     def update(
         self,
         *,
@@ -84,7 +128,7 @@ class Vacancy(DomainObject):
 
         client = VacanciesClient(self.transport)
         if version == 1:
-            return client.update_classic(
+            return self.update_classic(
                 vacancy_id=vacancy_id or self._require_vacancy_id(),
                 title=title,
                 idempotency_key=idempotency_key,
@@ -95,6 +139,40 @@ class Vacancy(DomainObject):
             idempotency_key=idempotency_key,
         )
 
+    @swagger_operation(
+        "PUT",
+        "/job/v1/vacancies/{vacancy_id}",
+        spec="АвитоРабота.json",
+        operation_id="vacancyUpdate",
+        method_args={"title": "body.name"},
+    )
+    def update_classic(
+        self,
+        *,
+        title: str,
+        vacancy_id: int | str | None = None,
+        idempotency_key: str | None = None,
+    ) -> JobActionResult:
+        """Обновляет вакансию через legacy v1 operation и возвращает типизированную SDK-модель.
+
+        Параметр `idempotency_key` задает ключ идемпотентности для безопасного повтора write-операции.
+
+        Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
+        """
+
+        return VacanciesClient(self.transport).update_classic(
+            vacancy_id=vacancy_id or self._require_vacancy_id(),
+            title=title,
+            idempotency_key=idempotency_key,
+        )
+
+    @swagger_operation(
+        "PUT",
+        "/job/v1/vacancies/archived/{vacancy_id}",
+        spec="АвитоРабота.json",
+        operation_id="vacancyArchive",
+        method_args={"employee_id": "body.employee_id"},
+    )
     def delete(
         self,
         *,
@@ -117,6 +195,13 @@ class Vacancy(DomainObject):
             idempotency_key=idempotency_key,
         )
 
+    @swagger_operation(
+        "POST",
+        "/job/v1/vacancies/{vacancy_id}/prolongate",
+        spec="АвитоРабота.json",
+        operation_id="vacancyProlongate",
+        method_args={"billing_type": "body.billing_type"},
+    )
     def prolongate(
         self,
         *,
@@ -139,6 +224,12 @@ class Vacancy(DomainObject):
             idempotency_key=idempotency_key,
         )
 
+    @swagger_operation(
+        "GET",
+        "/job/v2/vacancies",
+        spec="АвитоРабота.json",
+        operation_id="searchVacancy",
+    )
     def list(self, *, query: VacanciesQuery | None = None) -> VacanciesResult:
         """Выполняет публичную операцию `Vacancy.list` и возвращает типизированную SDK-модель.
 
@@ -149,6 +240,12 @@ class Vacancy(DomainObject):
 
         return VacanciesClient(self.transport).list(query=query)
 
+    @swagger_operation(
+        "GET",
+        "/job/v2/vacancies/{vacancy_id}",
+        spec="АвитоРабота.json",
+        operation_id="vacancyGetItem",
+    )
     def get(
         self, *, vacancy_id: int | str | None = None, query: VacanciesQuery | None = None
     ) -> VacancyInfo:
@@ -164,6 +261,13 @@ class Vacancy(DomainObject):
             query=query,
         )
 
+    @swagger_operation(
+        "POST",
+        "/job/v2/vacancies/batch",
+        spec="АвитоРабота.json",
+        operation_id="vacanciesGetByIds",
+        method_args={"ids": "body.ids"},
+    )
     def get_by_ids(self, *, ids: Sequence[int]) -> VacanciesResult:
         """Выполняет публичную операцию `Vacancy.get_by_ids` и возвращает типизированную SDK-модель.
 
@@ -174,6 +278,13 @@ class Vacancy(DomainObject):
 
         return VacanciesClient(self.transport).get_by_ids(ids=list(ids))
 
+    @swagger_operation(
+        "POST",
+        "/job/v2/vacancies/statuses",
+        spec="АвитоРабота.json",
+        operation_id="vacancyGetStatuses",
+        method_args={"ids": "body.ids"},
+    )
     def get_statuses(self, *, ids: Sequence[int]) -> VacancyStatusesResult:
         """Выполняет публичную операцию `Vacancy.get_statuses` и возвращает типизированную SDK-модель.
 
@@ -184,6 +295,13 @@ class Vacancy(DomainObject):
 
         return VacanciesClient(self.transport).get_statuses(ids=list(ids))
 
+    @swagger_operation(
+        "PUT",
+        "/job/v2/vacancies/{vacancy_uuid}/auto_renewal",
+        spec="АвитоРабота.json",
+        operation_id="vacancyAutoRenewal",
+        method_args={"auto_renewal": "body.auto_renewal"},
+    )
     def update_auto_renewal(
         self,
         *,
@@ -216,8 +334,18 @@ class Vacancy(DomainObject):
 class Application(DomainObject):
     """Доменный объект откликов."""
 
+    __swagger_domain__ = "jobs"
+    __sdk_factory__ = "application"
+
     user_id: int | str | None = None
 
+    @swagger_operation(
+        "POST",
+        "/job/v1/applications/apply_actions",
+        spec="АвитоРабота.json",
+        operation_id="applicationsApplyActions",
+        method_args={"ids": "body.ids", "action": "body.action"},
+    )
     def apply(
         self,
         *,
@@ -253,13 +381,49 @@ class Application(DomainObject):
         Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
         """
 
-        client = ApplicationsClient(self.transport)
         if ids is not None:
-            return client.get_by_ids(ids=list(ids))
+            return self.get_by_ids(ids=ids)
         if query is None:
             raise ValidationError("Для операции требуется `query` или `ids`.")
-        return client.get_ids(query=query)
+        return self.get_ids(query=query)
 
+    @swagger_operation(
+        "POST",
+        "/job/v1/applications/get_by_ids",
+        spec="АвитоРабота.json",
+        operation_id="applicationsGetByIds",
+        method_args={"ids": "body.ids"},
+    )
+    def get_by_ids(self, *, ids: Sequence[str]) -> ApplicationsResult:
+        """Возвращает отклики по идентификаторам и возвращает типизированную SDK-модель.
+
+        Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
+        """
+
+        return ApplicationsClient(self.transport).get_by_ids(ids=list(ids))
+
+    @swagger_operation(
+        "GET",
+        "/job/v1/applications/get_ids",
+        spec="АвитоРабота.json",
+        operation_id="applicationsGetIds",
+    )
+    def get_ids(self, *, query: ApplicationIdsQuery | None = None) -> ApplicationIdsResult:
+        """Возвращает идентификаторы откликов по фильтру и возвращает типизированную SDK-модель.
+
+        Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
+        """
+
+        if query is None:
+            raise ValidationError("Для операции требуется `query`.")
+        return ApplicationsClient(self.transport).get_ids(query=query)
+
+    @swagger_operation(
+        "GET",
+        "/job/v1/applications/get_states",
+        spec="АвитоРабота.json",
+        operation_id="applicationsGetStates",
+    )
     def get_states(self) -> ApplicationStatesResult:
         """Выполняет публичную операцию `Application.get_states` и возвращает типизированную SDK-модель.
 
@@ -270,6 +434,13 @@ class Application(DomainObject):
 
         return ApplicationsClient(self.transport).get_states()
 
+    @swagger_operation(
+        "POST",
+        "/job/v1/applications/set_is_viewed",
+        spec="АвитоРабота.json",
+        operation_id="applicationsSetIsViewed",
+        method_args={"applies": "body.applies"},
+    )
     def update(
         self,
         *,
@@ -295,9 +466,19 @@ class Application(DomainObject):
 class Resume(DomainObject):
     """Доменный объект резюме."""
 
+    __swagger_domain__ = "jobs"
+    __sdk_factory__ = "resume"
+    __sdk_factory_args__ = {"resume_id": "path.resume_id"}
+
     resume_id: int | str | None = None
     user_id: int | str | None = None
 
+    @swagger_operation(
+        "GET",
+        "/job/v1/resumes",
+        spec="АвитоРабота.json",
+        operation_id="resumesGet",
+    )
     def list(self, *, query: ResumeSearchQuery | None = None) -> ResumesResult:
         """Выполняет публичную операцию `Resume.list` и возвращает типизированную SDK-модель.
 
@@ -308,6 +489,12 @@ class Resume(DomainObject):
 
         return ResumeClient(self.transport).search(query=query)
 
+    @swagger_operation(
+        "GET",
+        "/job/v2/resumes/{resume_id}",
+        spec="АвитоРабота.json",
+        operation_id="resumeGetItem",
+    )
     def get(self, *, resume_id: int | str | None = None) -> ResumeInfo:
         """Выполняет публичную операцию `Resume.get` и возвращает типизированную SDK-модель.
 
@@ -320,6 +507,12 @@ class Resume(DomainObject):
             resume_id=str(resume_id or self._require_resume_id())
         )
 
+    @swagger_operation(
+        "GET",
+        "/job/v1/resumes/{resume_id}/contacts",
+        spec="АвитоРабота.json",
+        operation_id="resumeGetContacts",
+    )
     def get_contacts(self, *, resume_id: int | str | None = None) -> ResumeContactInfo:
         """Выполняет публичную операцию `Resume.get_contacts` и возвращает типизированную SDK-модель.
 
@@ -342,8 +535,17 @@ class Resume(DomainObject):
 class JobWebhook(DomainObject):
     """Доменный объект webhook откликов."""
 
+    __swagger_domain__ = "jobs"
+    __sdk_factory__ = "job_webhook"
+
     user_id: int | str | None = None
 
+    @swagger_operation(
+        "GET",
+        "/job/v1/applications/webhook",
+        spec="АвитоРабота.json",
+        operation_id="applicationsWebhookGet",
+    )
     def get(self) -> JobWebhookInfo:
         """Выполняет публичную операцию `JobWebhook.get` и возвращает типизированную SDK-модель.
 
@@ -354,6 +556,12 @@ class JobWebhook(DomainObject):
 
         return WebhookClient(self.transport).get_webhook()
 
+    @swagger_operation(
+        "GET",
+        "/job/v1/applications/webhooks",
+        spec="АвитоРабота.json",
+        operation_id="applicationsWebhooksGet",
+    )
     def list(self) -> JobWebhooksResult:
         """Выполняет публичную операцию `JobWebhook.list` и возвращает типизированную SDK-модель.
 
@@ -364,6 +572,13 @@ class JobWebhook(DomainObject):
 
         return WebhookClient(self.transport).list_webhooks()
 
+    @swagger_operation(
+        "PUT",
+        "/job/v1/applications/webhook",
+        spec="АвитоРабота.json",
+        operation_id="applicationsWebhookPut",
+        method_args={"url": "body.url"},
+    )
     def update(self, *, url: str, idempotency_key: str | None = None) -> JobWebhookInfo:
         """Выполняет публичную операцию `JobWebhook.update` и возвращает типизированную SDK-модель.
 
@@ -379,6 +594,12 @@ class JobWebhook(DomainObject):
             idempotency_key=idempotency_key,
         )
 
+    @swagger_operation(
+        "DELETE",
+        "/job/v1/applications/webhook",
+        spec="АвитоРабота.json",
+        operation_id="applicationsWebhookDelete",
+    )
     def delete(
         self, *, url: str | None = None, idempotency_key: str | None = None
     ) -> JobActionResult:
@@ -401,9 +622,19 @@ class JobWebhook(DomainObject):
 class JobDictionary(DomainObject):
     """Доменный объект словарей вакансий."""
 
+    __swagger_domain__ = "jobs"
+    __sdk_factory__ = "job_dictionary"
+    __sdk_factory_args__ = {"dictionary_id": "path.dictionary_id"}
+
     dictionary_id: int | str | None = None
     user_id: int | str | None = None
 
+    @swagger_operation(
+        "GET",
+        "/job/v2/vacancy/dict",
+        spec="АвитоРабота.json",
+        operation_id="getDicts",
+    )
     def list(self) -> JobDictionariesResult:
         """Выполняет публичную операцию `JobDictionary.list` и возвращает типизированную SDK-модель.
 
@@ -414,6 +645,12 @@ class JobDictionary(DomainObject):
 
         return DictionariesClient(self.transport).list_dicts()
 
+    @swagger_operation(
+        "GET",
+        "/job/v2/vacancy/dict/{dictionary_id}",
+        spec="АвитоРабота.json",
+        operation_id="getDictByID",
+    )
     def get(self, *, dictionary_id: str | None = None) -> JobDictionaryValuesResult:
         """Выполняет публичную операцию `JobDictionary.get` и возвращает типизированную SDK-модель.
 

@@ -61,6 +61,7 @@ class RatingsClient:
 
     def list_reviews(self, *, query: ReviewsQuery | None = None) -> ReviewsResult:
         resolved_query = ReviewsQuery(
+            offset=query.offset if query is not None and query.offset is not None else 0,
             page=query.page if query is not None and query.page is not None else 1,
             limit=query.limit if query is not None and query.limit is not None else 50,
         )

@@ -10,6 +10,8 @@ from avito.promotion.domain import (
 )
 from avito.promotion.enums import (
     CampaignType,
+    PromotionOrderServiceStatus,
+    PromotionOrderStatus,
     PromotionStatus,
     TargetActionBudgetType,
     TargetActionSelectedType,
@@ -93,6 +95,8 @@ __all__ = (
     "PromotionOrder",
     "PromotionOrderError",
     "PromotionOrderInfo",
+    "PromotionOrderServiceStatus",
+    "PromotionOrderStatus",
     "PromotionOrderStatusItem",
     "PromotionOrderStatusResult",
     "PromotionOrdersResult",

@@ -19,6 +19,7 @@ from avito.accounts.models import (
 )
 from avito.core import PaginatedList
 from avito.core.domain import DomainObject
+from avito.core.swagger import swagger_operation
 
 
 def _serialize_datetime(value: datetime | None) -> str | None:
@@ -29,8 +30,18 @@ def _serialize_datetime(value: datetime | None) -> str | None:
 class Account(DomainObject):
     """Доменный объект операций аккаунта."""
 
+    __swagger_domain__ = "accounts"
+    __sdk_factory__ = "account"
+    __sdk_factory_args__ = {"user_id": "path.user_id"}
+
     user_id: int | str | None = None
 
+    @swagger_operation(
+        "GET",
+        "/core/v1/accounts/self",
+        spec="Информацияопользователе.json",
+        operation_id="getUserInfoSelf",
+    )
     def get_self(self) -> AccountProfile:
         """Получает профиль авторизованного пользователя.
 
@@ -39,6 +50,12 @@ class Account(DomainObject):
 
         return AccountsClient(self.transport).get_self()
 
+    @swagger_operation(
+        "GET",
+        "/core/v1/accounts/{user_id}/balance",
+        spec="Информацияопользователе.json",
+        operation_id="getUserBalance",
+    )
     def get_balance(self, user_id: int | None = None) -> AccountBalance:
         """Получает баланс пользователя.
 
@@ -48,6 +65,12 @@ class Account(DomainObject):
         resolved_user_id = self._resolve_user_id(user_id or self.user_id)
         return AccountsClient(self.transport).get_balance(user_id=resolved_user_id)
 
+    @swagger_operation(
+        "POST",
+        "/core/v1/accounts/operations_history",
+        spec="Информацияопользователе.json",
+        operation_id="postOperationsHistory",
+    )
     def get_operations_history(
         self,
         *,
@@ -75,8 +98,18 @@ class Account(DomainObject):
 class AccountHierarchy(DomainObject):
     """Доменный объект иерархии аккаунтов."""
 
+    __swagger_domain__ = "accounts"
+    __sdk_factory__ = "account_hierarchy"
+    __sdk_factory_args__ = {"user_id": "path.user_id"}
+
     user_id: int | str | None = None
 
+    @swagger_operation(
+        "GET",
+        "/checkAhUserV1",
+        spec="ИерархияАккаунтов.json",
+        operation_id="checkAhUserV1",
+    )
     def get_status(self) -> AhUserStatus:
         """Получает статус пользователя в ИА.
 
@@ -85,6 +118,12 @@ class AccountHierarchy(DomainObject):
 
         return HierarchyClient(self.transport).get_status()
 
+    @swagger_operation(
+        "GET",
+        "/getEmployeesV1",
+        spec="ИерархияАккаунтов.json",
+        operation_id="getEmployeesV1",
+    )
     def list_employees(self) -> EmployeesResult:
         """Получает список сотрудников иерархии.
 
@@ -95,6 +134,12 @@ class AccountHierarchy(DomainObject):
 
         return HierarchyClient(self.transport).list_employees()
 
+    @swagger_operation(
+        "GET",
+        "/listCompanyPhonesV1",
+        spec="ИерархияАккаунтов.json",
+        operation_id="listCompanyPhonesV1",
+    )
     def list_company_phones(self) -> CompanyPhonesResult:
         """Получает список телефонов компании.
 
@@ -105,6 +150,13 @@ class AccountHierarchy(DomainObject):
 
         return HierarchyClient(self.transport).list_company_phones()
 
+    @swagger_operation(
+        "POST",
+        "/linkItemsV1",
+        spec="ИерархияАккаунтов.json",
+        operation_id="linkItemsV1",
+        method_args={"employee_id": "body.employee_id", "item_ids": "body.item_ids"},
+    )
     def link_items(
         self,
         *,
@@ -127,6 +179,13 @@ class AccountHierarchy(DomainObject):
             idempotency_key=idempotency_key,
         )
 
+    @swagger_operation(
+        "POST",
+        "/listItemsByEmployeeIdV1",
+        spec="ИерархияАккаунтов.json",
+        operation_id="listItemsByEmployeeIdV1",
+        method_args={"employee_id": "body.employee_id"},
+    )
     def list_items_by_employee(
         self,
         *,

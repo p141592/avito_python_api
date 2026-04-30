@@ -18,6 +18,7 @@ from avito.auth.models import (
 )
 from avito.auth.settings import AuthSettings
 from avito.core.exceptions import AuthenticationError, ConfigurationError
+from avito.core.swagger import swagger_operation
 
 _UNSET = object()
 
@@ -78,7 +79,7 @@ class AuthProvider:
         token = self._autoteka_access_token
         now = datetime.now(UTC)
         if token is None or token.is_expired(now):
-            token_response = self._get_autoteka_token_client().request_client_credentials_token(
+            token_response = self._get_autoteka_token_client().request_autoteka_client_credentials_token(
                 ClientCredentialsRequest(
                     client_id=self.settings.autoteka_client_id or self.settings.client_id or "",
                     client_secret=self.settings.autoteka_client_secret
@@ -147,9 +148,7 @@ class AuthProvider:
                 self._refresh_token = refresh_token
         if autoteka_access_token is not _UNSET:
             self._autoteka_access_token = (
-                autoteka_access_token
-                if isinstance(autoteka_access_token, AccessToken)
-                else None
+                autoteka_access_token if isinstance(autoteka_access_token, AccessToken) else None
             )
 
     def _get_token_client(self) -> TokenClient:
@@ -176,9 +175,7 @@ class AuthProvider:
             )
         autoteka_token_client = self.autoteka_token_client
         if autoteka_token_client is None:
-            raise ConfigurationError(
-                "Не удалось инициализировать OAuth token client для Автотеки."
-            )
+            raise ConfigurationError("Не удалось инициализировать OAuth token client для Автотеки.")
         return autoteka_token_client
 
     def _require_client_id(self) -> str:
@@ -196,6 +193,8 @@ class AuthProvider:
 class TokenClient:
     """Служебный клиент для canonical OAuth token endpoint."""
 
+    __swagger_domain__ = "auth"
+
     settings: AuthSettings
     token_url: str | None = None
     client: httpx.Client | None = None
@@ -206,6 +205,13 @@ class TokenClient:
         if self.client is not None:
             self.client.close()
 
+    @swagger_operation(
+        "POST",
+        "/token",
+        spec="Авторизация.json",
+        operation_id="getAccessToken",
+        method_args={"request": "body"},
+    )
     def request_client_credentials_token(
         self,
         request: ClientCredentialsRequest,
@@ -220,6 +226,21 @@ class TokenClient:
         if request.scope is not None:
             payload["scope"] = request.scope
         return self._request_token(payload)
+
+    @swagger_operation(
+        "POST",
+        "/token",
+        spec="Автотека.json",
+        operation_id="getAccessToken",
+        method_args={"request": "query.grant_type"},
+    )
+    def request_autoteka_client_credentials_token(
+        self,
+        request: ClientCredentialsRequest,
+    ) -> TokenResponse:
+        """Запрашивает access token по отдельному flow Автотеки."""
+
+        return self.request_client_credentials_token(request)
 
     def request_refresh_token(self, request: RefreshTokenRequest) -> TokenResponse:
         """Запрашивает новый access token по flow `refresh_token`."""
@@ -297,6 +318,8 @@ class TokenClient:
 class AlternateTokenClient:
     """Служебный клиент для альтернативного token endpoint из swagger."""
 
+    __swagger_domain__ = "auth"
+
     settings: AuthSettings
     client: httpx.Client | None = None
 
@@ -306,6 +329,13 @@ class AlternateTokenClient:
         if self.client is not None:
             self.client.close()
 
+    @swagger_operation(
+        "POST",
+        "/token\u200e",
+        spec="Авторизация.json",
+        operation_id="getAccessTokenAuthorizationCode",
+        method_args={"request": "body"},
+    )
     def request_client_credentials_token(
         self,
         request: ClientCredentialsRequest,
@@ -318,6 +348,13 @@ class AlternateTokenClient:
             client=self.client,
         ).request_client_credentials_token(request)
 
+    @swagger_operation(
+        "POST",
+        "/token\u200e\u200e",
+        spec="Авторизация.json",
+        operation_id="refreshAccessTokenAuthorizationCode",
+        method_args={"request": "body"},
+    )
     def request_refresh_token(self, request: RefreshTokenRequest) -> TokenResponse:
         """Обновляет токен через альтернативный canonical `/token`."""
 

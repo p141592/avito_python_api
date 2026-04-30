@@ -33,15 +33,27 @@ from avito.autoteka.models import (
 )
 from avito.core import ValidationError
 from avito.core.domain import DomainObject
+from avito.core.swagger import swagger_operation
 
 
 @dataclass(slots=True, frozen=True)
 class AutotekaVehicle(DomainObject):
     """Доменный объект превью, спецификаций, тизеров и каталога."""
 
+    __swagger_domain__ = "autoteka"
+    __sdk_factory__ = "autoteka_vehicle"
+    __sdk_factory_args__ = {"vehicle_id": "path.vehicle_id"}
+
     vehicle_id: int | str | None = None
     user_id: int | str | None = None
 
+    @swagger_operation(
+        "POST",
+        "/autoteka/v1/catalogs/resolve",
+        spec="Автотека.json",
+        operation_id="catalogsResolve",
+        method_args={"brand_id": "body.fields_value_ids"},
+    )
     def resolve_catalog(self, *, brand_id: int) -> CatalogResolveResult:
         """Актуализирует параметры автокаталога.
 
@@ -50,6 +62,13 @@ class AutotekaVehicle(DomainObject):
 
         return CatalogClient(self.transport).resolve_catalog(brand_id=brand_id)
 
+    @swagger_operation(
+        "POST",
+        "/autoteka/v1/get-leads",
+        spec="Автотека.json",
+        operation_id="getLeads",
+        method_args={"limit": "body.limit"},
+    )
     def get_leads(self, *, limit: int) -> AutotekaLeadsResult:
         """Выполняет публичную операцию `AutotekaVehicle.get_leads` и возвращает типизированную SDK-модель.
 
@@ -60,6 +79,13 @@ class AutotekaVehicle(DomainObject):
 
         return LeadsClient(self.transport).get_leads(limit=limit)
 
+    @swagger_operation(
+        "POST",
+        "/autoteka/v1/previews",
+        spec="Автотека.json",
+        operation_id="postPreviewByVin",
+        method_args={"vin": "body.vin"},
+    )
     def create_preview_by_vin(
         self, *, vin: str, idempotency_key: str | None = None
     ) -> AutotekaPreviewInfo:
@@ -77,6 +103,12 @@ class AutotekaVehicle(DomainObject):
             idempotency_key=idempotency_key,
         )
 
+    @swagger_operation(
+        "GET",
+        "/autoteka/v1/previews/{previewId}",
+        spec="Автотека.json",
+        operation_id="getPreview",
+    )
     def get_preview(self, *, preview_id: int | str | None = None) -> AutotekaPreviewInfo:
         """Выполняет публичную операцию `AutotekaVehicle.get_preview` и возвращает типизированную SDK-модель.
 
@@ -89,6 +121,13 @@ class AutotekaVehicle(DomainObject):
             preview_id=preview_id or self._require_vehicle_id("preview_id")
         )
 
+    @swagger_operation(
+        "POST",
+        "/autoteka/v1/request-preview-by-external-item",
+        spec="Автотека.json",
+        operation_id="postPreviewByExternalItem",
+        method_args={"item_id": "body.item_id", "site": "body.site"},
+    )
     def create_preview_by_external_item(
         self,
         *,
@@ -111,6 +150,13 @@ class AutotekaVehicle(DomainObject):
             idempotency_key=idempotency_key,
         )
 
+    @swagger_operation(
+        "POST",
+        "/autoteka/v1/request-preview-by-item-id",
+        spec="Автотека.json",
+        operation_id="postPreviewByItemId",
+        method_args={"item_id": "body.item_id"},
+    )
     def create_preview_by_item_id(
         self, *, item_id: int, idempotency_key: str | None = None
     ) -> AutotekaPreviewInfo:
@@ -128,6 +174,13 @@ class AutotekaVehicle(DomainObject):
             idempotency_key=idempotency_key,
         )
 
+    @swagger_operation(
+        "POST",
+        "/autoteka/v1/request-preview-by-regnumber",
+        spec="Автотека.json",
+        operation_id="postPreviewByRegNumber",
+        method_args={"reg_number": "body.reg_number"},
+    )
     def create_preview_by_reg_number(
         self, *, reg_number: str, idempotency_key: str | None = None
     ) -> AutotekaPreviewInfo:
@@ -145,6 +198,13 @@ class AutotekaVehicle(DomainObject):
             idempotency_key=idempotency_key,
         )
 
+    @swagger_operation(
+        "POST",
+        "/autoteka/v1/specifications/by-plate-number",
+        spec="Автотека.json",
+        operation_id="specificationByPlateNumber",
+        method_args={"plate_number": "body.plate_number"},
+    )
     def create_specification_by_plate_number(
         self, *, plate_number: str, idempotency_key: str | None = None
     ) -> AutotekaSpecificationInfo:
@@ -162,6 +222,13 @@ class AutotekaVehicle(DomainObject):
             idempotency_key=idempotency_key,
         )
 
+    @swagger_operation(
+        "POST",
+        "/autoteka/v1/specifications/by-vehicle-id",
+        spec="Автотека.json",
+        operation_id="specificationByVehicleId",
+        method_args={"vehicle_id": "body.vehicle_id"},
+    )
     def create_specification_by_vehicle_id(
         self, *, vehicle_id: str, idempotency_key: str | None = None
     ) -> AutotekaSpecificationInfo:
@@ -179,6 +246,12 @@ class AutotekaVehicle(DomainObject):
             idempotency_key=idempotency_key,
         )
 
+    @swagger_operation(
+        "GET",
+        "/autoteka/v1/specifications/specification/{specificationID}",
+        spec="Автотека.json",
+        operation_id="specificationGetById",
+    )
     def get_specification_by_id(
         self,
         *,
@@ -195,6 +268,13 @@ class AutotekaVehicle(DomainObject):
             specification_id=specification_id or self._require_vehicle_id("specification_id")
         )
 
+    @swagger_operation(
+        "POST",
+        "/autoteka/v1/teasers",
+        spec="Автотека.json",
+        operation_id="postTeaser",
+        method_args={"vehicle_id": "body.vehicle_id"},
+    )
     def create_teaser(
         self, *, vehicle_id: str, idempotency_key: str | None = None
     ) -> AutotekaTeaserInfo:
@@ -212,6 +292,12 @@ class AutotekaVehicle(DomainObject):
             idempotency_key=idempotency_key,
         )
 
+    @swagger_operation(
+        "GET",
+        "/autoteka/v1/teasers/{teaser_id}",
+        spec="Автотека.json",
+        operation_id="getTeaser",
+    )
     def get_teaser(self, *, teaser_id: int | str | None = None) -> AutotekaTeaserInfo:
         """Выполняет публичную операцию `AutotekaVehicle.get_teaser` и возвращает типизированную SDK-модель.
 
@@ -234,9 +320,19 @@ class AutotekaVehicle(DomainObject):
 class AutotekaReport(DomainObject):
     """Доменный объект отчетов и пакетов Автотеки."""
 
+    __swagger_domain__ = "autoteka"
+    __sdk_factory__ = "autoteka_report"
+    __sdk_factory_args__ = {"report_id": "path.report_id"}
+
     report_id: int | str | None = None
     user_id: int | str | None = None
 
+    @swagger_operation(
+        "GET",
+        "/autoteka/v1/packages/active_package",
+        spec="Автотека.json",
+        operation_id="getActivePackage",
+    )
     def get_active_package(self) -> AutotekaPackageInfo:
         """Выполняет публичную операцию `AutotekaReport.get_active_package` и возвращает типизированную SDK-модель.
 
@@ -247,6 +343,13 @@ class AutotekaReport(DomainObject):
 
         return ReportClient(self.transport).get_active_package()
 
+    @swagger_operation(
+        "POST",
+        "/autoteka/v1/reports",
+        spec="Автотека.json",
+        operation_id="postReport",
+        method_args={"preview_id": "body.preview_id"},
+    )
     def create_report(
         self, *, preview_id: int, idempotency_key: str | None = None
     ) -> AutotekaReportInfo:
@@ -264,6 +367,13 @@ class AutotekaReport(DomainObject):
             idempotency_key=idempotency_key,
         )
 
+    @swagger_operation(
+        "POST",
+        "/autoteka/v1/reports-by-vehicle-id",
+        spec="Автотека.json",
+        operation_id="postReportByVehicleId",
+        method_args={"vehicle_id": "body.vehicle_id"},
+    )
     def create_report_by_vehicle_id(
         self, *, vehicle_id: str, idempotency_key: str | None = None
     ) -> AutotekaReportInfo:
@@ -281,6 +391,12 @@ class AutotekaReport(DomainObject):
             idempotency_key=idempotency_key,
         )
 
+    @swagger_operation(
+        "GET",
+        "/autoteka/v1/reports/list",
+        spec="Автотека.json",
+        operation_id="getReportList",
+    )
     def list_reports(self) -> AutotekaReportsResult:
         """Получает список отчетов Автотеки.
 
@@ -291,6 +407,12 @@ class AutotekaReport(DomainObject):
 
         return ReportClient(self.transport).list_reports()
 
+    @swagger_operation(
+        "GET",
+        "/autoteka/v1/reports/{report_id}",
+        spec="Автотека.json",
+        operation_id="getReport",
+    )
     def get_report(self, *, report_id: int | str | None = None) -> AutotekaReportInfo:
         """Выполняет публичную операцию `AutotekaReport.get_report` и возвращает типизированную SDK-модель.
 
@@ -303,6 +425,13 @@ class AutotekaReport(DomainObject):
             report_id=report_id or self._require_report_id()
         )
 
+    @swagger_operation(
+        "POST",
+        "/autoteka/v1/sync/create-by-regnumber",
+        spec="Автотека.json",
+        operation_id="postSyncCreateReportByRegNumber",
+        method_args={"reg_number": "body.reg_number"},
+    )
     def create_sync_report_by_reg_number(
         self, *, reg_number: str, idempotency_key: str | None = None
     ) -> AutotekaReportInfo:
@@ -320,6 +449,13 @@ class AutotekaReport(DomainObject):
             idempotency_key=idempotency_key,
         )
 
+    @swagger_operation(
+        "POST",
+        "/autoteka/v1/sync/create-by-vin",
+        spec="Автотека.json",
+        operation_id="postSyncCreateReportByVin",
+        method_args={"vin": "body.vin"},
+    )
     def create_sync_report_by_vin(
         self, *, vin: str, idempotency_key: str | None = None
     ) -> AutotekaReportInfo:
@@ -347,8 +483,18 @@ class AutotekaReport(DomainObject):
 class AutotekaMonitoring(DomainObject):
     """Доменный объект мониторинга Автотеки."""
 
+    __swagger_domain__ = "autoteka"
+    __sdk_factory__ = "autoteka_monitoring"
+
     user_id: int | str | None = None
 
+    @swagger_operation(
+        "POST",
+        "/autoteka/v1/monitoring/bucket/add",
+        spec="Автотека.json",
+        operation_id="monitoringBucketAdd",
+        method_args={"vehicles": "body.data"},
+    )
     def create_monitoring_bucket_add(
         self, *, vehicles: list[str], idempotency_key: str | None = None
     ) -> MonitoringBucketResult:
@@ -366,6 +512,12 @@ class AutotekaMonitoring(DomainObject):
             idempotency_key=idempotency_key,
         )
 
+    @swagger_operation(
+        "POST",
+        "/autoteka/v1/monitoring/bucket/delete",
+        spec="Автотека.json",
+        operation_id="monitoringBucketDelete",
+    )
     def delete_bucket(self, *, idempotency_key: str | None = None) -> MonitoringBucketResult:
         """Очищает bucket мониторинга.
 
@@ -376,6 +528,13 @@ class AutotekaMonitoring(DomainObject):
 
         return MonitoringClient(self.transport).delete_bucket(idempotency_key=idempotency_key)
 
+    @swagger_operation(
+        "POST",
+        "/autoteka/v1/monitoring/bucket/remove",
+        spec="Автотека.json",
+        operation_id="monitoringBucketRemove",
+        method_args={"vehicles": "body.data"},
+    )
     def remove_bucket(
         self, *, vehicles: list[str], idempotency_key: str | None = None
     ) -> MonitoringBucketResult:
@@ -391,6 +550,12 @@ class AutotekaMonitoring(DomainObject):
             idempotency_key=idempotency_key,
         )
 
+    @swagger_operation(
+        "GET",
+        "/autoteka/v1/monitoring/get-reg-actions",
+        spec="Автотека.json",
+        operation_id="monitoringGetRegActions",
+    )
     def get_monitoring_reg_actions(
         self,
         *,
@@ -410,9 +575,20 @@ class AutotekaMonitoring(DomainObject):
 class AutotekaScoring(DomainObject):
     """Доменный объект скоринга рисков."""
 
+    __swagger_domain__ = "autoteka"
+    __sdk_factory__ = "autoteka_scoring"
+    __sdk_factory_args__ = {"scoring_id": "path.scoring_id"}
+
     scoring_id: int | str | None = None
     user_id: int | str | None = None
 
+    @swagger_operation(
+        "POST",
+        "/autoteka/v1/scoring/by-vehicle-id",
+        spec="Автотека.json",
+        operation_id="scoringByVehicleId",
+        method_args={"vehicle_id": "body.vehicle_id"},
+    )
     def create_scoring_by_vehicle_id(
         self, *, vehicle_id: str, idempotency_key: str | None = None
     ) -> AutotekaScoringInfo:
@@ -430,6 +606,12 @@ class AutotekaScoring(DomainObject):
             idempotency_key=idempotency_key,
         )
 
+    @swagger_operation(
+        "GET",
+        "/autoteka/v1/scoring/{scoring_id}",
+        spec="Автотека.json",
+        operation_id="scoringGetById",
+    )
     def get_scoring_by_id(self, *, scoring_id: int | str | None = None) -> AutotekaScoringInfo:
         """Выполняет публичную операцию `AutotekaScoring.get_scoring_by_id` и возвращает типизированную SDK-модель.
 
@@ -452,8 +634,18 @@ class AutotekaScoring(DomainObject):
 class AutotekaValuation(DomainObject):
     """Доменный объект оценки автомобиля."""
 
+    __swagger_domain__ = "autoteka"
+    __sdk_factory__ = "autoteka_valuation"
+
     user_id: int | str | None = None
 
+    @swagger_operation(
+        "POST",
+        "/autoteka/v1/valuation/by-specification",
+        spec="Автотека.json",
+        operation_id="valuationBySpecification",
+        method_args={"specification_id": "body.specification", "mileage": "body.mileage"},
+    )
     def get_valuation_by_specification(
         self, *, specification_id: int, mileage: int
     ) -> AutotekaValuationInfo:

@@ -17,7 +17,11 @@ from avito.promotion import (
     TargetActionPricing,
     TrxPromotion,
 )
-from avito.promotion.enums import PromotionStatus, TargetActionBudgetType, TargetActionSelectedType
+from avito.promotion.enums import (
+    PromotionOrderServiceStatus,
+    TargetActionBudgetType,
+    TargetActionSelectedType,
+)
 from avito.promotion.models import (
     BbipItem,
 )
@@ -277,8 +281,8 @@ def test_promotion_unknown_enums_map_to_unknown_and_warn_once(
     first_bids = pricing.get_bids()
     second_bids = pricing.get_bids()
 
-    assert first_service.status is PromotionStatus.UNKNOWN
-    assert second_service.status is PromotionStatus.UNKNOWN
+    assert first_service.status is PromotionOrderServiceStatus.UNKNOWN
+    assert second_service.status is PromotionOrderServiceStatus.UNKNOWN
     assert first_bids.selected_type is TargetActionSelectedType.UNKNOWN
     assert second_bids.selected_type is TargetActionSelectedType.UNKNOWN
     assert first_bids.auto is not None
@@ -289,7 +293,7 @@ def test_promotion_unknown_enums_map_to_unknown_and_warn_once(
     status_records = [
         record
         for record in caplog.records
-        if getattr(record, "enum", None) == "promotion.status"
+            if getattr(record, "enum", None) == "promotion.order_service_status"
         and getattr(record, "value", None) == "mystery-promotion-status"
     ]
     selected_type_records = [

@@ -3,10 +3,10 @@
     "headers": {
       "LastModifiedSinceHeader": {
         "description": "Дата и время последней полученной версии в формате RFC1123 в UTC",
+        "example": "Mon, 01 Jan 0001 00:00:00 UTC",
         "schema": {
           "type": "string"
-        },
-        "example": "Mon, 01 Jan 0001 00:00:00 UTC"
+        }
       },
       "StoreFrontCacheHeader": {
         "description": "Заголовок говорит нужно ли кэшировать ответ на стороне фронта",

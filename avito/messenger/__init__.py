@@ -12,6 +12,7 @@ from avito.messenger.enums import (
     MessageDirection,
     MessageType,
     SpecialOfferCampaignStatus,
+    SpecialOfferDispatchStatus,
     SubscriptionStatus,
     WebhookStatus,
 )
@@ -50,6 +51,7 @@ __all__ = (
     "SpecialOfferAvailableResult",
     "SpecialOfferCampaign",
     "SpecialOfferCampaignStatus",
+    "SpecialOfferDispatchStatus",
     "SpecialOfferStatsResult",
     "SubscriptionStatus",
     "SubscriptionsResult",

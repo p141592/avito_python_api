@@ -1,6 +1,7 @@
 nav:
   - index.md
   - coverage.md
+  - api-report.md
   - client.md
   - config.md
   - operations.md

@@ -36,7 +36,7 @@ from avito.jobs import Application, JobWebhook, Resume, Vacancy
 from avito.messenger import ChatMedia
 from avito.orders import DeliveryOrder, Order, OrderLabel, SandboxDelivery, Stock
 from avito.realty import RealtyBooking, RealtyListing, RealtyPricing
-from avito.testing import FakeResponse, FakeTransport
+from avito.testing import FakeResponse, FakeTransport, SwaggerFakeTransport
 
 MODEL_MODULES = (
     "avito.accounts.models",
@@ -93,6 +93,7 @@ def test_top_level_package_exports_canonical_error_contract() -> None:
 
 def test_testing_package_exports_fake_transport_contract() -> None:
     assert FakeTransport.__module__ == "avito.testing.fake_transport"
+    assert SwaggerFakeTransport.__module__ == "avito.testing.swagger_fake_transport"
     assert FakeResponse.__module__ == "httpx"
 
 

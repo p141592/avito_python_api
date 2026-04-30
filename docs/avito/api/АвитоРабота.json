@@ -3741,7 +3741,9 @@
             "$ref": "#/components/schemas/Bonuses"
           },
           "business_area": {
-            "$ref": "#/components/schemas/BusinessArea"
+            "description": "Идентификатор сферы деятельности \n<br>\nПолучить актуальный список доступных значений можно из справочника `business_area` через метод [getDictByID](/api-catalog/job/documentation#operation/getDictByID).\n<br>\n",
+            "nullable": true,
+            "type": "integer"
           },
           "citizenship": {
             "$ref": "#/components/schemas/CitizenshipCriteria"
@@ -3799,6 +3801,7 @@
           },
           "description": {
             "description": "Описание вакансии (строка длиной от 1 до 5000 символов)\n\nМожно использовать HTML-теги в тексте.\n\nПоддерживаемые тэги - `p`, `ul`, `ol`, `li`, `br`, `strong`, `em`\n",
+            "nullable": true,
             "type": "string"
           },
           "driving_experience": {
@@ -3825,6 +3828,7 @@
           },
           "employment": {
             "description": "Занятость <br>\nВозможные значения:\n  - temporary - Временная\n  - full - Полная\n  - internship - Стажировка\n  - partial - Частичная\n\nЕсли ничего не выбрать то будет автоматически проставляться в зависимости от графика работы: \nПри flexible и partTime, тип занятости - partial.\nßДля всех остальных full.\n",
+            "nullable": true,
             "type": "string"
           },
           "experience": {
@@ -3836,6 +3840,7 @@
               "moreThan5",
               "moreThan10"
             ],
+            "nullable": true,
             "type": "string"
           },
           "facility_type": {
@@ -3872,6 +3877,7 @@
           },
           "location": {
             "description": "Геолокация вакансии (как минимум одно из значений)",
+            "nullable": true,
             "properties": {
               "address": {
                 "$ref": "#/components/schemas/LocationAddress"
@@ -3952,6 +3958,7 @@
               "flexible",
               "shift"
             ],
+            "nullable": true,
             "type": "string"
           },
           "shifts": {
@@ -3959,6 +3966,7 @@
           },
           "title": {
             "description": "Название вакансии (строка длиной от 1 до 50 символов)",
+            "nullable": true,
             "type": "string"
           },
           "tools_availability": {
@@ -3995,14 +4003,7 @@
           }
         },
         "required": [
-          "title",
-          "description",
-          "billing_type",
-          "business_area",
-          "employment",
-          "schedule",
-          "experience",
-          "location"
+          "billing_type"
         ],
         "type": "object"
       },

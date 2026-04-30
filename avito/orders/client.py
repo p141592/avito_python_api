@@ -153,12 +153,21 @@ class OrdersClient:
             idempotency_key=idempotency_key,
         )
 
-    def get_courier_delivery_range(self) -> CourierRangesResult:
+    def get_courier_delivery_range(
+        self,
+        *,
+        order_id: str = "order-1",
+        address: str | None = None,
+    ) -> CourierRangesResult:
+        params: dict[str, object] = {"orderId": order_id}
+        if address is not None:
+            params["address"] = address
         return self.transport.request_public_model(
             "GET",
             "/order-management/1/order/getCourierDeliveryRange",
             context=RequestContext("orders.get_courier_delivery_range"),
             mapper=map_courier_ranges,
+            params=params,
         )
 
     def set_courier_delivery_range(
@@ -461,12 +470,18 @@ class SandboxDeliveryClient:
             idempotency_key=idempotency_key,
         )
 
-    def list_sorting_center(self) -> DeliverySortingCentersResult:
+    def list_sorting_center(
+        self,
+        *,
+        delivery_providers: list[str] | None = None,
+    ) -> DeliverySortingCentersResult:
+        providers = delivery_providers or ["pochta"]
         return self.transport.request_public_model(
             "GET",
             "/delivery-sandbox/sorting-center",
             context=RequestContext("orders.sandbox.list_sorting_center"),
             mapper=map_sorting_centers,
+            params={"deliveryProviders": ",".join(providers)},
         )
 
     def add_sorting_center(

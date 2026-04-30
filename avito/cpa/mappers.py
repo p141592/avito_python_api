@@ -6,6 +6,7 @@ from collections.abc import Mapping
 from typing import cast
 
 from avito.core.exceptions import ResponseMappingError
+from avito.cpa.enums import CpaCallStatusId
 from avito.cpa.models import (
     CallTrackingCallInfo,
     CallTrackingCallResponse,
@@ -84,6 +85,16 @@ def _bool(payload: Payload, *keys: str) -> bool | None:
     return None
 
 
+def _cpa_call_status_id(payload: Payload) -> CpaCallStatusId | None:
+    value = _int(payload, "statusId")
+    if value is None:
+        return None
+    try:
+        return CpaCallStatusId(value)
+    except ValueError:
+        return None
+
+
 def map_cpa_error(payload: object | None) -> CpaErrorInfo | None:
     """Преобразует payload ошибки CPA API."""
 
@@ -127,7 +138,7 @@ def _map_cpa_call(item: Payload) -> CpaCallInfo:
         buyer_phone=_str(item, "buyerPhone"),
         seller_phone=_str(item, "sellerPhone"),
         virtual_phone=_str(item, "virtualPhone"),
-        status_id=_int(item, "statusId"),
+        status_id=_cpa_call_status_id(item),
         price=_int(item, "price"),
         duration=_int(item, "duration", "talkDuration"),
         waiting_duration=_float(item, "waitingDuration"),

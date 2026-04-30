@@ -7,7 +7,12 @@ from typing import cast
 
 from avito.core.enums import map_enum_or_unknown
 from avito.core.exceptions import ResponseMappingError
-from avito.jobs.enums import ApplicationStatus, JobActionStatus, VacancyStatus
+from avito.jobs.enums import (
+    ApplicationStatus,
+    JobActionStatus,
+    VacancyModerationStatus,
+    VacancyStatus,
+)
 from avito.jobs.models import (
     ApplicationIdItem,
     ApplicationIdsResult,
@@ -255,17 +260,22 @@ def map_vacancy_statuses(payload: object) -> VacancyStatusesResult:
     return VacancyStatusesResult(
         items=[
             VacancyStatusInfo(
-                id=_str(item, "id", "vacancy_id")
+                id=_str(_mapping(item, "vacancy") or item, "id", "vacancy_id")
                 or (
-                    str(_int(item, "id", "vacancy_id"))
-                    if _int(item, "id", "vacancy_id") is not None
+                    str(_int(_mapping(item, "vacancy") or item, "id", "vacancy_id"))
+                    if _int(_mapping(item, "vacancy") or item, "id", "vacancy_id") is not None
                     else None
                 ),
-                uuid=_str(item, "uuid", "vacancy_uuid"),
+                uuid=_str(_mapping(item, "vacancy") or item, "uuid", "vacancy_uuid"),
                 status=map_enum_or_unknown(
-                    _str(item, "status", "state"),
+                    _str(_mapping(item, "vacancy") or item, "status", "state"),
                     VacancyStatus,
                     enum_name="jobs.vacancy_status",
+                ),
+                moderation_status=map_enum_or_unknown(
+                    _str(_mapping(item, "vacancy") or item, "moderation_status", "moderationStatus"),
+                    VacancyModerationStatus,
+                    enum_name="jobs.vacancy_moderation_status",
                 ),
             )
             for item in _list(data, "items", "statuses", "vacancies", "result")

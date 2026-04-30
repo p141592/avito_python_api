@@ -48,6 +48,10 @@ pydocstyle = { version = ">=6.3", extras = ["toml"] }
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+pythonpath = ["scripts"]
+markers = [
+    "live: требует доступа к сети; запускать с --live",
+]
 
 [tool.coverage.run]
 branch = true

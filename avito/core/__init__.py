@@ -20,6 +20,7 @@ from avito.core.exceptions import (
 from avito.core.pagination import PaginatedList, Paginator
 from avito.core.retries import RetryDecision, RetryPolicy
 from avito.core.serialization import SerializableModel
+from avito.core.swagger import SwaggerOperationBinding, swagger_operation
 from avito.core.transport import Transport
 from avito.core.types import (
     ApiTimeouts,
@@ -50,10 +51,12 @@ __all__ = (
     "RetryPolicy",
     "SerializableModel",
     "ServerError",
+    "SwaggerOperationBinding",
     "Transport",
     "TransportDebugInfo",
     "TransportError",
     "UnsupportedOperationError",
     "UpstreamApiError",
     "ValidationError",
+    "swagger_operation",
 )

@@ -8,8 +8,10 @@ from dataclasses import dataclass
 from avito.core import BinaryResponse
 from avito.core.serialization import SerializableModel
 from avito.orders.enums import (
-    DeliveryStatus,
+    DeliveryOperationStatus,
+    DeliveryTaskState,
     LabelTaskStatus,
+    OrderActionStatus,
     OrderStatus,
     TrackingAvitoEventType,
     TrackingAvitoStatus,
@@ -1047,7 +1049,7 @@ class OrderActionResult(SerializableModel):
 
     success: bool
     order_id: str | None = None
-    status: OrderStatus | None = None
+    status: OrderActionStatus | None = None
     message: str | None = None
 
 
@@ -1110,7 +1112,7 @@ class DeliveryEntityResult(SerializableModel):
     task_id: str | None = None
     order_id: str | None = None
     parcel_id: str | None = None
-    status: DeliveryStatus | None = None
+    status: DeliveryOperationStatus | None = None
     message: str | None = None
 
 
@@ -1135,7 +1137,7 @@ class DeliveryTaskInfo(SerializableModel):
     """Информация о задаче доставки."""
 
     task_id: str | None
-    status: DeliveryStatus | None
+    status: DeliveryTaskState | None
     error: str | None
 
 

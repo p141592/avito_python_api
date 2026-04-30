@@ -7,6 +7,7 @@ from dataclasses import dataclass
 
 from avito.core import BinaryResponse
 from avito.core.serialization import SerializableModel
+from avito.cpa.enums import CpaCallStatusId
 
 
 @dataclass(slots=True, frozen=True)
@@ -135,7 +136,7 @@ class CpaCallInfo(SerializableModel):
     buyer_phone: str | None
     seller_phone: str | None
     virtual_phone: str | None
-    status_id: int | None
+    status_id: CpaCallStatusId | None
     price: int | None
     duration: int | None
     waiting_duration: float | None
@@ -286,5 +287,4 @@ class CallTrackingRecord:
 
     def model_dump(self) -> dict[str, object]:
         return self.to_dict()
-
 

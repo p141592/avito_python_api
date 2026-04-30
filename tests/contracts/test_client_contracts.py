@@ -149,6 +149,9 @@ def test_listing_health_combines_listing_stats_calls_and_spendings() -> None:
 
     assert isinstance(summary, ListingHealthSummary)
     assert summary.total_listings == 1
+    assert summary.loaded_listings == 1
+    assert summary.listing_limit == 50
+    assert summary.is_complete is True
     assert summary.active_listings == 1
     assert summary.visible_listings == 1
     assert summary.total_views == 45
@@ -189,6 +192,9 @@ def test_listing_health_degrades_when_spendings_are_rate_limited() -> None:
     summary = client.listing_health()
 
     assert summary.total_listings == 1
+    assert summary.loaded_listings == 1
+    assert summary.listing_limit == 50
+    assert summary.is_complete is True
     assert summary.total_views == 45
     assert summary.total_calls == 3
     assert summary.total_spendings is None
@@ -199,6 +205,37 @@ def test_listing_health_degrades_when_spendings_are_rate_limited() -> None:
     assert unavailable.operation == "ads.stats.spendings"
     assert unavailable.status_code == 429
     assert unavailable.retry_after == 0.01
+    client.close()
+
+
+def test_listing_health_keeps_unknown_total_separate_from_loaded_count() -> None:
+    def handler(request: httpx.Request) -> httpx.Response:
+        if request.url.path == "/core/v1/items":
+            assert request.url.params["per_page"] == "50"
+            assert request.url.params["page"] == "1"
+            return httpx.Response(
+                200,
+                json={"items": [{"id": item_id, "status": "active"} for item_id in range(101, 126)]},
+            )
+        if request.url.path == "/stats/v1/accounts/7/items":
+            return httpx.Response(200, json={"items": []})
+        if request.url.path == "/core/v1/accounts/7/calls/stats/":
+            return httpx.Response(200, json={"items": []})
+        if request.url.path == "/stats/v2/accounts/7/spendings":
+            return httpx.Response(200, json={"items": []})
+        raise AssertionError(request.url.path)
+
+    client = AvitoClient(
+        AvitoSettings(auth=AuthSettings(client_id="client-id", client_secret="client-secret"))
+    )
+    client.transport = make_transport(httpx.MockTransport(handler), user_id=7)
+
+    summary = client.listing_health(limit=50, page_size=50)
+
+    assert summary.loaded_listings == 25
+    assert summary.total_listings is None
+    assert summary.listing_limit == 50
+    assert summary.is_complete is False
     client.close()
 
 

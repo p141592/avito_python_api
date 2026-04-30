@@ -3,6 +3,7 @@ from __future__ import annotations
 import random as random_module
 from collections.abc import Iterator
 from datetime import UTC, datetime, timedelta
+from email.utils import format_datetime
 
 import httpx
 import pytest
@@ -25,6 +26,7 @@ from avito.core import (
     UpstreamApiError,
     ValidationError,
 )
+from avito.core.rate_limit import RateLimiter
 from avito.core.retries import RetryPolicy
 from avito.core.types import ApiTimeouts
 from avito.testing import FakeTransport
@@ -156,6 +158,53 @@ def test_retry_policy_uses_full_jitter_with_cap() -> None:
     assert 0.0 <= first_delay <= 3.0
     assert 0.0 <= second_delay <= 3.0
     assert first_delay != second_delay
+
+
+def test_rate_limiter_waits_before_bucket_overflow() -> None:
+    now = {"value": 0.0}
+    sleeps: list[float] = []
+
+    def sleep(delay: float) -> None:
+        sleeps.append(delay)
+        now["value"] += delay
+
+    limiter = RateLimiter(
+        RetryPolicy(
+            rate_limit_enabled=True,
+            rate_limit_requests_per_second=2.0,
+            rate_limit_burst=1,
+        ),
+        clock=lambda: now["value"],
+        sleep=sleep,
+    )
+
+    assert limiter.acquire() == 0.0
+    assert limiter.acquire() == pytest.approx(0.5)
+    assert sleeps == [pytest.approx(0.5)]
+
+
+def test_rate_limiter_uses_remaining_header_as_short_cooldown() -> None:
+    now = {"value": 0.0}
+    sleeps: list[float] = []
+
+    def sleep(delay: float) -> None:
+        sleeps.append(delay)
+        now["value"] += delay
+
+    limiter = RateLimiter(
+        RetryPolicy(
+            rate_limit_enabled=True,
+            rate_limit_requests_per_second=4.0,
+            rate_limit_burst=10,
+        ),
+        clock=lambda: now["value"],
+        sleep=sleep,
+    )
+
+    limiter.observe_response(headers={"X-RateLimit-Remaining": "0"})
+
+    assert limiter.acquire() == pytest.approx(0.25)
+    assert sleeps == [pytest.approx(0.25)]
 
 
 def test_transport_does_not_retry_non_idempotent_request_without_explicit_permission() -> None:
@@ -322,6 +371,30 @@ def test_transport_preserves_retry_after_header_value() -> None:
     assert error.value.retry_after == 0.01
 
 
+def test_transport_parses_retry_after_http_date() -> None:
+    retry_at = datetime.now(UTC) + timedelta(seconds=10)
+    transport = Transport(
+        make_settings(retry_policy=RetryPolicy(max_attempts=1)),
+        client=httpx.Client(
+            transport=httpx.MockTransport(
+                lambda request: httpx.Response(
+                    429,
+                    json={"message": "Слишком много запросов."},
+                    headers={"Retry-After": format_datetime(retry_at, usegmt=True)},
+                )
+            ),
+            base_url="https://api.avito.ru",
+        ),
+        sleep=lambda _: None,
+    )
+
+    with pytest.raises(RateLimitError) as error:
+        transport.request_json("GET", "/limited", context=RequestContext("limited"))
+
+    assert error.value.retry_after is not None
+    assert 0 < error.value.retry_after <= 10
+
+
 def test_transport_uses_half_second_retry_after_default_without_header() -> None:
     transport = Transport(
         make_settings(retry_policy=RetryPolicy(max_attempts=1)),
@@ -341,6 +414,35 @@ def test_transport_uses_half_second_retry_after_default_without_header() -> None
         transport.request_json("GET", "/limited", context=RequestContext("limited"))
 
     assert error.value.retry_after == 0.5
+
+
+def test_transport_retries_rate_limit_without_retry_after_using_backoff() -> None:
+    responses = iter(
+        (
+            httpx.Response(429, json={"message": "Слишком много запросов."}),
+            httpx.Response(200, json={"ok": True}),
+        )
+    )
+    sleeps: list[float] = []
+    transport = Transport(
+        make_settings(
+            retry_policy=RetryPolicy(
+                max_attempts=2,
+                backoff_factor=1.0,
+                random_source=random_module.Random(2),
+            )
+        ),
+        client=httpx.Client(
+            transport=httpx.MockTransport(lambda request: next(responses)),
+            base_url="https://api.avito.ru",
+        ),
+        sleep=sleeps.append,
+    )
+
+    payload = transport.request_json("GET", "/limited", context=RequestContext("limited"))
+
+    assert payload == {"ok": True}
+    assert sleeps == [pytest.approx(random_module.Random(2).random())]
 
 
 def test_transport_raises_mapping_error_for_invalid_json() -> None:

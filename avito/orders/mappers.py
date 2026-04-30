@@ -7,7 +7,13 @@ from typing import cast
 
 from avito.core.enums import map_enum_or_unknown
 from avito.core.exceptions import ResponseMappingError
-from avito.orders.enums import DeliveryStatus, LabelTaskStatus, OrderStatus
+from avito.orders.enums import (
+    DeliveryOperationStatus,
+    DeliveryTaskState,
+    LabelTaskStatus,
+    OrderActionStatus,
+    OrderStatus,
+)
 from avito.orders.models import (
     CourierRange,
     CourierRangesResult,
@@ -110,8 +116,8 @@ def map_order_action(payload: object) -> OrderActionResult:
         order_id=_str(source, "orderId", "order_id", "id"),
         status=map_enum_or_unknown(
             _str(source, "status"),
-            OrderStatus,
-            enum_name="orders.order_status",
+            OrderActionStatus,
+            enum_name="orders.order_action_status",
         ),
         message=_str(source, "message"),
     )
@@ -170,8 +176,8 @@ def map_delivery_entity(payload: object) -> DeliveryEntityResult:
         parcel_id=_str(source, "parcelId", "parcelID"),
         status=map_enum_or_unknown(
             _str(source, "status"),
-            DeliveryStatus,
-            enum_name="orders.delivery_status",
+            DeliveryOperationStatus,
+            enum_name="orders.delivery_operation_status",
         ),
         message=_str(_mapping(data, "error"), "message") or _str(source, "message"),
     )
@@ -207,8 +213,8 @@ def map_delivery_task(payload: object) -> DeliveryTaskInfo:
         task_id=task_id or (str(task_int) if task_int is not None else None),
         status=map_enum_or_unknown(
             _str(source, "status"),
-            DeliveryStatus,
-            enum_name="orders.delivery_status",
+            DeliveryTaskState,
+            enum_name="orders.delivery_task_state",
         ),
         error=_str(_mapping(data, "error"), "message") or _str(source, "error"),
     )

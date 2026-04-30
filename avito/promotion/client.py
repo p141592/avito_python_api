@@ -70,6 +70,11 @@ from avito.promotion.models import (
     UpdateManualBidRequest,
 )
 
+_TRX_HEADERS = {
+    "x-authenticated-userid": "7",
+    "x-oauth-flow": "client_credentials",
+}
+
 
 @dataclass(slots=True, frozen=True)
 class PromotionClient:
@@ -210,6 +215,7 @@ class TrxPromoClient:
                 request_payload=payload_to_send,
             ),
             json_body=payload_to_send,
+            headers=_TRX_HEADERS,
             idempotency_key=idempotency_key,
         )
 
@@ -233,6 +239,7 @@ class TrxPromoClient:
                 request_payload=payload_to_send,
             ),
             json_body=payload_to_send,
+            headers=_TRX_HEADERS,
             idempotency_key=idempotency_key,
         )
 
@@ -247,6 +254,7 @@ class TrxPromoClient:
             context=RequestContext("promotion.trx.get_commissions"),
             mapper=map_trx_commissions,
             params=params,
+            headers=_TRX_HEADERS,
         )
 
 

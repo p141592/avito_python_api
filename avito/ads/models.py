@@ -5,7 +5,15 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from datetime import datetime
 
-from avito.ads.enums import AdsActionStatus, AutoloadFieldType, AutoloadReportStatus, ListingStatus
+from avito.ads.enums import (
+    AdsActionStatus,
+    AutoloadAvitoStatus,
+    AutoloadFieldType,
+    AutoloadItemStatus,
+    AutoloadItemStatusDetail,
+    AutoloadReportStatus,
+    ListingStatus,
+)
 from avito.core.serialization import SerializableModel
 
 
@@ -347,8 +355,10 @@ class AutoloadReportItem(SerializableModel):
 
     item_id: int | None
     avito_id: int | None
-    status: AutoloadReportStatus | None
+    status: AutoloadItemStatus | None
     title: str | None
+    status_detail: AutoloadItemStatusDetail | None = None
+    avito_status: AutoloadAvitoStatus | None = None
 
 
 @dataclass(slots=True, frozen=True)

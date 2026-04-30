@@ -9,6 +9,8 @@ from typing import TypedDict
 from avito.core.serialization import SerializableModel
 from avito.promotion.enums import (
     CampaignType,
+    PromotionOrderServiceStatus,
+    PromotionOrderStatus,
     PromotionStatus,
     TargetActionBudgetType,
     TargetActionSelectedType,
@@ -50,7 +52,7 @@ class PromotionService(SerializableModel):
     service_code: str | None
     service_name: str | None
     price: int | None
-    status: PromotionStatus | None
+    status: PromotionOrderServiceStatus | None
 
 
 @dataclass(slots=True, frozen=True)
@@ -85,7 +87,7 @@ class PromotionOrderInfo(SerializableModel):
     order_id: str | None
     item_id: int | None
     service_code: str | None
-    status: PromotionStatus | None
+    status: PromotionOrderStatus | None
     created_at: datetime | None
 
 
@@ -124,7 +126,7 @@ class PromotionOrderStatusItem(SerializableModel):
     item_id: int | None
     price: int | None
     slug: str | None
-    status: PromotionStatus | None
+    status: PromotionOrderServiceStatus | None
     error_reason: str | None
 
 
@@ -133,7 +135,7 @@ class PromotionOrderStatusResult(SerializableModel):
     """Статус заявки на продвижение."""
 
     order_id: str | None
-    status: PromotionStatus | None
+    status: PromotionOrderStatus | None
     total_price: int | None
     items: list[PromotionOrderStatusItem]
     errors: list[PromotionOrderError]

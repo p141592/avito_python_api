@@ -17,6 +17,7 @@ def request_public_model[ModelT](
     mapper: Callable[[object], ModelT],
     params: Mapping[str, object] | None = None,
     json_body: Mapping[str, object] | None = None,
+    headers: Mapping[str, str] | None = None,
     idempotency_key: str | None = None,
 ) -> ModelT:
     """Выполняет HTTP-запрос и маппит JSON в публичную модель SDK."""
@@ -28,6 +29,7 @@ def request_public_model[ModelT](
         mapper=mapper,
         params=params,
         json_body=json_body,
+        headers=headers,
         idempotency_key=idempotency_key,
     )
 

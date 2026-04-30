@@ -3,35 +3,9 @@
 [![CI](https://github.com/p141592/avito_python_api/actions/workflows/ci.yml/badge.svg)](https://github.com/p141592/avito_python_api/actions/workflows/ci.yml)
 [![Coverage Status](https://coveralls.io/repos/github/p141592/avito_python_api/badge.svg?branch=main)](https://coveralls.io/github/p141592/avito_python_api?branch=main)
 [![PyPI Downloads](https://img.shields.io/pypi/dm/avito-py.svg)](https://pypi.org/project/avito-py/)
-[![API coverage](https://img.shields.io/badge/API%20coverage-204%2F204-success)](docs/avito/inventory.md)
 [![Docs](https://img.shields.io/badge/docs-latest-blue)](https://p141592.github.io/avito_python_api/)
 
-`avito-py` — синхронный Python SDK для работы с Avito API через единый объектный фасад `AvitoClient`.
-
-Цели SDK:
-
-- скрыть transport, OAuth и retry-логику от пользовательского кода;
-- возвращать типизированные `dataclass`-модели вместо сырого JSON;
-- дать единый вход в доменные сценарии вида `avito.ad(...).get()` и `avito.chat(...).send_message(...)`;
-- покрыть все swagger-документы из каталога [docs/avito/api](docs/avito/api).
-
-SDK является синхронным. Любая асинхронная поддержка, если она появится, будет жить в отдельном namespace `avito.aio` и никогда не будет смешана с sync-классами в одном модуле.
-
-Каталог [docs/avito/api](docs/avito/api) рассматривается как upstream API contract. Эти файлы не редактируются вручную при развитии SDK: публичные модели, мапперы и тесты должны подстраиваться под documented shape из `docs/avito/api/*`.
-
-## Установка
-
-```bash
-poetry add avito-py
-```
-
-или
-
-```bash
-pip install avito-py
-```
-
-Требование к интерпретатору: Python `3.14` и выше в рамках ветки `3.x`. Репозиторий и релизный контур валидируются именно на Python `3.14`.
+Отчёт покрытия Avito API: [покрытие API](https://p141592.github.io/avito_python_api/reference/api-report/).
 
 ## Быстрый старт
 
@@ -49,6 +23,22 @@ print(ad.title)
 ```
 
 По умолчанию настройки читаются из переменных окружения с префиксом `AVITO_`.
+
+`avito-py` — синхронный Python SDK для работы с Avito API через единый объектный фасад `AvitoClient`.
+
+## Установка
+
+```bash
+poetry add avito-py
+```
+
+или
+
+```bash
+pip install avito-py
+```
+
+Требование к интерпретатору: Python `3.14` и выше в рамках ветки `3.x`. Репозиторий и релизный контур валидируются именно на Python `3.14`.
 
 ## Инициализация клиента
 
@@ -374,4 +364,4 @@ git push origin v1.0.2
 ## Документация репозитория
 
 - [STYLEGUIDE.md](STYLEGUIDE.md) — нормативные архитектурные правила
-- [docs/avito/inventory.md](docs/avito/inventory.md) — матрица соответствия swagger-операций и публичного API SDK
+- [docs/site/reference](docs/site/reference) — справочник публичного API SDK
