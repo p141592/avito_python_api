@@ -32,17 +32,7 @@ LEGACY_FILENAMES = (
     "_enums.py",
 )
 LEGACY_USAGE_PATTERNS = ("request_public_model", "mapper=")
-DEFAULT_MIGRATION_ALLOWLIST = frozenset(
-    {
-        "orders",
-    }
-)
-LEGACY_CORE_ALLOWLIST = frozenset(
-    {
-        "avito/core/mapping.py",
-        "avito/core/transport.py",
-    }
-)
+DEFAULT_MIGRATION_ALLOWLIST: frozenset[str] = frozenset()
 APPROVED_PUBLIC_WRAPPERS = frozenset(
     {
         ("jobs", "Application", "list"),
@@ -263,10 +253,7 @@ def _lint_legacy_usage(
     errors: list[ArchitectureLintError] = []
     for path in _iter_text_files(root, SOURCE_CHECK_DIRS):
         relative_path = _relative_path(path, root)
-        if (
-            _path_domain(path, root) in allowlisted_domains
-            or relative_path in LEGACY_CORE_ALLOWLIST
-        ):
+        if _path_domain(path, root) in allowlisted_domains:
             continue
         for line_number, line in enumerate(path.read_text(encoding="utf-8").splitlines(), 1):
             for pattern in LEGACY_USAGE_PATTERNS:
@@ -400,7 +387,7 @@ def _collect_operation_model_uses(root: Path, domain: str) -> tuple[OperationMod
     for path in _domain_operation_files(root, domain):
         tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
         for node in ast.walk(tree):
-            if not _is_operation_spec_call(node):
+            if not isinstance(node, ast.Call) or not _is_operation_spec_call(node):
                 continue
             for keyword in node.keywords:
                 if keyword.arg not in {"query_model", "request_model", "response_model"}:

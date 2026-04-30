@@ -4,49 +4,125 @@ from __future__ import annotations
 
 from collections.abc import Sequence
 from dataclasses import dataclass
+from typing import cast
 
-from avito.core import ValidationError
+from avito.core import BinaryResponse, ValidationError
 from avito.core.domain import DomainObject
 from avito.core.swagger import swagger_operation
-from avito.orders._client import (
-    DeliveryClient,
-    DeliveryTasksClient,
-    LabelsClient,
-    OrdersClient,
-    SandboxDeliveryClient,
-    StockManagementClient,
-)
-from avito.orders._enums import TrackingAvitoEventType, TrackingAvitoStatus
 from avito.orders.models import (
+    AddSortingCentersRequest,
+    AddTariffV2Request,
+    AddTerminalsRequest,
+    CancelParcelRequest,
     CancelSandboxParcelOptions,
+    CancelSandboxParcelRequest,
     ChangeParcelApplication,
     ChangeParcelOptions,
+    ChangeParcelRequest,
     CourierRangesResult,
     CustomAreaScheduleEntry,
+    CustomAreaScheduleRequest,
+    DeliveryAnnouncementRequest,
     DeliveryDirection,
     DeliveryEntityResult,
+    DeliveryParcelIdsRequest,
+    DeliveryParcelRequest,
+    DeliveryParcelResultRequest,
     DeliverySortingCentersResult,
     DeliveryTariffZone,
     DeliveryTaskInfo,
     DeliveryTermsZone,
     DeliveryTrackingOptions,
+    DeliveryTrackingRequest,
+    GetChangeParcelInfoRequest,
+    GetRegisteredParcelIdRequest,
+    GetSandboxParcelInfoRequest,
     LabelPdfResult,
     LabelTaskResult,
+    OrderAcceptReturnRequest,
     OrderActionResult,
+    OrderApplyTransitionRequest,
+    OrderCncDetailsRequest,
+    OrderConfirmationCodeRequest,
+    OrderCourierRangeRequest,
     OrderDeliveryProperties,
+    OrderLabelsRequest,
+    OrderMarkingsRequest,
     OrdersResult,
+    OrderTrackingNumberRequest,
+    ProhibitOrderAcceptanceRequest,
     RealAddress,
     SandboxAnnouncementPackage,
     SandboxAnnouncementParticipant,
     SandboxArea,
+    SandboxAreasRequest,
     SandboxCancelAnnouncementOptions,
+    SandboxCancelAnnouncementRequest,
+    SandboxConfirmationCodeRequest,
     SandboxCreateAnnouncementOptions,
+    SandboxCreateAnnouncementRequest,
+    SandboxGetAnnouncementEventRequest,
+    SetOrderPropertiesRequest,
+    SetOrderRealAddressRequest,
     SortingCenterUpload,
+    StockInfoRequest,
     StockInfoResult,
     StockUpdateEntry,
+    StockUpdateRequest,
     StockUpdateResult,
     TaggedSortingCenter,
+    TaggedSortingCentersRequest,
     TerminalUpload,
+    TrackingAvitoEventType,
+    TrackingAvitoStatus,
+    UpdateTermsRequest,
+)
+from avito.orders.operations import (
+    ACCEPT_RETURN_ORDER,
+    APPLY_TRANSITION,
+    CHECK_CONFIRMATION_CODE,
+    CREATE_LABELS,
+    CREATE_LABELS_EXTENDED,
+    DELIVERY_CANCEL_ANNOUNCEMENT,
+    DELIVERY_CHANGE_PARCEL_RESULT,
+    DELIVERY_CREATE_ANNOUNCEMENT,
+    DELIVERY_CREATE_PARCEL,
+    DELIVERY_UPDATE_CHANGE_PARCELS,
+    DOWNLOAD_LABEL,
+    GET_COURIER_DELIVERY_RANGE,
+    GET_DELIVERY_TASK,
+    GET_STOCK_INFO,
+    LIST_ORDERS,
+    SANDBOX_ADD_AREAS,
+    SANDBOX_ADD_SORTING_CENTER,
+    SANDBOX_ADD_TAGS_TO_SORTING_CENTER,
+    SANDBOX_ADD_TARIFF,
+    SANDBOX_ADD_TERMINALS,
+    SANDBOX_CANCEL_PARCEL,
+    SANDBOX_CANCEL_SANDBOX_ANNOUNCEMENT,
+    SANDBOX_CANCEL_SANDBOX_PARCEL,
+    SANDBOX_CHANGE_SANDBOX_PARCEL,
+    SANDBOX_CHECK_CONFIRMATION_CODE,
+    SANDBOX_CREATE_ANNOUNCEMENT,
+    SANDBOX_CREATE_PARCEL,
+    SANDBOX_CREATE_SANDBOX_ANNOUNCEMENT,
+    SANDBOX_GET_ANNOUNCEMENT_EVENT,
+    SANDBOX_GET_CHANGE_PARCEL_INFO,
+    SANDBOX_GET_PARCEL_INFO,
+    SANDBOX_GET_REGISTERED_PARCEL_ID,
+    SANDBOX_LIST_SORTING_CENTER,
+    SANDBOX_PROHIBIT_ORDER_ACCEPTANCE,
+    SANDBOX_SET_ORDER_PROPERTIES,
+    SANDBOX_SET_ORDER_REAL_ADDRESS,
+    SANDBOX_TRACK_ANNOUNCEMENT,
+    SANDBOX_TRACKING,
+    SANDBOX_UPDATE_CUSTOM_AREA_SCHEDULE,
+    SANDBOX_UPDATE_TERMS,
+    SET_CNC_DETAILS,
+    SET_COURIER_DELIVERY_RANGE,
+    SET_TRACKING_NUMBER,
+    UPDATE_MARKINGS,
+    UPDATE_STOCKS,
 )
 
 
@@ -73,7 +149,7 @@ class Order(DomainObject):
         Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
         """
 
-        return OrdersClient(self.transport).list_orders()
+        return self._execute(LIST_ORDERS)  # type: ignore[return-value]
 
     @swagger_operation(
         "POST",
@@ -94,11 +170,11 @@ class Order(DomainObject):
         Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
         """
 
-        return OrdersClient(self.transport).update_markings(
-            order_id=order_id,
-            codes=list(codes),
+        return self._execute(
+            UPDATE_MARKINGS,
+            request=OrderMarkingsRequest(order_id=order_id, codes=list(codes)),
             idempotency_key=idempotency_key,
-        )
+        )  # type: ignore[return-value]
 
     @swagger_operation(
         "POST",
@@ -119,11 +195,14 @@ class Order(DomainObject):
         Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
         """
 
-        return OrdersClient(self.transport).accept_return_order(
-            order_id=order_id,
-            postal_office_id=postal_office_id,
+        return self._execute(
+            ACCEPT_RETURN_ORDER,
+            request=OrderAcceptReturnRequest(
+                order_id=order_id,
+                postal_office_id=postal_office_id,
+            ),
             idempotency_key=idempotency_key,
-        )
+        )  # type: ignore[return-value]
 
     @swagger_operation(
         "POST",
@@ -144,11 +223,11 @@ class Order(DomainObject):
         Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
         """
 
-        return OrdersClient(self.transport).apply_transition(
-            order_id=order_id,
-            transition=transition,
+        return self._execute(
+            APPLY_TRANSITION,
+            request=OrderApplyTransitionRequest(order_id=order_id, transition=transition),
             idempotency_key=idempotency_key,
-        )
+        )  # type: ignore[return-value]
 
     @swagger_operation(
         "POST",
@@ -169,11 +248,11 @@ class Order(DomainObject):
         Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
         """
 
-        return OrdersClient(self.transport).check_confirmation_code(
-            order_id=order_id,
-            code=code,
+        return self._execute(
+            CHECK_CONFIRMATION_CODE,
+            request=OrderConfirmationCodeRequest(order_id=order_id, code=code),
             idempotency_key=idempotency_key,
-        )
+        )  # type: ignore[return-value]
 
     @swagger_operation(
         "POST",
@@ -194,11 +273,11 @@ class Order(DomainObject):
         Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
         """
 
-        return OrdersClient(self.transport).set_cnc_details(
-            order_id=order_id,
-            pickup_point_id=pickup_point_id,
+        return self._execute(
+            SET_CNC_DETAILS,
+            request=OrderCncDetailsRequest(order_id=order_id, pickup_point_id=pickup_point_id),
             idempotency_key=idempotency_key,
-        )
+        )  # type: ignore[return-value]
 
     @swagger_operation(
         "GET",
@@ -214,7 +293,10 @@ class Order(DomainObject):
         Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
         """
 
-        return OrdersClient(self.transport).get_courier_delivery_range()
+        return self._execute(
+            GET_COURIER_DELIVERY_RANGE,
+            query={"orderId": "order-1"},
+        )  # type: ignore[return-value]
 
     @swagger_operation(
         "POST",
@@ -235,11 +317,11 @@ class Order(DomainObject):
         Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
         """
 
-        return OrdersClient(self.transport).set_courier_delivery_range(
-            order_id=order_id,
-            interval_id=interval_id,
+        return self._execute(
+            SET_COURIER_DELIVERY_RANGE,
+            request=OrderCourierRangeRequest(order_id=order_id, interval_id=interval_id),
             idempotency_key=idempotency_key,
-        )
+        )  # type: ignore[return-value]
 
     @swagger_operation(
         "POST",
@@ -260,11 +342,14 @@ class Order(DomainObject):
         Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
         """
 
-        return OrdersClient(self.transport).set_tracking_number(
-            order_id=order_id,
-            tracking_number=tracking_number,
+        return self._execute(
+            SET_TRACKING_NUMBER,
+            request=OrderTrackingNumberRequest(
+                order_id=order_id,
+                tracking_number=tracking_number,
+            ),
             idempotency_key=idempotency_key,
-        )
+        )  # type: ignore[return-value]
 
 
 @dataclass(slots=True, frozen=True)
@@ -301,13 +386,13 @@ class OrderLabel(DomainObject):
         Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
         """
 
-        client = LabelsClient(self.transport)
         if extended:
             return self.create_extended(order_ids=order_ids, idempotency_key=idempotency_key)
-        return client.create_generate_labels(
-            order_ids=list(order_ids),
+        return self._execute(
+            CREATE_LABELS,
+            request=OrderLabelsRequest(order_ids=list(order_ids)),
             idempotency_key=idempotency_key,
-        )
+        )  # type: ignore[return-value]
 
     @swagger_operation(
         "POST",
@@ -329,10 +414,11 @@ class OrderLabel(DomainObject):
         Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
         """
 
-        return LabelsClient(self.transport).create_generate_labels_extended(
-            order_ids=list(order_ids),
+        return self._execute(
+            CREATE_LABELS_EXTENDED,
+            request=OrderLabelsRequest(order_ids=list(order_ids)),
             idempotency_key=idempotency_key,
-        )
+        )  # type: ignore[return-value]
 
     @swagger_operation(
         "GET",
@@ -349,7 +435,11 @@ class OrderLabel(DomainObject):
         """
 
         resolved_task_id = task_id or self._require_task_id()
-        return LabelsClient(self.transport).get_download_label(task_id=resolved_task_id)
+        binary = self._execute(
+            DOWNLOAD_LABEL,
+            path_params={"taskID": resolved_task_id},
+        )
+        return LabelPdfResult(binary=cast(BinaryResponse, binary))
 
     def _require_task_id(self) -> str:
         if self.task_id is None:
@@ -385,10 +475,11 @@ class DeliveryOrder(DomainObject):
         Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
         """
 
-        return DeliveryClient(self.transport).create_announcement(
-            order_id=order_id,
+        return self._execute(
+            DELIVERY_CREATE_ANNOUNCEMENT,
+            request=DeliveryAnnouncementRequest(order_id=order_id),
             idempotency_key=idempotency_key,
-        )
+        )  # type: ignore[return-value]
 
     @swagger_operation(
         "POST",
@@ -407,10 +498,11 @@ class DeliveryOrder(DomainObject):
         Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
         """
 
-        return DeliveryClient(self.transport).cancel_announcement(
-            order_id=order_id,
+        return self._execute(
+            DELIVERY_CANCEL_ANNOUNCEMENT,
+            request=DeliveryAnnouncementRequest(order_id=order_id),
             idempotency_key=idempotency_key,
-        )
+        )  # type: ignore[return-value]
 
     @swagger_operation(
         "POST",
@@ -435,11 +527,11 @@ class DeliveryOrder(DomainObject):
         Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
         """
 
-        return DeliveryClient(self.transport).create_parcel(
-            order_id=order_id,
-            parcel_id=parcel_id,
+        return self._execute(
+            DELIVERY_CREATE_PARCEL,
+            request=DeliveryParcelRequest(order_id=order_id, parcel_id=parcel_id),
             idempotency_key=idempotency_key,
-        )
+        )  # type: ignore[return-value]
 
     @swagger_operation(
         "POST",
@@ -460,10 +552,11 @@ class DeliveryOrder(DomainObject):
         Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
         """
 
-        return DeliveryClient(self.transport).update_change_parcels(
-            parcel_ids=list(parcel_ids),
+        return self._execute(
+            DELIVERY_UPDATE_CHANGE_PARCELS,
+            request=DeliveryParcelIdsRequest(parcel_ids=list(parcel_ids)),
             idempotency_key=idempotency_key,
-        )
+        )  # type: ignore[return-value]
 
     @swagger_operation(
         "POST",
@@ -484,11 +577,11 @@ class DeliveryOrder(DomainObject):
         Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
         """
 
-        return DeliveryClient(self.transport).change_parcel_result(
-            parcel_id=parcel_id,
-            result=result,
+        return self._execute(
+            DELIVERY_CHANGE_PARCEL_RESULT,
+            request=DeliveryParcelResultRequest(parcel_id=parcel_id, result=result),
             idempotency_key=idempotency_key,
-        )
+        )  # type: ignore[return-value]
 
 
 @dataclass(slots=True, frozen=True)
@@ -519,10 +612,11 @@ class SandboxDelivery(DomainObject):
         Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
         """
 
-        return SandboxDeliveryClient(self.transport).create_announcement(
-            order_id=order_id,
+        return self._execute(
+            SANDBOX_CREATE_ANNOUNCEMENT,
+            request=DeliveryAnnouncementRequest(order_id=order_id),
             idempotency_key=idempotency_key,
-        )
+        )  # type: ignore[return-value]
 
     @swagger_operation(
         "POST",
@@ -543,10 +637,11 @@ class SandboxDelivery(DomainObject):
         Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
         """
 
-        return SandboxDeliveryClient(self.transport).track_announcement(
-            order_id=order_id,
+        return self._execute(
+            SANDBOX_TRACK_ANNOUNCEMENT,
+            request=DeliveryAnnouncementRequest(order_id=order_id),
             idempotency_key=idempotency_key,
-        )
+        )  # type: ignore[return-value]
 
     @swagger_operation(
         "POST",
@@ -567,10 +662,11 @@ class SandboxDelivery(DomainObject):
         Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
         """
 
-        return SandboxDeliveryClient(self.transport).update_custom_area_schedule(
-            items=list(items),
+        return self._execute(
+            SANDBOX_UPDATE_CUSTOM_AREA_SCHEDULE,
+            request=CustomAreaScheduleRequest(items=list(items)),
             idempotency_key=idempotency_key,
-        )
+        )  # type: ignore[return-value]
 
     @swagger_operation(
         "POST",
@@ -591,11 +687,11 @@ class SandboxDelivery(DomainObject):
         Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
         """
 
-        return SandboxDeliveryClient(self.transport).cancel_parcel(
-            parcel_id=parcel_id,
-            actor=actor,
+        return self._execute(
+            SANDBOX_CANCEL_PARCEL,
+            request=CancelParcelRequest(parcel_id=parcel_id, actor=actor),
             idempotency_key=idempotency_key,
-        )
+        )  # type: ignore[return-value]
 
     @swagger_operation(
         "POST",
@@ -616,11 +712,14 @@ class SandboxDelivery(DomainObject):
         Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
         """
 
-        return SandboxDeliveryClient(self.transport).check_confirmation_code(
-            parcel_id=parcel_id,
-            confirm_code=confirm_code,
+        return self._execute(
+            SANDBOX_CHECK_CONFIRMATION_CODE,
+            request=SandboxConfirmationCodeRequest(
+                parcel_id=parcel_id,
+                confirm_code=confirm_code,
+            ),
             idempotency_key=idempotency_key,
-        )
+        )  # type: ignore[return-value]
 
     @swagger_operation(
         "POST",
@@ -645,11 +744,11 @@ class SandboxDelivery(DomainObject):
         Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
         """
 
-        return SandboxDeliveryClient(self.transport).set_order_properties(
-            order_id=order_id,
-            properties=properties,
+        return self._execute(
+            SANDBOX_SET_ORDER_PROPERTIES,
+            request=SetOrderPropertiesRequest(order_id=order_id, properties=properties),
             idempotency_key=idempotency_key,
-        )
+        )  # type: ignore[return-value]
 
     @swagger_operation(
         "POST",
@@ -670,11 +769,11 @@ class SandboxDelivery(DomainObject):
         Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
         """
 
-        return SandboxDeliveryClient(self.transport).set_order_real_address(
-            order_id=order_id,
-            address=address,
+        return self._execute(
+            SANDBOX_SET_ORDER_REAL_ADDRESS,
+            request=SetOrderRealAddressRequest(order_id=order_id, address=address),
             idempotency_key=idempotency_key,
-        )
+        )  # type: ignore[return-value]
 
     @swagger_operation(
         "POST",
@@ -712,17 +811,20 @@ class SandboxDelivery(DomainObject):
         Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
         """
 
-        return SandboxDeliveryClient(self.transport).tracking(
-            order_id=order_id,
-            avito_status=avito_status,
-            avito_event_type=avito_event_type,
-            provider_event_code=provider_event_code,
-            date=date,
-            location=location,
-            comment=comment,
-            options=options,
+        return self._execute(
+            SANDBOX_TRACKING,
+            request=DeliveryTrackingRequest(
+                order_id=order_id,
+                avito_status=avito_status,
+                avito_event_type=avito_event_type,
+                provider_event_code=provider_event_code,
+                date=date,
+                location=location,
+                comment=comment,
+                options=options,
+            ),
             idempotency_key=idempotency_key,
-        )
+        )  # type: ignore[return-value]
 
     @swagger_operation(
         "POST",
@@ -743,10 +845,11 @@ class SandboxDelivery(DomainObject):
         Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
         """
 
-        return SandboxDeliveryClient(self.transport).prohibit_order_acceptance(
-            order_id=order_id,
+        return self._execute(
+            SANDBOX_PROHIBIT_ORDER_ACCEPTANCE,
+            request=ProhibitOrderAcceptanceRequest(order_id=order_id),
             idempotency_key=idempotency_key,
-        )
+        )  # type: ignore[return-value]
 
     @swagger_operation(
         "GET",
@@ -762,7 +865,10 @@ class SandboxDelivery(DomainObject):
         Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
         """
 
-        return SandboxDeliveryClient(self.transport).list_sorting_center()
+        return self._execute(
+            SANDBOX_LIST_SORTING_CENTER,
+            query={"deliveryProviders": "pochta"},
+        )  # type: ignore[return-value]
 
     @swagger_operation(
         "POST",
@@ -783,10 +889,11 @@ class SandboxDelivery(DomainObject):
         Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
         """
 
-        return SandboxDeliveryClient(self.transport).add_sorting_center(
-            items=list(items),
+        return self._execute(
+            SANDBOX_ADD_SORTING_CENTER,
+            request=AddSortingCentersRequest(items=list(items)),
             idempotency_key=idempotency_key,
-        )
+        )  # type: ignore[return-value]
 
     @swagger_operation(
         "POST",
@@ -811,11 +918,12 @@ class SandboxDelivery(DomainObject):
         Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
         """
 
-        return SandboxDeliveryClient(self.transport).add_areas(
-            tariff_id=tariff_id,
-            areas=list(areas),
+        return self._execute(
+            SANDBOX_ADD_AREAS,
+            path_params={"tariff_id": tariff_id},
+            request=SandboxAreasRequest(areas=list(areas)),
             idempotency_key=idempotency_key,
-        )
+        )  # type: ignore[return-value]
 
     @swagger_operation(
         "POST",
@@ -840,11 +948,12 @@ class SandboxDelivery(DomainObject):
         Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
         """
 
-        return SandboxDeliveryClient(self.transport).add_tags_to_sorting_center(
-            tariff_id=tariff_id,
-            items=list(items),
+        return self._execute(
+            SANDBOX_ADD_TAGS_TO_SORTING_CENTER,
+            path_params={"tariff_id": tariff_id},
+            request=TaggedSortingCentersRequest(items=list(items)),
             idempotency_key=idempotency_key,
-        )
+        )  # type: ignore[return-value]
 
     @swagger_operation(
         "POST",
@@ -869,11 +978,12 @@ class SandboxDelivery(DomainObject):
         Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
         """
 
-        return SandboxDeliveryClient(self.transport).add_terminals(
-            tariff_id=tariff_id,
-            items=list(items),
+        return self._execute(
+            SANDBOX_ADD_TERMINALS,
+            path_params={"tariff_id": tariff_id},
+            request=AddTerminalsRequest(items=list(items)),
             idempotency_key=idempotency_key,
-        )
+        )  # type: ignore[return-value]
 
     @swagger_operation(
         "POST",
@@ -898,11 +1008,12 @@ class SandboxDelivery(DomainObject):
         Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
         """
 
-        return SandboxDeliveryClient(self.transport).update_terms(
-            tariff_id=tariff_id,
-            items=list(items),
+        return self._execute(
+            SANDBOX_UPDATE_TERMS,
+            path_params={"tariff_id": tariff_id},
+            request=UpdateTermsRequest(items=list(items)),
             idempotency_key=idempotency_key,
-        )
+        )  # type: ignore[return-value]
 
     @swagger_operation(
         "POST",
@@ -937,15 +1048,18 @@ class SandboxDelivery(DomainObject):
         Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
         """
 
-        return SandboxDeliveryClient(self.transport).add_tariff(
-            name=name,
-            delivery_provider_tariff_id=delivery_provider_tariff_id,
-            directions=list(directions),
-            tariff_zones=list(tariff_zones),
-            terms_zones=list(terms_zones),
-            tariff_type=tariff_type,
+        return self._execute(
+            SANDBOX_ADD_TARIFF,
+            request=AddTariffV2Request(
+                name=name,
+                delivery_provider_tariff_id=delivery_provider_tariff_id,
+                directions=list(directions),
+                tariff_zones=list(tariff_zones),
+                terms_zones=list(terms_zones),
+                tariff_type=tariff_type,
+            ),
             idempotency_key=idempotency_key,
-        )
+        )  # type: ignore[return-value]
 
     @swagger_operation(
         "POST",
@@ -970,11 +1084,11 @@ class SandboxDelivery(DomainObject):
         Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
         """
 
-        return SandboxDeliveryClient(self.transport).create_parcel(
-            order_id=order_id,
-            parcel_id=parcel_id,
+        return self._execute(
+            SANDBOX_CREATE_PARCEL,
+            request=DeliveryParcelRequest(order_id=order_id, parcel_id=parcel_id),
             idempotency_key=idempotency_key,
-        )
+        )  # type: ignore[return-value]
 
     @swagger_operation(
         "POST",
@@ -1004,12 +1118,15 @@ class SandboxDelivery(DomainObject):
         Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
         """
 
-        return SandboxDeliveryClient(self.transport).cancel_sandbox_announcement(
-            announcement_id=announcement_id,
-            date=date,
-            options=options,
+        return self._execute(
+            SANDBOX_CANCEL_SANDBOX_ANNOUNCEMENT,
+            request=SandboxCancelAnnouncementRequest(
+                announcement_id=announcement_id,
+                date=date,
+                options=options,
+            ),
             idempotency_key=idempotency_key,
-        )
+        )  # type: ignore[return-value]
 
     @swagger_operation(
         "POST",
@@ -1034,11 +1151,11 @@ class SandboxDelivery(DomainObject):
         Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
         """
 
-        return SandboxDeliveryClient(self.transport).cancel_sandbox_parcel(
-            parcel_id=parcel_id,
-            options=options,
+        return self._execute(
+            SANDBOX_CANCEL_SANDBOX_PARCEL,
+            request=CancelSandboxParcelRequest(parcel_id=parcel_id, options=options),
             idempotency_key=idempotency_key,
-        )
+        )  # type: ignore[return-value]
 
     @swagger_operation(
         "POST",
@@ -1065,13 +1182,16 @@ class SandboxDelivery(DomainObject):
         Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
         """
 
-        return SandboxDeliveryClient(self.transport).change_sandbox_parcel(
-            type=type,
-            parcel_id=parcel_id,
-            application=application,
-            options=options,
+        return self._execute(
+            SANDBOX_CHANGE_SANDBOX_PARCEL,
+            request=ChangeParcelRequest(
+                type=type,
+                parcel_id=parcel_id,
+                application=application,
+                options=options,
+            ),
             idempotency_key=idempotency_key,
-        )
+        )  # type: ignore[return-value]
 
     @swagger_operation(
         "POST",
@@ -1111,17 +1231,20 @@ class SandboxDelivery(DomainObject):
         Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
         """
 
-        return SandboxDeliveryClient(self.transport).create_sandbox_announcement(
-            announcement_id=announcement_id,
-            barcode=barcode,
-            sender=sender,
-            receiver=receiver,
-            announcement_type=announcement_type,
-            date=date,
-            packages=list(packages),
-            options=options,
+        return self._execute(
+            SANDBOX_CREATE_SANDBOX_ANNOUNCEMENT,
+            request=SandboxCreateAnnouncementRequest(
+                announcement_id=announcement_id,
+                barcode=barcode,
+                sender=sender,
+                receiver=receiver,
+                announcement_type=announcement_type,
+                date=date,
+                packages=list(packages),
+                options=options,
+            ),
             idempotency_key=idempotency_key,
-        )
+        )  # type: ignore[return-value]
 
     @swagger_operation(
         "POST",
@@ -1142,10 +1265,11 @@ class SandboxDelivery(DomainObject):
         Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
         """
 
-        return SandboxDeliveryClient(self.transport).get_sandbox_announcement_event(
-            announcement_id=announcement_id,
+        return self._execute(
+            SANDBOX_GET_ANNOUNCEMENT_EVENT,
+            request=SandboxGetAnnouncementEventRequest(announcement_id=announcement_id),
             idempotency_key=idempotency_key,
-        )
+        )  # type: ignore[return-value]
 
     @swagger_operation(
         "POST",
@@ -1166,10 +1290,11 @@ class SandboxDelivery(DomainObject):
         Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
         """
 
-        return SandboxDeliveryClient(self.transport).get_sandbox_change_parcel_info(
-            application_id=application_id,
+        return self._execute(
+            SANDBOX_GET_CHANGE_PARCEL_INFO,
+            request=GetChangeParcelInfoRequest(application_id=application_id),
             idempotency_key=idempotency_key,
-        )
+        )  # type: ignore[return-value]
 
     @swagger_operation(
         "POST",
@@ -1190,10 +1315,11 @@ class SandboxDelivery(DomainObject):
         Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
         """
 
-        return SandboxDeliveryClient(self.transport).get_sandbox_parcel_info(
-            parcel_id=parcel_id,
+        return self._execute(
+            SANDBOX_GET_PARCEL_INFO,
+            request=GetSandboxParcelInfoRequest(parcel_id=parcel_id),
             idempotency_key=idempotency_key,
-        )
+        )  # type: ignore[return-value]
 
     @swagger_operation(
         "POST",
@@ -1214,10 +1340,11 @@ class SandboxDelivery(DomainObject):
         Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
         """
 
-        return SandboxDeliveryClient(self.transport).get_sandbox_registered_parcel_id(
-            order_id=order_id,
+        return self._execute(
+            SANDBOX_GET_REGISTERED_PARCEL_ID,
+            request=GetRegisteredParcelIdRequest(order_id=order_id),
             idempotency_key=idempotency_key,
-        )
+        )  # type: ignore[return-value]
 
 
 @dataclass(slots=True, frozen=True)
@@ -1246,7 +1373,10 @@ class DeliveryTask(DomainObject):
         """
 
         resolved_task_id = task_id or self._require_task_id()
-        return DeliveryTasksClient(self.transport).get_task(task_id=resolved_task_id)
+        return self._execute(
+            GET_DELIVERY_TASK,
+            path_params={"task_id": resolved_task_id},
+        )  # type: ignore[return-value]
 
     def _require_task_id(self) -> str:
         if self.task_id is None:
@@ -1277,7 +1407,10 @@ class Stock(DomainObject):
         Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
         """
 
-        return StockManagementClient(self.transport).get_info(item_ids=list(item_ids))
+        return self._execute(
+            GET_STOCK_INFO,
+            request=StockInfoRequest(item_ids=list(item_ids)),
+        )  # type: ignore[return-value]
 
     @swagger_operation(
         "PUT",
@@ -1300,10 +1433,11 @@ class Stock(DomainObject):
         Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
         """
 
-        return StockManagementClient(self.transport).update_stocks(
-            stocks=list(stocks),
+        return self._execute(
+            UPDATE_STOCKS,
+            request=StockUpdateRequest(stocks=list(stocks)),
             idempotency_key=idempotency_key,
-        )
+        )  # type: ignore[return-value]
 
 
 __all__ = (

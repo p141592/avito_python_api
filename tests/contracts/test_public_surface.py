@@ -140,16 +140,12 @@ def test_public_surface_avoids_raw_dict_signatures_and_legacy_suffixes() -> None
     module_names = (
         "avito.accounts.domain",
         "avito.ads.domain",
-        "avito.ads.client",
         "avito.autoteka.domain",
-        "avito.autoteka.client",
         "avito.cpa.domain",
         "avito.jobs.domain",
         "avito.messenger.domain",
         "avito.orders.domain",
-        "avito.orders.client",
         "avito.promotion.domain",
-        "avito.promotion.client",
         "avito.ratings.domain",
         "avito.realty.domain",
         "avito.tariffs.domain",
@@ -207,12 +203,12 @@ def test_chat_media_upload_images_no_longer_accepts_raw_dict() -> None:
     assert "UploadImageFile" in signature_text
 
 
-def test_section_clients_are_frozen_dataclasses() -> None:
+def test_domain_objects_are_frozen_dataclasses() -> None:
     module_names = (
-        "avito.ads.client",
-        "avito.autoteka.client",
-        "avito.orders.client",
-        "avito.promotion.client",
+        "avito.ads.domain",
+        "avito.autoteka.domain",
+        "avito.orders.domain",
+        "avito.promotion.domain",
     )
     offenders: list[str] = []
 

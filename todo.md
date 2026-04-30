@@ -112,7 +112,7 @@ poetry run python scripts/lint_swagger_bindings.py --json --strict --output swag
 | autoteka | 0 | 26 | 26 | 26 | pagination | done |
 | promotion | 0 | 24 | 24 | 24 | empty_response | done |
 | ads | 0 | 28 | 28 | 28 | empty_response, pagination | done |
-| orders | 3 | 45 | 45 | 45 | binary, pagination | partial: `_client.py`/`_enums.py`/`_mapping.py` retained, OperationSpec migration not started |
+| orders | 0 | 45 | 45 | 45 | binary, pagination | done |
 
 ## Phase 1. Implement v2 core MVP
 
@@ -551,6 +551,8 @@ poetry run ruff check .
 
 ### 5.1. Convert `autoteka`
 
+Статус: выполнено.
+
 Focus:
 
 - nested parsing;
@@ -568,6 +570,8 @@ avito/autoteka/
 ```
 
 ### 5.2. Convert `promotion`
+
+Статус: выполнено.
 
 Focus:
 
@@ -595,6 +599,8 @@ avito/promotion/
 ```
 
 ### 5.3. Convert `ads`
+
+Статус: выполнено.
 
 Focus:
 
@@ -626,6 +632,10 @@ avito/ads/
 ```
 
 ### 5.4. Convert `orders`
+
+Статус: выполнено. Удалены `_client.py`, `_mapping.py`, `_enums.py`;
+публичные методы выполняются через `orders/operations.py`, enum-ы и parsing перенесены
+в `orders/models.py`, `architecture-lint` проходит без migration allowlist.
 
 Focus:
 
@@ -671,6 +681,10 @@ poetry run ruff check .
 ## Phase 6. Remove legacy core and transport surface
 
 Цель: после перевода всех доменов удалить инфраструктуру, которая существовала только для legacy architecture.
+
+Статус: выполнено. Удалены `avito/core/mapping.py` и
+`Transport.request_public_model(...)`; `architecture-lint` больше не содержит
+allowlist для legacy core, inventory показывает `legacy_usage_count: 0`.
 
 Actions:
 

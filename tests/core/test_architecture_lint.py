@@ -4,6 +4,7 @@ from pathlib import Path
 
 from lint_architecture import (
     DEFAULT_MIGRATION_ALLOWLIST,
+    ArchitectureLintError,
     lint_architecture,
     render_text_report,
 )
@@ -222,13 +223,20 @@ def test_lint_architecture_rejects_runtime_patching_in_production(
 
 
 def test_render_text_report_includes_error_locations() -> None:
-    errors = lint_architecture(Path("."), allowlisted_domains=())
+    errors = (
+        ArchitectureLintError(
+            code="ARCH_LEGACY_USAGE",
+            message="Запрещено legacy usage.",
+            path="avito/example/domain.py",
+            line=95,
+        ),
+    )
 
     output = render_text_report(errors, allowlisted_domains=())
 
     assert "Architecture lint:" in output
     assert "allowlisted_domains=-" in output
-    assert "avito/orders/_client.py:95: [ARCH_LEGACY_USAGE]" in output
+    assert "avito/example/domain.py:95: [ARCH_LEGACY_USAGE]" in output
 
 
 def _write(path: Path, content: str) -> None:

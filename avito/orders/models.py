@@ -3,19 +3,131 @@
 from __future__ import annotations
 
 from base64 import b64encode
+from collections.abc import Mapping
 from dataclasses import dataclass
+from enum import Enum
+from typing import cast
 
-from avito.core import BinaryResponse
-from avito.core.serialization import SerializableModel
-from avito.orders._enums import (
-    DeliveryOperationStatus,
-    DeliveryTaskState,
-    LabelTaskStatus,
-    OrderActionStatus,
-    OrderStatus,
-    TrackingAvitoEventType,
-    TrackingAvitoStatus,
-)
+from avito.core import ApiModel, BinaryResponse
+from avito.core.enums import map_enum_or_unknown
+from avito.core.exceptions import ResponseMappingError
+
+Payload = Mapping[str, object]
+
+
+class OrderStatus(str, Enum):
+    """Статус заказа."""
+
+    UNKNOWN = "__unknown__"
+    ON_CONFIRMATION = "on_confirmation"
+    READY_TO_SHIP = "ready_to_ship"
+    IN_TRANSIT = "in_transit"
+    CANCELED = "canceled"
+    DELIVERED = "delivered"
+    ON_RETURN = "on_return"
+    IN_DISPUTE = "in_dispute"
+    CLOSED = "closed"
+    NEW = "new"
+    MARKED = "marked"
+    CONFIRMED = "confirmed"
+    CODE_VALID = "code-valid"
+    RANGE_SET = "range-set"
+    TRACKING_SET = "tracking-set"
+    RETURN_ACCEPTED = "return-accepted"
+
+
+class OrderActionStatus(str, Enum):
+    """Статус результата операции над заказом."""
+
+    UNKNOWN = "__unknown__"
+    MARKED = "marked"
+    CONFIRMED = "confirmed"
+    CODE_VALID = "code-valid"
+    RANGE_SET = "range-set"
+    TRACKING_SET = "tracking-set"
+    RETURN_ACCEPTED = "return-accepted"
+    SUCCESS = "success"
+    FAIL = "fail"
+    EXPIRED = "expired"
+    ATTEMPTS = "attempts"
+
+
+class LabelTaskStatus(str, Enum):
+    """Статус задачи генерации этикеток."""
+
+    UNKNOWN = "__unknown__"
+    CREATED = "created"
+
+
+class DeliveryOperationStatus(str, Enum):
+    """Статус результата операции delivery API."""
+
+    UNKNOWN = "__unknown__"
+    ANNOUNCEMENT_CREATED = "announcement-created"
+    PARCEL_CREATED = "parcel-created"
+    ANNOUNCEMENT_CANCELLED = "announcement-cancelled"
+    CALLBACK_ACCEPTED = "callback-accepted"
+    PARCELS_UPDATED = "parcels-updated"
+    SUCCESS = "success"
+    FAILED = "failed"
+    DUPLICATE = "duplicate"
+    FORBIDDEN = "forbidden"
+    OK = "OK"
+    OK_LOWER = "ok"
+
+
+class DeliveryTaskState(str, Enum):
+    """Статус фоновой задачи delivery API."""
+
+    UNKNOWN = "__unknown__"
+    PROCESSING = "processing"
+    SUCCESS = "success"
+    FAILED = "failed"
+    PENDING_APPROVAL = "pending_approval"
+    DECLINED = "declined"
+    DONE = "done"
+
+
+class DeliveryStatus(str, Enum):
+    """Legacy-статус операции или задачи delivery API."""
+
+    UNKNOWN = "__unknown__"
+    ANNOUNCEMENT_CREATED = "announcement-created"
+    PARCEL_CREATED = "parcel-created"
+    ANNOUNCEMENT_CANCELLED = "announcement-cancelled"
+    CALLBACK_ACCEPTED = "callback-accepted"
+    PARCELS_UPDATED = "parcels-updated"
+    SUCCESS = "success"
+    FAILED = "failed"
+    DUPLICATE = "duplicate"
+    FORBIDDEN = "forbidden"
+    OK = "OK"
+    OK_LOWER = "ok"
+    PROCESSING = "processing"
+    PENDING_APPROVAL = "pending_approval"
+    DECLINED = "declined"
+    DONE = "done"
+
+
+class TrackingAvitoStatus(str, Enum):
+    """Статус Avito для sandbox tracking-события."""
+
+    UNKNOWN = "__unknown__"
+    CONFIRMED = "CONFIRMED"
+    IN_TRANSIT = "IN_TRANSIT"
+    ON_DELIVERY = "ON_DELIVERY"
+    DELIVERED = "DELIVERED"
+    IN_TRANSIT_RETURN = "IN_TRANSIT_RETURN"
+    ON_DELIVERY_RETURN = "ON_DELIVERY_RETURN"
+    RETURNED = "RETURNED"
+    LOST = "LOST"
+    DESTROYED = "DESTROYED"
+
+
+class TrackingAvitoEventType(str, Enum):
+    """Тип Avito-события для sandbox tracking."""
+
+    UNKNOWN = "__unknown__"
 
 
 @dataclass(slots=True, frozen=True)
@@ -1024,8 +1136,63 @@ class StockUpdateRequest:
         return {"stocks": [stock.to_payload() for stock in self.stocks]}
 
 
+def _expect_mapping(payload: object) -> Payload:
+    if not isinstance(payload, Mapping):
+        raise ResponseMappingError("Ожидался JSON-объект.", payload=payload)
+    return cast(Payload, payload)
+
+
+def _list(payload: Payload, *keys: str) -> list[Payload]:
+    for key in keys:
+        value = payload.get(key)
+        if isinstance(value, list):
+            return [item for item in value if isinstance(item, Mapping)]
+    return []
+
+
+def _mapping(payload: Payload, *keys: str) -> Payload:
+    for key in keys:
+        value = payload.get(key)
+        if isinstance(value, Mapping):
+            return cast(Payload, value)
+    return {}
+
+
+def _str(payload: Payload, *keys: str) -> str | None:
+    for key in keys:
+        value = payload.get(key)
+        if isinstance(value, str):
+            return value
+    return None
+
+
+def _int(payload: Payload, *keys: str) -> int | None:
+    for key in keys:
+        value = payload.get(key)
+        if isinstance(value, bool):
+            continue
+        if isinstance(value, int):
+            return value
+    return None
+
+
+def _bool(payload: Payload, *keys: str) -> bool | None:
+    for key in keys:
+        value = payload.get(key)
+        if isinstance(value, bool):
+            return value
+    return None
+
+
+def _extract_errors(payload: Payload) -> list[str]:
+    errors = payload.get("errors")
+    if not isinstance(errors, list):
+        return []
+    return [str(error) for error in errors if isinstance(error, str)]
+
+
 @dataclass(slots=True, frozen=True)
-class OrderSummary(SerializableModel):
+class OrderSummary(ApiModel):
     """Краткая информация о заказе."""
 
     order_id: str | None
@@ -1036,15 +1203,36 @@ class OrderSummary(SerializableModel):
 
 
 @dataclass(slots=True, frozen=True)
-class OrdersResult(SerializableModel):
+class OrdersResult(ApiModel):
     """Список заказов."""
 
     items: list[OrderSummary]
     total: int | None = None
 
+    @classmethod
+    def from_payload(cls, payload: object) -> OrdersResult:
+        data = _expect_mapping(payload)
+        return cls(
+            items=[
+                OrderSummary(
+                    order_id=_str(item, "id", "order_id", "orderId"),
+                    status=map_enum_or_unknown(
+                        _str(item, "status"),
+                        OrderStatus,
+                        enum_name="orders.order_status",
+                    ),
+                    created_at=_str(item, "created", "created_at", "createdAt"),
+                    buyer_name=_str(_mapping(item, "buyerInfo"), "fullName"),
+                    total_price=_int(item, "totalPrice", "price"),
+                )
+                for item in _list(data, "orders", "items", "result")
+            ],
+            total=_int(data, "total", "count"),
+        )
+
 
 @dataclass(slots=True, frozen=True)
-class OrderActionResult(SerializableModel):
+class OrderActionResult(ApiModel):
     """Результат операции над заказом."""
 
     success: bool
@@ -1052,9 +1240,25 @@ class OrderActionResult(SerializableModel):
     status: OrderActionStatus | None = None
     message: str | None = None
 
+    @classmethod
+    def from_payload(cls, payload: object) -> OrderActionResult:
+        data = _expect_mapping(payload)
+        result = _mapping(data, "result")
+        source = result or data
+        return cls(
+            success=bool(source.get("success", data.get("success", True))),
+            order_id=_str(source, "orderId", "order_id", "id"),
+            status=map_enum_or_unknown(
+                _str(source, "status"),
+                OrderActionStatus,
+                enum_name="orders.order_action_status",
+            ),
+            message=_str(source, "message"),
+        )
+
 
 @dataclass(slots=True, frozen=True)
-class CourierRange(SerializableModel):
+class CourierRange(ApiModel):
     """Доступный интервал курьерской доставки."""
 
     interval_id: str | None
@@ -1064,19 +1268,53 @@ class CourierRange(SerializableModel):
 
 
 @dataclass(slots=True, frozen=True)
-class CourierRangesResult(SerializableModel):
+class CourierRangesResult(ApiModel):
     """Список доступных интервалов курьерской доставки."""
 
     items: list[CourierRange]
     address: str | None = None
 
+    @classmethod
+    def from_payload(cls, payload: object) -> CourierRangesResult:
+        data = _expect_mapping(payload)
+        result = _mapping(data, "result")
+        source = result or data
+        return cls(
+            items=[
+                CourierRange(
+                    interval_id=_str(item, "id", "intervalId"),
+                    date=_str(item, "date"),
+                    start_at=_str(item, "startAt", "startDate"),
+                    end_at=_str(item, "endAt", "endDate"),
+                )
+                for item in _list(source, "timeIntervals", "intervals", "items", "result")
+            ],
+            address=_str(source, "address"),
+        )
+
 
 @dataclass(slots=True, frozen=True)
-class LabelTaskResult(SerializableModel):
+class LabelTaskResult(ApiModel):
     """Результат генерации этикеток."""
 
     task_id: str | None
     status: LabelTaskStatus | None = None
+
+    @classmethod
+    def from_payload(cls, payload: object) -> LabelTaskResult:
+        data = _expect_mapping(payload)
+        result = _mapping(data, "result", "data")
+        source = result or data
+        task_id = _str(source, "taskId", "taskID", "id")
+        task_int = _int(source, "taskId", "taskID")
+        return cls(
+            task_id=task_id or (str(task_int) if task_int is not None else None),
+            status=map_enum_or_unknown(
+                _str(source, "status"),
+                LabelTaskStatus,
+                enum_name="orders.label_task_status",
+            ),
+        )
 
 
 @dataclass(slots=True, frozen=True)
@@ -1105,7 +1343,7 @@ class LabelPdfResult:
 
 
 @dataclass(slots=True, frozen=True)
-class DeliveryEntityResult(SerializableModel):
+class DeliveryEntityResult(ApiModel):
     """Результат операции delivery API."""
 
     success: bool
@@ -1115,9 +1353,29 @@ class DeliveryEntityResult(SerializableModel):
     status: DeliveryOperationStatus | None = None
     message: str | None = None
 
+    @classmethod
+    def from_payload(cls, payload: object) -> DeliveryEntityResult:
+        data = _expect_mapping(payload)
+        result = _mapping(data, "result", "data")
+        source = result or data
+        task_id = _str(source, "taskId", "taskID")
+        task_int = _int(source, "taskId", "taskID")
+        return cls(
+            success=bool(source.get("success", data.get("success", True))),
+            task_id=task_id or (str(task_int) if task_int is not None else None),
+            order_id=_str(source, "orderId", "orderID"),
+            parcel_id=_str(source, "parcelId", "parcelID"),
+            status=map_enum_or_unknown(
+                _str(source, "status"),
+                DeliveryOperationStatus,
+                enum_name="orders.delivery_operation_status",
+            ),
+            message=_str(_mapping(data, "error"), "message") or _str(source, "message"),
+        )
+
 
 @dataclass(slots=True, frozen=True)
-class DeliverySortingCenter(SerializableModel):
+class DeliverySortingCenter(ApiModel):
     """Сортировочный центр доставки."""
 
     sorting_center_id: str | None
@@ -1126,23 +1384,56 @@ class DeliverySortingCenter(SerializableModel):
 
 
 @dataclass(slots=True, frozen=True)
-class DeliverySortingCentersResult(SerializableModel):
+class DeliverySortingCentersResult(ApiModel):
     """Список сортировочных центров доставки."""
 
     items: list[DeliverySortingCenter]
 
+    @classmethod
+    def from_payload(cls, payload: object) -> DeliverySortingCentersResult:
+        data = _expect_mapping(payload)
+        result = _mapping(data, "result", "data")
+        source = result or data
+        return cls(
+            items=[
+                DeliverySortingCenter(
+                    sorting_center_id=_str(item, "id", "sortingCenterId", "sorting_center_id"),
+                    name=_str(item, "name"),
+                    city=_str(item, "city"),
+                )
+                for item in _list(source, "sortingCenters", "items", "result")
+            ],
+        )
+
 
 @dataclass(slots=True, frozen=True)
-class DeliveryTaskInfo(SerializableModel):
+class DeliveryTaskInfo(ApiModel):
     """Информация о задаче доставки."""
 
     task_id: str | None
     status: DeliveryTaskState | None
     error: str | None
 
+    @classmethod
+    def from_payload(cls, payload: object) -> DeliveryTaskInfo:
+        data = _expect_mapping(payload)
+        result = _mapping(data, "result", "data")
+        source = result or data
+        task_id = _str(source, "taskId", "taskID", "id")
+        task_int = _int(source, "taskId", "taskID")
+        return cls(
+            task_id=task_id or (str(task_int) if task_int is not None else None),
+            status=map_enum_or_unknown(
+                _str(source, "status"),
+                DeliveryTaskState,
+                enum_name="orders.delivery_task_state",
+            ),
+            error=_str(_mapping(data, "error"), "message") or _str(source, "error"),
+        )
+
 
 @dataclass(slots=True, frozen=True)
-class StockInfo(SerializableModel):
+class StockInfo(ApiModel):
     """Информация по остаткам объявления."""
 
     item_id: int | None
@@ -1153,14 +1444,30 @@ class StockInfo(SerializableModel):
 
 
 @dataclass(slots=True, frozen=True)
-class StockInfoResult(SerializableModel):
+class StockInfoResult(ApiModel):
     """Список текущих остатков."""
 
     items: list[StockInfo]
 
+    @classmethod
+    def from_payload(cls, payload: object) -> StockInfoResult:
+        data = _expect_mapping(payload)
+        return cls(
+            items=[
+                StockInfo(
+                    item_id=_int(item, "item_id", "itemId"),
+                    quantity=_int(item, "quantity"),
+                    is_multiple=_bool(item, "is_multiple", "isMultiple"),
+                    is_unlimited=_bool(item, "is_unlimited", "isUnlimited"),
+                    is_out_of_stock=_bool(item, "is_out_of_stock", "isOutOfStock"),
+                )
+                for item in _list(data, "stocks", "items", "result")
+            ],
+        )
+
 
 @dataclass(slots=True, frozen=True)
-class StockUpdateItem(SerializableModel):
+class StockUpdateItem(ApiModel):
     """Результат обновления остатков объявления."""
 
     item_id: int | None
@@ -1170,7 +1477,22 @@ class StockUpdateItem(SerializableModel):
 
 
 @dataclass(slots=True, frozen=True)
-class StockUpdateResult(SerializableModel):
+class StockUpdateResult(ApiModel):
     """Результат изменения остатков."""
 
     items: list[StockUpdateItem]
+
+    @classmethod
+    def from_payload(cls, payload: object) -> StockUpdateResult:
+        data = _expect_mapping(payload)
+        return cls(
+            items=[
+                StockUpdateItem(
+                    item_id=_int(item, "item_id", "itemId"),
+                    external_id=_str(item, "external_id", "externalId"),
+                    success=bool(item.get("success", True)),
+                    errors=_extract_errors(item),
+                )
+                for item in _list(data, "stocks", "items", "result")
+            ],
+        )

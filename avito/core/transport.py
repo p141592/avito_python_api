@@ -293,35 +293,6 @@ class Transport:
                 headers=dict(response.headers),
             ) from exc
 
-    def request_public_model[ModelT](
-        self,
-        method: HttpMethod,
-        path: str,
-        *,
-        context: RequestContext,
-        mapper: Callable[[object], ModelT],
-        params: Mapping[str, object] | None = None,
-        json_body: object | None = None,
-        data: Mapping[str, object] | None = None,
-        files: Mapping[str, object] | None = None,
-        headers: Mapping[str, str] | None = None,
-        idempotency_key: str | None = None,
-    ) -> ModelT:
-        """Выполняет запрос, получает JSON и маппит его в публичную SDK-модель."""
-
-        payload = self.request_json(
-            method,
-            path,
-            context=context,
-            params=params,
-            json_body=json_body,
-            data=data,
-            files=files,
-            headers=headers,
-            idempotency_key=idempotency_key,
-        )
-        return mapper(payload)
-
     def download_binary(
         self,
         path: str,

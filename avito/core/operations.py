@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from collections.abc import Mapping
 from dataclasses import dataclass, field
+from email.message import Message
 from typing import Literal, Protocol, TypeVar, cast
 from urllib.parse import quote
 
@@ -35,7 +36,7 @@ class ParamsModel(Protocol):
 class PayloadModel(Protocol):
     """Protocol for request models."""
 
-    def to_payload(self) -> Mapping[str, object]:
+    def to_payload(self) -> object:
         """Serialize model to JSON payload."""
 
 
@@ -198,7 +199,7 @@ def _serialize_query(
 def _serialize_request(
     spec: OperationSpec,
     request: object | Mapping[str, object] | None,
-) -> Mapping[str, object] | None:
+) -> object | None:
     if request is None:
         return None
     if isinstance(request, RequestModel):
@@ -242,10 +243,22 @@ def _request_binary(
     return BinaryResponse(
         content=response.content,
         content_type=response.headers.get("content-type"),
-        filename=None,
+        filename=_extract_filename(response.headers.get("content-disposition")),
         status_code=response.status_code,
         headers=dict(response.headers),
     )
+
+
+def _extract_filename(content_disposition: str | None) -> str | None:
+    if content_disposition is None:
+        return None
+    message = Message()
+    message["content-disposition"] = content_disposition
+    filename = message.get_param("filename", header="content-disposition")
+    if isinstance(filename, tuple):
+        _, _, decoded_value = filename
+        return decoded_value
+    return filename
 
 
 __all__ = (

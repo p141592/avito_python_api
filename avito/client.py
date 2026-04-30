@@ -28,7 +28,7 @@ from avito.cpa import CallTrackingCall, CpaArchive, CpaCall, CpaChat, CpaLead
 from avito.jobs import Application, JobDictionary, JobWebhook, Resume, Vacancy
 from avito.messenger import Chat, ChatMedia, ChatMessage, ChatWebhook, SpecialOfferCampaign
 from avito.orders import DeliveryOrder, DeliveryTask, Order, OrderLabel, SandboxDelivery, Stock
-from avito.orders._enums import OrderStatus
+from avito.orders.models import OrderStatus
 from avito.promotion import (
     AutostrategyCampaign,
     BbipPromotion,
