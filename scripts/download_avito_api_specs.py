@@ -9,30 +9,71 @@ import subprocess
 import sys
 from dataclasses import dataclass
 from pathlib import Path
+from urllib.parse import urljoin
 
 BASE_URL = "https://developers.avito.ru"
-LIST_URL = f"{BASE_URL}/web/1/openapi/list"
-INFO_URL_TEMPLATE = f"{BASE_URL}/web/1/openapi/info/{{slug}}"
+API_CATALOG_URL = f"{BASE_URL}/api-catalog"
+DOCUMENTATION_URL_TEMPLATE = f"{API_CATALOG_URL}/{{slug}}/documentation"
 DEFAULT_OUTPUT_DIR = Path("docs/avito/api")
+DEFAULT_CONNECT_TIMEOUT_SECONDS = 30
+DEFAULT_MAX_TIME_SECONDS = 180
 
 
 @dataclass(frozen=True, slots=True)
 class ApiCatalogItem:
     slug: str
     title: str
+    documentation_url: str
 
 
-def run_curl(url: str) -> str:
+@dataclass(frozen=True, slots=True)
+class ApiCatalogSource:
+    data_base_url: str
+
+    @property
+    def list_url(self) -> str:
+        return f"{self.data_base_url}/list"
+
+    def info_url(self, slug: str) -> str:
+        return f"{self.data_base_url}/info/{slug}"
+
+
+def run_curl(url: str, source_url: str) -> str:
     result = subprocess.run(
-        ["curl", "-fsSL", url],
+        [
+            "curl",
+            "-fsSL",
+            "--connect-timeout",
+            str(DEFAULT_CONNECT_TIMEOUT_SECONDS),
+            "--max-time",
+            str(DEFAULT_MAX_TIME_SECONDS),
+            url,
+        ],
         check=False,
         capture_output=True,
         text=True,
     )
     if result.returncode != 0:
         message = result.stderr.strip() or f"curl завершился с кодом {result.returncode}"
-        raise RuntimeError(f"Не удалось скачать {url}: {message}")
+        raise RuntimeError(f"Не удалось скачать {source_url}: {message}")
     return result.stdout
+
+
+def discover_catalog_source(page_html: str) -> ApiCatalogSource:
+    script_match = re.search(
+        r'<script[^>]+src="([^"]*open-api-dev-portal[^"]+\.js)"',
+        page_html,
+    )
+    if script_match is None:
+        raise RuntimeError(f"Источник {API_CATALOG_URL} не содержит JS каталога API")
+
+    script_url = urljoin(BASE_URL, script_match.group(1))
+    script = run_curl(script_url, API_CATALOG_URL)
+    data_base_match = re.search(r'"(/web/\d+/openapi)"', script)
+    if data_base_match is None:
+        raise RuntimeError(f"Источник {API_CATALOG_URL} не содержит data endpoint каталога API")
+
+    return ApiCatalogSource(data_base_url=urljoin(BASE_URL, data_base_match.group(1)))
 
 
 def load_json(raw: str, source: str) -> object:
@@ -52,23 +93,31 @@ def get_string_field(data: object, field: str, source: str) -> str:
 
 
 def fetch_catalog() -> list[ApiCatalogItem]:
-    raw_catalog = load_json(run_curl(LIST_URL), LIST_URL)
-    if not isinstance(raw_catalog, list):
-        raise RuntimeError(f"Источник {LIST_URL} вернул не список API")
-
-    catalog: list[ApiCatalogItem] = []
-    for raw_item in raw_catalog:
-        slug = get_string_field(raw_item, "slug", LIST_URL)
-        title = get_string_field(raw_item, "title", LIST_URL)
-        catalog.append(ApiCatalogItem(slug=slug, title=title))
+    catalog, _source = fetch_catalog_with_source()
     return catalog
 
 
-def fetch_swagger(slug: str) -> object:
-    source_url = INFO_URL_TEMPLATE.format(slug=slug)
-    raw_info = load_json(run_curl(source_url), source_url)
-    raw_swagger = get_string_field(raw_info, "swagger", source_url)
-    return load_json(raw_swagger, source_url)
+def fetch_catalog_with_source() -> tuple[list[ApiCatalogItem], ApiCatalogSource]:
+    page_html = run_curl(API_CATALOG_URL, API_CATALOG_URL)
+    source = discover_catalog_source(page_html)
+    raw_catalog = load_json(run_curl(source.list_url, API_CATALOG_URL), API_CATALOG_URL)
+    if not isinstance(raw_catalog, list):
+        raise RuntimeError(f"Источник {API_CATALOG_URL} вернул не список API")
+
+    catalog: list[ApiCatalogItem] = []
+    for raw_item in raw_catalog:
+        slug = get_string_field(raw_item, "slug", API_CATALOG_URL)
+        title = get_string_field(raw_item, "title", API_CATALOG_URL)
+        documentation_url = DOCUMENTATION_URL_TEMPLATE.format(slug=slug)
+        catalog.append(ApiCatalogItem(slug=slug, title=title, documentation_url=documentation_url))
+    return catalog, source
+
+
+def fetch_swagger(item: ApiCatalogItem, source: ApiCatalogSource) -> object:
+    data_url = source.info_url(item.slug)
+    raw_info = load_json(run_curl(data_url, item.documentation_url), item.documentation_url)
+    raw_swagger = get_string_field(raw_info, "swagger", item.documentation_url)
+    return load_json(raw_swagger, item.documentation_url)
 
 
 def normalize_filename(title: str) -> str:
@@ -98,7 +147,7 @@ def remove_stale_specs(output_dir: Path, expected_files: set[Path]) -> int:
 
 
 def download_specs(output_dir: Path, dry_run: bool, clean: bool) -> int:
-    catalog = fetch_catalog()
+    catalog, source = fetch_catalog_with_source()
     output_dir.mkdir(parents=True, exist_ok=True)
     expected_files = {output_dir / normalize_filename(item.title) for item in catalog}
 
@@ -112,7 +161,7 @@ def download_specs(output_dir: Path, dry_run: bool, clean: bool) -> int:
             print(f"{item.slug}: {destination}")
             continue
 
-        spec = fetch_swagger(item.slug)
+        spec = fetch_swagger(item, source)
         save_spec(spec, destination)
         print(f"{item.slug}: {destination}")
         saved_count += 1

@@ -4,7 +4,7 @@ export
 REGISTRY=10.11.0.9:5000
 MKDOCS_ENV=DISABLE_MKDOCS_2_WARNING=true NO_MKDOCS_2_WARNING=1
 
-check: test typecheck lint swagger-coverage build
+check: swagger-update test typecheck lint swagger-lint build
 
 build: clean
 	poetry build
