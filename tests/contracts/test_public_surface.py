@@ -139,27 +139,20 @@ def test_public_signatures_use_typed_requests_instead_of_generic_wrappers() -> N
 def test_public_surface_avoids_raw_dict_signatures_and_legacy_suffixes() -> None:
     module_names = (
         "avito.accounts.domain",
-        "avito.accounts.client",
         "avito.ads.domain",
         "avito.ads.client",
         "avito.autoteka.domain",
         "avito.autoteka.client",
         "avito.cpa.domain",
-        "avito.cpa.client",
         "avito.jobs.domain",
-        "avito.jobs.client",
         "avito.messenger.domain",
-        "avito.messenger.client",
         "avito.orders.domain",
         "avito.orders.client",
         "avito.promotion.domain",
         "avito.promotion.client",
         "avito.ratings.domain",
-        "avito.ratings.client",
         "avito.realty.domain",
-        "avito.realty.client",
         "avito.tariffs.domain",
-        "avito.tariffs.client",
     )
     banned_signature_tokens = ("Mapping[str, object]", "dict[str, object]", "object]")
     banned_name_fragments = ("legacy_",)
@@ -216,17 +209,10 @@ def test_chat_media_upload_images_no_longer_accepts_raw_dict() -> None:
 
 def test_section_clients_are_frozen_dataclasses() -> None:
     module_names = (
-        "avito.accounts.client",
         "avito.ads.client",
         "avito.autoteka.client",
-        "avito.cpa.client",
-        "avito.jobs.client",
-        "avito.messenger.client",
         "avito.orders.client",
         "avito.promotion.client",
-        "avito.ratings.client",
-        "avito.realty.client",
-        "avito.tariffs.client",
     )
     offenders: list[str] = []
 

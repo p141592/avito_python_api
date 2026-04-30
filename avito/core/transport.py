@@ -355,7 +355,7 @@ class Transport:
             return stripped
         has_trailing_slash = stripped.endswith("/")
         segments = [
-            quote(segment, safe=":@") for segment in stripped.strip("/").split("/") if segment
+            quote(segment, safe=":@%") for segment in stripped.strip("/").split("/") if segment
         ]
         normalized = "/" + "/".join(segments)
         if has_trailing_slash and normalized != "/":

@@ -5,8 +5,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from avito.core import RequestContext, Transport
-from avito.orders.enums import TrackingAvitoEventType, TrackingAvitoStatus
-from avito.orders.mappers import (
+from avito.orders._enums import TrackingAvitoEventType, TrackingAvitoStatus
+from avito.orders._mapping import (
     map_courier_ranges,
     map_delivery_entity,
     map_delivery_task,

@@ -7,7 +7,6 @@ from avito.autoteka.domain import (
     AutotekaValuation,
     AutotekaVehicle,
 )
-from avito.autoteka.enums import AutotekaStatus
 from avito.autoteka.models import (
     AutotekaLeadEvent,
     AutotekaLeadsResult,
@@ -17,6 +16,7 @@ from avito.autoteka.models import (
     AutotekaReportsResult,
     AutotekaScoringInfo,
     AutotekaSpecificationInfo,
+    AutotekaStatus,
     AutotekaTeaserInfo,
     AutotekaValuationInfo,
     CatalogField,

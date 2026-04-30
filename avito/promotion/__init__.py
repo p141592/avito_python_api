@@ -1,5 +1,13 @@
 """Пакет promotion."""
 
+from avito.promotion._enums import (
+    CampaignType,
+    PromotionOrderServiceStatus,
+    PromotionOrderStatus,
+    PromotionStatus,
+    TargetActionBudgetType,
+    TargetActionSelectedType,
+)
 from avito.promotion.domain import (
     AutostrategyCampaign,
     BbipPromotion,
@@ -7,14 +15,6 @@ from avito.promotion.domain import (
     PromotionOrder,
     TargetActionPricing,
     TrxPromotion,
-)
-from avito.promotion.enums import (
-    CampaignType,
-    PromotionOrderServiceStatus,
-    PromotionOrderStatus,
-    PromotionStatus,
-    TargetActionBudgetType,
-    TargetActionSelectedType,
 )
 from avito.promotion.models import (
     AutostrategyBudget,

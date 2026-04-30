@@ -2,31 +2,96 @@
 
 from __future__ import annotations
 
+from collections.abc import Mapping
 from dataclasses import dataclass
+from enum import Enum
 
-from avito.core.serialization import SerializableModel
-from avito.jobs.enums import (
-    ApplicationStatus,
-    JobActionStatus,
-    VacancyModerationStatus,
-    VacancyStatus,
-)
+from avito.core import ApiModel, RequestModel
+from avito.core.exceptions import ResponseMappingError
+
+Payload = Mapping[str, object]
+
+
+class JobActionStatus(str, Enum):
+    """Статус мутационной операции jobs."""
+
+    UNKNOWN = "__unknown__"
+    VIEWED = "viewed"
+    INVITED = "invited"
+    CREATED = "created"
+    UPDATED = "updated"
+    ARCHIVED = "archived"
+    PROLONGATED = "prolongated"
+    AUTO_RENEWAL_UPDATED = "auto-renewal-updated"
+
+
+class ApplicationStatus(str, Enum):
+    """Статус отклика."""
+
+    UNKNOWN = "__unknown__"
+    NEW = "new"
+
+
+class VacancyStatus(str, Enum):
+    """Статус вакансии."""
+
+    UNKNOWN = "__unknown__"
+    ACTIVE = "active"
+    CREATED = "created"
+    UPDATED = "updated"
+    ACTIVATED = "activated"
+    ARCHIVED = "archived"
+    BLOCKED = "blocked"
+    CLOSED = "closed"
+    EXPIRED = "expired"
+    REJECTED = "rejected"
+    UNBLOCKED = "unblocked"
+
+
+class VacancyModerationStatus(str, Enum):
+    """Статус модерации вакансии."""
+
+    UNKNOWN = "__unknown__"
+    IN_PROGRESS = "in_progress"
+    ALLOWED = "allowed"
+    BLOCKED = "blocked"
+    REJECTED = "rejected"
+
+
+class JobEnrichmentStatus(str, Enum):
+    """Статус обогащения параметров вакансии."""
+
+    UNKNOWN = "__unknown__"
+    IN_PROGRESS = "in_progress"
+    NOT_COMPLETED = "not_completed"
+    COMPLETED_NO_CRITERIA = "completed_no_criteria"
+    COMPLETED_MATCHED = "completed_matched"
+    COMPLETED_MISMATCHED = "completed_mismatched"
+
+
+class JobMatchingStatus(str, Enum):
+    """Статус сопоставления критерия вакансии."""
+
+    UNKNOWN = "__unknown__"
+    NO_CRITERIA = "no_criteria"
+    MATCHED = "matched"
+    MISMATCHED = "mismatched"
 
 
 @dataclass(slots=True, frozen=True)
-class ApplicationIdsQuery:
+class ApplicationIdsQuery(RequestModel):
     """Query списка идентификаторов откликов."""
 
     updated_at_from: str
 
-    def to_params(self) -> dict[str, str]:
+    def to_params(self) -> dict[str, object]:
         """Сериализует query-параметры идентификаторов откликов."""
 
         return {"updatedAtFrom": self.updated_at_from}
 
 
 @dataclass(slots=True, frozen=True)
-class ApplicationIdsRequest:
+class ApplicationIdsRequest(RequestModel):
     """Запрос получения откликов по идентификаторам."""
 
     ids: list[str]
@@ -38,7 +103,7 @@ class ApplicationIdsRequest:
 
 
 @dataclass(slots=True, frozen=True)
-class ApplicationActionRequest:
+class ApplicationActionRequest(RequestModel):
     """Запрос действия над откликами."""
 
     ids: list[str]
@@ -51,7 +116,7 @@ class ApplicationActionRequest:
 
 
 @dataclass(slots=True, frozen=True)
-class ApplicationViewedItem:
+class ApplicationViewedItem(RequestModel):
     """Флаг просмотра для отклика."""
 
     id: str
@@ -64,7 +129,7 @@ class ApplicationViewedItem:
 
 
 @dataclass(slots=True, frozen=True)
-class ApplicationViewedRequest:
+class ApplicationViewedRequest(RequestModel):
     """Запрос обновления флага просмотра откликов."""
 
     applies: list[ApplicationViewedItem]
@@ -76,7 +141,7 @@ class ApplicationViewedRequest:
 
 
 @dataclass(slots=True, frozen=True)
-class JobWebhookUpdateRequest:
+class JobWebhookUpdateRequest(RequestModel):
     """Запрос обновления webhook откликов."""
 
     url: str
@@ -88,34 +153,34 @@ class JobWebhookUpdateRequest:
 
 
 @dataclass(slots=True, frozen=True)
-class ResumeSearchQuery:
+class ResumeSearchQuery(RequestModel):
     """Query поиска резюме."""
 
     query: str
 
-    def to_params(self) -> dict[str, str]:
+    def to_params(self) -> dict[str, object]:
         """Сериализует query поиска резюме."""
 
         return {"query": self.query}
 
 
 @dataclass(slots=True, frozen=True)
-class VacanciesQuery:
+class VacanciesQuery(RequestModel):
     """Query списка или карточки вакансий."""
 
     query: str | None = None
 
-    def to_params(self) -> dict[str, str]:
+    def to_params(self) -> dict[str, object]:
         """Сериализует query вакансий."""
 
-        params: dict[str, str] = {}
+        params: dict[str, object] = {}
         if self.query is not None:
             params["query"] = self.query
         return params
 
 
 @dataclass(slots=True, frozen=True)
-class VacancyCreateRequest:
+class VacancyCreateRequest(RequestModel):
     """Запрос создания вакансии."""
 
     title: str
@@ -127,7 +192,7 @@ class VacancyCreateRequest:
 
 
 @dataclass(slots=True, frozen=True)
-class VacancyUpdateRequest:
+class VacancyUpdateRequest(RequestModel):
     """Запрос обновления вакансии."""
 
     title: str
@@ -139,7 +204,7 @@ class VacancyUpdateRequest:
 
 
 @dataclass(slots=True, frozen=True)
-class VacancyArchiveRequest:
+class VacancyArchiveRequest(RequestModel):
     """Запрос архивации вакансии v1."""
 
     employee_id: int
@@ -151,7 +216,7 @@ class VacancyArchiveRequest:
 
 
 @dataclass(slots=True, frozen=True)
-class VacancyProlongateRequest:
+class VacancyProlongateRequest(RequestModel):
     """Запрос продления вакансии v1."""
 
     billing_type: str
@@ -163,7 +228,7 @@ class VacancyProlongateRequest:
 
 
 @dataclass(slots=True, frozen=True)
-class VacancyIdsRequest:
+class VacancyIdsRequest(RequestModel):
     """Запрос списка вакансий по идентификаторам."""
 
     ids: list[int]
@@ -175,7 +240,7 @@ class VacancyIdsRequest:
 
 
 @dataclass(slots=True, frozen=True)
-class VacancyAutoRenewalRequest:
+class VacancyAutoRenewalRequest(RequestModel):
     """Запрос обновления автообновления вакансии."""
 
     auto_renewal: bool
@@ -187,7 +252,7 @@ class VacancyAutoRenewalRequest:
 
 
 @dataclass(slots=True, frozen=True)
-class JobActionResult(SerializableModel):
+class JobActionResult(ApiModel):
     """Результат mutation-операции Jobs API."""
 
     success: bool
@@ -195,9 +260,25 @@ class JobActionResult(SerializableModel):
     status: JobActionStatus | None = None
     message: str | None = None
 
+    @classmethod
+    def from_payload(cls, payload: object) -> JobActionResult:
+        """Преобразует результат mutation-операции Jobs API."""
+
+        data = _expect_mapping(payload)
+        result = _mapping(data, "result")
+        source = result or data
+        identifier = _str(source, "id", "uuid", "vacancy_uuid", "vacancyUuid", "apply_id")
+        numeric_id = _int(source, "id", "vacancy_id", "vacancyId")
+        return cls(
+            success=bool(source.get("ok", source.get("success", True))),
+            id=identifier or (str(numeric_id) if numeric_id is not None else None),
+            status=_enum(JobActionStatus, _str(source, "status", "state")),
+            message=_str(source, "message"),
+        )
+
 
 @dataclass(slots=True, frozen=True)
-class ApplicationInfo(SerializableModel):
+class ApplicationInfo(ApiModel):
     """Информация об отклике."""
 
     id: str | None
@@ -207,16 +288,38 @@ class ApplicationInfo(SerializableModel):
     is_viewed: bool | None
     applicant_name: str | None
 
+    @classmethod
+    def from_payload(cls, payload: object) -> ApplicationInfo:
+        data = _expect_mapping(payload)
+        return cls(
+            id=_str(data, "id"),
+            vacancy_id=_int(data, "vacancy_id", "vacancyId"),
+            resume_id=_str(data, "resume_id", "resumeId"),
+            state=_enum(ApplicationStatus, _str(data, "state", "status")),
+            is_viewed=_bool(data, "is_viewed", "isViewed"),
+            applicant_name=_str(_mapping(data, "applicant"), "name", "fullName"),
+        )
+
 
 @dataclass(slots=True, frozen=True)
-class ApplicationsResult(SerializableModel):
+class ApplicationsResult(ApiModel):
     """Список откликов."""
 
     items: list[ApplicationInfo]
 
+    @classmethod
+    def from_payload(cls, payload: object) -> ApplicationsResult:
+        data = _expect_mapping(payload)
+        return cls(
+            items=[
+                ApplicationInfo.from_payload(item)
+                for item in _list(data, "applies", "applications", "items", "result")
+            ],
+        )
+
 
 @dataclass(slots=True, frozen=True)
-class ApplicationIdItem(SerializableModel):
+class ApplicationIdItem(ApiModel):
     """Идентификатор отклика."""
 
     id: str | None
@@ -224,15 +327,26 @@ class ApplicationIdItem(SerializableModel):
 
 
 @dataclass(slots=True, frozen=True)
-class ApplicationIdsResult(SerializableModel):
+class ApplicationIdsResult(ApiModel):
     """Постраничный список идентификаторов откликов."""
 
     items: list[ApplicationIdItem]
     cursor: str | None = None
 
+    @classmethod
+    def from_payload(cls, payload: object) -> ApplicationIdsResult:
+        data = _expect_mapping(payload)
+        return cls(
+            items=[
+                ApplicationIdItem(id=_str(item, "id"), updated_at=_str(item, "updatedAt", "updated_at"))
+                for item in _list(data, "items", "applies", "result")
+            ],
+            cursor=_str(_mapping(data, "meta"), "cursor") or _str(data, "cursor"),
+        )
+
 
 @dataclass(slots=True, frozen=True)
-class ApplicationState(SerializableModel):
+class ApplicationState(ApiModel):
     """Статус отклика."""
 
     slug: str | None
@@ -240,14 +354,27 @@ class ApplicationState(SerializableModel):
 
 
 @dataclass(slots=True, frozen=True)
-class ApplicationStatesResult(SerializableModel):
+class ApplicationStatesResult(ApiModel):
     """Список возможных статусов откликов."""
 
     items: list[ApplicationState]
 
+    @classmethod
+    def from_payload(cls, payload: object) -> ApplicationStatesResult:
+        data = _expect_mapping(payload)
+        return cls(
+            items=[
+                ApplicationState(
+                    slug=_str(item, "slug", "id"),
+                    description=_str(item, "description", "name"),
+                )
+                for item in _list(data, "states", "items", "result")
+            ],
+        )
+
 
 @dataclass(slots=True, frozen=True)
-class ResumeInfo(SerializableModel):
+class ResumeInfo(ApiModel):
     """Краткая или полная информация о резюме."""
 
     id: str | None
@@ -256,27 +383,61 @@ class ResumeInfo(SerializableModel):
     location: str | None
     salary: int | None
 
+    @classmethod
+    def from_payload(cls, payload: object) -> ResumeInfo:
+        data = _expect_mapping(payload)
+        salary_payload = _mapping(data, "salary")
+        return cls(
+            id=_str(data, "id", "resume_id", "resumeId"),
+            title=_str(data, "title"),
+            candidate_name=_str(data, "name", "full_name", "fullName"),
+            location=_str(data, "location") or _str(_mapping(data, "address_details"), "location"),
+            salary=_int(data, "salary") or _int(salary_payload, "value", "from"),
+        )
+
 
 @dataclass(slots=True, frozen=True)
-class ResumesResult(SerializableModel):
+class ResumesResult(ApiModel):
     """Результат поиска резюме."""
 
     items: list[ResumeInfo]
     cursor: str | None = None
     total: int | None = None
 
+    @classmethod
+    def from_payload(cls, payload: object) -> ResumesResult:
+        data = _expect_mapping(payload)
+        meta = _mapping(data, "meta")
+        return cls(
+            items=[
+                ResumeInfo.from_payload(item)
+                for item in _list(data, "resumes", "items", "result")
+            ],
+            cursor=_str(meta, "cursor"),
+            total=_int(meta, "total"),
+        )
+
 
 @dataclass(slots=True, frozen=True)
-class ResumeContactInfo(SerializableModel):
+class ResumeContactInfo(ApiModel):
     """Контакты соискателя."""
 
     name: str | None
     phone: str | None
     email: str | None
 
+    @classmethod
+    def from_payload(cls, payload: object) -> ResumeContactInfo:
+        data = _expect_mapping(payload)
+        return cls(
+            name=_str(data, "name", "fullName"),
+            phone=_str(data, "phone", "phoneNumber"),
+            email=_str(data, "email"),
+        )
+
 
 @dataclass(slots=True, frozen=True)
-class VacancyInfo(SerializableModel):
+class VacancyInfo(ApiModel):
     """Информация о вакансии."""
 
     id: str | None
@@ -285,17 +446,42 @@ class VacancyInfo(SerializableModel):
     status: VacancyStatus | None
     url: str | None
 
+    @classmethod
+    def from_payload(cls, payload: object) -> VacancyInfo:
+        data = _expect_mapping(payload)
+        numeric_id = _int(data, "id", "vacancy_id", "vacancyId")
+        return cls(
+            id=_str(data, "id", "vacancy_id", "vacancyId")
+            or (str(numeric_id) if numeric_id is not None else None),
+            uuid=_str(data, "uuid", "vacancy_uuid", "vacancyUuid"),
+            title=_str(data, "title", "name"),
+            status=_enum(VacancyStatus, _str(data, "status", "state")),
+            url=_str(data, "url"),
+        )
+
 
 @dataclass(slots=True, frozen=True)
-class VacanciesResult(SerializableModel):
+class VacanciesResult(ApiModel):
     """Список вакансий."""
 
     items: list[VacancyInfo]
     total: int | None = None
 
+    @classmethod
+    def from_payload(cls, payload: object) -> VacanciesResult:
+        items = _expect_list(payload) if isinstance(payload, list) else []
+        data = {} if isinstance(payload, list) else _expect_mapping(payload)
+        if not items:
+            items = _list(data, "vacancies", "items", "result")
+        meta = _mapping(data, "meta")
+        return cls(
+            items=[VacancyInfo.from_payload(item) for item in items],
+            total=_int(meta, "total") or _int(data, "total"),
+        )
+
 
 @dataclass(slots=True, frozen=True)
-class VacancyStatusInfo(SerializableModel):
+class VacancyStatusInfo(ApiModel):
     """Статус публикации вакансии v2."""
 
     id: str | None
@@ -305,30 +491,72 @@ class VacancyStatusInfo(SerializableModel):
 
 
 @dataclass(slots=True, frozen=True)
-class VacancyStatusesResult(SerializableModel):
+class VacancyStatusesResult(ApiModel):
     """Список статусов вакансий."""
 
     items: list[VacancyStatusInfo]
 
+    @classmethod
+    def from_payload(cls, payload: object) -> VacancyStatusesResult:
+        data = _expect_mapping(payload)
+        items: list[VacancyStatusInfo] = []
+        for item in _list(data, "items", "statuses", "vacancies", "result"):
+            vacancy = _mapping(item, "vacancy") or item
+            numeric_id = _int(vacancy, "id", "vacancy_id")
+            items.append(
+                VacancyStatusInfo(
+                    id=_str(vacancy, "id", "vacancy_id")
+                    or (str(numeric_id) if numeric_id is not None else None),
+                    uuid=_str(vacancy, "uuid", "vacancy_uuid"),
+                    status=_enum(VacancyStatus, _str(vacancy, "status", "state")),
+                    moderation_status=_enum(
+                        VacancyModerationStatus,
+                        _str(vacancy, "moderation_status", "moderationStatus"),
+                    ),
+                )
+            )
+        return cls(items=items)
+
 
 @dataclass(slots=True, frozen=True)
-class JobWebhookInfo(SerializableModel):
+class JobWebhookInfo(ApiModel):
     """Подписка webhook раздела Работа."""
 
     url: str | None
     is_active: bool | None
     version: str | None
 
+    @classmethod
+    def from_payload(cls, payload: object) -> JobWebhookInfo:
+        data = _expect_mapping(payload)
+        return cls(
+            url=_str(data, "url"),
+            is_active=_bool(data, "is_active", "isActive", "active"),
+            version=_str(data, "version"),
+        )
+
 
 @dataclass(slots=True, frozen=True)
-class JobWebhooksResult(SerializableModel):
+class JobWebhooksResult(ApiModel):
     """Список webhook-подписок."""
 
     items: list[JobWebhookInfo]
 
+    @classmethod
+    def from_payload(cls, payload: object) -> JobWebhooksResult:
+        if isinstance(payload, list):
+            return cls(items=[JobWebhookInfo.from_payload(item) for item in _expect_list(payload)])
+        data = _expect_mapping(payload)
+        return cls(
+            items=[
+                JobWebhookInfo.from_payload(item)
+                for item in _list(data, "items", "webhooks", "result")
+            ],
+        )
+
 
 @dataclass(slots=True, frozen=True)
-class JobDictionaryInfo(SerializableModel):
+class JobDictionaryInfo(ApiModel):
     """Справочник вакансий."""
 
     id: str | None
@@ -336,14 +564,28 @@ class JobDictionaryInfo(SerializableModel):
 
 
 @dataclass(slots=True, frozen=True)
-class JobDictionariesResult(SerializableModel):
+class JobDictionariesResult(ApiModel):
     """Список доступных словарей."""
 
     items: list[JobDictionaryInfo]
 
+    @classmethod
+    def from_payload(cls, payload: object) -> JobDictionariesResult:
+        items_payload = (
+            _expect_list(payload)
+            if isinstance(payload, list)
+            else _list(_expect_mapping(payload), "items", "result")
+        )
+        return cls(
+            items=[
+                JobDictionaryInfo(id=_str(item, "id"), description=_str(item, "description"))
+                for item in items_payload
+            ],
+        )
+
 
 @dataclass(slots=True, frozen=True)
-class JobDictionaryValue(SerializableModel):
+class JobDictionaryValue(ApiModel):
     """Значение словаря вакансий."""
 
     id: int | str | None
@@ -352,7 +594,88 @@ class JobDictionaryValue(SerializableModel):
 
 
 @dataclass(slots=True, frozen=True)
-class JobDictionaryValuesResult(SerializableModel):
+class JobDictionaryValuesResult(ApiModel):
     """Список значений словаря."""
 
     items: list[JobDictionaryValue]
+
+    @classmethod
+    def from_payload(cls, payload: object) -> JobDictionaryValuesResult:
+        items_payload = (
+            _expect_list(payload)
+            if isinstance(payload, list)
+            else _list(_expect_mapping(payload), "items", "result")
+        )
+        return cls(
+            items=[
+                JobDictionaryValue(
+                    id=_int(item, "id") if _int(item, "id") is not None else _str(item, "id"),
+                    name=_str(item, "name", "description"),
+                    deprecated=_bool(item, "deprecated"),
+                )
+                for item in items_payload
+            ],
+        )
+
+
+def _expect_mapping(payload: object) -> Payload:
+    if not isinstance(payload, Mapping):
+        raise ResponseMappingError("Ожидался JSON-объект.", payload=payload)
+    return payload
+
+
+def _expect_list(payload: object) -> list[Payload]:
+    if not isinstance(payload, list):
+        raise ResponseMappingError("Ожидался JSON-массив.", payload=payload)
+    return [item for item in payload if isinstance(item, Mapping)]
+
+
+def _list(payload: Payload, *keys: str) -> list[Payload]:
+    for key in keys:
+        value = payload.get(key)
+        if isinstance(value, list):
+            return [item for item in value if isinstance(item, Mapping)]
+    return []
+
+
+def _mapping(payload: Payload, *keys: str) -> Payload:
+    for key in keys:
+        value = payload.get(key)
+        if isinstance(value, Mapping):
+            return value
+    return {}
+
+
+def _str(payload: Payload, *keys: str) -> str | None:
+    for key in keys:
+        value = payload.get(key)
+        if isinstance(value, str):
+            return value
+    return None
+
+
+def _int(payload: Payload, *keys: str) -> int | None:
+    for key in keys:
+        value = payload.get(key)
+        if isinstance(value, bool):
+            continue
+        if isinstance(value, int):
+            return value
+    return None
+
+
+def _bool(payload: Payload, *keys: str) -> bool | None:
+    for key in keys:
+        value = payload.get(key)
+        if isinstance(value, bool):
+            return value
+    return None
+
+
+def _enum[EnumT: Enum](enum_type: type[EnumT], value: str | None) -> EnumT | None:
+    if value is None:
+        return None
+    try:
+        return enum_type(value)
+    except ValueError:
+        return enum_type("__unknown__")

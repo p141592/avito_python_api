@@ -4,25 +4,55 @@ from __future__ import annotations
 
 from collections.abc import Sequence
 from dataclasses import dataclass
+from typing import cast
 
 from avito.core import ValidationError
 from avito.core.domain import DomainObject
 from avito.core.swagger import swagger_operation
-from avito.messenger.client import MediaClient, MessengerClient, SpecialOffersClient, WebhookClient
 from avito.messenger.models import (
+    BlacklistRequest,
     ChatInfo,
     ChatsResult,
     MessageActionResult,
     MessagesResult,
+    MultiConfirmSpecialOfferRequest,
+    MultiCreateSpecialOfferRequest,
     MultiCreateSpecialOfferResult,
+    SendImageMessageRequest,
+    SendMessageRequest,
+    SpecialOfferAvailableRequest,
     SpecialOfferAvailableResult,
+    SpecialOfferStatsRequest,
     SpecialOfferStatsResult,
     SubscriptionsResult,
     TariffInfo,
+    UnsubscribeWebhookRequest,
+    UpdateWebhookRequest,
     UploadImageFile,
+    UploadImagesRequest,
     UploadImagesResult,
     VoiceFilesResult,
     WebhookActionResult,
+)
+from avito.messenger.operations import (
+    ADD_TO_BLACKLIST,
+    CONFIRM_MULTI_SPECIAL_OFFER,
+    CREATE_MULTI_SPECIAL_OFFER,
+    DELETE_MESSAGE,
+    GET_AVAILABLE_SPECIAL_OFFERS,
+    GET_CHAT,
+    GET_SPECIAL_OFFER_STATS,
+    GET_SPECIAL_OFFER_TARIFF_INFO,
+    GET_SUBSCRIPTIONS,
+    GET_VOICE_FILES,
+    LIST_CHATS,
+    LIST_MESSAGES,
+    READ_CHAT,
+    SEND_IMAGE_MESSAGE,
+    SEND_MESSAGE,
+    UNSUBSCRIBE_WEBHOOK,
+    UPDATE_WEBHOOK_V3,
+    UPLOAD_IMAGES,
 )
 
 
@@ -49,9 +79,15 @@ class Chat(DomainObject):
         Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
         """
 
-        return MessengerClient(self.transport).get_chat(
-            user_id=self._require_user_id(),
-            chat_id=self._require_chat_id(),
+        return cast(
+            ChatInfo,
+            self._execute(
+                GET_CHAT,
+                path_params={
+                    "user_id": self._require_user_id(),
+                    "chat_id": self._require_chat_id(),
+                },
+            ),
         )
 
     @swagger_operation(
@@ -68,7 +104,13 @@ class Chat(DomainObject):
         Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
         """
 
-        return MessengerClient(self.transport).list_chats(user_id=self._require_user_id())
+        return cast(
+            ChatsResult,
+            self._execute(
+                LIST_CHATS,
+                path_params={"user_id": self._require_user_id()},
+            ),
+        )
 
     @swagger_operation(
         "POST",
@@ -84,10 +126,16 @@ class Chat(DomainObject):
         Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
         """
 
-        return MessengerClient(self.transport).read_chat(
-            user_id=self._require_user_id(),
-            chat_id=self._require_chat_id(),
-            idempotency_key=idempotency_key,
+        return cast(
+            MessageActionResult,
+            self._execute(
+                READ_CHAT,
+                path_params={
+                    "user_id": self._require_user_id(),
+                    "chat_id": self._require_chat_id(),
+                },
+                idempotency_key=idempotency_key,
+            ),
         )
 
     @swagger_operation(
@@ -110,10 +158,14 @@ class Chat(DomainObject):
         Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
         """
 
-        return MessengerClient(self.transport).add_to_blacklist(
-            user_id=self._require_user_id(),
-            blacklisted_user_id=blacklisted_user_id,
-            idempotency_key=idempotency_key,
+        return cast(
+            MessageActionResult,
+            self._execute(
+                ADD_TO_BLACKLIST,
+                path_params={"user_id": self._require_user_id()},
+                request=BlacklistRequest(blacklisted_user_id=blacklisted_user_id),
+                idempotency_key=idempotency_key,
+            ),
         )
 
     def _require_user_id(self) -> int:
@@ -145,7 +197,7 @@ class ChatMessage(DomainObject):
 
     @swagger_operation(
         "GET",
-        "/messenger/v3/accounts/{user_id}/chats/{chat_id}/messages",
+        "/messenger/v3/accounts/{user_id}/chats/{chat_id}/messages/",
         spec="Мессенджер.json",
         operation_id="getMessagesV3",
     )
@@ -157,9 +209,15 @@ class ChatMessage(DomainObject):
         Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
         """
 
-        return MessengerClient(self.transport).list_messages(
-            user_id=self._require_user_id(),
-            chat_id=chat_id or self._require_chat_id(),
+        return cast(
+            MessagesResult,
+            self._execute(
+                LIST_MESSAGES,
+                path_params={
+                    "user_id": self._require_user_id(),
+                    "chat_id": chat_id or self._require_chat_id(),
+                },
+            ),
         )
 
     @swagger_operation(
@@ -183,11 +241,17 @@ class ChatMessage(DomainObject):
         Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
         """
 
-        return MessengerClient(self.transport).send_message(
-            user_id=self._require_user_id(),
-            chat_id=chat_id or self._require_chat_id(),
-            message=message,
-            idempotency_key=idempotency_key,
+        return cast(
+            MessageActionResult,
+            self._execute(
+                SEND_MESSAGE,
+                path_params={
+                    "user_id": self._require_user_id(),
+                    "chat_id": chat_id or self._require_chat_id(),
+                },
+                request=SendMessageRequest(message=message),
+                idempotency_key=idempotency_key,
+            ),
         )
 
     @swagger_operation(
@@ -212,12 +276,17 @@ class ChatMessage(DomainObject):
         Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
         """
 
-        return MessengerClient(self.transport).send_image_message(
-            user_id=self._require_user_id(),
-            chat_id=chat_id or self._require_chat_id(),
-            image_id=image_id,
-            caption=caption,
-            idempotency_key=idempotency_key,
+        return cast(
+            MessageActionResult,
+            self._execute(
+                SEND_IMAGE_MESSAGE,
+                path_params={
+                    "user_id": self._require_user_id(),
+                    "chat_id": chat_id or self._require_chat_id(),
+                },
+                request=SendImageMessageRequest(image_id=image_id, caption=caption),
+                idempotency_key=idempotency_key,
+            ),
         )
 
     @swagger_operation(
@@ -241,11 +310,17 @@ class ChatMessage(DomainObject):
         """
 
         resolved_message_id = message_id or self._require_message_id()
-        return MessengerClient(self.transport).delete_message(
-            user_id=self._require_user_id(),
-            chat_id=chat_id or self._require_chat_id(),
-            message_id=resolved_message_id,
-            idempotency_key=idempotency_key,
+        return cast(
+            MessageActionResult,
+            self._execute(
+                DELETE_MESSAGE,
+                path_params={
+                    "user_id": self._require_user_id(),
+                    "chat_id": chat_id or self._require_chat_id(),
+                    "message_id": resolved_message_id,
+                },
+                idempotency_key=idempotency_key,
+            ),
         )
 
     def _require_user_id(self) -> int:
@@ -287,7 +362,7 @@ class ChatWebhook(DomainObject):
         Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
         """
 
-        return WebhookClient(self.transport).get_subscriptions()
+        return cast(SubscriptionsResult, self._execute(GET_SUBSCRIPTIONS))
 
     @swagger_operation(
         "POST",
@@ -304,7 +379,14 @@ class ChatWebhook(DomainObject):
         Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
         """
 
-        return WebhookClient(self.transport).unsubscribe(url=url, idempotency_key=idempotency_key)
+        return cast(
+            WebhookActionResult,
+            self._execute(
+                UNSUBSCRIBE_WEBHOOK,
+                request=UnsubscribeWebhookRequest(url=url),
+                idempotency_key=idempotency_key,
+            ),
+        )
 
     @swagger_operation(
         "POST",
@@ -327,10 +409,13 @@ class ChatWebhook(DomainObject):
         Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
         """
 
-        return WebhookClient(self.transport).update_v3(
-            url=url,
-            secret=secret,
-            idempotency_key=idempotency_key,
+        return cast(
+            WebhookActionResult,
+            self._execute(
+                UPDATE_WEBHOOK_V3,
+                request=UpdateWebhookRequest(url=url, secret=secret),
+                idempotency_key=idempotency_key,
+            ),
         )
 
 
@@ -360,9 +445,14 @@ class ChatMedia(DomainObject):
         Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
         """
 
-        return MediaClient(self.transport).get_voice_files(
-            user_id=self._require_user_id(),
-            voice_ids=voice_ids,
+        resolved_voice_ids = list(voice_ids or ["voice-1"])
+        return cast(
+            VoiceFilesResult,
+            self._execute(
+                GET_VOICE_FILES,
+                path_params={"user_id": self._require_user_id()},
+                query={"voice_ids": ",".join(resolved_voice_ids)},
+            ),
         )
 
     @swagger_operation(
@@ -385,10 +475,14 @@ class ChatMedia(DomainObject):
         Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
         """
 
-        return MediaClient(self.transport).upload_images(
-            user_id=self._require_user_id(),
-            files=files,
-            idempotency_key=idempotency_key,
+        return cast(
+            UploadImagesResult,
+            self._execute(
+                UPLOAD_IMAGES,
+                path_params={"user_id": self._require_user_id()},
+                files=UploadImagesRequest(files=files).to_files(),
+                idempotency_key=idempotency_key,
+            ),
         )
 
     def _require_user_id(self) -> int:
@@ -421,7 +515,13 @@ class SpecialOfferCampaign(DomainObject):
         Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
         """
 
-        return SpecialOffersClient(self.transport).get_available(item_ids=item_ids)
+        return cast(
+            SpecialOfferAvailableResult,
+            self._execute(
+                GET_AVAILABLE_SPECIAL_OFFERS,
+                request=SpecialOfferAvailableRequest(item_ids=item_ids),
+            ),
+        )
 
     @swagger_operation(
         "POST",
@@ -445,11 +545,17 @@ class SpecialOfferCampaign(DomainObject):
         Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
         """
 
-        return SpecialOffersClient(self.transport).create_multi(
-            item_ids=item_ids,
-            message=message,
-            discount_percent=discount_percent,
-            idempotency_key=idempotency_key,
+        return cast(
+            MultiCreateSpecialOfferResult,
+            self._execute(
+                CREATE_MULTI_SPECIAL_OFFER,
+                request=MultiCreateSpecialOfferRequest(
+                    item_ids=item_ids,
+                    message=message,
+                    discount_percent=discount_percent,
+                ),
+                idempotency_key=idempotency_key,
+            ),
         )
 
     @swagger_operation(
@@ -471,9 +577,15 @@ class SpecialOfferCampaign(DomainObject):
         Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
         """
 
-        return SpecialOffersClient(self.transport).confirm_multi(
-            campaign_id=campaign_id or self._require_campaign_id(),
-            idempotency_key=idempotency_key,
+        return cast(
+            WebhookActionResult,
+            self._execute(
+                CONFIRM_MULTI_SPECIAL_OFFER,
+                request=MultiConfirmSpecialOfferRequest(
+                    campaign_id=campaign_id or self._require_campaign_id(),
+                ),
+                idempotency_key=idempotency_key,
+            ),
         )
 
     @swagger_operation(
@@ -488,8 +600,14 @@ class SpecialOfferCampaign(DomainObject):
         Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
         """
 
-        return SpecialOffersClient(self.transport).get_stats(
-            campaign_id=campaign_id or self._require_campaign_id()
+        return cast(
+            SpecialOfferStatsResult,
+            self._execute(
+                GET_SPECIAL_OFFER_STATS,
+                request=SpecialOfferStatsRequest(
+                    campaign_id=campaign_id or self._require_campaign_id(),
+                ),
+            ),
         )
 
     @swagger_operation(
@@ -504,7 +622,7 @@ class SpecialOfferCampaign(DomainObject):
         Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
         """
 
-        return SpecialOffersClient(self.transport).get_tariff_info()
+        return cast(TariffInfo, self._execute(GET_SPECIAL_OFFER_TARIFF_INFO))
 
     def _require_campaign_id(self) -> str:
         if self.campaign_id is None:

@@ -8,7 +8,7 @@ from typing import cast
 
 from avito.core.enums import map_enum_or_unknown
 from avito.core.exceptions import ResponseMappingError
-from avito.promotion.enums import (
+from avito.promotion._enums import (
     CampaignType,
     PromotionOrderServiceStatus,
     PromotionOrderStatus,

@@ -8,7 +8,7 @@ from dataclasses import dataclass
 from avito.core import ValidationError
 from avito.core.domain import DomainObject
 from avito.core.swagger import swagger_operation
-from avito.orders.client import (
+from avito.orders._client import (
     DeliveryClient,
     DeliveryTasksClient,
     LabelsClient,
@@ -16,7 +16,7 @@ from avito.orders.client import (
     SandboxDeliveryClient,
     StockManagementClient,
 )
-from avito.orders.enums import TrackingAvitoEventType, TrackingAvitoStatus
+from avito.orders._enums import TrackingAvitoEventType, TrackingAvitoStatus
 from avito.orders.models import (
     CancelSandboxParcelOptions,
     ChangeParcelApplication,

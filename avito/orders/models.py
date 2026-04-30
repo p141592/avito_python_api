@@ -7,7 +7,7 @@ from dataclasses import dataclass
 
 from avito.core import BinaryResponse
 from avito.core.serialization import SerializableModel
-from avito.orders.enums import (
+from avito.orders._enums import (
     DeliveryOperationStatus,
     DeliveryTaskState,
     LabelTaskStatus,

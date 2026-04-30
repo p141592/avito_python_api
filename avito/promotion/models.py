@@ -7,7 +7,7 @@ from datetime import datetime
 from typing import TypedDict
 
 from avito.core.serialization import SerializableModel
-from avito.promotion.enums import (
+from avito.promotion._enums import (
     CampaignType,
     PromotionOrderServiceStatus,
     PromotionOrderStatus,

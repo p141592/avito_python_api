@@ -1,14 +1,6 @@
 """Пакет jobs."""
 
 from avito.jobs.domain import Application, JobDictionary, JobWebhook, Resume, Vacancy
-from avito.jobs.enums import (
-    ApplicationStatus,
-    JobActionStatus,
-    JobEnrichmentStatus,
-    JobMatchingStatus,
-    VacancyModerationStatus,
-    VacancyStatus,
-)
 from avito.jobs.models import (
     ApplicationActionRequest,
     ApplicationIdsQuery,
@@ -16,11 +8,15 @@ from avito.jobs.models import (
     ApplicationIdsResult,
     ApplicationsResult,
     ApplicationStatesResult,
+    ApplicationStatus,
     ApplicationViewedItem,
     ApplicationViewedRequest,
     JobActionResult,
+    JobActionStatus,
     JobDictionariesResult,
     JobDictionaryValuesResult,
+    JobEnrichmentStatus,
+    JobMatchingStatus,
     JobWebhookInfo,
     JobWebhooksResult,
     JobWebhookUpdateRequest,
@@ -35,7 +31,9 @@ from avito.jobs.models import (
     VacancyCreateRequest,
     VacancyIdsRequest,
     VacancyInfo,
+    VacancyModerationStatus,
     VacancyProlongateRequest,
+    VacancyStatus,
     VacancyStatusesResult,
     VacancyUpdateRequest,
 )

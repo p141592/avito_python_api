@@ -7,7 +7,7 @@ from typing import cast
 
 from avito.core.enums import map_enum_or_unknown
 from avito.core.exceptions import ResponseMappingError
-from avito.orders.enums import (
+from avito.orders._enums import (
     DeliveryOperationStatus,
     DeliveryTaskState,
     LabelTaskStatus,

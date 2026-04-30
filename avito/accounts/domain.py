@@ -5,8 +5,8 @@ from __future__ import annotations
 from collections.abc import Sequence
 from dataclasses import dataclass
 from datetime import datetime
+from typing import cast
 
-from avito.accounts.client import AccountsClient, HierarchyClient
 from avito.accounts.models import (
     AccountActionResult,
     AccountBalance,
@@ -14,10 +14,25 @@ from avito.accounts.models import (
     AhUserStatus,
     CompanyPhonesResult,
     EmployeeItem,
+    EmployeeItemLinkRequest,
+    EmployeeItemsRequest,
+    EmployeeItemsResult,
     EmployeesResult,
     OperationRecord,
+    OperationsHistoryRequest,
+    OperationsHistoryResult,
 )
-from avito.core import PaginatedList
+from avito.accounts.operations import (
+    GET_AH_USER_STATUS,
+    GET_BALANCE,
+    GET_OPERATIONS_HISTORY,
+    GET_SELF,
+    LINK_ITEMS,
+    LIST_COMPANY_PHONES,
+    LIST_EMPLOYEES,
+    LIST_ITEMS_BY_EMPLOYEE,
+)
+from avito.core import JsonPage, PaginatedList, Paginator, ValidationError
 from avito.core.domain import DomainObject
 from avito.core.swagger import swagger_operation
 
@@ -48,7 +63,7 @@ class Account(DomainObject):
         Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
         """
 
-        return AccountsClient(self.transport).get_self()
+        return cast(AccountProfile, self._execute(GET_SELF))
 
     @swagger_operation(
         "GET",
@@ -62,8 +77,11 @@ class Account(DomainObject):
         Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
         """
 
-        resolved_user_id = self._resolve_user_id(user_id or self.user_id)
-        return AccountsClient(self.transport).get_balance(user_id=resolved_user_id)
+        resolved_user_id = self._resolve_account_user_id(user_id)
+        return cast(
+            AccountBalance,
+            self._execute(GET_BALANCE, path_params={"user_id": resolved_user_id}),
+        )
 
     @swagger_operation(
         "POST",
@@ -86,12 +104,43 @@ class Account(DomainObject):
         Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
         """
 
-        return AccountsClient(self.transport).get_operations_history(
-            date_from=_serialize_datetime(date_from),
-            date_to=_serialize_datetime(date_to),
-            limit=limit,
-            offset=offset,
-        )
+        page_size = limit or 25
+        base_offset = offset or 0
+
+        def fetch_page(page: int | None, _cursor: str | None) -> JsonPage[OperationRecord]:
+            current_page = page or 1
+            current_offset = base_offset + (current_page - 1) * page_size
+            result = cast(
+                OperationsHistoryResult,
+                self._execute(
+                    GET_OPERATIONS_HISTORY,
+                    request=OperationsHistoryRequest(
+                        date_from=_serialize_datetime(date_from),
+                        date_to=_serialize_datetime(date_to),
+                        limit=page_size,
+                        offset=current_offset,
+                    ),
+                ),
+            )
+            return JsonPage(
+                items=result.operations,
+                total=result.total,
+                page=current_page,
+                per_page=page_size,
+            )
+
+        return Paginator(fetch_page).as_list(first_page=fetch_page(1, None))
+
+    def _resolve_account_user_id(self, user_id: int | None) -> int:
+        if user_id is not None or self.user_id is not None:
+            return self._resolve_user_id(user_id or self.user_id)
+        profile = self.get_self()
+        if profile.user_id is None:
+            raise ValidationError(
+                "Для операции требуется `user_id`: передайте его в фабрику клиента, "
+                "в метод операции или задайте `AVITO_USER_ID`."
+            )
+        return profile.user_id
 
 
 @dataclass(slots=True, frozen=True)
@@ -116,7 +165,7 @@ class AccountHierarchy(DomainObject):
         Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
         """
 
-        return HierarchyClient(self.transport).get_status()
+        return cast(AhUserStatus, self._execute(GET_AH_USER_STATUS))
 
     @swagger_operation(
         "GET",
@@ -132,7 +181,7 @@ class AccountHierarchy(DomainObject):
         Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
         """
 
-        return HierarchyClient(self.transport).list_employees()
+        return cast(EmployeesResult, self._execute(LIST_EMPLOYEES))
 
     @swagger_operation(
         "GET",
@@ -148,7 +197,7 @@ class AccountHierarchy(DomainObject):
         Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
         """
 
-        return HierarchyClient(self.transport).list_company_phones()
+        return cast(CompanyPhonesResult, self._execute(LIST_COMPANY_PHONES))
 
     @swagger_operation(
         "POST",
@@ -172,11 +221,17 @@ class AccountHierarchy(DomainObject):
         Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
         """
 
-        return HierarchyClient(self.transport).link_items(
-            employee_id=employee_id,
-            item_ids=list(item_ids),
-            source_employee_id=source_employee_id,
-            idempotency_key=idempotency_key,
+        return cast(
+            AccountActionResult,
+            self._execute(
+                LINK_ITEMS,
+                request=EmployeeItemLinkRequest(
+                    employee_id=employee_id,
+                    item_ids=list(item_ids),
+                    source_employee_id=source_employee_id,
+                ),
+                idempotency_key=idempotency_key,
+            ),
         )
 
     @swagger_operation(
@@ -200,11 +255,31 @@ class AccountHierarchy(DomainObject):
         Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
         """
 
-        return HierarchyClient(self.transport).list_items_by_employee(
-            employee_id=employee_id,
-            limit=limit,
-            offset=offset,
-        )
+        page_size = limit or 25
+        base_offset = offset or 0
+
+        def fetch_page(page: int | None, _cursor: str | None) -> JsonPage[EmployeeItem]:
+            current_page = page or 1
+            current_offset = base_offset + (current_page - 1) * page_size
+            result = cast(
+                EmployeeItemsResult,
+                self._execute(
+                    LIST_ITEMS_BY_EMPLOYEE,
+                    request=EmployeeItemsRequest(
+                        employee_id=employee_id,
+                        limit=page_size,
+                        offset=current_offset,
+                    ),
+                ),
+            )
+            return JsonPage(
+                items=result.items,
+                total=result.total,
+                page=current_page,
+                per_page=page_size,
+            )
+
+        return Paginator(fetch_page).as_list(first_page=fetch_page(1, None))
 
 
 __all__ = ("Account", "AccountHierarchy")

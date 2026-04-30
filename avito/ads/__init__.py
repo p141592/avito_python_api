@@ -1,14 +1,6 @@
 """Пакет ads."""
 
-from avito.ads.domain import (
-    Ad,
-    AdPromotion,
-    AdStats,
-    AutoloadArchive,
-    AutoloadProfile,
-    AutoloadReport,
-)
-from avito.ads.enums import (
+from avito.ads._enums import (
     AdsActionStatus,
     AutoloadAvitoStatus,
     AutoloadFieldType,
@@ -16,6 +8,14 @@ from avito.ads.enums import (
     AutoloadItemStatusDetail,
     AutoloadReportStatus,
     ListingStatus,
+)
+from avito.ads.domain import (
+    Ad,
+    AdPromotion,
+    AdStats,
+    AutoloadArchive,
+    AutoloadProfile,
+    AutoloadReport,
 )
 from avito.ads.models import (
     AccountSpendings,

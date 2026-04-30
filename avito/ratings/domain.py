@@ -3,16 +3,23 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from typing import cast
 
 from avito.core import ValidationError
 from avito.core.domain import DomainObject
 from avito.core.swagger import swagger_operation
-from avito.ratings.client import RatingsClient
 from avito.ratings.models import (
+    CreateReviewAnswerRequest,
     RatingProfileInfo,
     ReviewAnswerInfo,
     ReviewsQuery,
     ReviewsResult,
+)
+from avito.ratings.operations import (
+    CREATE_REVIEW_ANSWER,
+    DELETE_REVIEW_ANSWER,
+    GET_RATINGS_INFO,
+    LIST_REVIEWS,
 )
 
 
@@ -39,7 +46,12 @@ class Review(DomainObject):
         Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
         """
 
-        return RatingsClient(self.transport).list_reviews(query=query)
+        resolved_query = ReviewsQuery(
+            offset=query.offset if query is not None and query.offset is not None else 0,
+            page=query.page if query is not None and query.page is not None else 1,
+            limit=query.limit if query is not None and query.limit is not None else 50,
+        )
+        return cast(ReviewsResult, self._execute(LIST_REVIEWS, query=resolved_query))
 
 
 @dataclass(slots=True, frozen=True)
@@ -76,10 +88,13 @@ class ReviewAnswer(DomainObject):
         Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
         """
 
-        return RatingsClient(self.transport).create_review_answer(
-            review_id=review_id,
-            text=text,
-            idempotency_key=idempotency_key,
+        return cast(
+            ReviewAnswerInfo,
+            self._execute(
+                CREATE_REVIEW_ANSWER,
+                request=CreateReviewAnswerRequest(review_id=review_id, text=text),
+                idempotency_key=idempotency_key,
+            ),
         )
 
     @swagger_operation(
@@ -103,9 +118,13 @@ class ReviewAnswer(DomainObject):
         Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
         """
 
-        return RatingsClient(self.transport).delete_review_answer(
-            answer_id=answer_id or self._require_answer_id(),
-            idempotency_key=idempotency_key,
+        return cast(
+            ReviewAnswerInfo,
+            self._execute(
+                DELETE_REVIEW_ANSWER,
+                path_params={"answer_id": answer_id or self._require_answer_id()},
+                idempotency_key=idempotency_key,
+            ),
         )
 
     def _require_answer_id(self) -> str:
@@ -137,7 +156,7 @@ class RatingProfile(DomainObject):
         Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
         """
 
-        return RatingsClient(self.transport).get_ratings_info()
+        return cast(RatingProfileInfo, self._execute(GET_RATINGS_INFO))
 
 
 __all__ = ("RatingProfile", "Review", "ReviewAnswer")

@@ -6,8 +6,8 @@ from dataclasses import dataclass
 
 from avito.core.domain import DomainObject
 from avito.core.swagger import swagger_operation
-from avito.tariffs.client import TariffsClient
 from avito.tariffs.models import TariffInfo
+from avito.tariffs.operations import GET_TARIFF_INFO
 
 
 @dataclass(slots=True, frozen=True)
@@ -32,7 +32,7 @@ class Tariff(DomainObject):
         Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
         """
 
-        return TariffsClient(self.transport).get_tariff_info()
+        return self._execute(GET_TARIFF_INFO)  # type: ignore[return-value]
 
 
 __all__ = ("Tariff",)

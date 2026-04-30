@@ -3,19 +3,32 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from typing import cast
 
 from avito.core import ValidationError
 from avito.core.domain import DomainObject
 from avito.core.swagger import swagger_operation
-from avito.realty.client import RealtyAnalyticsClient, ShortTermRentClient
 from avito.realty.models import (
     RealtyActionResult,
     RealtyAnalyticsInfo,
+    RealtyBaseParamsUpdateRequest,
     RealtyBookingsQuery,
     RealtyBookingsResult,
+    RealtyBookingsUpdateRequest,
     RealtyInterval,
+    RealtyIntervalsRequest,
     RealtyMarketPriceInfo,
     RealtyPricePeriod,
+    RealtyPricesUpdateRequest,
+)
+from avito.realty.operations import (
+    GET_INTERVALS,
+    GET_MARKET_PRICE_CORRESPONDENCE,
+    GET_REPORT_FOR_CLASSIFIED,
+    LIST_REALTY_BOOKINGS,
+    UPDATE_BASE_PARAMS,
+    UPDATE_BOOKINGS_INFO,
+    UPDATE_REALTY_PRICES,
 )
 
 
@@ -50,9 +63,15 @@ class RealtyListing(DomainObject):
         Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
         """
 
-        return ShortTermRentClient(self.transport).get_intervals(
-            item_id=item_id or int(self._require_item_id()),
-            intervals=intervals,
+        return cast(
+            RealtyActionResult,
+            self._execute(
+                GET_INTERVALS,
+                request=RealtyIntervalsRequest(
+                    item_id=item_id or int(self._require_item_id()),
+                    intervals=intervals,
+                ),
+            ),
         )
 
     @swagger_operation(
@@ -72,9 +91,13 @@ class RealtyListing(DomainObject):
         Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
         """
 
-        return ShortTermRentClient(self.transport).update_base_params(
-            item_id=item_id or self._require_item_id(),
-            min_stay_days=min_stay_days,
+        return cast(
+            RealtyActionResult,
+            self._execute(
+                UPDATE_BASE_PARAMS,
+                path_params={"item_id": item_id or self._require_item_id()},
+                request=RealtyBaseParamsUpdateRequest(min_stay_days=min_stay_days),
+            ),
         )
 
     def _require_item_id(self) -> str:
@@ -115,10 +138,16 @@ class RealtyBooking(DomainObject):
         Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
         """
 
-        return ShortTermRentClient(self.transport).update_bookings_info(
-            user_id=user_id or self._require_user_id(),
-            item_id=item_id or self._require_item_id(),
-            blocked_dates=blocked_dates,
+        return cast(
+            RealtyActionResult,
+            self._execute(
+                UPDATE_BOOKINGS_INFO,
+                path_params={
+                    "user_id": user_id or self._require_user_id(),
+                    "item_id": item_id or self._require_item_id(),
+                },
+                request=RealtyBookingsUpdateRequest(blocked_dates=blocked_dates),
+            ),
         )
 
     @swagger_operation(
@@ -144,13 +173,19 @@ class RealtyBooking(DomainObject):
         Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
         """
 
-        return ShortTermRentClient(self.transport).list_realty_bookings(
-            user_id=user_id or self._require_user_id(),
-            item_id=item_id or self._require_item_id(),
-            query=RealtyBookingsQuery(
-                date_start=date_start,
-                date_end=date_end,
-                with_unpaid=with_unpaid,
+        return cast(
+            RealtyBookingsResult,
+            self._execute(
+                LIST_REALTY_BOOKINGS,
+                path_params={
+                    "user_id": user_id or self._require_user_id(),
+                    "item_id": item_id or self._require_item_id(),
+                },
+                query=RealtyBookingsQuery(
+                    date_start=date_start,
+                    date_end=date_end,
+                    with_unpaid=with_unpaid,
+                ),
             ),
         )
 
@@ -197,10 +232,16 @@ class RealtyPricing(DomainObject):
         Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
         """
 
-        return ShortTermRentClient(self.transport).update_realty_prices(
-            user_id=user_id or self._require_user_id(),
-            item_id=item_id or self._require_item_id(),
-            periods=periods,
+        return cast(
+            RealtyActionResult,
+            self._execute(
+                UPDATE_REALTY_PRICES,
+                path_params={
+                    "user_id": user_id or self._require_user_id(),
+                    "item_id": item_id or self._require_item_id(),
+                },
+                request=RealtyPricesUpdateRequest(periods=periods),
+            ),
         )
 
     def _require_item_id(self) -> str:
@@ -245,9 +286,15 @@ class RealtyAnalyticsReport(DomainObject):
         Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
         """
 
-        return RealtyAnalyticsClient(self.transport).get_market_price_correspondence(
-            item_id=item_id or self._require_item_id(),
-            price=price,
+        return cast(
+            RealtyMarketPriceInfo,
+            self._execute(
+                GET_MARKET_PRICE_CORRESPONDENCE,
+                path_params={
+                    "itemId": item_id or self._require_item_id(),
+                    "price": price,
+                },
+            ),
         )
 
     @swagger_operation(
@@ -264,8 +311,12 @@ class RealtyAnalyticsReport(DomainObject):
         Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
         """
 
-        return RealtyAnalyticsClient(self.transport).get_report_for_classified(
-            item_id=item_id or self._require_item_id()
+        return cast(
+            RealtyAnalyticsInfo,
+            self._execute(
+                GET_REPORT_FOR_CLASSIFIED,
+                path_params={"itemId": item_id or self._require_item_id()},
+            ),
         )
 
     def _require_item_id(self) -> str:

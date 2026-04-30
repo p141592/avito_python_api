@@ -4,17 +4,6 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from avito.autoteka.client import (
-    CatalogClient,
-    LeadsClient,
-    MonitoringClient,
-    PreviewClient,
-    ReportClient,
-    ScoringClient,
-    SpecificationsClient,
-    TeaserClient,
-    ValuationClient,
-)
 from avito.autoteka.models import (
     AutotekaLeadsResult,
     AutotekaPackageInfo,
@@ -25,15 +14,62 @@ from avito.autoteka.models import (
     AutotekaSpecificationInfo,
     AutotekaTeaserInfo,
     AutotekaValuationInfo,
+    CatalogResolveRequest,
     CatalogResolveResult,
+    ExternalItemPreviewRequest,
+    ItemIdRequest,
+    LeadsRequest,
+    MonitoringBucketRequest,
     MonitoringBucketResult,
     MonitoringEventsQuery,
     MonitoringEventsResult,
+    PlateNumberRequest,
+    PreviewReportRequest,
+    RegNumberRequest,
+    TeaserCreateRequest,
     ValuationBySpecificationRequest,
+    VehicleIdRequest,
+    VinRequest,
+)
+from avito.autoteka.operations import (
+    ADD_MONITORING_BUCKET,
+    CATALOG_RESOLVE,
+    CREATE_PREVIEW_BY_EXTERNAL_ITEM,
+    CREATE_PREVIEW_BY_ITEM_ID,
+    CREATE_PREVIEW_BY_REG_NUMBER,
+    CREATE_PREVIEW_BY_VIN,
+    CREATE_REPORT,
+    CREATE_REPORT_BY_VEHICLE_ID,
+    CREATE_SCORING_BY_VEHICLE_ID,
+    CREATE_SPECIFICATION_BY_PLATE_NUMBER,
+    CREATE_SPECIFICATION_BY_VEHICLE_ID,
+    CREATE_SYNC_REPORT_BY_REG_NUMBER,
+    CREATE_SYNC_REPORT_BY_VIN,
+    CREATE_TEASER,
+    DELETE_MONITORING_BUCKET,
+    GET_ACTIVE_PACKAGE,
+    GET_LEADS,
+    GET_MONITORING_REG_ACTIONS,
+    GET_PREVIEW,
+    GET_REPORT,
+    GET_SCORING_BY_ID,
+    GET_SPECIFICATION_BY_ID,
+    GET_TEASER,
+    GET_VALUATION_BY_SPECIFICATION,
+    LIST_REPORTS,
+    REMOVE_MONITORING_BUCKET,
 )
 from avito.core import ValidationError
 from avito.core.domain import DomainObject
 from avito.core.swagger import swagger_operation
+from avito.core.transport import Transport
+
+
+def _autoteka_headers(transport: Transport) -> dict[str, str]:
+    auth_provider = transport.auth_provider
+    if auth_provider is None:
+        return {}
+    return {"Authorization": f"Bearer {auth_provider.get_autoteka_access_token()}"}
 
 
 @dataclass(slots=True, frozen=True)
@@ -60,7 +96,11 @@ class AutotekaVehicle(DomainObject):
         Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
         """
 
-        return CatalogClient(self.transport).resolve_catalog(brand_id=brand_id)
+        return self._execute(
+            CATALOG_RESOLVE,
+            request=CatalogResolveRequest(brand_id=brand_id),
+            headers=_autoteka_headers(self.transport),
+        )  # type: ignore[return-value]
 
     @swagger_operation(
         "POST",
@@ -77,7 +117,11 @@ class AutotekaVehicle(DomainObject):
         Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
         """
 
-        return LeadsClient(self.transport).get_leads(limit=limit)
+        return self._execute(
+            GET_LEADS,
+            request=LeadsRequest(limit=limit),
+            headers=_autoteka_headers(self.transport),
+        )  # type: ignore[return-value]
 
     @swagger_operation(
         "POST",
@@ -98,10 +142,12 @@ class AutotekaVehicle(DomainObject):
         Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
         """
 
-        return PreviewClient(self.transport).create_by_vin(
-            vin=vin,
+        return self._execute(
+            CREATE_PREVIEW_BY_VIN,
+            request=VinRequest(vin=vin),
+            headers=_autoteka_headers(self.transport),
             idempotency_key=idempotency_key,
-        )
+        )  # type: ignore[return-value]
 
     @swagger_operation(
         "GET",
@@ -117,9 +163,11 @@ class AutotekaVehicle(DomainObject):
         Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
         """
 
-        return PreviewClient(self.transport).get_preview(
-            preview_id=preview_id or self._require_vehicle_id("preview_id")
-        )
+        return self._execute(
+            GET_PREVIEW,
+            path_params={"preview_id": preview_id or self._require_vehicle_id("preview_id")},
+            headers=_autoteka_headers(self.transport),
+        )  # type: ignore[return-value]
 
     @swagger_operation(
         "POST",
@@ -144,11 +192,12 @@ class AutotekaVehicle(DomainObject):
         Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
         """
 
-        return PreviewClient(self.transport).create_by_external_item(
-            item_id=item_id,
-            site=site,
+        return self._execute(
+            CREATE_PREVIEW_BY_EXTERNAL_ITEM,
+            request=ExternalItemPreviewRequest(item_id=item_id, site=site),
+            headers=_autoteka_headers(self.transport),
             idempotency_key=idempotency_key,
-        )
+        )  # type: ignore[return-value]
 
     @swagger_operation(
         "POST",
@@ -169,10 +218,12 @@ class AutotekaVehicle(DomainObject):
         Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
         """
 
-        return PreviewClient(self.transport).create_by_item_id(
-            item_id=item_id,
+        return self._execute(
+            CREATE_PREVIEW_BY_ITEM_ID,
+            request=ItemIdRequest(item_id=item_id),
+            headers=_autoteka_headers(self.transport),
             idempotency_key=idempotency_key,
-        )
+        )  # type: ignore[return-value]
 
     @swagger_operation(
         "POST",
@@ -193,10 +244,12 @@ class AutotekaVehicle(DomainObject):
         Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
         """
 
-        return PreviewClient(self.transport).create_by_reg_number(
-            reg_number=reg_number,
+        return self._execute(
+            CREATE_PREVIEW_BY_REG_NUMBER,
+            request=RegNumberRequest(reg_number=reg_number),
+            headers=_autoteka_headers(self.transport),
             idempotency_key=idempotency_key,
-        )
+        )  # type: ignore[return-value]
 
     @swagger_operation(
         "POST",
@@ -217,10 +270,12 @@ class AutotekaVehicle(DomainObject):
         Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
         """
 
-        return SpecificationsClient(self.transport).create_by_plate_number(
-            plate_number=plate_number,
+        return self._execute(
+            CREATE_SPECIFICATION_BY_PLATE_NUMBER,
+            request=PlateNumberRequest(plate_number=plate_number),
+            headers=_autoteka_headers(self.transport),
             idempotency_key=idempotency_key,
-        )
+        )  # type: ignore[return-value]
 
     @swagger_operation(
         "POST",
@@ -241,10 +296,12 @@ class AutotekaVehicle(DomainObject):
         Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
         """
 
-        return SpecificationsClient(self.transport).create_by_vehicle_id(
-            vehicle_id=vehicle_id,
+        return self._execute(
+            CREATE_SPECIFICATION_BY_VEHICLE_ID,
+            request=VehicleIdRequest(vehicle_id=vehicle_id),
+            headers=_autoteka_headers(self.transport),
             idempotency_key=idempotency_key,
-        )
+        )  # type: ignore[return-value]
 
     @swagger_operation(
         "GET",
@@ -264,9 +321,14 @@ class AutotekaVehicle(DomainObject):
         Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
         """
 
-        return SpecificationsClient(self.transport).get_by_id(
-            specification_id=specification_id or self._require_vehicle_id("specification_id")
-        )
+        return self._execute(
+            GET_SPECIFICATION_BY_ID,
+            path_params={
+                "specification_id": specification_id
+                or self._require_vehicle_id("specification_id")
+            },
+            headers=_autoteka_headers(self.transport),
+        )  # type: ignore[return-value]
 
     @swagger_operation(
         "POST",
@@ -287,10 +349,12 @@ class AutotekaVehicle(DomainObject):
         Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
         """
 
-        return TeaserClient(self.transport).create(
-            vehicle_id=vehicle_id,
+        return self._execute(
+            CREATE_TEASER,
+            request=TeaserCreateRequest(vehicle_id=vehicle_id),
+            headers=_autoteka_headers(self.transport),
             idempotency_key=idempotency_key,
-        )
+        )  # type: ignore[return-value]
 
     @swagger_operation(
         "GET",
@@ -306,9 +370,11 @@ class AutotekaVehicle(DomainObject):
         Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
         """
 
-        return TeaserClient(self.transport).get(
-            teaser_id=teaser_id or self._require_vehicle_id("teaser_id")
-        )
+        return self._execute(
+            GET_TEASER,
+            path_params={"teaser_id": teaser_id or self._require_vehicle_id("teaser_id")},
+            headers=_autoteka_headers(self.transport),
+        )  # type: ignore[return-value]
 
     def _require_vehicle_id(self, field_name: str) -> str:
         if self.vehicle_id is None:
@@ -341,7 +407,10 @@ class AutotekaReport(DomainObject):
         Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
         """
 
-        return ReportClient(self.transport).get_active_package()
+        return self._execute(
+            GET_ACTIVE_PACKAGE,
+            headers=_autoteka_headers(self.transport),
+        )  # type: ignore[return-value]
 
     @swagger_operation(
         "POST",
@@ -362,10 +431,12 @@ class AutotekaReport(DomainObject):
         Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
         """
 
-        return ReportClient(self.transport).create_report(
-            preview_id=preview_id,
+        return self._execute(
+            CREATE_REPORT,
+            request=PreviewReportRequest(preview_id=preview_id),
+            headers=_autoteka_headers(self.transport),
             idempotency_key=idempotency_key,
-        )
+        )  # type: ignore[return-value]
 
     @swagger_operation(
         "POST",
@@ -386,10 +457,12 @@ class AutotekaReport(DomainObject):
         Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
         """
 
-        return ReportClient(self.transport).create_report_by_vehicle_id(
-            vehicle_id=vehicle_id,
+        return self._execute(
+            CREATE_REPORT_BY_VEHICLE_ID,
+            request=VehicleIdRequest(vehicle_id=vehicle_id),
+            headers=_autoteka_headers(self.transport),
             idempotency_key=idempotency_key,
-        )
+        )  # type: ignore[return-value]
 
     @swagger_operation(
         "GET",
@@ -405,7 +478,10 @@ class AutotekaReport(DomainObject):
         Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
         """
 
-        return ReportClient(self.transport).list_reports()
+        return self._execute(
+            LIST_REPORTS,
+            headers=_autoteka_headers(self.transport),
+        )  # type: ignore[return-value]
 
     @swagger_operation(
         "GET",
@@ -421,9 +497,11 @@ class AutotekaReport(DomainObject):
         Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
         """
 
-        return ReportClient(self.transport).get_report(
-            report_id=report_id or self._require_report_id()
-        )
+        return self._execute(
+            GET_REPORT,
+            path_params={"report_id": report_id or self._require_report_id()},
+            headers=_autoteka_headers(self.transport),
+        )  # type: ignore[return-value]
 
     @swagger_operation(
         "POST",
@@ -444,10 +522,12 @@ class AutotekaReport(DomainObject):
         Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
         """
 
-        return ReportClient(self.transport).create_sync_report_by_reg_number(
-            reg_number=reg_number,
+        return self._execute(
+            CREATE_SYNC_REPORT_BY_REG_NUMBER,
+            request=RegNumberRequest(reg_number=reg_number),
+            headers=_autoteka_headers(self.transport),
             idempotency_key=idempotency_key,
-        )
+        )  # type: ignore[return-value]
 
     @swagger_operation(
         "POST",
@@ -468,10 +548,12 @@ class AutotekaReport(DomainObject):
         Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
         """
 
-        return ReportClient(self.transport).create_sync_report_by_vin(
-            vin=vin,
+        return self._execute(
+            CREATE_SYNC_REPORT_BY_VIN,
+            request=VinRequest(vin=vin),
+            headers=_autoteka_headers(self.transport),
             idempotency_key=idempotency_key,
-        )
+        )  # type: ignore[return-value]
 
     def _require_report_id(self) -> str:
         if self.report_id is None:
@@ -507,10 +589,12 @@ class AutotekaMonitoring(DomainObject):
         Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
         """
 
-        return MonitoringClient(self.transport).add_bucket(
-            vehicles=vehicles,
+        return self._execute(
+            ADD_MONITORING_BUCKET,
+            request=MonitoringBucketRequest(vehicles=vehicles),
+            headers=_autoteka_headers(self.transport),
             idempotency_key=idempotency_key,
-        )
+        )  # type: ignore[return-value]
 
     @swagger_operation(
         "POST",
@@ -526,7 +610,11 @@ class AutotekaMonitoring(DomainObject):
         Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
         """
 
-        return MonitoringClient(self.transport).delete_bucket(idempotency_key=idempotency_key)
+        return self._execute(
+            DELETE_MONITORING_BUCKET,
+            headers=_autoteka_headers(self.transport),
+            idempotency_key=idempotency_key,
+        )  # type: ignore[return-value]
 
     @swagger_operation(
         "POST",
@@ -545,10 +633,12 @@ class AutotekaMonitoring(DomainObject):
         Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
         """
 
-        return MonitoringClient(self.transport).remove_bucket(
-            vehicles=vehicles,
+        return self._execute(
+            REMOVE_MONITORING_BUCKET,
+            request=MonitoringBucketRequest(vehicles=vehicles),
+            headers=_autoteka_headers(self.transport),
             idempotency_key=idempotency_key,
-        )
+        )  # type: ignore[return-value]
 
     @swagger_operation(
         "GET",
@@ -568,7 +658,11 @@ class AutotekaMonitoring(DomainObject):
         Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
         """
 
-        return MonitoringClient(self.transport).get_reg_actions(query=query)
+        return self._execute(
+            GET_MONITORING_REG_ACTIONS,
+            query=query,
+            headers=_autoteka_headers(self.transport),
+        )  # type: ignore[return-value]
 
 
 @dataclass(slots=True, frozen=True)
@@ -601,10 +695,12 @@ class AutotekaScoring(DomainObject):
         Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
         """
 
-        return ScoringClient(self.transport).create_by_vehicle_id(
-            vehicle_id=vehicle_id,
+        return self._execute(
+            CREATE_SCORING_BY_VEHICLE_ID,
+            request=VehicleIdRequest(vehicle_id=vehicle_id),
+            headers=_autoteka_headers(self.transport),
             idempotency_key=idempotency_key,
-        )
+        )  # type: ignore[return-value]
 
     @swagger_operation(
         "GET",
@@ -620,9 +716,11 @@ class AutotekaScoring(DomainObject):
         Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
         """
 
-        return ScoringClient(self.transport).get_by_id(
-            scoring_id=scoring_id or self._require_scoring_id()
-        )
+        return self._execute(
+            GET_SCORING_BY_ID,
+            path_params={"scoring_id": scoring_id or self._require_scoring_id()},
+            headers=_autoteka_headers(self.transport),
+        )  # type: ignore[return-value]
 
     def _require_scoring_id(self) -> str:
         if self.scoring_id is None:
@@ -656,9 +754,14 @@ class AutotekaValuation(DomainObject):
         Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
         """
 
-        return ValuationClient(self.transport).get_by_specification(
-            ValuationBySpecificationRequest(specification_id=specification_id, mileage=mileage)
-        )
+        return self._execute(
+            GET_VALUATION_BY_SPECIFICATION,
+            request=ValuationBySpecificationRequest(
+                specification_id=specification_id,
+                mileage=mileage,
+            ),
+            headers=_autoteka_headers(self.transport),
+        )  # type: ignore[return-value]
 
 
 __all__ = (

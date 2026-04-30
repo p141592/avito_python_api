@@ -188,7 +188,7 @@ The contract suite is exhaustive over the Swagger binding map:
 When adding or changing a public API method that corresponds to Avito API:
 
 1. Confirm the upstream operation in `docs/avito/api/*.json`.
-2. Add or update the domain method, section client call, mapper and public models.
+2. Add or update the domain method, `OperationSpec`, request/query models, response models, and model-owned payload parsing.
 3. Add `@swagger_operation(...)` on the public domain method without schemas/statuses/content types in the decorator.
 4. Add or update class-level metadata if the domain class is new.
 5. Document the public method through docstring so generated reference explains arguments, return model, pagination/dry-run/idempotency behavior and common exceptions.

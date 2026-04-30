@@ -4,7 +4,7 @@ export
 REGISTRY=10.11.0.9:5000
 MKDOCS_ENV=DISABLE_MKDOCS_2_WARNING=true NO_MKDOCS_2_WARNING=1
 
-check: swagger-update test typecheck lint swagger-lint build
+check: swagger-update test typecheck lint swagger-lint architecture-lint build
 
 build: clean
 	poetry build
@@ -35,6 +35,9 @@ swagger-update:
 
 swagger-lint: swagger-update
 	poetry run python scripts/lint_swagger_bindings.py --strict
+
+architecture-lint:
+	poetry run python scripts/lint_architecture.py
 
 swagger-coverage: swagger-lint
 	poetry run pytest tests/core/test_swagger.py tests/core/test_swagger_discovery.py tests/core/test_swagger_linter.py tests/core/test_swagger_report.py tests/core/test_swagger_registry.py tests/contracts/test_swagger_contracts.py

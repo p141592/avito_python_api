@@ -99,8 +99,8 @@ Rules:
 - `domain.py` contains public `DomainObject` classes, explicit public methods, reference-ready docstrings, `@swagger_operation(...)` bindings, business validation, and construction of internal request models.
 - `operations.py` or `operations/` contains internal `OperationSpec` definitions: HTTP method, path, operation name, retry policy, path rendering, request model class, response model class, and pagination/binary/multipart strategy when applicable.
 - `models.py` or `models/` contains public response dataclasses, internal request/query dataclasses, colocated enum types, `from_payload()`, `to_payload()`, `to_params()`, and normalization logic.
-- New domains must not introduce `client.py`, `mappers.py`, or standalone `enums.py` unless the architecture note for the change explains why the target layout is insufficient.
-- Existing domains may keep legacy `client.py`, `mappers.py`, and `enums.py` during migration. Compatibility mappers must delegate to `Model.from_payload()` once a model owns the mapping.
+- New or converted API domains must not introduce `client.py`, `mappers.py`, or standalone `enums.py` unless the architecture note for the change explains why the target layout is insufficient.
+- Once an API domain is converted to v2, legacy `client.py`, `mappers.py`, standalone `enums.py`, compatibility adapters, and compatibility exports are forbidden for that domain.
 
 ## Public API
 
@@ -197,7 +197,7 @@ Rules:
 - One class, one explicit area of responsibility.
 - Classes must not simultaneously handle HTTP, authorization, logging, and model transformation.
 - "God object" classes containing logic for all API sections are forbidden.
-- `SectionClient` and standalone `Mapper` modules are legacy compatibility layers, not the target for new code. When retained, they must remain internal and delegate to transport plus model-owned mapping.
+- `SectionClient` and standalone `Mapper` modules are legacy migration layers for domains that have not yet moved to v2. Converted domains must execute through `OperationSpec` and model-owned mapping only.
 
 ## Dataclasses and Models
 

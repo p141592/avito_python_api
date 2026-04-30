@@ -1,14 +1,6 @@
 """Пакет orders."""
 
-from avito.orders.domain import (
-    DeliveryOrder,
-    DeliveryTask,
-    Order,
-    OrderLabel,
-    SandboxDelivery,
-    Stock,
-)
-from avito.orders.enums import (
+from avito.orders._enums import (
     DeliveryOperationStatus,
     DeliveryStatus,
     DeliveryTaskState,
@@ -17,6 +9,14 @@ from avito.orders.enums import (
     OrderStatus,
     TrackingAvitoEventType,
     TrackingAvitoStatus,
+)
+from avito.orders.domain import (
+    DeliveryOrder,
+    DeliveryTask,
+    Order,
+    OrderLabel,
+    SandboxDelivery,
+    Stock,
 )
 from avito.orders.models import (
     AddSortingCentersRequest,

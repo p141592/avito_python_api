@@ -6,7 +6,7 @@ from collections.abc import Mapping
 from datetime import datetime
 from typing import cast
 
-from avito.ads.enums import (
+from avito.ads._enums import (
     AdsActionStatus,
     AutoloadAvitoStatus,
     AutoloadFieldType,

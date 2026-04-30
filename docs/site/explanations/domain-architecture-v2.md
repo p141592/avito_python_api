@@ -1,6 +1,9 @@
 # Целевая структура доменов
 
-Эта страница фиксирует целевую архитектуру доменных пакетов для дальнейшего рефакторинга SDK. Текущая реализация может ещё содержать `client.py`, `mappers.py` и `enums.py`; новая структура описывает направление, в котором нужно переносить новые и изменяемые домены.
+Эта страница фиксирует целевую архитектуру доменных пакетов SDK. Домены
+`tariffs`, `accounts` и `ratings` являются эталонной реализацией v2: публичные
+методы находятся в `domain.py`, HTTP-контракты в `operations.py`, а модели,
+enum-ы и payload mapping принадлежат `models.py`.
 
 ## Основной принцип
 
@@ -14,7 +17,9 @@
 - сериализацию request/query моделей через `to_payload()` и `to_params()`;
 - enum-ы, относящиеся к этой модели или группе моделей.
 
-Отдельные mapper-функции не должны быть основным способом преобразования JSON. Если временный compatibility `mappers.py` остаётся во время миграции, он должен только делегировать в `Model.from_payload()`.
+Отдельные mapper-функции не должны быть способом преобразования JSON для
+переведённых API-доменов. При переводе домена legacy `client.py`, `mappers.py`
+и standalone `enums.py` удаляются в том же изменении.
 
 ## Структура простого домена
 
@@ -63,8 +68,6 @@ Enum должен лежать рядом с моделями, которые е
 ```python
 from dataclasses import dataclass
 from enum import StrEnum
-from typing import Self
-
 from avito.core.models import ApiModel
 from avito.core.payload import JsonReader
 
@@ -83,11 +86,11 @@ class OrderInfo(ApiModel):
     status: OrderStatus
 
     @classmethod
-    def from_payload(cls, payload: object) -> Self:
-        data = JsonReader.expect_mapping(payload)
+    def from_payload(cls, payload: object) -> "OrderInfo":
+        reader = JsonReader(payload)
         return cls(
-            order_id=data.required_str("id", "order_id", "orderId"),
-            status=data.enum("status", OrderStatus, default=OrderStatus.UNKNOWN),
+            order_id=reader.required_str("id", "order_id", "orderId"),
+            status=reader.enum(OrderStatus, "status", unknown=OrderStatus.UNKNOWN),
         )
 ```
 
@@ -96,15 +99,11 @@ class OrderInfo(ApiModel):
 `core` предоставляет только инфраструктурные базовые классы. Они не знают о конкретных доменах Avito.
 
 ```python
-from typing import Self
-
 from avito.core.serialization import SerializableModel
 
 
 class ApiModel(SerializableModel):
-    @classmethod
-    def from_payload(cls, payload: object) -> Self:
-        raise NotImplementedError
+    """Base class for public typed API response models."""
 
 
 class RequestModel:
@@ -135,7 +134,7 @@ class CreateReviewAnswerRequest(RequestModel):
 HTTP-контракт операции описывается отдельно от моделей, но не содержит JSON-маппинга.
 
 ```python
-from avito.core.operations import OperationSpec, RetryPolicy
+from avito.core.operations import OperationSpec
 from avito.ratings.models import CreateReviewAnswerRequest, ReviewAnswerInfo
 
 
@@ -145,7 +144,7 @@ CREATE_REVIEW_ANSWER = OperationSpec(
     path="/ratings/v1/answers",
     request_model=CreateReviewAnswerRequest,
     response_model=ReviewAnswerInfo,
-    retry_policy=RetryPolicy.IDEMPOTENCY_KEY,
+    retry_mode="enabled",
 )
 ```
 
@@ -157,6 +156,7 @@ CREATE_REVIEW_ANSWER = OperationSpec(
 
 ```python
 from dataclasses import dataclass
+from typing import cast
 
 from avito.core.domain import DomainObject
 from avito.core.swagger import swagger_operation
@@ -194,11 +194,11 @@ class ReviewAnswer(DomainObject):
         """
 
         request = CreateReviewAnswerRequest(review_id=review_id, text=text)
-        return self._execute(
+        return cast(ReviewAnswerInfo, self._execute(
             operations.CREATE_REVIEW_ANSWER,
-            request,
+            request=request,
             idempotency_key=idempotency_key,
-        )
+        ))
 ```
 
 Публичные методы нельзя генерировать через `setattr`, `globals()` или другой runtime-patching. Новый слой операций сокращает внутреннее дублирование, но публичный SDK-контракт остаётся явным.
@@ -210,7 +210,7 @@ class ReviewAnswer(DomainObject):
 - `ApiModel`, `RequestModel` и shared serialization helpers;
 - `JsonReader` для безопасного чтения JSON без знания доменных моделей;
 - `api_field()` и другие helpers для dataclass metadata;
-- `OperationSpec`, `OperationExecutor`, `RetryPolicy` и path rendering;
+- `OperationSpec`, `OperationExecutor`, retry mode и path rendering;
 - общие стратегии пагинации: offset, page, cursor;
 - универсальную primitive-валидацию;
 - transport, retries, exceptions, swagger discovery и swagger lint.
@@ -230,4 +230,4 @@ class ReviewAnswer(DomainObject):
 - JSON-маппинг response payload находится в `ResponseModel.from_payload()`.
 - JSON-маппинг request/query payload находится в request dataclass.
 - Enum-ы находятся в `models.py` или в подпакете `models/`, рядом с моделями.
-- `mappers.py` и `client.py` не добавляются для новых доменов без отдельного архитектурного обоснования.
+- `client.py`, `mappers.py` и standalone `enums.py` отсутствуют в переведённых API-доменах.

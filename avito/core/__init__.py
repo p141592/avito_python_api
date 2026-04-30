@@ -17,7 +17,11 @@ from avito.core.exceptions import (
     UpstreamApiError,
     ValidationError,
 )
+from avito.core.fields import api_field
+from avito.core.models import ApiModel, RequestModel
+from avito.core.operations import EmptyResponse, OperationExecutor, OperationSpec
 from avito.core.pagination import PaginatedList, Paginator
+from avito.core.payload import JsonReader
 from avito.core.retries import RetryDecision, RetryPolicy
 from avito.core.serialization import SerializableModel
 from avito.core.swagger import SwaggerOperationBinding, swagger_operation
@@ -32,6 +36,7 @@ from avito.core.types import (
 
 __all__ = (
     "ApiTimeouts",
+    "ApiModel",
     "AuthenticationError",
     "AuthorizationError",
     "AvitoError",
@@ -40,12 +45,17 @@ __all__ = (
     "ConfigurationError",
     "ConflictError",
     "DomainObject",
+    "EmptyResponse",
+    "JsonReader",
     "JsonPage",
     "NotFoundError",
+    "OperationExecutor",
+    "OperationSpec",
     "PaginatedList",
     "Paginator",
     "RateLimitError",
     "RequestContext",
+    "RequestModel",
     "ResponseMappingError",
     "RetryDecision",
     "RetryPolicy",
@@ -58,5 +68,6 @@ __all__ = (
     "UnsupportedOperationError",
     "UpstreamApiError",
     "ValidationError",
+    "api_field",
     "swagger_operation",
 )

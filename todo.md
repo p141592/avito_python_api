@@ -80,25 +80,55 @@ poetry run python scripts/lint_swagger_bindings.py --json --strict --output swag
 
 ### 0.3. Создать progress table
 
+Phase 0 baseline снят командой:
+
+```bash
+poetry run python scripts/inventory_architecture.py --json --output architecture-inventory-report.json
+poetry run python scripts/lint_swagger_bindings.py --json --strict --output swagger-bindings-report.json
+```
+
+Общий baseline:
+
+- API-доменов: 11;
+- API-domain legacy files: 33;
+- legacy imports: 70;
+- `request_public_model` / `mapper=` hits: 321;
+- public methods в `avito/<domain>/domain.py`: 201;
+- Swagger operations всего: 204;
+- Swagger operations в API-доменах Phase 0: 200;
+- discovered Swagger bindings в API-доменах Phase 0: 200.
+
 Поддерживать таблицу до завершения миграции.
 
-| Domain | Legacy files removed | OperationSpec | Models `from_payload` | Request models | Domain tests | Swagger OK | Status |
-|---|---:|---:|---:|---:|---:|---:|---|
-| tariffs | no | no | no | no | no | yes/no | pending |
-| accounts | no | no | no | no | no | yes/no | pending |
-| ratings | no | no | no | no | no | yes/no | pending |
-| realty | no | no | no | no | no | yes/no | pending |
-| cpa | no | no | no | no | no | yes/no | pending |
-| messenger | no | no | no | no | no | yes/no | pending |
-| jobs | no | no | no | no | no | yes/no | pending |
-| autoteka | no | no | no | no | no | yes/no | pending |
-| promotion | no | no | no | no | no | yes/no | pending |
-| ads | no | no | no | no | no | yes/no | pending |
-| orders | no | no | no | no | no | yes/no | pending |
+| Domain | Legacy files | Public methods | Swagger bindings | Swagger ops | Edge cases | Status |
+|---|---:|---:|---:|---:|---|---|
+| tariffs | 0 | 1 | 1 | 1 | - | done |
+| accounts | 0 | 8 | 8 | 8 | empty_response | done |
+| ratings | 0 | 4 | 4 | 4 | pagination | done |
+| realty | 0 | 7 | 7 | 7 | empty_response | done |
+| cpa | 0 | 14 | 14 | 14 | empty_response | done |
+| messenger | 0 | 18 | 18 | 18 | empty_response, multipart, pagination | done |
+| jobs | 0 | 26 | 25 | 25 | empty_response, pagination | done |
+| autoteka | 0 | 26 | 26 | 26 | pagination | done |
+| promotion | 0 | 24 | 24 | 24 | empty_response | done |
+| ads | 0 | 28 | 28 | 28 | empty_response, pagination | done |
+| orders | 0 | 45 | 45 | 45 | binary, pagination | partial: legacy files removed, OperationSpec migration remains |
 
 ## Phase 1. Implement v2 core MVP
 
 Цель: создать минимальный core, на котором можно перевести первые домены без временных adapter-ов.
+
+Статус: выполнено. Добавлены `ApiModel`, `RequestModel`, `api_field`, `JsonReader`,
+`OperationSpec`, `OperationExecutor`, `EmptyResponse`, `DomainObject._execute()`;
+`_resolve_user_id` больше не импортирует `avito.accounts.client`.
+
+Проверено:
+
+```bash
+poetry run pytest tests/core/
+poetry run mypy avito/core avito/testing
+poetry run ruff check avito/core tests/core
+```
 
 ### 1.1. Добавить `avito/core/models.py`
 
@@ -239,6 +269,10 @@ poetry run ruff check avito/core tests/core
 
 Цель: автоматически запретить возврат к legacy architecture.
 
+Статус: выполнено. Добавлен `scripts/lint_architecture.py`, Makefile target
+`architecture-lint`, focused tests `tests/core/test_architecture_lint.py`.
+Migration allowlist уменьшен после перевода `tariffs`, `accounts`, `ratings`.
+
 ### 2.1. Добавить `scripts/lint_architecture.py`
 
 Линтер должен использовать AST там, где regex ненадёжен.
@@ -322,6 +356,8 @@ poetry run pytest tests/core/test_architecture_lint.py
 
 Цель: минимальный эталон JSON GET.
 
+Статус: выполнено.
+
 Actions:
 
 - создать `avito/tariffs/operations.py`;
@@ -351,6 +387,8 @@ poetry run ruff check .
 
 Цель: снять core dependency на legacy account client и закрыть user/account patterns.
 
+Статус: выполнено.
+
 Actions:
 
 - создать `avito/accounts/operations.py`;
@@ -376,6 +414,8 @@ poetry run ruff check .
 ### 3.3. Convert `ratings`
 
 Цель: эталон write/idempotency/list/delete операций.
+
+Статус: выполнено.
 
 Actions:
 
@@ -403,6 +443,10 @@ poetry run ruff check .
 ### 3.4. Freeze reference pattern
 
 После `tariffs`, `accounts`, `ratings`:
+
+Статус: выполнено. Эталонный паттерн зафиксирован в
+`docs/site/explanations/domain-architecture-v2.md`, `STYLEGUIDE.md` и
+`docs/site/explanations/swagger-binding-subsystem.md`.
 
 - обновить `docs/site/explanations/domain-architecture-v2.md` фактическими сигнатурами core API;
 - обновить `STYLEGUIDE.md`: temporary compatibility больше не описывать как поддерживаемый режим;

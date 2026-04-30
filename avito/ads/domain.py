@@ -5,38 +5,70 @@ from __future__ import annotations
 from collections.abc import Sequence
 from dataclasses import dataclass
 from datetime import date, datetime
+from typing import cast
 
-from avito.ads.client import (
-    AdsClient,
-    AutoloadArchiveClient,
-    AutoloadClient,
-    StatsClient,
-    VasClient,
-)
-from avito.ads.enums import ListingStatus
+from avito.ads._enums import ListingStatus
 from avito.ads.models import (
     AccountSpendings,
     AdsActionResult,
+    AdsListResult,
     ApplyVasPackageRequest,
     ApplyVasRequest,
     AutoloadFeesResult,
     AutoloadFieldsResult,
     AutoloadProfileSettings,
+    AutoloadProfileUpdateRequest,
     AutoloadReportDetails,
     AutoloadReportItemsResult,
+    AutoloadReportsResult,
     AutoloadReportSummary,
     AutoloadTreeResult,
+    CallsStatsRequest,
     CallsStatsResult,
     IdMappingResult,
     ItemAnalyticsResult,
+    ItemStatsRequest,
     ItemStatsResult,
     LegacyAutoloadReport,
     Listing,
+    UpdatePriceRequest,
     UpdatePriceResult,
+    UploadByUrlRequest,
     UploadResult,
+    VasPricesRequest,
     VasPricesResult,
 )
-from avito.core import PaginatedList, ValidationError
+from avito.ads.operations import (
+    APPLY_ITEM_VAS,
+    APPLY_ITEM_VAS_PACKAGE,
+    APPLY_VAS_DIRECT,
+    GET_ACCOUNT_SPENDINGS,
+    GET_AD_IDS_BY_AVITO_IDS,
+    GET_ARCHIVE_LAST_COMPLETED_REPORT,
+    GET_ARCHIVE_PROFILE,
+    GET_ARCHIVE_REPORT,
+    GET_AUTOLOAD_ITEMS_INFO,
+    GET_AUTOLOAD_LAST_COMPLETED_REPORT,
+    GET_AUTOLOAD_NODE_FIELDS,
+    GET_AUTOLOAD_PROFILE,
+    GET_AUTOLOAD_REPORT,
+    GET_AUTOLOAD_REPORT_FEES,
+    GET_AUTOLOAD_REPORT_ITEMS,
+    GET_AUTOLOAD_TREE,
+    GET_AVITO_IDS_BY_AD_IDS,
+    GET_CALLS_STATS,
+    GET_ITEM,
+    GET_ITEM_ANALYTICS,
+    GET_ITEM_STATS,
+    GET_VAS_PRICES,
+    LIST_AUTOLOAD_REPORTS,
+    LIST_ITEMS,
+    SAVE_ARCHIVE_PROFILE,
+    SAVE_AUTOLOAD_PROFILE,
+    UPDATE_PRICE,
+    UPLOAD_BY_URL,
+)
+from avito.core import JsonPage, PaginatedList, Paginator, ValidationError
 from avito.core.deprecation import deprecated_method
 from avito.core.domain import DomainObject
 from avito.core.swagger import swagger_operation
@@ -44,7 +76,8 @@ from avito.core.validation import (
     validate_non_empty_string,
     validate_string_items,
 )
-from avito.promotion.enums import PromotionStatus
+from avito.promotion import _mapping as promotion_mapping
+from avito.promotion._enums import PromotionStatus
 from avito.promotion.models import PromotionActionResult
 
 
@@ -86,6 +119,32 @@ def _serialize_stats_date(value: StatsDate | None) -> str | None:
             raise ValidationError("Дата статистики должна быть в ISO-формате.") from exc
 
 
+def _bounded_total(total: int | None, max_items: int | None) -> int | None:
+    if max_items is None:
+        return total
+    if total is None:
+        return None
+    return min(total, max_items)
+
+
+def _has_next_ads_page(
+    *,
+    page_item_count: int,
+    collected_count: int,
+    page_size: int,
+    total: int | None,
+    max_items: int | None,
+    already_collected: int,
+) -> bool:
+    if page_item_count == 0 or page_size <= 0:
+        return False
+    if max_items is not None and already_collected + collected_count >= max_items:
+        return False
+    if total is not None:
+        return already_collected + collected_count < min(total, max_items or total)
+    return page_item_count >= page_size
+
+
 @dataclass(slots=True, frozen=True)
 class Ad(DomainObject):
     """Доменный объект объявления."""
@@ -110,7 +169,10 @@ class Ad(DomainObject):
         """
 
         item_id, user_id = self._require_ids()
-        return AdsClient(self.transport).get_item(user_id=user_id, item_id=item_id)
+        return self._execute(
+            GET_ITEM,
+            path_params={"user_id": user_id, "item_id": item_id},
+        )  # type: ignore[return-value]
 
     @swagger_operation(
         "GET",
@@ -134,13 +196,57 @@ class Ad(DomainObject):
         """
 
         user_id = self._resolve_user_id(self.user_id)
-        return AdsClient(self.transport).list_items(
-            user_id=user_id,
-            status=status,
-            limit=limit,
-            page_size=page_size,
-            offset=offset,
+        resolved_page_size = page_size or limit
+        start_offset = offset or 0
+        first_page_number = (
+            start_offset // resolved_page_size + 1
+            if resolved_page_size is not None and resolved_page_size > 0
+            else 1
         )
+        result = self._execute(
+            LIST_ITEMS,
+            query={
+                "user_id": user_id,
+                "status": status,
+                "per_page": resolved_page_size,
+                "page": first_page_number,
+            },
+        )
+        list_result = cast(AdsListResult, result)
+        page_size = (
+            resolved_page_size
+            if resolved_page_size and resolved_page_size > 0
+            else len(list_result.items)
+        )
+        max_items = limit if limit is not None and limit >= 0 else None
+        page_offset = start_offset % page_size if page_size > 0 else 0
+        available_items = list_result.items[page_offset:]
+        first_items = available_items[:max_items] if max_items is not None else available_items
+        first_page = JsonPage(
+            items=list(first_items),
+            total=_bounded_total(list_result.total, max_items),
+            source_total=list_result.total,
+            page=first_page_number,
+            per_page=page_size if page_size > 0 else None,
+            has_next_page=_has_next_ads_page(
+                page_item_count=len(list_result.items),
+                collected_count=len(first_items),
+                page_size=page_size,
+                total=list_result.total,
+                max_items=max_items,
+                already_collected=0,
+            ),
+        )
+        return Paginator(
+            lambda page, cursor: self._fetch_ads_page(
+                page=page,
+                user_id=user_id,
+                status=status,
+                page_size=page_size,
+                max_items=max_items,
+                first_page_number=first_page_number,
+            )
+        ).as_list(start_page=first_page_number, first_page=first_page)
 
     @swagger_operation(
         "POST",
@@ -163,10 +269,55 @@ class Ad(DomainObject):
         """
 
         item_id = self._require_item_id()
-        return AdsClient(self.transport).update_price(
-            item_id=item_id,
-            price=price,
+        return self._execute(
+            UPDATE_PRICE,
+            path_params={"item_id": item_id},
+            request=UpdatePriceRequest(price=price),
             idempotency_key=idempotency_key,
+        )  # type: ignore[return-value]
+
+    def _fetch_ads_page(
+        self,
+        *,
+        page: int | None,
+        user_id: int | None,
+        status: ListingStatus | str | None,
+        page_size: int,
+        max_items: int | None,
+        first_page_number: int,
+    ) -> JsonPage[Listing]:
+        if page is None:
+            raise ValidationError("Для операции требуется `page`.")
+
+        already_collected = max(page - first_page_number, 0) * page_size
+        remaining = max_items - already_collected if max_items is not None else None
+        if remaining is not None and remaining <= 0:
+            return JsonPage(items=[], total=max_items, page=page, per_page=page_size)
+        result = self._execute(
+            LIST_ITEMS,
+            query={
+                "user_id": user_id,
+                "status": status,
+                "per_page": min(page_size, remaining) if remaining is not None else page_size,
+                "page": page,
+            },
+        )
+        list_result = cast(AdsListResult, result)
+        items = list_result.items[:remaining] if remaining is not None else list_result.items
+        return JsonPage(
+            items=list(items),
+            total=_bounded_total(list_result.total, max_items),
+            source_total=list_result.total,
+            page=page,
+            per_page=page_size,
+            has_next_page=_has_next_ads_page(
+                page_item_count=len(list_result.items),
+                collected_count=len(items),
+                page_size=page_size,
+                total=list_result.total,
+                max_items=max_items,
+                already_collected=already_collected,
+            ),
         )
 
     def _require_item_id(self) -> int:
@@ -211,12 +362,15 @@ class AdStats(DomainObject):
 
         user_id = self._require_user_id()
         resolved_item_ids = item_ids or ([int(self.item_id)] if self.item_id is not None else [])
-        return StatsClient(self.transport).get_calls_stats(
-            user_id=user_id,
-            item_ids=resolved_item_ids,
-            date_from=_serialize_stats_date(date_from),
-            date_to=_serialize_stats_date(date_to),
-        )
+        return self._execute(
+            GET_CALLS_STATS,
+            path_params={"user_id": user_id},
+            request=CallsStatsRequest(
+                item_ids=resolved_item_ids,
+                date_from=_serialize_stats_date(date_from),
+                date_to=_serialize_stats_date(date_to),
+            ),
+        )  # type: ignore[return-value]
 
     @swagger_operation(
         "POST",
@@ -239,13 +393,16 @@ class AdStats(DomainObject):
 
         user_id = self._require_user_id()
         resolved_item_ids = item_ids or ([int(self.item_id)] if self.item_id is not None else [])
-        return StatsClient(self.transport).get_item_stats(
-            user_id=user_id,
-            item_ids=resolved_item_ids,
-            date_from=_serialize_stats_date(date_from),
-            date_to=_serialize_stats_date(date_to),
-            fields=fields or [],
-        )
+        return self._execute(
+            GET_ITEM_STATS,
+            path_params={"user_id": user_id},
+            request=ItemStatsRequest(
+                item_ids=resolved_item_ids,
+                date_from=_serialize_stats_date(date_from),
+                date_to=_serialize_stats_date(date_to),
+                fields=fields or [],
+            ),
+        )  # type: ignore[return-value]
 
     @swagger_operation(
         "POST",
@@ -268,13 +425,16 @@ class AdStats(DomainObject):
 
         user_id = self._require_user_id()
         resolved_item_ids = item_ids or ([int(self.item_id)] if self.item_id is not None else [])
-        return StatsClient(self.transport).get_item_analytics(
-            user_id=user_id,
-            item_ids=resolved_item_ids,
-            date_from=_serialize_stats_date(date_from),
-            date_to=_serialize_stats_date(date_to),
-            fields=fields or [],
-        )
+        return self._execute(
+            GET_ITEM_ANALYTICS,
+            path_params={"user_id": user_id},
+            request=ItemStatsRequest(
+                item_ids=resolved_item_ids,
+                date_from=_serialize_stats_date(date_from),
+                date_to=_serialize_stats_date(date_to),
+                fields=fields or [],
+            ),
+        )  # type: ignore[return-value]
 
     @swagger_operation(
         "POST",
@@ -297,13 +457,16 @@ class AdStats(DomainObject):
 
         user_id = self._require_user_id()
         resolved_item_ids = item_ids or ([int(self.item_id)] if self.item_id is not None else [])
-        return StatsClient(self.transport).get_account_spendings(
-            user_id=user_id,
-            item_ids=resolved_item_ids,
-            date_from=_serialize_stats_date(date_from),
-            date_to=_serialize_stats_date(date_to),
-            fields=fields or [],
-        )
+        return self._execute(
+            GET_ACCOUNT_SPENDINGS,
+            path_params={"user_id": user_id},
+            request=ItemStatsRequest(
+                item_ids=resolved_item_ids,
+                date_from=_serialize_stats_date(date_from),
+                date_to=_serialize_stats_date(date_to),
+                fields=fields or [],
+            ),
+        )  # type: ignore[return-value]
 
     def _require_user_id(self) -> int:
         return self._resolve_user_id(self.user_id)
@@ -336,11 +499,11 @@ class AdPromotion(DomainObject):
         """
 
         user_id = self._require_user_id()
-        return VasClient(self.transport).get_prices(
-            user_id=user_id,
-            item_ids=item_ids,
-            location_id=location_id,
-        )
+        return self._execute(
+            GET_VAS_PRICES,
+            path_params={"user_id": user_id},
+            request=VasPricesRequest(item_ids=item_ids, location_id=location_id),
+        )  # type: ignore[return-value]
 
     @swagger_operation(
         "PUT",
@@ -375,11 +538,17 @@ class AdPromotion(DomainObject):
                 target=target,
                 request_payload=request_payload,
             )
-        return VasClient(self.transport).apply_item_vas(
-            user_id=user_id,
-            item_id=item_id,
-            codes=codes,
+        payload = self._execute(
+            APPLY_ITEM_VAS,
+            path_params={"user_id": user_id, "item_id": item_id},
+            request=ApplyVasRequest(codes=codes),
             idempotency_key=idempotency_key,
+        )
+        return promotion_mapping.map_promotion_action(
+            payload,
+            action="apply_vas",
+            target=target,
+            request_payload=request_payload,
         )
 
     @swagger_operation(
@@ -415,11 +584,17 @@ class AdPromotion(DomainObject):
                 target=target,
                 request_payload=request_payload,
             )
-        return VasClient(self.transport).apply_item_vas_package(
-            user_id=user_id,
-            item_id=item_id,
-            package_code=package_code,
+        payload = self._execute(
+            APPLY_ITEM_VAS_PACKAGE,
+            path_params={"user_id": user_id, "item_id": item_id},
+            request=ApplyVasPackageRequest(package_code=package_code),
             idempotency_key=idempotency_key,
+        )
+        return promotion_mapping.map_promotion_action(
+            payload,
+            action="apply_vas_package",
+            target=target,
+            request_payload=request_payload,
         )
 
     @swagger_operation(
@@ -453,10 +628,17 @@ class AdPromotion(DomainObject):
                 target=target,
                 request_payload=request_payload,
             )
-        return VasClient(self.transport).apply_vas_direct(
-            item_id=item_id,
-            codes=codes,
+        payload = self._execute(
+            APPLY_VAS_DIRECT,
+            path_params={"item_id": item_id},
+            request=ApplyVasRequest(codes=codes),
             idempotency_key=idempotency_key,
+        )
+        return promotion_mapping.map_promotion_action(
+            payload,
+            action="apply_vas_direct",
+            target=target,
+            request_payload=request_payload,
         )
 
     def _require_item_id(self) -> int:
@@ -493,7 +675,7 @@ class AutoloadProfile(DomainObject):
         Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
         """
 
-        return AutoloadClient(self.transport).get_profile()
+        return self._execute(GET_AUTOLOAD_PROFILE)  # type: ignore[return-value]
 
     @swagger_operation(
         "POST",
@@ -516,12 +698,15 @@ class AutoloadProfile(DomainObject):
         Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
         """
 
-        return AutoloadClient(self.transport).save_profile(
-            is_enabled=is_enabled,
-            email=email,
-            callback_url=callback_url,
+        return self._execute(
+            SAVE_AUTOLOAD_PROFILE,
+            request=AutoloadProfileUpdateRequest(
+                is_enabled=is_enabled,
+                email=email,
+                callback_url=callback_url,
+            ),
             idempotency_key=idempotency_key,
-        )
+        )  # type: ignore[return-value]
 
     @swagger_operation(
         "POST",
@@ -538,10 +723,11 @@ class AutoloadProfile(DomainObject):
         Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
         """
 
-        return AutoloadClient(self.transport).upload_by_url(
-            url=url,
+        return self._execute(
+            UPLOAD_BY_URL,
+            request=UploadByUrlRequest(url=url),
             idempotency_key=idempotency_key,
-        )
+        )  # type: ignore[return-value]
 
     @swagger_operation(
         "GET",
@@ -555,7 +741,7 @@ class AutoloadProfile(DomainObject):
         Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
         """
 
-        return AutoloadClient(self.transport).get_tree()
+        return self._execute(GET_AUTOLOAD_TREE)  # type: ignore[return-value]
 
     @swagger_operation(
         "GET",
@@ -570,7 +756,10 @@ class AutoloadProfile(DomainObject):
         Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
         """
 
-        return AutoloadClient(self.transport).get_node_fields(node_slug=node_slug)
+        return self._execute(
+            GET_AUTOLOAD_NODE_FIELDS,
+            path_params={"node_slug": node_slug},
+        )  # type: ignore[return-value]
 
 
 @dataclass(slots=True, frozen=True)
@@ -596,7 +785,10 @@ class AutoloadReport(DomainObject):
         """
 
         report_id = self._require_report_id()
-        return AutoloadClient(self.transport).get_report(report_id=report_id)
+        return self._execute(
+            GET_AUTOLOAD_REPORT,
+            path_params={"report_id": report_id},
+        )  # type: ignore[return-value]
 
     @swagger_operation(
         "GET",
@@ -614,7 +806,25 @@ class AutoloadReport(DomainObject):
         Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
         """
 
-        return AutoloadClient(self.transport).list_reports(limit=limit, offset=offset)
+        page_size = limit or 25
+        base_offset = offset or 0
+
+        def fetch_page(page: int | None, _cursor: str | None) -> JsonPage[AutoloadReportSummary]:
+            current_page = page or 1
+            current_offset = base_offset + (current_page - 1) * page_size
+            result = self._execute(
+                LIST_AUTOLOAD_REPORTS,
+                query={"limit": page_size, "offset": current_offset},
+            )
+            reports = cast(AutoloadReportsResult, result)
+            return JsonPage(
+                items=reports.items,
+                total=reports.total,
+                page=current_page,
+                per_page=page_size,
+            )
+
+        return Paginator(fetch_page).as_list(first_page=fetch_page(1, None))
 
     @swagger_operation(
         "GET",
@@ -628,7 +838,7 @@ class AutoloadReport(DomainObject):
         Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
         """
 
-        return AutoloadClient(self.transport).get_last_completed_report()
+        return self._execute(GET_AUTOLOAD_LAST_COMPLETED_REPORT)  # type: ignore[return-value]
 
     @swagger_operation(
         "GET",
@@ -645,7 +855,10 @@ class AutoloadReport(DomainObject):
         """
 
         report_id = self._require_report_id()
-        return AutoloadClient(self.transport).get_report_items(report_id=report_id)
+        return self._execute(
+            GET_AUTOLOAD_REPORT_ITEMS,
+            path_params={"report_id": report_id},
+        )  # type: ignore[return-value]
 
     @swagger_operation(
         "GET",
@@ -660,7 +873,10 @@ class AutoloadReport(DomainObject):
         """
 
         report_id = self._require_report_id()
-        return AutoloadClient(self.transport).get_report_fees(report_id=report_id)
+        return self._execute(
+            GET_AUTOLOAD_REPORT_FEES,
+            path_params={"report_id": report_id},
+        )  # type: ignore[return-value]
 
     @swagger_operation(
         "GET",
@@ -675,7 +891,10 @@ class AutoloadReport(DomainObject):
         Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
         """
 
-        return AutoloadClient(self.transport).get_ad_ids_by_avito_ids(avito_ids=list(avito_ids))
+        return self._execute(
+            GET_AD_IDS_BY_AVITO_IDS,
+            query={"query": ",".join(str(item) for item in avito_ids)},
+        )  # type: ignore[return-value]
 
     @swagger_operation(
         "GET",
@@ -690,7 +909,10 @@ class AutoloadReport(DomainObject):
         Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
         """
 
-        return AutoloadClient(self.transport).get_avito_ids_by_ad_ids(ad_ids=list(ad_ids))
+        return self._execute(
+            GET_AVITO_IDS_BY_AD_IDS,
+            query={"query": ",".join(str(item) for item in ad_ids)},
+        )  # type: ignore[return-value]
 
     @swagger_operation(
         "GET",
@@ -705,7 +927,10 @@ class AutoloadReport(DomainObject):
         Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
         """
 
-        return AutoloadClient(self.transport).get_items_info(item_ids=list(item_ids))
+        return self._execute(
+            GET_AUTOLOAD_ITEMS_INFO,
+            query={"query": ",".join(str(item) for item in item_ids)},
+        )  # type: ignore[return-value]
 
     def _require_report_id(self) -> int:
         if self.report_id is None:
@@ -745,7 +970,7 @@ class AutoloadArchive(DomainObject):
         Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
         """
 
-        return AutoloadArchiveClient(self.transport).get_profile()
+        return self._execute(GET_ARCHIVE_PROFILE)  # type: ignore[return-value]
 
     @swagger_operation(
         "POST",
@@ -778,12 +1003,15 @@ class AutoloadArchive(DomainObject):
         Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
         """
 
-        return AutoloadArchiveClient(self.transport).save_profile(
-            is_enabled=is_enabled,
-            email=email,
-            callback_url=callback_url,
+        return self._execute(
+            SAVE_ARCHIVE_PROFILE,
+            request=AutoloadProfileUpdateRequest(
+                is_enabled=is_enabled,
+                email=email,
+                callback_url=callback_url,
+            ),
             idempotency_key=idempotency_key,
-        )
+        )  # type: ignore[return-value]
 
     @swagger_operation(
         "GET",
@@ -807,7 +1035,7 @@ class AutoloadArchive(DomainObject):
         Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
         """
 
-        return AutoloadArchiveClient(self.transport).get_last_completed_report()
+        return self._execute(GET_ARCHIVE_LAST_COMPLETED_REPORT)  # type: ignore[return-value]
 
     @swagger_operation(
         "GET",
@@ -832,7 +1060,10 @@ class AutoloadArchive(DomainObject):
         """
 
         report_id = self._require_report_id()
-        return AutoloadArchiveClient(self.transport).get_report(report_id=report_id)
+        return self._execute(
+            GET_ARCHIVE_REPORT,
+            path_params={"report_id": report_id},
+        )  # type: ignore[return-value]
 
     def _require_report_id(self) -> int:
         if self.report_id is None:

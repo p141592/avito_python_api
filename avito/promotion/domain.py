@@ -15,15 +15,8 @@ from avito.core.validation import (
     validate_non_empty_string,
     validate_positive_int,
 )
-from avito.promotion.client import (
-    AutostrategyClient,
-    BbipClient,
-    CpaAuctionClient,
-    PromotionClient,
-    TargetActionPriceClient,
-    TrxPromoClient,
-)
-from avito.promotion.enums import CampaignType, PromotionStatus, TargetActionBudgetType
+from avito.promotion import _mapping
+from avito.promotion._enums import CampaignType, PromotionStatus, TargetActionBudgetType
 from avito.promotion.models import (
     AutostrategyBudget,
     AutostrategyStat,
@@ -40,22 +33,63 @@ from avito.promotion.models import (
     CampaignUpdateTimeFilter,
     CancelTrxPromotionRequest,
     CpaAuctionBidsResult,
+    CreateAutostrategyBudgetRequest,
+    CreateAutostrategyCampaignRequest,
+    CreateBbipForecastsRequest,
     CreateBbipOrderRequest,
+    CreateBbipSuggestsRequest,
     CreateItemBid,
+    CreateItemBidsRequest,
     CreateTrxPromotionApplyRequest,
     DeletePromotionRequest,
+    GetAutostrategyCampaignInfoRequest,
+    GetAutostrategyStatRequest,
+    GetPromotionOrderStatusRequest,
+    GetPromotionsByItemIdsRequest,
+    ListAutostrategyCampaignsRequest,
+    ListPromotionOrdersRequest,
+    ListPromotionServicesRequest,
     PromotionActionResult,
     PromotionOrdersResult,
     PromotionOrderStatusResult,
     PromotionServiceDictionary,
     PromotionServicesResult,
+    StopAutostrategyCampaignRequest,
     TargetActionGetBidsResult,
     TargetActionPromotionsByItemIdsResult,
     TrxCommissionsResult,
     TrxItem,
     TrxItemInput,
     UpdateAutoBidRequest,
+    UpdateAutostrategyCampaignRequest,
     UpdateManualBidRequest,
+)
+from avito.promotion.operations import (
+    APPLY_TRX,
+    CANCEL_TRX,
+    CREATE_AUTOSTRATEGY_BUDGET,
+    CREATE_AUTOSTRATEGY_CAMPAIGN,
+    CREATE_BBIP_ORDER,
+    CREATE_CPA_AUCTION_BIDS,
+    DELETE_AUTOSTRATEGY_CAMPAIGN,
+    DELETE_TARGET_ACTION_PROMOTION,
+    GET_AUTOSTRATEGY_CAMPAIGN,
+    GET_AUTOSTRATEGY_STAT,
+    GET_BBIP_FORECASTS,
+    GET_BBIP_SUGGESTS,
+    GET_CPA_AUCTION_BIDS,
+    GET_ORDER_STATUS,
+    GET_SERVICE_DICTIONARY,
+    GET_TARGET_ACTION_BIDS,
+    GET_TARGET_ACTION_PROMOTIONS,
+    GET_TRX_COMMISSIONS,
+    LIST_AUTOSTRATEGY_CAMPAIGNS,
+    LIST_ORDERS,
+    LIST_SERVICES,
+    TRX_HEADERS,
+    UPDATE_AUTOSTRATEGY_CAMPAIGN,
+    UPDATE_TARGET_ACTION_AUTO,
+    UPDATE_TARGET_ACTION_MANUAL,
 )
 
 
@@ -102,7 +136,7 @@ class PromotionOrder(DomainObject):
         Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
         """
 
-        return PromotionClient(self.transport).get_service_dictionary()
+        return self._execute(GET_SERVICE_DICTIONARY)  # type: ignore[return-value]
 
     @swagger_operation(
         "POST",
@@ -119,7 +153,10 @@ class PromotionOrder(DomainObject):
         Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
         """
 
-        return PromotionClient(self.transport).list_services(item_ids=item_ids)
+        return self._execute(
+            LIST_SERVICES,
+            request=ListPromotionServicesRequest(item_ids=item_ids),
+        )  # type: ignore[return-value]
 
     @swagger_operation(
         "POST",
@@ -140,10 +177,10 @@ class PromotionOrder(DomainObject):
         Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
         """
 
-        return PromotionClient(self.transport).list_orders(
-            item_ids=item_ids,
-            order_ids=order_ids,
-        )
+        return self._execute(
+            LIST_ORDERS,
+            request=ListPromotionOrdersRequest(item_ids=item_ids, order_ids=order_ids),
+        )  # type: ignore[return-value]
 
     @swagger_operation(
         "POST",
@@ -162,7 +199,10 @@ class PromotionOrder(DomainObject):
         )
         if not resolved_order_ids:
             raise ValidationError("Для операции требуется хотя бы один `order_id`.")
-        return PromotionClient(self.transport).get_order_status(order_ids=resolved_order_ids)
+        return self._execute(
+            GET_ORDER_STATUS,
+            request=GetPromotionOrderStatusRequest(order_ids=resolved_order_ids),
+        )  # type: ignore[return-value]
 
 
 @dataclass(slots=True, frozen=True)
@@ -198,7 +238,10 @@ class BbipPromotion(DomainObject):
             )
             for item in items
         ]
-        return BbipClient(self.transport).get_forecasts(items=bbip_items)
+        return self._execute(
+            GET_BBIP_FORECASTS,
+            request=CreateBbipForecastsRequest(items=bbip_items),
+        )  # type: ignore[return-value]
 
     @swagger_operation(
         "PUT",
@@ -246,9 +289,16 @@ class BbipPromotion(DomainObject):
                 target=target,
                 request_payload=request_payload,
             )
-        return BbipClient(self.transport).create_order(
-            items=bbip_items,
+        payload = self._execute(
+            CREATE_BBIP_ORDER,
+            request=CreateBbipOrderRequest(items=bbip_items),
             idempotency_key=idempotency_key,
+        )
+        return _mapping.map_promotion_action(
+            payload,
+            action="create_order",
+            target=target,
+            request_payload=request_payload,
         )
 
     @swagger_operation(
@@ -264,7 +314,10 @@ class BbipPromotion(DomainObject):
         """
 
         resolved_item_ids = item_ids or self._resource_item_ids()
-        return BbipClient(self.transport).get_suggests(item_ids=resolved_item_ids)
+        return self._execute(
+            GET_BBIP_SUGGESTS,
+            request=CreateBbipSuggestsRequest(item_ids=resolved_item_ids),
+        )  # type: ignore[return-value]
 
     def _resource_item_ids(self) -> list[int]:
         if self.item_id is None:
@@ -325,9 +378,17 @@ class TrxPromotion(DomainObject):
         target: dict[str, object] = {"item_ids": [item["item_id"] for item in items]}
         if dry_run:
             return _preview_result(action="apply", target=target, request_payload=request_payload)
-        return TrxPromoClient(self.transport).apply(
-            items=trx_items,
+        payload = self._execute(
+            APPLY_TRX,
+            request=CreateTrxPromotionApplyRequest(items=trx_items),
+            headers=TRX_HEADERS,
             idempotency_key=idempotency_key,
+        )
+        return _mapping.map_promotion_action(
+            payload,
+            action="apply",
+            target=target,
+            request_payload=request_payload,
         )
 
     @swagger_operation(
@@ -358,9 +419,17 @@ class TrxPromotion(DomainObject):
         target = {"item_ids": list(resolved_item_ids)}
         if dry_run:
             return _preview_result(action="delete", target=target, request_payload=request_payload)
-        return TrxPromoClient(self.transport).cancel(
-            item_ids=resolved_item_ids,
+        payload = self._execute(
+            CANCEL_TRX,
+            request=CancelTrxPromotionRequest(item_ids=resolved_item_ids),
+            headers=TRX_HEADERS,
             idempotency_key=idempotency_key,
+        )
+        return _mapping.map_promotion_action(
+            payload,
+            action="delete",
+            target=target,
+            request_payload=request_payload,
         )
 
     @swagger_operation(
@@ -375,9 +444,12 @@ class TrxPromotion(DomainObject):
         Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
         """
 
-        return TrxPromoClient(self.transport).get_commissions(
-            item_ids=item_ids or self._resource_item_ids()
-        )
+        resolved_item_ids = item_ids or self._resource_item_ids()
+        return self._execute(
+            GET_TRX_COMMISSIONS,
+            query={"itemIDs": ",".join(str(item_id) for item_id in resolved_item_ids)},
+            headers=TRX_HEADERS,
+        )  # type: ignore[return-value]
 
     def _resource_item_ids(self) -> list[int]:
         if self.item_id is None:
@@ -412,10 +484,10 @@ class CpaAuction(DomainObject):
         Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
         """
 
-        return CpaAuctionClient(self.transport).get_user_bids(
-            from_item_id=from_item_id,
-            batch_size=batch_size,
-        )
+        return self._execute(
+            GET_CPA_AUCTION_BIDS,
+            query={"fromItemID": from_item_id, "batchSize": batch_size},
+        )  # type: ignore[return-value]
 
     @swagger_operation(
         "POST",
@@ -441,9 +513,17 @@ class CpaAuction(DomainObject):
             CreateItemBid(item_id=item["item_id"], price_penny=item["price_penny"])
             for item in items
         ]
-        return CpaAuctionClient(self.transport).create_item_bids(
-            items=bids,
+        request = CreateItemBidsRequest(items=bids)
+        payload = self._execute(
+            CREATE_CPA_AUCTION_BIDS,
+            request=request,
             idempotency_key=idempotency_key,
+        )
+        return _mapping.map_promotion_action(
+            payload,
+            action="create_item_bids",
+            target={"item_ids": [item.item_id for item in bids]},
+            request_payload=request.to_payload(),
         )
 
 
@@ -470,9 +550,10 @@ class TargetActionPricing(DomainObject):
         Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
         """
 
-        return TargetActionPriceClient(self.transport).get_bids(
-            item_id=item_id or self._require_item_id()
-        )
+        return self._execute(
+            GET_TARGET_ACTION_BIDS,
+            path_params={"item_id": item_id or self._require_item_id()},
+        )  # type: ignore[return-value]
 
     @swagger_operation(
         "POST",
@@ -489,9 +570,10 @@ class TargetActionPricing(DomainObject):
         """
 
         resolved_item_ids = item_ids or [self._require_item_id()]
-        return TargetActionPriceClient(self.transport).get_promotions_by_item_ids(
-            item_ids=resolved_item_ids
-        )
+        return self._execute(
+            GET_TARGET_ACTION_PROMOTIONS,
+            request=GetPromotionsByItemIdsRequest(item_ids=resolved_item_ids),
+        )  # type: ignore[return-value]
 
     @swagger_operation(
         "POST",
@@ -521,9 +603,16 @@ class TargetActionPricing(DomainObject):
         target = {"item_id": resolved_item_id}
         if dry_run:
             return _preview_result(action="delete", target=target, request_payload=request_payload)
-        return TargetActionPriceClient(self.transport).delete_promotion(
-            item_id=resolved_item_id,
+        payload = self._execute(
+            DELETE_TARGET_ACTION_PROMOTION,
+            request=DeletePromotionRequest(item_id=resolved_item_id),
             idempotency_key=idempotency_key,
+        )
+        return _mapping.map_promotion_action(
+            payload,
+            action="delete",
+            target=target,
+            request_payload=request_payload,
         )
 
     @swagger_operation(
@@ -574,12 +663,21 @@ class TargetActionPricing(DomainObject):
                 target=target,
                 request_payload=request_payload,
             )
-        return TargetActionPriceClient(self.transport).update_auto_bid(
-            item_id=resolved_item_id,
-            action_type_id=action_type_id,
-            budget_penny=budget_penny,
-            budget_type=budget_type,
+        payload = self._execute(
+            UPDATE_TARGET_ACTION_AUTO,
+            request=UpdateAutoBidRequest(
+                item_id=resolved_item_id,
+                action_type_id=action_type_id,
+                budget_penny=budget_penny,
+                budget_type=budget_type,
+            ),
             idempotency_key=idempotency_key,
+        )
+        return _mapping.map_promotion_action(
+            payload,
+            action="update_auto",
+            target=target,
+            request_payload=request_payload,
         )
 
     @swagger_operation(
@@ -627,12 +725,21 @@ class TargetActionPricing(DomainObject):
                 target=target,
                 request_payload=request_payload,
             )
-        return TargetActionPriceClient(self.transport).update_manual_bid(
-            item_id=resolved_item_id,
-            action_type_id=action_type_id,
-            bid_penny=bid_penny,
-            limit_penny=limit_penny,
+        payload = self._execute(
+            UPDATE_TARGET_ACTION_MANUAL,
+            request=UpdateManualBidRequest(
+                item_id=resolved_item_id,
+                action_type_id=action_type_id,
+                bid_penny=bid_penny,
+                limit_penny=limit_penny,
+            ),
             idempotency_key=idempotency_key,
+        )
+        return _mapping.map_promotion_action(
+            payload,
+            action="update_manual",
+            target=target,
+            request_payload=request_payload,
         )
 
     def _require_item_id(self) -> int:
@@ -674,12 +781,15 @@ class AutostrategyCampaign(DomainObject):
 
         _validate_optional_datetime("start_time", start_time)
         _validate_optional_datetime("finish_time", finish_time)
-        return AutostrategyClient(self.transport).create_budget(
-            campaign_type=campaign_type,
-            start_time=start_time,
-            finish_time=finish_time,
-            items=items,
-        )
+        return self._execute(
+            CREATE_AUTOSTRATEGY_BUDGET,
+            request=CreateAutostrategyBudgetRequest(
+                campaign_type=campaign_type,
+                start_time=start_time,
+                finish_time=finish_time,
+                items=items,
+            ),
+        )  # type: ignore[return-value]
 
     @swagger_operation(
         "POST",
@@ -712,19 +822,22 @@ class AutostrategyCampaign(DomainObject):
 
         _validate_optional_datetime("start_time", start_time)
         _validate_optional_datetime("finish_time", finish_time)
-        return AutostrategyClient(self.transport).create_campaign(
-            campaign_type=campaign_type,
-            title=title,
-            budget=budget,
-            budget_bonus=budget_bonus,
-            budget_real=budget_real,
-            calc_id=calc_id,
-            description=description,
-            finish_time=finish_time,
-            items=items,
-            start_time=start_time,
+        return self._execute(
+            CREATE_AUTOSTRATEGY_CAMPAIGN,
+            request=CreateAutostrategyCampaignRequest(
+                campaign_type=campaign_type,
+                title=title,
+                budget=budget,
+                budget_bonus=budget_bonus,
+                budget_real=budget_real,
+                calc_id=calc_id,
+                description=description,
+                finish_time=finish_time,
+                items=items,
+                start_time=start_time,
+            ),
             idempotency_key=idempotency_key,
-        )
+        )  # type: ignore[return-value]
 
     @swagger_operation(
         "POST",
@@ -756,18 +869,21 @@ class AutostrategyCampaign(DomainObject):
 
         _validate_optional_datetime("start_time", start_time)
         _validate_optional_datetime("finish_time", finish_time)
-        return AutostrategyClient(self.transport).edit_campaign(
-            campaign_id=campaign_id or self._require_campaign_id(),
-            version=version,
-            budget=budget,
-            calc_id=calc_id,
-            description=description,
-            finish_time=finish_time,
-            items=items,
-            start_time=start_time,
-            title=title,
+        return self._execute(
+            UPDATE_AUTOSTRATEGY_CAMPAIGN,
+            request=UpdateAutostrategyCampaignRequest(
+                campaign_id=campaign_id or self._require_campaign_id(),
+                version=version,
+                budget=budget,
+                calc_id=calc_id,
+                description=description,
+                finish_time=finish_time,
+                items=items,
+                start_time=start_time,
+                title=title,
+            ),
             idempotency_key=idempotency_key,
-        )
+        )  # type: ignore[return-value]
 
     @swagger_operation(
         "POST",
@@ -782,9 +898,12 @@ class AutostrategyCampaign(DomainObject):
         Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
         """
 
-        return AutostrategyClient(self.transport).get_campaign_info(
-            campaign_id=campaign_id or self._require_campaign_id()
-        )
+        return self._execute(
+            GET_AUTOSTRATEGY_CAMPAIGN,
+            request=GetAutostrategyCampaignInfoRequest(
+                campaign_id=campaign_id or self._require_campaign_id()
+            ),
+        )  # type: ignore[return-value]
 
     @swagger_operation(
         "POST",
@@ -807,11 +926,14 @@ class AutostrategyCampaign(DomainObject):
         Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
         """
 
-        return AutostrategyClient(self.transport).stop_campaign(
-            campaign_id=campaign_id or self._require_campaign_id(),
-            version=version,
+        return self._execute(
+            DELETE_AUTOSTRATEGY_CAMPAIGN,
+            request=StopAutostrategyCampaignRequest(
+                campaign_id=campaign_id or self._require_campaign_id(),
+                version=version,
+            ),
             idempotency_key=idempotency_key,
-        )
+        )  # type: ignore[return-value]
 
     @swagger_operation(
         "POST",
@@ -851,13 +973,16 @@ class AutostrategyCampaign(DomainObject):
             if order_by is not None
             else None
         )
-        return AutostrategyClient(self.transport).list_campaigns(
-            limit=limit,
-            offset=offset,
-            status_id=status_id,
-            order_by=order_by_payload,
-            filter=filter_payload,
-        )
+        return self._execute(
+            LIST_AUTOSTRATEGY_CAMPAIGNS,
+            request=ListAutostrategyCampaignsRequest(
+                limit=limit,
+                offset=offset,
+                status_id=status_id,
+                order_by=order_by_payload,
+                filter=filter_payload,
+            ),
+        )  # type: ignore[return-value]
 
     @swagger_operation(
         "POST",
@@ -871,9 +996,12 @@ class AutostrategyCampaign(DomainObject):
         Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
         """
 
-        return AutostrategyClient(self.transport).get_stat(
-            campaign_id=campaign_id or self._require_campaign_id()
-        )
+        return self._execute(
+            GET_AUTOSTRATEGY_STAT,
+            request=GetAutostrategyStatRequest(
+                campaign_id=campaign_id or self._require_campaign_id()
+            ),
+        )  # type: ignore[return-value]
 
     def _require_campaign_id(self) -> int:
         if self.campaign_id is None:

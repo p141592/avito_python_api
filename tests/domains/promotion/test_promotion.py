@@ -17,7 +17,7 @@ from avito.promotion import (
     TargetActionPricing,
     TrxPromotion,
 )
-from avito.promotion.enums import (
+from avito.promotion._enums import (
     PromotionOrderServiceStatus,
     TargetActionBudgetType,
     TargetActionSelectedType,

@@ -5,7 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from datetime import datetime
 
-from avito.ads.enums import (
+from avito.ads._enums import (
     AdsActionStatus,
     AutoloadAvitoStatus,
     AutoloadFieldType,
