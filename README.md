@@ -8,6 +8,32 @@
 [![Покрытие методов](https://img.shields.io/badge/%D0%9C%D0%B5%D1%82%D0%BE%D0%B4%D1%8B-204%2F204-brightgreen)](https://p141592.github.io/avito_python_api/reference/api-report/)
 [![Покрытие структуры запроса и ответа](https://img.shields.io/badge/Request%2Fresponse-204%2F204-brightgreen)](https://p141592.github.io/avito_python_api/reference/api-report/)
 
+| Покрытие API | Статус |
+|---|---:|
+| Домены SDK | 11 / 11 |
+| Swagger operations | 204 / 204 |
+| Request/response contract tests | 204 / 204 |
+| Strict binding gate | проходит |
+
+Детальный отчёт: [покрытие API](https://p141592.github.io/avito_python_api/reference/api-report/).
+
+## Быстрый старт
+
+Получение ключей — https://www.avito.ru/professionals/api
+
+```python
+from avito import AvitoClient
+
+with AvitoClient.from_env() as avito:
+    profile = avito.account().get_self()
+    ad = avito.ad(item_id=42, user_id=123).get()
+
+print(profile.name)
+print(ad.title)
+```
+
+По умолчанию настройки читаются из переменных окружения с префиксом `AVITO_`.
+
 `avito-py` — синхронный Python SDK для работы с Avito API через единый объектный фасад `AvitoClient`.
 
 Цели SDK:
@@ -35,23 +61,6 @@ pip install avito-py
 ```
 
 Требование к интерпретатору: Python `3.14` и выше в рамках ветки `3.x`. Репозиторий и релизный контур валидируются именно на Python `3.14`.
-
-## Быстрый старт
-
-Получение ключей — https://www.avito.ru/professionals/api
-
-```python
-from avito import AvitoClient
-
-with AvitoClient.from_env() as avito:
-    profile = avito.account().get_self()
-    ad = avito.ad(item_id=42, user_id=123).get()
-
-print(profile.name)
-print(ad.title)
-```
-
-По умолчанию настройки читаются из переменных окружения с префиксом `AVITO_`.
 
 ## Инициализация клиента
 
