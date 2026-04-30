@@ -26,18 +26,6 @@ print(ad.title)
 
 `avito-py` — синхронный Python SDK для работы с Avito API через единый объектный фасад `AvitoClient`.
 
-Цели SDK:
-
-- скрыть transport, OAuth и retry-логику от пользовательского кода;
-- возвращать типизированные `dataclass`-модели вместо сырого JSON;
-- дать единый вход в доменные сценарии вида `avito.ad(...).get()` и `avito.chat(...).send_message(...)`;
-- покрыть все swagger-документы из каталога [docs/avito/api](docs/avito/api).
-
-SDK является синхронным. Любая асинхронная поддержка, если она появится, будет жить в отдельном namespace `avito.aio` и никогда не будет смешана с sync-классами в одном модуле.
-
-Каталог [docs/avito/api](docs/avito/api) рассматривается как upstream API contract. Эти файлы не редактируются вручную при развитии SDK: публичные модели, мапперы и тесты должны подстраиваться под documented shape из `docs/avito/api/*`.
-Карта покрытия SDK строится из Swagger operation bindings на публичных доменных методах, а не из markdown inventory.
-
 ## Установка
 
 ```bash
