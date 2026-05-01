@@ -90,7 +90,7 @@ with AvitoClient.from_env() as avito:
         item_ids=[101],
         idempotency_key="account-profile-example-1",
     )
-    items = hierarchy.list_items_by_employee(employee_id=10, limit=5)
+    items = hierarchy.list_items_by_employee(employee_id=10, category_id=24)
 
 print(result.success)
 print(items[0].title)

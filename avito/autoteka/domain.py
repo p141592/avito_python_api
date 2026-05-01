@@ -88,7 +88,7 @@ class AutotekaVehicle(DomainObject):
         "/autoteka/v1/catalogs/resolve",
         spec="Автотека.json",
         operation_id="catalogsResolve",
-        method_args={"brand_id": "body.fields_value_ids"},
+        method_args={"brand_id": "body.fieldsValueIds"},
     )
     def resolve_catalog(
         self,
@@ -115,15 +115,23 @@ class AutotekaVehicle(DomainObject):
         "/autoteka/v1/get-leads",
         spec="Автотека.json",
         operation_id="getLeads",
-        method_args={"limit": "body.limit"},
+        method_args={"subscription_id": "body.subscriptionId", "limit": "body.limit"},
     )
     def get_leads(
-        self, *, limit: int, timeout: ApiTimeouts | None = None, retry: RetryOverride | None = None
+        self,
+        *,
+        subscription_id: int,
+        limit: int,
+        last_id: int | None = None,
+        timeout: ApiTimeouts | None = None,
+        retry: RetryOverride | None = None,
     ) -> AutotekaLeadsResult:
         """Возвращает leads для автомобилей Автотеки.
 
         Аргументы:
+            subscription_id: идентифицирует подписку Сигнала.
             limit: ограничивает размер возвращаемой выборки.
+            last_id: задает последний прочитанный идентификатор для постраничной выдачи.
             timeout: переопределяет таймауты HTTP-запроса для этого вызова.
             retry: переопределяет retry-политику операции: default, enabled или disabled.
 
@@ -140,7 +148,7 @@ class AutotekaVehicle(DomainObject):
 
         return self._execute(
             GET_LEADS,
-            request=LeadsRequest(limit=limit),
+            request=LeadsRequest(subscription_id=subscription_id, limit=limit, last_id=last_id),
             headers=_autoteka_headers(self.transport),
             timeout=timeout,
             retry=retry,
@@ -232,7 +240,7 @@ class AutotekaVehicle(DomainObject):
         "/autoteka/v1/request-preview-by-external-item",
         spec="Автотека.json",
         operation_id="postPreviewByExternalItem",
-        method_args={"item_id": "body.item_id", "site": "body.site"},
+        method_args={"item_id": "body.itemId", "site": "body.site"},
     )
     def create_preview_by_external_item(
         self,

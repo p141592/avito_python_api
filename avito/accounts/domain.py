@@ -278,14 +278,17 @@ class AccountHierarchy(DomainObject):
         "/listItemsByEmployeeIdV1",
         spec="ИерархияАккаунтов.json",
         operation_id="listItemsByEmployeeIdV1",
-        method_args={"employee_id": "body.employee_id"},
+        method_args={
+            "employee_id": "body.employee_id",
+            "category_id": "body.category_id",
+        },
     )
     def list_items_by_employee(
         self,
         *,
         employee_id: int,
-        limit: int | None = None,
-        offset: int | None = None,
+        category_id: int,
+        last_item_id: int | None = None,
         timeout: ApiTimeouts | None = None,
         retry: RetryOverride | None = None,
     ) -> PaginatedList[EmployeeItem]:
@@ -293,8 +296,8 @@ class AccountHierarchy(DomainObject):
 
         Аргументы:
             employee_id: идентифицирует сотрудника аккаунта.
-            limit: ограничивает размер возвращаемой выборки.
-            offset: задает смещение первой записи в выборке.
+            category_id: ограничивает объявления категорией из справочника Авито.
+            last_item_id: задает курсор для продолжения выборки.
             timeout: переопределяет таймауты HTTP-запроса для этого вызова.
             retry: переопределяет retry-политику операции: default, enabled или disabled.
 
@@ -309,18 +312,14 @@ class AccountHierarchy(DomainObject):
             AvitoError: ошибка SDK с контекстом operation, status, request_id, attempt, method и endpoint.
         """
 
-        page_size = limit or 25
-        base_offset = offset or 0
-
         def fetch_page(page: int | None, _cursor: str | None) -> JsonPage[EmployeeItem]:
             current_page = page or 1
-            current_offset = base_offset + (current_page - 1) * page_size
             result = self._execute(
                 LIST_ITEMS_BY_EMPLOYEE,
                 request=EmployeeItemsRequest(
                     employee_id=employee_id,
-                    limit=page_size,
-                    offset=current_offset,
+                    category_id=category_id,
+                    last_item_id=last_item_id,
                 ),
                 timeout=timeout,
                 retry=retry,
@@ -329,7 +328,7 @@ class AccountHierarchy(DomainObject):
                 items=result.items,
                 total=result.total,
                 page=current_page,
-                per_page=page_size,
+                per_page=len(result.items),
             )
 
         return Paginator(fetch_page).as_list(first_page=fetch_page(1, None))

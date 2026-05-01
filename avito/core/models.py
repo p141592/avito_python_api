@@ -43,7 +43,7 @@ class ApiErrorPayload(ApiModel):
 class RequestModel:
     """Base class for request and query dataclasses with API-name serialization."""
 
-    def to_payload(self) -> dict[str, object]:
+    def to_payload(self) -> object:
         """Serialize dataclass fields into JSON-compatible request body."""
 
         return _serialize_dataclass(self)

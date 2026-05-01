@@ -91,7 +91,7 @@ def test_account_hierarchy_domain_maps_employees_phones_and_items() -> None:
             assert json.loads(request.content.decode()) == {"employeeId": 10, "itemIds": [1, 2]}
             return httpx.Response(200, json={"success": True, "message": "linked"})
         assert request.url.path == "/listItemsByEmployeeIdV1"
-        assert json.loads(request.content.decode()) == {"employeeId": 10, "limit": 5, "offset": 0}
+        assert json.loads(request.content.decode()) == {"employeeId": 10, "categoryId": 24}
         return httpx.Response(
             200,
             json={
@@ -106,7 +106,7 @@ def test_account_hierarchy_domain_maps_employees_phones_and_items() -> None:
     employees = hierarchy.list_employees()
     phones = hierarchy.list_company_phones()
     linked = hierarchy.link_items(employee_id=10, item_ids=[1, 2])
-    items = hierarchy.list_items_by_employee(employee_id=10, limit=5)
+    items = hierarchy.list_items_by_employee(employee_id=10, category_id=24)
 
     assert status.is_active is True
     assert employees.items[0].employee_id == 10

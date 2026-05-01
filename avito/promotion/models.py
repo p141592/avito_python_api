@@ -730,7 +730,7 @@ class CancelTrxPromotionRequest:
     def to_payload(self) -> dict[str, object]:
         """Сериализует запрос остановки TrxPromo."""
 
-        return {"items": [{"itemID": item_id} for item_id in self.item_ids]}
+        return {"itemIDs": list(self.item_ids)}
 
 
 @dataclass(slots=True, frozen=True)

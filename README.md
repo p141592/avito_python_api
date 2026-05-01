@@ -118,7 +118,10 @@ with AvitoClient.from_env() as avito:
     account = avito.account(user_id=123)
     balance = account.get_balance()
     ad = avito.ad(item_id=42, user_id=123).get()
-    stats = avito.ad_stats(item_id=42, user_id=123).get_item_stats()
+    stats = avito.ad_stats(item_id=42, user_id=123).get_item_stats(
+        date_from="2026-04-01",
+        date_to="2026-04-23",
+    )
 ```
 
 `user_id` можно передать явно, задать через `AVITO_USER_ID` или оставить пустым для read-only вызовов, где SDK может определить пользователя через `account().get_self()`. Если идентификатор не удалось определить, SDK поднимает `ValidationError` с подсказкой, как вызвать метод правильно. Для OAuth secret поддерживаются `AVITO_CLIENT_SECRET` и alias `AVITO_SECRET`.
@@ -223,7 +226,7 @@ from avito import AvitoClient
 with AvitoClient.from_env() as avito:
     calls = avito.cpa_call().list(
         date_time_from="2026-04-18T00:00:00Z",
-        date_time_to="2026-04-19T00:00:00Z",
+        limit=100,
     )
     calltracking = avito.call_tracking_call(10).get()
     records = avito.call_tracking_call(10).download()

@@ -1,262 +1,279 @@
-# TODO: Приведение SDK к STYLEGUIDE.md
+# Swagger Schema Contract Coverage
 
-## Контекст восстановления
+## Контекст для восстановления
 
-Дата анализа: 2026-05-01.
+Задача: добавить в SDK строгую проверку полного соответствия локальным Swagger/OpenAPI спецификациям Авито. Нельзя замалчивать пробелы покрытия, использовать allowlist/skip для непокрытых контрактов или сохранять обратную совместимость ценой расхождения со Swagger.
 
-Репозиторий: `/Users/n.baryshnikov/Projects/avito_python_api`.
+Целевой инвариант:
 
-Цель: устранить несоответствия `STYLEGUIDE.md` по архитектуре, публичным
-сигнатурам, transport/auth boundary, docstrings, error language и enum fallback.
+- каждая Swagger operation имеет ровно один SDK binding;
+- каждый binding исполняет ровно один `OperationSpec`;
+- каждый Swagger JSON `requestBody` имеет явный `OperationSpec.request_model`;
+- каждый Swagger JSON success response имеет явный `OperationSpec.response_model`;
+- каждый Swagger JSON error response имеет явный `OperationSpec.error_models[status]` или общий typed error model;
+- все JSON request/success/error payloads проверяются по field key и JSON type;
+- unsupported Swagger schema shape является падающим тестом, а не пропуском.
 
-Выбранная стратегия: **breaking cleanup**. Старые публичные формы не сохраняются
-через deprecated wrappers.
+Текущий важный статус: инфраструктурный слой уже добавлен. `SwaggerRegistry` строит normalized schema tree, `OperationSpec` получил `error_models`, добавлен общий `ApiErrorPayload`, добавлен `avito/testing/swagger_schema.py`, а контрактные тесты теперь вскрывают реальные payload mismatches. Полнота моделей и parsing schemas уже проходят, но строгие schema payload tests сейчас красные и являются backlog исправлений.
 
-Исходное состояние проверок:
+Проверки, которые уже проходили после инфраструктурного шага:
 
-- `make lint` passed
-- `make typecheck` passed
-- `make swagger-lint` passed: 204/204 operations bound
-- `make test` passed: 986 tests
+```bash
+poetry run python scripts/lint_swagger_bindings.py --strict
+poetry run mypy avito
+poetry run ruff check avito tests/contracts/test_swagger_contracts.py
+poetry run pytest tests/domains/accounts/test_accounts.py tests/core/test_swagger_registry.py tests/contracts/test_swagger_contracts.py::test_swagger_operation_specs_cover_all_declared_json_bodies
+```
 
-Основные найденные несоответствия:
+Команды для получения текущего backlog:
 
-- OAuth token flow использует прямой `httpx` вне общего transport-контура.
-- `AvitoClient` хранит публично заменяемые `settings`, `auth_provider`,
-  `transport`.
-- Public domain methods не принимают per-operation `timeout` и `retry` overrides.
-- Internal `RequestModel`/query DTO и input DTO протекают в публичные сигнатуры.
-- Есть wrapper `Application.list(...)` с двумя путями выполнения.
-- Docstrings массово содержат generic fragments вместо reference-ready описаний.
-- Часть публичных error messages смешивает русский и английский.
-- `CpaCallStatusId` тихо возвращает `None` для неизвестного upstream значения.
+```bash
+poetry run pytest tests/contracts/test_swagger_contracts.py -k request_body_matches --tb=short
+poetry run pytest tests/contracts/test_swagger_contracts.py -k "success_response_models_accept or error_responses_preserve" --tb=short
+```
 
-## Этап 1. OAuth Through Transport
+Последний известный baseline:
 
-Перевести OAuth token flow на общий transport-контур:
+- `85` request-body mismatches;
+- `61` success/error response mismatches.
 
-- убрать прямые `httpx.Client()` и `client.post()` из `avito/auth/provider.py`;
-- убрать `token_http_client`, `alternate_http_client`, `autoteka_http_client` из
-  `AvitoClient._build_auth_provider`;
-- выполнять token operations через unauthenticated `Transport(..., auth_provider=None)`;
-- сохранить ошибки OAuth как `AuthenticationError`, без сырых `httpx` исключений
-  наружу.
+## Action Plan
 
-Проверка этапа:
+### 1. Зафиксировать красный baseline
 
-- `rg -n "httpx.Client\\(|client\\.post\\(" avito/auth/provider.py avito/client.py`
-  не показывает прямой OAuth HTTP-код;
-- тест подтверждает, что token request получает SDK `User-Agent`, timeout и
-  centralized error mapping;
-- `poetry run pytest tests/core/test_authentication.py tests/core/test_transport.py`.
+Сохранить текущий список падений как рабочий backlog:
 
-## Этап 2. Immutable AvitoClient
+```bash
+poetry run pytest tests/contracts/test_swagger_contracts.py -k request_body_matches --tb=short
+poetry run pytest tests/contracts/test_swagger_contracts.py -k "success_response_models_accept or error_responses_preserve" --tb=short
+```
 
-Сделать `AvitoClient` practically immutable:
+Цель: закрывать домены пачками и видеть прогресс, а не спорить с тестами по одному.
 
-- заменить публичное хранение на `_settings`, `_auth_provider`, `_transport`;
-- добавить read-only properties `settings`, `auth_provider`, `transport`;
-- запретить замену этих атрибутов после init;
-- оставить изменяемым только `_closed`.
+### 2. Сначала закрыть request-body mismatches
 
-Проверка этапа:
+Request fixes обычно локальные: public args, `method_args`, request dataclass, `to_payload()`.
 
-- тесты проверяют, что `client.settings = ...`, `client.transport = ...`,
-  `client.auth_provider = ...` невозможны;
-- context manager и `close()` продолжают работать;
-- `poetry run pytest tests/contracts/test_client_contracts.py tests/core/test_configuration.py`.
+Порядок доменов:
 
-## Этап 3. Per-Operation Overrides
+1. `accounts`
+2. `ads`
+3. `cpa`
+4. `autoteka`
+5. `jobs`
+6. `messenger`
+7. `promotion`
+8. `ratings`
+9. `realty`
+10. `orders`
+11. `delivery`
 
-Добавить во все public API domain methods:
+### 3. Цикл исправления каждой failing request operation
 
-- `timeout: ApiTimeouts | None = None`;
-- `retry: Literal["default", "enabled", "disabled"] | None = None`.
+Для каждой операции:
 
-Прокинуть через:
+1. Открыть Swagger schema операции в `docs/avito/api/*.json`.
+2. Сравнить с фактическим `request.json_body` из `SwaggerFakeTransport`.
+3. Если поле required в Swagger, сделать его required в public method или гарантированно выводимым из состояния домена.
+4. Поправить `to_payload()` на точные Swagger keys.
+5. Поправить типы публичных аргументов и request dataclass.
+6. Добавить/исправить `@swagger_operation(method_args=...)`, чтобы generated contract call был валидным.
+7. Обновить доменные тесты и docs snippets, если public signature изменилась.
 
-- `DomainObject._execute(...)`;
-- `OperationExecutor.execute(...)`;
-- `RequestContext`.
+### 4. Первый batch: `ads` requests
 
-Effective retry:
+Закрыть:
 
-- `None` / `"default"` использует `OperationSpec.retry_mode`;
-- `"enabled"` форсирует retry;
-- `"disabled"` запрещает retry.
+- `PUT /core/v1/accounts/{user_id}/items/{item_id}/vas`: `vas_id`, не `codes`;
+- `PUT /core/v2/items/{item_id}/vas`: `slugs`, не `codes`;
+- `PUT /core/v2/accounts/{user_id}/items/{item_id}/vas_packages`: `package_id`;
+- stats endpoints: required `dateFrom/dateTo`, а для v2 также `grouping`, `limit`, `metrics`, `offset`;
+- spendings: required `dateFrom/dateTo/grouping/spendingTypes`.
 
-Проверка этапа:
+### 5. Второй batch: `cpa` requests
 
-- AST/grep-скан подтверждает наличие `timeout` и `retry` в public domain methods;
-- тест подтверждает, что timeout попадает в `RequestContext`;
-- тест подтверждает retry override precedence;
-- `poetry run pytest tests/core/test_operations.py tests/core/test_transport.py`.
+Закрыть:
 
-## Этап 4. Remove Internal DTO From Public Signatures
+- complaints: Swagger требует `message`, SDK сейчас использует `reason`;
+- `callsByTime`, `chatsByTime`, `phonesInfoFromChats`: добавить required `limit/offset/dateTimeFrom`;
+- `balanceInfo`: Swagger описывает body type `string`; SDK сейчас отправляет `{}`.
 
-Заменить public signatures:
+### 6. Третий batch: `autoteka` requests
 
-- `Review.list(*, offset=None, page=None, limit=None, timeout=None, retry=None)`;
-- `AutotekaMonitoring.get_monitoring_reg_actions(*, limit=None, timeout=None, retry=None)`;
-- `Vacancy.list(*, query: str | None = None, ...)`;
-- `Vacancy.get(*, vacancy_id: int | str | None = None, query: str | None = None, ...)`;
-- `Application.get_ids(*, updated_at_from: str, ...)`;
-- удалить `Application.list(...)`;
-- `Resume.list(*, query: str | None = None, ...)`.
+Закрыть:
 
-Internal query dataclasses остаются только внутри реализации.
+- `vehicleId` и `itemId` как `string`, не `integer`;
+- monitoring bucket add/remove: точные Swagger keys вместо `vehicles`;
+- `valuation/by-specification`: required wrapper `specification`;
+- `get-leads`: required `subscriptionId`;
+- `catalogs/resolve`: required `fieldsValueIds`.
 
-Проверка этапа:
+### 7. Средние домены
 
-- AST-скан не находит `Request`, `Query`, `Params` типы в public domain signatures;
-- `Application.list` отсутствует;
-- payload/query params совпадают со старым поведением;
-- `poetry run pytest tests/domains/jobs/test_jobs.py tests/domains/ratings/test_ratings.py tests/domains/autoteka/test_autoteka.py`.
+После первых трех batches перейти к:
 
-## Этап 5. Public Input Models Instead Of TypedDict/Internal RequestModel
+- `jobs`: ids как strings, webhook/vacancy required fields;
+- `messenger`: blacklist/message/image payload keys;
+- special offers: required nested fields;
+- `promotion`: cancel/apply/order payload shape;
+- `ratings`: answer request shape;
+- `realty`: prices/intervals/base/booking wrappers.
 
-Заменить публичные input DTO:
+### 8. Крупные домены в конце
 
-- `BbipItemInput`;
-- `TrxItemInput`;
-- `BidItemInput`;
-- `ApplicationViewedItem` как public input.
+`orders` и `delivery` оставить после стабилизации подхода:
 
-Новая форма:
-
-- frozen public dataclasses, не наследующие `RequestModel`;
-- internal request dataclasses строятся внутри domain methods.
-
-Проверка этапа:
-
-- `rg -n "TypedDict|RequestModel" avito/*/domain.py` не показывает public input usage;
-- dry-run и real payload promotion methods совпадают;
-- tests покрывают BBIP, TrxPromo, CPA auction, application viewed update;
-- `poetry run pytest tests/domains/promotion/test_promotion.py tests/domains/jobs/test_jobs.py`.
-
-## Этап 6. Reference-Ready Docstrings
-
-Заменить generic docstring fragments:
-
-- "Выполняет публичную операцию ...";
-- "Пустой результат возвращается как пустая коллекция или `None` согласно аннотации метода."
-
-Каждый public method должен описывать:
-
-- бизнес-действие;
-- аргументы;
-- return model;
-- pagination/dry-run/idempotency/override behavior;
-- common SDK exceptions.
-
-Проверка этапа:
-
-- `rg -n "Выполняет публичную операцию|Пустой результат возвращается" avito/*/domain.py`
-  возвращает пусто;
-- добавить тест/сканер против этих шаблонов;
-- `poetry run pytest tests/contracts/`.
-
-## Этап 7. Error Language Consistency
-
-Заменить mixed-language public error fragments:
-
-- `OAuth transport`;
-- `OAuth endpoint`;
-- `JSON files`;
-- `Binding ambiguous`;
-- аналогичные совпадения.
-
-Проверка этапа:
-
-- `rg -n "OAuth transport|OAuth endpoint|JSON files|Binding ambiguous" avito tests docs`
-  возвращает пусто или только допустимые технические docs references;
-- error tests продолжают проходить;
-- `poetry run pytest tests/core/test_authentication.py tests/core/test_swagger_registry.py`.
-
-## Этап 8. CPA Enum Fallback
-
-Исправить `CpaCallStatusId`:
-
-- добавить `UNKNOWN` или typed fallback;
-- unknown upstream value не должен тихо превращаться в `None`;
-- warning должен логироваться once per process.
-
-Проверка этапа:
-
-- тест unknown `statusId`;
-- тест warning-once behavior;
-- `poetry run pytest tests/domains/cpa/test_cpa.py`.
-
-## Этап 9. Docs And Release Notes
-
-Обновить:
-
-- `CHANGELOG.md` с breaking changes;
-- reference docs;
-- how-to snippets со старыми query/request/input forms.
-
-Проверка этапа:
-
-- `rg` не находит старые snippets: `Application.list`, `query=ReviewsQuery`,
-  `query=ApplicationIdsQuery`, старые TypedDict inputs;
-- `make docs-strict`, если docs pipeline меняет reference output.
-
-## Code To Remove After Completion
-
-Удалить:
-
-- `Application.list(...)` из `avito/jobs/domain.py`;
-- public usage `ReviewsQuery`, `MonitoringEventsQuery`, `VacanciesQuery`,
-  `ApplicationIdsQuery`, `ResumeSearchQuery` в domain signatures;
-- `BbipItemInput`, `_TrxItemInputRequired`, `TrxItemInput`, `BidItemInput`, если
-  больше не используются;
-- `ApplicationViewedItem` как public `RequestModel`, после ввода public replacement;
-- bare `httpx.Client()` fallback и direct `client.post(...)` в token flow;
-- token HTTP clients из `AvitoClient._build_auth_provider`;
-- generic docstring fragments;
-- mixed-language public error fragments;
-- tests/docs, завязанные на старые публичные формы.
-
-Финальная проверка удаления:
-
-- `rg -n "Application\\.list|def list\\(.*Application|ReviewsQuery|MonitoringEventsQuery|VacanciesQuery|ApplicationIdsQuery|ResumeSearchQuery" avito docs tests`;
-- `rg -n "BbipItemInput|TrxItemInput|BidItemInput|ApplicationViewedItem" avito docs tests`;
-- `rg -n "httpx.Client\\(|client\\.post\\(" avito/auth/provider.py avito/client.py`.
-
-## Final Gate
-
-Перед завершением:
-
-- `make lint`;
-- `make typecheck`;
-- `make swagger-lint`;
-- `poetry run pytest tests/core/test_swagger*.py tests/contracts/test_swagger_contracts.py`;
-- `poetry run pytest tests/domains/`;
-- `make test`;
-- `make check`;
-- `make docs-strict`, если менялись docs/reference.
-
-## Assumptions
-
-- Breaking cleanup подтвержден: обратную совместимость через deprecated wrappers
-  не сохраняем.
-- Swagger binding invariant остается обязательным: 204 operations, exactly one
-  discovered binding per operation.
-- Internal request/query dataclasses могут остаться, но не в public domain signatures.
-- Public input dataclasses допустимы, если явно задокументированы и не наследуют
-  `RequestModel`.
-
-## Changeslog выполнения
-
-| Дата | Этап | Статус | Файлы | Проверка | Примечание |
-|---|---|---|---|---|---|
-| 2026-05-01 | План сохранен | done | `todo.md` | `sed -n '1,40p' todo.md`; `tail -n 20 todo.md` | Создан файл с контекстом восстановления, планом, проверками этапов и changeslog |
-| 2026-05-01 | OAuth through Transport | done | `avito/auth/provider.py`, `avito/client.py`, `tests/core/test_authentication.py` | `rg -n "httpx\\.Client\\(|client\\.post\\(" avito/auth/provider.py avito/client.py`; `poetry run pytest tests/core/test_authentication.py tests/core/test_transport.py`; `poetry run ruff check avito/auth/provider.py avito/client.py tests/core/test_authentication.py`; `poetry run mypy avito/auth/provider.py avito/client.py` | OAuth token flow идет через unauthenticated `Transport`; token clients получают SDK settings для base URL, timeout и User-Agent |
-| 2026-05-01 | Immutable AvitoClient | done | `avito/client.py`, `tests/contracts/test_client_contracts.py` | `poetry run pytest tests/contracts/test_client_contracts.py tests/core/test_configuration.py`; `poetry run ruff check avito/client.py tests/contracts/test_client_contracts.py`; `poetry run mypy avito/client.py` | `settings`, `auth_provider`, `transport` переведены на read-only properties; тесты используют `_from_transport` вместо мутации клиента |
-| 2026-05-01 | Per-operation overrides | done | `avito/core/types.py`, `avito/core/operations.py`, `avito/core/domain.py`, `avito/core/transport.py`, `avito/*/domain.py`, `tests/core/test_operations.py`, `tests/core/test_transport.py` | `poetry run pytest tests/core/test_operations.py tests/core/test_transport.py`; `poetry run mypy avito`; `poetry run ruff check avito tests/core/test_operations.py tests/core/test_transport.py`; `make swagger-lint` | `timeout` и `retry` добавлены в Swagger-bound public methods; executor прокидывает `ApiTimeouts` в `RequestContext`; `retry=\"disabled\"` запрещает retry даже для retryable HTTP methods |
-| 2026-05-01 | Public signatures cleanup | done | `avito/ratings/domain.py`, `avito/autoteka/domain.py`, `avito/jobs/domain.py`, `tests/domains/ratings/test_ratings.py`, `tests/domains/autoteka/test_autoteka.py`, `tests/domains/jobs/test_jobs.py`, `docs/site/how-to/ratings-and-tariffs.md`, `docs/site/how-to/job-applications.md` | `poetry run pytest tests/domains/jobs/test_jobs.py tests/domains/ratings/test_ratings.py tests/domains/autoteka/test_autoteka.py`; `poetry run pytest tests/core/test_swagger*.py tests/contracts/test_swagger_contracts.py`; `poetry run mypy avito`; `poetry run ruff check avito tests/domains/jobs/test_jobs.py tests/domains/ratings/test_ratings.py tests/domains/autoteka/test_autoteka.py`; `make swagger-lint`; `make docs-strict` | Internal query DTO убраны из public domain signatures; `Application.list(...)` удален; docs snippets переведены на `get_ids`, `get_by_ids`, primitive query params |
-| 2026-05-01 | Public input models cleanup | done | `avito/promotion/models.py`, `avito/promotion/domain.py`, `avito/promotion/__init__.py`, `avito/jobs/models.py`, `avito/jobs/domain.py`, `avito/testing/swagger_fake_transport.py`, `tests/domains/promotion/test_promotion.py`, `tests/contracts/test_model_contracts.py` | `poetry run pytest tests/domains/promotion/test_promotion.py tests/domains/jobs/test_jobs.py`; `poetry run pytest tests/core/test_swagger*.py tests/contracts/test_swagger_contracts.py`; `poetry run ruff check avito/promotion/models.py avito/promotion/domain.py avito/promotion/__init__.py avito/jobs/models.py avito/jobs/domain.py avito/testing/swagger_fake_transport.py tests/domains/promotion/test_promotion.py tests/domains/jobs/test_jobs.py tests/contracts/test_model_contracts.py`; `poetry run mypy avito/promotion/models.py avito/promotion/domain.py avito/jobs/models.py avito/jobs/domain.py`; `make swagger-lint`; `rg -n "class ApplicationViewedItem\\(RequestModel\\)|class (BbipItemInput|_TrxItemInputRequired|TrxItemInput|BidItemInput)|TypedDict" avito docs tests` | `BbipItemInput`, `_TrxItemInputRequired`, `TrxItemInput`, `BidItemInput` удалены; public promotion signatures принимают `BbipItem`, `TrxItem`, `CpaAuctionBidInput`; `ApplicationViewedItem` больше не наследует `RequestModel`, внутренний payload строится через request dataclasses |
-| 2026-05-01 | Docstrings cleanup | done | `avito/accounts/domain.py`, `avito/ads/domain.py`, `avito/autoteka/domain.py`, `avito/cpa/domain.py`, `avito/jobs/domain.py`, `avito/messenger/domain.py`, `avito/orders/domain.py`, `avito/promotion/domain.py`, `avito/ratings/domain.py`, `avito/realty/domain.py`, `tests/contracts/test_docstring_contracts.py` | `rg -n "Выполняет публичную операцию|Пустой результат возвращается" avito/*/domain.py`; `poetry run pytest tests/contracts/`; `poetry run ruff check avito/accounts/domain.py avito/ads/domain.py avito/autoteka/domain.py avito/cpa/domain.py avito/jobs/domain.py avito/messenger/domain.py avito/orders/domain.py avito/promotion/domain.py avito/ratings/domain.py avito/realty/domain.py tests/contracts/test_docstring_contracts.py` | Generic docstring fragments заменены на reference-ready описания с аргументами, return model, pagination/idempotency/timeout/retry behavior и common SDK exceptions; добавлен contract-test против регресса |
-| 2026-05-01 | Error language cleanup | done | `avito/auth/provider.py`, `avito/core/swagger_registry.py`, `avito/testing/swagger_fake_transport.py` | `rg -n "OAuth transport|OAuth endpoint|JSON files|Binding ambiguous" avito tests docs`; `poetry run pytest tests/core/test_authentication.py tests/core/test_swagger_registry.py`; `poetry run ruff check avito/auth/provider.py avito/core/swagger_registry.py avito/testing/swagger_fake_transport.py` | Mixed-language public error fragments заменены на русские формулировки |
-| 2026-05-01 | CPA enum fallback | done | `avito/core/enums.py`, `avito/cpa/models.py`, `tests/domains/cpa/test_cpa.py` | `poetry run pytest tests/domains/cpa/test_cpa.py`; `poetry run ruff check avito/core/enums.py avito/cpa/models.py tests/domains/cpa/test_cpa.py`; `poetry run mypy avito/core/enums.py avito/cpa/models.py` | `CpaCallStatusId.UNKNOWN` добавлен; unknown `statusId` мапится в typed fallback и логирует warning once per process |
-| 2026-05-01 | Docs and final gate | done | `README.md`, `CHANGELOG.md`, `avito/jobs/__init__.py`, `avito/autoteka/__init__.py`, `todo.md` | `rg -n "Application\\.list|query=ReviewsQuery|query=ApplicationIdsQuery|query=ResumeSearchQuery|BbipItemInput|TrxItemInput|BidItemInput|ReviewsQuery\\(|ApplicationIdsQuery\\(|ResumeSearchQuery\\(" README.md docs/site`; `rg -n "ApplicationIdsQuery|ResumeSearchQuery|VacanciesQuery|MonitoringEventsQuery" avito/*/__init__.py README.md docs/site`; `make docs-strict`; `poetry run pytest tests/core/test_swagger_registry.py tests/contracts/test_swagger_contracts.py`; `poetry run pytest tests/domains/`; `make check` | README snippets и release notes обновлены; internal query DTO убраны из generated reference surface; full gate passed |
+- там много nested objects;
+- больше шансов, что public API сейчас намеренно упрощен, но целевой контракт требует приводить SDK к Swagger;
+- фиксировать по operation groups: labels, tracking, parcel, sandbox tariffs, announcements.
+
+### 9. После request-body green перейти к success responses
+
+Для каждого failing success response:
+
+1. Сгенерированный Swagger payload считать source of truth.
+2. `from_payload()` должен его принять.
+3. Если модель ожидает другой wrapper (`items`, `result`, `success.result`) - добавить корректный Swagger path.
+4. Если публичная модель слишком бедная, расширить dataclass typed fields.
+5. Если response реально array, `from_payload()` должен читать array, а не только object.
+
+### 10. Потом error responses
+
+Цель:
+
+- generated error payload валиден по Swagger;
+- transport поднимает правильный exception;
+- `exception.payload == swagger_payload`;
+- `message/error_code/details` извлекаются без ломки схемы.
+
+Если schema error payload нестандартная, исправлять общий parser `_extract_message/_extract_error_code/_extract_error_details`, но не терять raw `payload`.
+
+### 11. Усилить lint после стабилизации
+
+Перенести часть runtime contract правил в `swagger_linter`:
+
+- JSON requestBody требует `request_model`;
+- JSON success response требует `response_model`;
+- JSON error response требует `error_models`;
+- schema must parse.
+
+### 12. Включить строгие schema tests в gate
+
+Когда все green:
+
+- добавить новые тесты в `make swagger-coverage`;
+- затем убедиться, что `make check` проходит.
+
+### 13. Финальная проверка
+
+Минимум:
+
+```bash
+poetry run pytest tests/contracts/test_swagger_contracts.py
+poetry run pytest tests/domains/
+poetry run python scripts/lint_swagger_bindings.py --strict
+poetry run mypy avito
+poetry run ruff check .
+```
+
+Финально:
+
+```bash
+make check
+```
+
+## Changelog / Статус выполнения
+
+### 2026-05-01
+
+- Этап 1 выполнен: красный baseline зафиксирован в `swagger_contract_backlog.md`.
+- Подтверждено текущими прогонами:
+  - `poetry run pytest tests/contracts/test_swagger_contracts.py -k request_body_matches --tb=short` - `85 failed, 119 passed`;
+  - `poetry run pytest tests/contracts/test_swagger_contracts.py -k "success_response_models_accept or error_responses_preserve" --tb=short` - `61 failed, 782 passed`.
+- Добавлена инфраструктура strict Swagger schema contracts.
+- `SwaggerRegistry` расширен normalized JSON schema tree для request/response/error bodies.
+- `OperationSpec` расширен `error_models`.
+- Добавлен общий typed wrapper `ApiErrorPayload`.
+- Добавлен `avito/testing/swagger_schema.py` с generator/validator по key/type.
+- Добавлены контрактные тесты на:
+  - полноту моделей для всех JSON bodies;
+  - соответствие actual request body Swagger schema;
+  - прием Swagger-shaped success payload через SDK response models;
+  - сохранение Swagger-shaped error payload в SDK exceptions.
+- Закрыты начальные missing model gaps:
+  - 3 missing `request_model`;
+  - 7 missing `response_model`;
+  - JSON error responses покрыты общим typed error model.
+- Исправлен `accounts.get_operations_history()`:
+  - `date_from` и `date_to` стали required;
+  - payload теперь отправляет `dateTimeFrom/dateTimeTo` по Swagger;
+  - обновлены domain test и docs snippet.
+- Проверено:
+  - `poetry run python scripts/lint_swagger_bindings.py --strict` - pass;
+  - `poetry run mypy avito` - pass;
+  - `poetry run ruff check avito tests/contracts/test_swagger_contracts.py` - pass;
+  - targeted registry/model-coverage/accounts tests - pass.
+- Оставшийся backlog:
+  - `85` request-body mismatches;
+  - `61` success/error response mismatches.
+- Рекомендуемый следующий шаг: начать с `ads` request batch.
+
+### 2026-05-01 / Этап 2 partial
+
+- Начато закрытие request-body mismatches.
+- Закрыт `accounts` request mismatch:
+  - `POST /listItemsByEmployeeIdV1` теперь отправляет `employeeId/categoryId/lastItemId` по Swagger;
+  - `category_id` стал обязательным публичным аргументом.
+- Закрыт `ads` request batch:
+  - legacy VAS v1 отправляет `vas_id`;
+  - VAS v2 отправляет `slugs`;
+  - VAS package отправляет `package_id`;
+  - stats/calls/spendings request models отправляют обязательные Swagger поля периода, grouping/limit/metrics/offset/spendingTypes.
+- Обновлены доменные тесты, model/client contract tests, README/how-to snippets и `CHANGELOG.md` для измененных публичных сигнатур.
+- Проверено:
+  - `poetry run pytest tests/domains/accounts/test_accounts.py tests/domains/ads/test_ads.py tests/domains/promotion/test_promotion.py tests/contracts/test_model_contracts.py tests/contracts/test_client_contracts.py` - pass;
+  - `poetry run ruff check ...` по измененным файлам - pass;
+  - `poetry run mypy ...` по измененным source-файлам - pass;
+  - `poetry run pytest tests/contracts/test_swagger_contracts.py -k request_body_matches --tb=short` - `77 failed, 127 passed`.
+- Request-body backlog уменьшен с `85` до `77`.
+- Закрыт `cpa` request batch:
+  - complaints отправляют `message`;
+  - `balanceInfo` отправляет JSON string `"{}"` по Swagger;
+  - `callsByTime`, `chatsByTime`, `phonesInfoFromChats` отправляют обязательные `dateTimeFrom`, `limit`, `offset`/`limit`.
+- Request-body backlog дополнительно уменьшен до `69 failed, 135 passed`.
+- Следующий практичный шаг: закрыть маленькие request groups (`autoload`, `stock`, `trx-promo`, `autostrategy`) или перейти к `autoteka` по исходному порядку плана.
+
+### 2026-05-01 / Этап 3
+
+- Закрыт `autoteka` request batch:
+  - monitoring bucket add/remove отправляют `data`;
+  - `vehicleId` и external `itemId` генерируются как JSON strings;
+  - `valuation/by-specification` отправляет required wrapper `specification`;
+  - `get-leads` требует `subscriptionId`;
+  - `catalogs/resolve` отправляет `fieldsValueIds`.
+- Обновлены доменные/model tests и `CHANGELOG.md` для измененной публичной сигнатуры `get_leads(subscription_id=...)`.
+- Проверено:
+  - `poetry run pytest tests/domains/autoteka/test_autoteka.py tests/contracts/test_model_contracts.py` - pass;
+  - `poetry run ruff check avito/autoteka avito/testing/swagger_fake_transport.py tests/domains/autoteka/test_autoteka.py tests/contracts/test_model_contracts.py` - pass;
+  - `poetry run mypy avito/autoteka avito/testing/swagger_fake_transport.py` - pass;
+  - `poetry run python scripts/lint_swagger_bindings.py --strict` - pass;
+  - `poetry run pytest tests/contracts/test_swagger_contracts.py -k request_body_matches --tb=short` - `59 failed, 145 passed`.
+- Request-body backlog уменьшен с `69` до `59`.
+- Следующий практичный шаг: закрыть маленькие request groups (`autoload`, `stock`, `trx-promo`, `autostrategy`) или перейти к `jobs`.
+
+### 2026-05-02 / Этап 4
+
+- Закрыты маленькие request groups:
+  - `autoload`: v2 profile save отправляет `autoload_enabled`, `report_email`, `schedule`, `feeds_data`; legacy v1 profile save отправляет `autoload_enabled`, `report_email`, `schedule`, `upload_url`;
+  - `stock`: info request отправляет `item_ids` и опциональный `strong_consistency`;
+  - `trx-promo`: cancel request отправляет `itemIDs`;
+  - `autostrategy`: update/stop bindings генерируют `campaignId` и `version`.
+- Обновлен `SwaggerFakeTransport` для генерации валидных значений сложных body bindings этого batch.
+- Проверено:
+  - `poetry run pytest tests/contracts/test_swagger_contracts.py -k request_body_matches --tb=short` - `53 failed, 151 passed`;
+  - `poetry run python scripts/lint_swagger_bindings.py --strict` - pass;
+  - `poetry run pytest tests/domains/ads/test_ads.py tests/domains/orders/test_orders.py tests/domains/promotion/test_promotion.py tests/contracts/test_model_contracts.py` - pass;
+  - `poetry run ruff check avito/ads avito/orders avito/promotion avito/testing/swagger_fake_transport.py tests/domains/ads/test_ads.py tests/domains/orders/test_orders.py tests/domains/promotion/test_promotion.py tests/contracts/test_model_contracts.py` - pass;
+  - `poetry run mypy avito/ads avito/orders avito/promotion avito/testing/swagger_fake_transport.py` - pass.
+- Request-body backlog уменьшен с `59` до `53`.
+- Следующий практичный шаг: перейти к `jobs` request batch.

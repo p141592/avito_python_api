@@ -191,7 +191,7 @@ def test_promotion_write_methods_keep_same_payload_in_dry_run_mode() -> None:
         date_from=datetime.fromisoformat("2026-04-18T00:00:00+00:00"),
     )
 
-    vas_preview = ad_promotion.apply_vas(codes=["xl"], dry_run=True)
+    vas_preview = ad_promotion.apply_vas(vas_id="xl", dry_run=True)
     bbip_preview = bbip.create_order(items=[bbip_item], dry_run=True)
     trx_preview = trx.apply(items=[trx_item], dry_run=True)
 
@@ -199,7 +199,7 @@ def test_promotion_write_methods_keep_same_payload_in_dry_run_mode() -> None:
     assert bbip_preview.status == "preview"
     assert trx_preview.status == "preview"
 
-    vas_apply = ad_promotion.apply_vas(codes=["xl"])
+    vas_apply = ad_promotion.apply_vas(vas_id="xl")
     bbip_apply = bbip.create_order(items=[bbip_item])
     trx_apply = trx.apply(items=[trx_item])
 

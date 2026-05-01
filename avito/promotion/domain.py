@@ -438,6 +438,7 @@ class TrxPromotion(DomainObject):
         "/trx-promo/1/cancel",
         spec="TrxPromo.json",
         operation_id="api_trx_promo_open_api_cancel",
+        method_args={"item_ids": "body.itemIDs"},
     )
     def delete(
         self,
@@ -938,7 +939,7 @@ class AutostrategyCampaign(DomainObject):
         "/autostrategy/v1/campaign/edit",
         spec="Автостратегия.json",
         operation_id="editAutostrategyCampaign",
-        method_args={"version": "body.version"},
+        method_args={"campaign_id": "body.campaignId", "version": "body.version"},
     )
     def update(
         self,
@@ -1016,7 +1017,7 @@ class AutostrategyCampaign(DomainObject):
         "/autostrategy/v1/campaign/stop",
         spec="Автостратегия.json",
         operation_id="stopAutostrategyCampaign",
-        method_args={"version": "body.version"},
+        method_args={"campaign_id": "body.campaignId", "version": "body.version"},
     )
     def delete(
         self,

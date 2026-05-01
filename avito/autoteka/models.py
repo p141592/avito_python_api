@@ -30,19 +30,26 @@ class CatalogResolveRequest(RequestModel):
     def to_payload(self) -> dict[str, object]:
         """Сериализует запрос автокаталога."""
 
-        return {"brandId": self.brand_id}
+        return {"fieldsValueIds": [{"id": 110000, "valueId": self.brand_id}]}
 
 
 @dataclass(slots=True, frozen=True)
 class LeadsRequest(RequestModel):
     """Запрос событий сервиса Сигнал."""
 
+    subscription_id: int
     limit: int
+    last_id: int | None = None
 
     def to_payload(self) -> dict[str, object]:
         """Сериализует запрос событий Сигнал."""
 
-        return {"limit": self.limit}
+        payload: dict[str, object] = {"subscriptionId": self.subscription_id}
+        if self.limit is not None:
+            payload["limit"] = self.limit
+        if self.last_id is not None:
+            payload["lastId"] = self.last_id
+        return payload
 
 
 @dataclass(slots=True, frozen=True)
@@ -139,7 +146,7 @@ class MonitoringBucketRequest(RequestModel):
     def to_payload(self) -> dict[str, object]:
         """Сериализует запрос изменения списка мониторинга."""
 
-        return {"vehicles": list(self.vehicles)}
+        return {"data": list(self.vehicles)}
 
 
 @dataclass(slots=True, frozen=True)
@@ -179,7 +186,18 @@ class ValuationBySpecificationRequest(RequestModel):
     def to_payload(self) -> dict[str, object]:
         """Сериализует запрос оценки автомобиля."""
 
-        return {"specificationId": self.specification_id, "mileage": self.mileage}
+        empty_choice = {"label": "", "valueId": 0}
+        return {
+            "specification": {
+                "brand": {"label": "", "valueId": self.specification_id},
+                "model": empty_choice,
+                "year": {"label": "", "valueId": self.specification_id},
+                "generation": empty_choice,
+                "modification": empty_choice,
+                "ownersCount": empty_choice,
+            },
+            "mileage": self.mileage,
+        }
 
 
 @dataclass(slots=True, frozen=True)

@@ -2123,6 +2123,7 @@ class Stock(DomainObject):
         self,
         *,
         item_ids: Sequence[int],
+        strong_consistency: bool | None = None,
         timeout: ApiTimeouts | None = None,
         retry: RetryOverride | None = None,
     ) -> StockInfoResult:
@@ -2145,7 +2146,10 @@ class Stock(DomainObject):
 
         return self._execute(
             GET_STOCK_INFO,
-            request=StockInfoRequest(item_ids=list(item_ids)),
+            request=StockInfoRequest(
+                item_ids=list(item_ids),
+                strong_consistency=strong_consistency,
+            ),
             timeout=timeout,
             retry=retry,
         )

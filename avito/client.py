@@ -54,6 +54,16 @@ from avito.tariffs import Tariff
 SummaryDate = date | datetime | str
 
 
+def _default_summary_date_range(
+    date_from: SummaryDate | None,
+    date_to: SummaryDate | None,
+) -> tuple[SummaryDate, SummaryDate]:
+    if date_from is not None and date_to is not None:
+        return date_from, date_to
+    today = date.today().isoformat()
+    return date_from or today, date_to or today
+
+
 def _sum_optional_int(values: Iterable[int | None]) -> int | None:
     resolved = [value for value in values if value is not None]
     if not resolved:
@@ -275,15 +285,16 @@ class AvitoClient:
         spendings_by_item_id: dict[int, SpendingRecord] = {}
         unavailable_sections: list[SummaryUnavailableSection] = []
         if item_ids:
+            stats_date_from, stats_date_to = _default_summary_date_range(date_from, date_to)
             item_stats = self.ad_stats(user_id=resolved_user_id).get_item_stats(
                 item_ids=item_ids,
-                date_from=date_from,
-                date_to=date_to,
+                date_from=stats_date_from,
+                date_to=stats_date_to,
             )
             calls_stats = self.ad_stats(user_id=resolved_user_id).get_calls_stats(
                 item_ids=item_ids,
-                date_from=date_from,
-                date_to=date_to,
+                date_from=stats_date_from,
+                date_to=stats_date_to,
             )
             stats_by_item_id = {
                 stats.item_id: stats for stats in item_stats.items if stats.item_id is not None
@@ -294,8 +305,10 @@ class AvitoClient:
             try:
                 spendings = self.ad_stats(user_id=resolved_user_id).get_account_spendings(
                     item_ids=item_ids,
-                    date_from=date_from,
-                    date_to=date_to,
+                    date_from=stats_date_from,
+                    date_to=stats_date_to,
+                    spending_types=["promotion", "presence", "commission", "rest"],
+                    grouping="day",
                 )
             except AvitoError as error:
                 unavailable_sections.append(_summary_unavailable_section("spendings", error))

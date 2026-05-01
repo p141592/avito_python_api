@@ -32,11 +32,14 @@ _SDK_CONSTANTS: Mapping[str, SdkValue] = {
     "action_id": 101,
     "call_id": 102,
     "campaign_id": 103,
+    "category_id": 1,
     "chat_id": "chat-1",
     "delivery_provider_id": "provider-1",
     "dictionary_id": 104,
     "employee_id": 10,
     "grant_type": "client_credentials",
+    "grouping": "day",
+    "is_enabled": True,
     "item_id": 105,
     "item_ids": [105],
     "limit": 2,
@@ -57,7 +60,9 @@ _SDK_CONSTANTS: Mapping[str, SdkValue] = {
     "vacancy_id": 113,
     "vacancy_uuid": "vacancy-uuid-1",
     "value": "value",
-    "vehicle_id": 114,
+    "subscriptionId": 1,
+    "vehicle_id": "XTA210990Y2766384",
+    "version": 1,
     "voice_ids": ["voice-1"],
 }
 _BODY_VALUES: Mapping[str, SdkValue] = {
@@ -67,6 +72,7 @@ _BODY_VALUES: Mapping[str, SdkValue] = {
     "action_ids": [101],
     "applies": [],
     "auto_renewal": True,
+    "autoload_enabled": True,
     "bid_penny": 1000,
     "billing_type": "package",
     "blacklisted_user_id": 7,
@@ -80,8 +86,12 @@ _BODY_VALUES: Mapping[str, SdkValue] = {
     "codes": ["xl"],
     "date_time_from": "2026-04-01T00:00:00+00:00",
     "date_time_to": "2026-04-02T00:00:00+00:00",
+    "dateFrom": "2026-04-01",
+    "dateTo": "2026-04-02",
     "employee_id": 10,
     "files": ["file-1"],
+    "grouping": "day",
+    "is_enabled": True,
     "ids": [101],
     "image_id": "image-1",
     "intervals": [{"date_from": "2026-05-01", "date_to": "2026-05-02"}],
@@ -89,6 +99,7 @@ _BODY_VALUES: Mapping[str, SdkValue] = {
     "item_ids": [105],
     "limit": 2,
     "message": "Тестовое сообщение",
+    "metrics": ["views"],
     "mileage": 10000,
     "min_stay_days": 2,
     "name": "Тариф",
@@ -102,14 +113,18 @@ _BODY_VALUES: Mapping[str, SdkValue] = {
     "price": 1500,
     "reason": "test",
     "reg_number": "А123АА77",
+    "report_email": "autoload@example.test",
+    "schedule_rate": 100,
     "specification_id": 1,
+    "spendingTypes": ["promotion"],
+    "slugs": ["xl"],
     "task_id": 112,
     "text": "Ответ",
     "title": "Тест",
     "transition": "confirm",
     "url": "https://example.test/file.xml",
     "vacancy_id": 113,
-    "vehicle_id": 114,
+    "vehicle_id": "XTA210990Y2766384",
     "vehicles": [{"vin": "XTA210990Y2766384"}],
     "vin": "XTA210990Y2766384",
 }
@@ -386,6 +401,10 @@ class SwaggerFakeTransport(FakeTransport):
         return self._body_field_value(argument_name, argument_name, annotation)
 
     def _body_field_value(self, argument_name: str, field_name: str, annotation: str) -> object:
+        if argument_name == "brand_id" and field_name == "fieldsValueIds":
+            return 1
+        if argument_name == "specification_id" and field_name == "specification":
+            return 1
         if argument_name == "applies" or "ApplicationViewedItem" in annotation:
             from avito.jobs.models import ApplicationViewedItem
 
@@ -512,6 +531,24 @@ class SwaggerFakeTransport(FakeTransport):
             return [RealtyInterval(date="2026-05-01", available=True)]
         if name == "blocked_dates":
             return ["2026-05-01"]
+        if name == "data":
+            return ["XTA210990Y2766384"]
+        if name == "autoload_enabled":
+            return True
+        if name == "campaignId":
+            return 103
+        if name == "feeds_data":
+            return "https://example.test/feed.xml"
+        if name == "itemIDs":
+            return [105]
+        if name == "item_ids":
+            return [105]
+        if name == "report_email":
+            return "autoload@example.test"
+        if name == "schedule":
+            return 100
+        if name == "upload_url":
+            return "https://example.test/feed.xml"
         if name == "date_start":
             return "2026-05-01"
         if name == "date_end":

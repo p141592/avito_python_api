@@ -19,7 +19,7 @@ def test_autoteka_vehicle_flows() -> None:
         path = request.url.path
         payload = json.loads(request.content.decode()) if request.content else None
         if path == "/autoteka/v1/catalogs/resolve":
-            assert payload == {"brandId": 1}
+            assert payload == {"fieldsValueIds": [{"id": 110000, "valueId": 1}]}
             return httpx.Response(
                 200,
                 json={
@@ -109,7 +109,7 @@ def test_autoteka_vehicle_flows() -> None:
     vehicle = AutotekaVehicle(make_transport(httpx.MockTransport(handler)), vehicle_id="77")
 
     assert vehicle.resolve_catalog(brand_id=1).items[0].values[0].label == "Audi"
-    assert vehicle.get_leads(limit=1).last_id == 321
+    assert vehicle.get_leads(subscription_id=44, limit=1).last_id == 321
     assert vehicle.create_preview_by_vin(vin="VIN-1").preview_id == "77"
     assert vehicle.create_preview_by_item_id(item_id=901).preview_id == "78"
     assert vehicle.create_preview_by_reg_number(reg_number="A123AA77").preview_id == "79"

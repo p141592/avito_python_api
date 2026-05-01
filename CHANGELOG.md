@@ -28,6 +28,12 @@ and this project adheres to Semantic Versioning.
 - Transport получил поддержку `Idempotency-Key`; публичные write-методы во всех доменах принимают `idempotency_key`, а dry-run/write-контракт promotion покрыт тестами.
 - Во всех доменных пакетах добавлены `enums.py`; `accounts`, `ads`, `autoteka`, `jobs`, `messenger`, `orders`, `promotion`, `ratings`, `realty` и `tariffs` переведены на typed enums с fallback на `UNKNOWN` и warning-логом ровно один раз на неизвестное upstream-значение.
 - `CpaCallStatusId` получил `UNKNOWN`; неизвестный upstream `statusId` больше не превращается в `None` и логирует warning один раз на процесс.
+- **BREAKING:** `AccountHierarchy.list_items_by_employee(...)` теперь требует `category_id` и отправляет Swagger body `employeeId/categoryId/lastItemId`; старые `limit`/`offset` не входят в контракт `/listItemsByEmployeeIdV1`.
+- **BREAKING:** статистические методы `AdStats.get_item_stats(...)`, `get_calls_stats(...)`, `get_item_analytics(...)` и `get_account_spendings(...)` теперь требуют обязательные поля периода и параметры, описанные в Swagger requestBody.
+- **BREAKING:** `AdPromotion.apply_vas(...)` принимает `vas_id` для legacy v1 endpoint, а `apply_vas_direct(...)` принимает `slugs`; payload больше не использует внутренний ключ `codes`.
+- **BREAKING:** CPA methods now match Swagger request bodies: complaints send `message`, balanceInfo sends JSON string `"{}"`, chats/phones/calls list methods require `limit`/`offset` or `limit` fields declared by Swagger.
+- **BREAKING:** Autoteka request bodies now match Swagger: `get_leads(...)` requires `subscription_id`, catalog resolve sends `fieldsValueIds`, monitoring bucket methods send `data`, and vehicle/request identifiers use Swagger JSON types.
+- **BREAKING:** Autoload profile saves now require Swagger fields (`report_email`, schedule and feed/upload URL), stock info sends `item_ids`, TrxPromo cancel sends `itemIDs`, and Autostrategy update/stop generated calls include `campaignId` and `version`.
 
 ### Removed
 - **BREAKING:** удалены классы исключений `NotFoundError`, `ClientError`, `ServerError` из `avito.core.exceptions`. HTTP 404 и 5xx теперь маппятся на `UpstreamApiError`. Пользователям, ловившим эти типы, перейти на `UpstreamApiError` или `AvitoError` и проверять `status_code`.

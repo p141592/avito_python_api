@@ -340,8 +340,8 @@ class CallsStatsRequest:
     """Запрос статистики звонков."""
 
     item_ids: list[int] = field(default_factory=list)
-    date_from: str | None = None
-    date_to: str | None = None
+    date_from: str = ""
+    date_to: str = ""
 
     def to_payload(self) -> dict[str, object]:
         """Сериализует фильтр статистики звонков."""
@@ -395,8 +395,8 @@ class ItemStatsRequest:
     """Запрос статистики по объявлениям."""
 
     item_ids: list[int]
-    date_from: str | None = None
-    date_to: str | None = None
+    date_from: str
+    date_to: str
     fields: list[str] = field(default_factory=list)
 
     def to_payload(self) -> dict[str, object]:
@@ -411,6 +411,30 @@ class ItemStatsRequest:
                 "fields": self.fields or None,
             }.items()
             if value is not None
+        }
+
+
+@dataclass(slots=True, frozen=True)
+class ItemAnalyticsRequest:
+    """Запрос расширенной аналитики по объявлениям."""
+
+    date_from: str
+    date_to: str
+    metrics: list[str]
+    grouping: str
+    limit: int
+    offset: int
+
+    def to_payload(self) -> dict[str, object]:
+        """Сериализует запрос расширенной аналитики."""
+
+        return {
+            "dateFrom": self.date_from,
+            "dateTo": self.date_to,
+            "metrics": self.metrics,
+            "grouping": self.grouping,
+            "limit": self.limit,
+            "offset": self.offset,
         }
 
 
@@ -503,6 +527,30 @@ class AccountSpendings(SerializableModel):
 
 
 @dataclass(slots=True, frozen=True)
+class SpendingsRequest:
+    """Запрос статистики расходов профиля."""
+
+    date_from: str
+    date_to: str
+    spending_types: list[str]
+    grouping: str
+    item_ids: list[int] = field(default_factory=list)
+
+    def to_payload(self) -> dict[str, object]:
+        """Сериализует запрос статистики расходов."""
+
+        payload: dict[str, object] = {
+            "dateFrom": self.date_from,
+            "dateTo": self.date_to,
+            "spendingTypes": self.spending_types,
+            "grouping": self.grouping,
+        }
+        if self.item_ids:
+            payload["filter"] = {"itemIDs": self.item_ids}
+        return payload
+
+
+@dataclass(slots=True, frozen=True)
 class VasPrice(SerializableModel):
     """Цена и доступность услуги продвижения."""
 
@@ -581,12 +629,24 @@ class VasApplyResult(SerializableModel):
 class ApplyVasRequest:
     """Запрос применения услуг продвижения."""
 
-    codes: list[str]
+    vas_id: str
 
     def to_payload(self) -> dict[str, object]:
         """Сериализует запрос применения VAS."""
 
-        return {"codes": self.codes}
+        return {"vas_id": self.vas_id}
+
+
+@dataclass(slots=True, frozen=True)
+class ApplyVasDirectRequest:
+    """Запрос применения услуг продвижения через v2 endpoint."""
+
+    slugs: list[str]
+
+    def to_payload(self) -> dict[str, object]:
+        """Сериализует запрос применения VAS v2."""
+
+        return {"slugs": self.slugs}
 
 
 @dataclass(slots=True, frozen=True)
@@ -598,7 +658,7 @@ class ApplyVasPackageRequest:
     def to_payload(self) -> dict[str, object]:
         """Сериализует запрос применения пакета VAS."""
 
-        return {"packageCode": self.package_code}
+        return {"package_id": self.package_code}
 
 
 @dataclass(slots=True, frozen=True)
@@ -625,22 +685,36 @@ class AutoloadProfileSettings(SerializableModel):
 class AutoloadProfileUpdateRequest:
     """Запрос сохранения профиля автозагрузки."""
 
-    is_enabled: bool | None = None
-    email: str | None = None
-    callback_url: str | None = None
+    is_enabled: bool
+    report_email: str
+    schedule_rate: int
+    schedule_weekdays: list[int]
+    schedule_time_slots: list[int]
+    upload_url: str | None = None
+    feed_name: str | None = None
+    feed_url: str | None = None
 
     def to_payload(self) -> dict[str, object]:
         """Сериализует изменения профиля."""
 
-        return {
-            key: value
-            for key, value in {
-                "isEnabled": self.is_enabled,
-                "email": self.email,
-                "callbackUrl": self.callback_url,
-            }.items()
-            if value is not None
+        payload: dict[str, object] = {
+            "autoload_enabled": self.is_enabled,
+            "report_email": self.report_email,
+            "schedule": [
+                {
+                    "rate": self.schedule_rate,
+                    "weekdays": list(self.schedule_weekdays),
+                    "time_slots": list(self.schedule_time_slots),
+                }
+            ],
         }
+        if self.feed_url is not None:
+            payload["feeds_data"] = [
+                {"feed_name": self.feed_name or "default", "feed_url": self.feed_url}
+            ]
+        if self.upload_url is not None:
+            payload["upload_url"] = self.upload_url
+        return payload
 
 
 @dataclass(slots=True, frozen=True)

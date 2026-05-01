@@ -299,8 +299,8 @@ class EmployeeItemsRequest(RequestModel):
     """Запрос списка объявлений сотрудника."""
 
     employee_id: int
-    limit: int | None = None
-    offset: int | None = None
+    category_id: int
+    last_item_id: int | None = None
 
     def to_payload(self) -> dict[str, object]:
         """Сериализует фильтр объявлений сотрудника."""
@@ -308,8 +308,8 @@ class EmployeeItemsRequest(RequestModel):
         return _without_none(
             {
                 "employeeId": self.employee_id,
-                "limit": self.limit,
-                "offset": self.offset,
+                "categoryId": self.category_id,
+                "lastItemId": self.last_item_id,
             }
         )
 

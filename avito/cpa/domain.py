@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-from collections.abc import Sequence
 from dataclasses import dataclass
 
 from avito.core import ApiTimeouts, RetryOverride, ValidationError
@@ -18,6 +17,7 @@ from avito.cpa.models import (
     CpaActionResult,
     CpaAudioRecord,
     CpaBalanceInfo,
+    CpaBalanceInfoRequest,
     CpaCallByIdRequest,
     CpaCallComplaintRequest,
     CpaCallInfo,
@@ -68,7 +68,7 @@ class CpaLead(DomainObject):
     def create_complaint_by_action_id(
         self,
         *,
-        action_id: str,
+        action_id: int,
         reason: str,
         timeout: ApiTimeouts | None = None,
         retry: RetryOverride | None = None,
@@ -125,7 +125,11 @@ class CpaLead(DomainObject):
         """
 
         return self._execute(
-            GET_CPA_BALANCE, request={}, headers=CPA_HEADERS, timeout=timeout, retry=retry
+            GET_CPA_BALANCE,
+            request=CpaBalanceInfoRequest(),
+            headers=CPA_HEADERS,
+            timeout=timeout,
+            retry=retry,
         )
 
 
@@ -183,13 +187,18 @@ class CpaChat(DomainObject):
         "/cpa/v2/chatsByTime",
         spec="CPAАвито.json",
         operation_id="chatsByTime",
-        method_args={"created_at_from": "body.date_time_from"},
+        method_args={
+            "created_at_from": "body.dateTimeFrom",
+            "limit": "body.limit",
+            "offset": "body.offset",
+        },
     )
     def list(
         self,
         *,
         created_at_from: str,
-        limit: int | None = None,
+        limit: int,
+        offset: int,
         version: int = 2,
         timeout: ApiTimeouts | None = None,
         retry: RetryOverride | None = None,
@@ -199,6 +208,7 @@ class CpaChat(DomainObject):
         Аргументы:
             created_at_from: задает нижнюю границу времени создания.
             limit: ограничивает размер возвращаемой выборки.
+            offset: задает смещение первой записи в выборке.
             version: задает версию upstream-контракта, если операция ее поддерживает.
             timeout: переопределяет таймауты HTTP-запроса для этого вызова.
             retry: переопределяет retry-политику операции: default, enabled или disabled.
@@ -215,12 +225,19 @@ class CpaChat(DomainObject):
         """
 
         if version == 1:
-            return self.list_classic(created_at_from=created_at_from, limit=limit)
+            return self.list_classic(
+                created_at_from=created_at_from,
+                limit=limit,
+                offset=offset,
+                timeout=timeout,
+                retry=retry,
+            )
         return self._execute(
             LIST_CPA_CHATS,
             request=CpaChatsByTimeRequest(
                 created_at_from=created_at_from,
                 limit=limit,
+                offset=offset,
             ),
             headers=CPA_HEADERS,
             timeout=timeout,
@@ -232,13 +249,18 @@ class CpaChat(DomainObject):
         "/cpa/v1/chatsByTime",
         spec="CPAАвито.json",
         operation_id="chatsByTime",
-        method_args={"created_at_from": "body.date_time_from"},
+        method_args={
+            "created_at_from": "body.dateTimeFrom",
+            "limit": "body.limit",
+            "offset": "body.offset",
+        },
     )
     def list_classic(
         self,
         *,
         created_at_from: str,
-        limit: int | None = None,
+        limit: int,
+        offset: int,
         timeout: ApiTimeouts | None = None,
         retry: RetryOverride | None = None,
     ) -> CpaChatsResult:
@@ -260,6 +282,7 @@ class CpaChat(DomainObject):
             request=CpaChatsByTimeRequest(
                 created_at_from=created_at_from,
                 limit=limit,
+                offset=offset,
             ),
             headers=CPA_HEADERS,
             timeout=timeout,
@@ -271,19 +294,27 @@ class CpaChat(DomainObject):
         "/cpa/v1/phonesInfoFromChats",
         spec="CPAАвито.json",
         operation_id="phonesInfoFromChats",
-        method_args={"action_ids": "body.date_time_from"},
+        method_args={
+            "date_time_from": "body.dateTimeFrom",
+            "limit": "body.limit",
+            "offset": "body.offset",
+        },
     )
     def get_phones_info_from_chats(
         self,
         *,
-        action_ids: Sequence[str],
+        date_time_from: str,
+        limit: int,
+        offset: int,
         timeout: ApiTimeouts | None = None,
         retry: RetryOverride | None = None,
     ) -> CpaPhonesResult:
         """Возвращает phones info from chats для CPA-чатов.
 
         Аргументы:
-            action_ids: передает значение `action_ids` в upstream API.
+            date_time_from: задает нижнюю границу времени поиска.
+            limit: ограничивает размер возвращаемой выборки.
+            offset: задает смещение первой записи в выборке.
             timeout: переопределяет таймауты HTTP-запроса для этого вызова.
             retry: переопределяет retry-политику операции: default, enabled или disabled.
 
@@ -299,7 +330,11 @@ class CpaChat(DomainObject):
 
         return self._execute(
             GET_CPA_PHONES_INFO,
-            request=CpaPhonesFromChatsRequest(action_ids=list(action_ids)),
+            request=CpaPhonesFromChatsRequest(
+                date_time_from=date_time_from,
+                limit=limit,
+                offset=offset,
+            ),
             headers=CPA_HEADERS,
             timeout=timeout,
             retry=retry,
@@ -326,15 +361,16 @@ class CpaCall(DomainObject):
         spec="CPAАвито.json",
         operation_id="getCallsByTimeV2",
         method_args={
-            "date_time_from": "body.date_time_from",
-            "date_time_to": "body.date_time_from",
+            "date_time_from": "body.dateTimeFrom",
+            "limit": "body.limit",
         },
     )
     def list(
         self,
         *,
         date_time_from: str,
-        date_time_to: str,
+        limit: int,
+        offset: int | None = None,
         timeout: ApiTimeouts | None = None,
         retry: RetryOverride | None = None,
     ) -> CpaCallsResult:
@@ -342,7 +378,8 @@ class CpaCall(DomainObject):
 
         Аргументы:
             date_time_from: задает начало временного интервала.
-            date_time_to: задает конец временного интервала.
+            limit: ограничивает размер возвращаемой выборки.
+            offset: задает смещение первой записи в выборке.
             timeout: переопределяет таймауты HTTP-запроса для этого вызова.
             retry: переопределяет retry-политику операции: default, enabled или disabled.
 
@@ -360,7 +397,8 @@ class CpaCall(DomainObject):
             LIST_CPA_CALLS,
             request=CpaCallsByTimeRequest(
                 date_time_from=date_time_from,
-                date_time_to=date_time_to,
+                limit=limit,
+                offset=offset,
             ),
             headers=CPA_HEADERS,
             timeout=timeout,
@@ -483,7 +521,11 @@ class CpaArchive(DomainObject):
         """
 
         return self._execute(
-            GET_CPA_ARCHIVE_BALANCE, request={}, headers=CPA_HEADERS, timeout=timeout, retry=retry
+            GET_CPA_ARCHIVE_BALANCE,
+            request=CpaBalanceInfoRequest(),
+            headers=CPA_HEADERS,
+            timeout=timeout,
+            retry=retry,
         )
 
     @swagger_operation(

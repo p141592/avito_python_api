@@ -29,23 +29,31 @@ class CpaChatsByTimeRequest(RequestModel):
     """Запрос списка CPA-чатов по времени."""
 
     created_at_from: str
-    limit: int | None = None
+    limit: int
+    offset: int
 
     def to_payload(self) -> dict[str, object]:
-        payload: dict[str, object] = {"createdAtFrom": self.created_at_from}
-        if self.limit is not None:
-            payload["limit"] = self.limit
-        return payload
+        return {
+            "dateTimeFrom": self.created_at_from,
+            "limit": self.limit,
+            "offset": self.offset,
+        }
 
 
 @dataclass(slots=True, frozen=True)
 class CpaPhonesFromChatsRequest(RequestModel):
     """Запрос телефонов из целевых чатов."""
 
-    action_ids: list[str]
+    date_time_from: str
+    limit: int
+    offset: int
 
     def to_payload(self) -> dict[str, object]:
-        return {"actionIds": list(self.action_ids)}
+        return {
+            "dateTimeFrom": self.date_time_from,
+            "limit": self.limit,
+            "offset": self.offset,
+        }
 
 
 @dataclass(slots=True, frozen=True)
@@ -53,13 +61,25 @@ class CpaCallsByTimeRequest(RequestModel):
     """Запрос списка CPA-звонков по времени."""
 
     date_time_from: str
-    date_time_to: str
+    limit: int
+    offset: int | None = None
 
     def to_payload(self) -> dict[str, object]:
-        return {
+        payload: dict[str, object] = {
             "dateTimeFrom": self.date_time_from,
-            "dateTimeTo": self.date_time_to,
+            "limit": self.limit,
         }
+        if self.offset is not None:
+            payload["offset"] = self.offset
+        return payload
+
+
+@dataclass(slots=True, frozen=True)
+class CpaBalanceInfoRequest(RequestModel):
+    """Запрос CPA-баланса со string body по Swagger."""
+
+    def to_payload(self) -> object:
+        return "{}"
 
 
 @dataclass(slots=True, frozen=True)
@@ -70,18 +90,18 @@ class CpaCallComplaintRequest(RequestModel):
     reason: str
 
     def to_payload(self) -> dict[str, object]:
-        return {"callId": self.call_id, "reason": self.reason}
+        return {"callId": self.call_id, "message": self.reason}
 
 
 @dataclass(slots=True, frozen=True)
 class CpaLeadComplaintRequest(RequestModel):
     """Запрос жалобы по action id."""
 
-    action_id: str
+    action_id: int
     reason: str
 
     def to_payload(self) -> dict[str, object]:
-        return {"actionId": self.action_id, "reason": self.reason}
+        return {"actionId": self.action_id, "message": self.reason}
 
 
 @dataclass(slots=True, frozen=True)

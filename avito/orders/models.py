@@ -1110,9 +1110,13 @@ class StockInfoRequest:
     """Запрос текущих остатков."""
 
     item_ids: list[int]
+    strong_consistency: bool | None = None
 
     def to_payload(self) -> dict[str, object]:
-        return {"itemIds": list(self.item_ids)}
+        payload: dict[str, object] = {"item_ids": list(self.item_ids)}
+        if self.strong_consistency is not None:
+            payload["strong_consistency"] = self.strong_consistency
+        return payload
 
 
 @dataclass(slots=True, frozen=True)

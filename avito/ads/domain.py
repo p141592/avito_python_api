@@ -9,6 +9,7 @@ from datetime import date, datetime
 from avito.ads.models import (
     AccountSpendings,
     AdsActionResult,
+    ApplyVasDirectRequest,
     ApplyVasPackageRequest,
     ApplyVasRequest,
     AutoloadFeesResult,
@@ -22,12 +23,14 @@ from avito.ads.models import (
     CallsStatsRequest,
     CallsStatsResult,
     IdMappingResult,
+    ItemAnalyticsRequest,
     ItemAnalyticsResult,
     ItemStatsRequest,
     ItemStatsResult,
     LegacyAutoloadReport,
     Listing,
     ListingStatus,
+    SpendingsRequest,
     UpdatePriceRequest,
     UpdatePriceResult,
     UploadByUrlRequest,
@@ -102,9 +105,7 @@ def _preview_result(
 StatsDate = date | datetime | str
 
 
-def _serialize_stats_date(value: StatsDate | None) -> str | None:
-    if value is None:
-        return None
+def _serialize_stats_date(value: StatsDate) -> str:
     if isinstance(value, datetime):
         return value.date().isoformat()
     if isinstance(value, date):
@@ -375,13 +376,17 @@ class AdStats(DomainObject):
         "/core/v1/accounts/{user_id}/calls/stats",
         spec="Объявления.json",
         operation_id="postCallsStats",
+        method_args={
+            "date_from": "body.dateFrom",
+            "date_to": "body.dateTo",
+        },
     )
     def get_calls_stats(
         self,
         *,
+        date_from: StatsDate,
+        date_to: StatsDate,
         item_ids: list[int] | None = None,
-        date_from: StatsDate | None = None,
-        date_to: StatsDate | None = None,
         timeout: ApiTimeouts | None = None,
         retry: RetryOverride | None = None,
     ) -> CallsStatsResult:
@@ -409,13 +414,17 @@ class AdStats(DomainObject):
         "/stats/v1/accounts/{user_id}/items",
         spec="Объявления.json",
         operation_id="itemStatsShallow",
+        method_args={
+            "date_from": "body.dateFrom",
+            "date_to": "body.dateTo",
+        },
     )
     def get_item_stats(
         self,
         *,
+        date_from: StatsDate,
+        date_to: StatsDate,
         item_ids: list[int] | None = None,
-        date_from: StatsDate | None = None,
-        date_to: StatsDate | None = None,
         fields: list[str] | None = None,
         timeout: ApiTimeouts | None = None,
         retry: RetryOverride | None = None,
@@ -445,14 +454,25 @@ class AdStats(DomainObject):
         "/stats/v2/accounts/{user_id}/items",
         spec="Объявления.json",
         operation_id="itemAnalytics",
+        method_args={
+            "date_from": "body.dateFrom",
+            "date_to": "body.dateTo",
+            "metrics": "body.metrics",
+            "grouping": "body.grouping",
+            "limit": "body.limit",
+            "offset": "body.offset",
+        },
     )
     def get_item_analytics(
         self,
         *,
+        date_from: StatsDate,
+        date_to: StatsDate,
+        metrics: list[str],
+        grouping: str,
+        limit: int,
+        offset: int,
         item_ids: list[int] | None = None,
-        date_from: StatsDate | None = None,
-        date_to: StatsDate | None = None,
-        fields: list[str] | None = None,
         timeout: ApiTimeouts | None = None,
         retry: RetryOverride | None = None,
     ) -> ItemAnalyticsResult:
@@ -462,15 +482,16 @@ class AdStats(DomainObject):
         """
 
         user_id = self._require_user_id()
-        resolved_item_ids = item_ids or ([int(self.item_id)] if self.item_id is not None else [])
         return self._execute(
             GET_ITEM_ANALYTICS,
             path_params={"user_id": user_id},
-            request=ItemStatsRequest(
-                item_ids=resolved_item_ids,
+            request=ItemAnalyticsRequest(
                 date_from=_serialize_stats_date(date_from),
                 date_to=_serialize_stats_date(date_to),
-                fields=fields or [],
+                metrics=metrics,
+                grouping=grouping,
+                limit=limit,
+                offset=offset,
             ),
             timeout=timeout,
             retry=retry,
@@ -481,14 +502,21 @@ class AdStats(DomainObject):
         "/stats/v2/accounts/{user_id}/spendings",
         spec="Объявления.json",
         operation_id="accountSpendings",
+        method_args={
+            "date_from": "body.dateFrom",
+            "date_to": "body.dateTo",
+            "spending_types": "body.spendingTypes",
+            "grouping": "body.grouping",
+        },
     )
     def get_account_spendings(
         self,
         *,
+        date_from: StatsDate,
+        date_to: StatsDate,
+        spending_types: list[str],
+        grouping: str,
         item_ids: list[int] | None = None,
-        date_from: StatsDate | None = None,
-        date_to: StatsDate | None = None,
-        fields: list[str] | None = None,
         timeout: ApiTimeouts | None = None,
         retry: RetryOverride | None = None,
     ) -> AccountSpendings:
@@ -502,11 +530,12 @@ class AdStats(DomainObject):
         return self._execute(
             GET_ACCOUNT_SPENDINGS,
             path_params={"user_id": user_id},
-            request=ItemStatsRequest(
-                item_ids=resolved_item_ids,
+            request=SpendingsRequest(
                 date_from=_serialize_stats_date(date_from),
                 date_to=_serialize_stats_date(date_to),
-                fields=fields or [],
+                spending_types=spending_types,
+                grouping=grouping,
+                item_ids=resolved_item_ids,
             ),
             timeout=timeout,
             retry=retry,
@@ -561,12 +590,12 @@ class AdPromotion(DomainObject):
         "/core/v1/accounts/{user_id}/items/{item_id}/vas",
         spec="Объявления.json",
         operation_id="putItemVas",
-        method_args={"codes": "body.vas_id"},
+        method_args={"vas_id": "body.vas_id"},
     )
     def apply_vas(
         self,
         *,
-        codes: list[str],
+        vas_id: str,
         dry_run: bool = False,
         idempotency_key: str | None = None,
         timeout: ApiTimeouts | None = None,
@@ -582,8 +611,8 @@ class AdPromotion(DomainObject):
         """
 
         item_id, user_id = self._require_ids()
-        validate_string_items("codes", codes)
-        request_payload = ApplyVasRequest(codes=codes).to_payload()
+        validate_non_empty_string("vas_id", vas_id)
+        request_payload = ApplyVasRequest(vas_id=vas_id).to_payload()
         target: dict[str, object] = {"item_id": item_id, "user_id": user_id}
         if dry_run:
             return _preview_result(
@@ -594,7 +623,7 @@ class AdPromotion(DomainObject):
         payload = self._execute(
             APPLY_ITEM_VAS,
             path_params={"user_id": user_id, "item_id": item_id},
-            request=ApplyVasRequest(codes=codes),
+            request=ApplyVasRequest(vas_id=vas_id),
             idempotency_key=idempotency_key,
             timeout=timeout,
             retry=retry,
@@ -661,12 +690,12 @@ class AdPromotion(DomainObject):
         "/core/v2/items/{item_id}/vas",
         spec="Объявления.json",
         operation_id="applyVas",
-        method_args={"codes": "body.slugs"},
+        method_args={"slugs": "body.slugs"},
     )
     def apply_vas_direct(
         self,
         *,
-        codes: list[str],
+        slugs: list[str],
         dry_run: bool = False,
         idempotency_key: str | None = None,
         timeout: ApiTimeouts | None = None,
@@ -680,8 +709,8 @@ class AdPromotion(DomainObject):
         """
 
         item_id = self._require_item_id()
-        validate_string_items("codes", codes)
-        request_payload = ApplyVasRequest(codes=codes).to_payload()
+        validate_string_items("slugs", slugs)
+        request_payload = ApplyVasDirectRequest(slugs=slugs).to_payload()
         target: dict[str, object] = {"item_id": item_id}
         if dry_run:
             return _preview_result(
@@ -692,7 +721,7 @@ class AdPromotion(DomainObject):
         payload = self._execute(
             APPLY_VAS_DIRECT,
             path_params={"item_id": item_id},
-            request=ApplyVasRequest(codes=codes),
+            request=ApplyVasDirectRequest(slugs=slugs),
             idempotency_key=idempotency_key,
             timeout=timeout,
             retry=retry,
@@ -747,13 +776,23 @@ class AutoloadProfile(DomainObject):
         "/autoload/v2/profile",
         spec="Автозагрузка.json",
         operation_id="createOrUpdateProfileV2",
+        method_args={
+            "is_enabled": "body.autoload_enabled",
+            "feed_url": "body.feeds_data",
+            "report_email": "body.report_email",
+            "schedule_rate": "body.schedule",
+        },
     )
     def save(
         self,
         *,
-        is_enabled: bool | None = None,
-        email: str | None = None,
-        callback_url: str | None = None,
+        is_enabled: bool,
+        feed_url: str,
+        report_email: str,
+        schedule_rate: int,
+        schedule_weekdays: list[int] | None = None,
+        schedule_time_slots: list[int] | None = None,
+        feed_name: str | None = None,
         idempotency_key: str | None = None,
         timeout: ApiTimeouts | None = None,
         retry: RetryOverride | None = None,
@@ -769,8 +808,12 @@ class AutoloadProfile(DomainObject):
             SAVE_AUTOLOAD_PROFILE,
             request=AutoloadProfileUpdateRequest(
                 is_enabled=is_enabled,
-                email=email,
-                callback_url=callback_url,
+                report_email=report_email,
+                schedule_rate=schedule_rate,
+                schedule_weekdays=schedule_weekdays or [0, 1, 2, 3, 4, 5, 6],
+                schedule_time_slots=schedule_time_slots or [0],
+                feed_name=feed_name,
+                feed_url=feed_url,
             ),
             idempotency_key=idempotency_key,
             timeout=timeout,
@@ -1135,6 +1178,12 @@ class AutoloadArchive(DomainObject):
         operation_id="createOrUpdateProfile",
         deprecated=True,
         legacy=True,
+        method_args={
+            "is_enabled": "body.autoload_enabled",
+            "upload_url": "body.upload_url",
+            "report_email": "body.report_email",
+            "schedule_rate": "body.schedule",
+        },
     )
     @deprecated_method(
         symbol="AutoloadArchive.save_profile",
@@ -1145,9 +1194,12 @@ class AutoloadArchive(DomainObject):
     def save_profile(
         self,
         *,
-        is_enabled: bool | None = None,
-        email: str | None = None,
-        callback_url: str | None = None,
+        is_enabled: bool,
+        upload_url: str,
+        report_email: str,
+        schedule_rate: int,
+        schedule_weekdays: list[int] | None = None,
+        schedule_time_slots: list[int] | None = None,
         idempotency_key: str | None = None,
         timeout: ApiTimeouts | None = None,
         retry: RetryOverride | None = None,
@@ -1165,8 +1217,11 @@ class AutoloadArchive(DomainObject):
             SAVE_ARCHIVE_PROFILE,
             request=AutoloadProfileUpdateRequest(
                 is_enabled=is_enabled,
-                email=email,
-                callback_url=callback_url,
+                report_email=report_email,
+                schedule_rate=schedule_rate,
+                schedule_weekdays=schedule_weekdays or [0, 1, 2, 3, 4, 5, 6],
+                schedule_time_slots=schedule_time_slots or [0],
+                upload_url=upload_url,
             ),
             idempotency_key=idempotency_key,
             timeout=timeout,
