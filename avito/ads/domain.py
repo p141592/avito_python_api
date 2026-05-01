@@ -65,7 +65,14 @@ from avito.ads.operations import (
     UPDATE_PRICE,
     UPLOAD_BY_URL,
 )
-from avito.core import JsonPage, PaginatedList, Paginator, ValidationError
+from avito.core import (
+    ApiTimeouts,
+    JsonPage,
+    PaginatedList,
+    Paginator,
+    RetryOverride,
+    ValidationError,
+)
 from avito.core.deprecation import deprecated_method
 from avito.core.domain import DomainObject
 from avito.core.swagger import swagger_operation
@@ -157,7 +164,9 @@ class Ad(DomainObject):
         spec="Объявления.json",
         operation_id="getItemInfo",
     )
-    def get(self) -> Listing:
+    def get(
+        self, *, timeout: ApiTimeouts | None = None, retry: RetryOverride | None = None
+    ) -> Listing:
         """Получает объявление по `item_id`.
 
         Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
@@ -167,6 +176,8 @@ class Ad(DomainObject):
         return self._execute(
             GET_ITEM,
             path_params={"user_id": user_id, "item_id": item_id},
+            timeout=timeout,
+            retry=retry,
         )
 
     @swagger_operation(
@@ -182,12 +193,28 @@ class Ad(DomainObject):
         limit: int | None = None,
         page_size: int | None = None,
         offset: int | None = None,
+        timeout: ApiTimeouts | None = None,
+        retry: RetryOverride | None = None,
     ) -> PaginatedList[Listing]:
-        """Получает список объявлений.
+        """Возвращает объявления аккаунта с ленивой пагинацией.
 
-        Пустой результат возвращается как пустая коллекция или `None` согласно аннотации метода.
+        Аргументы:
+            status: фильтрует результат по статусу.
+            limit: ограничивает размер возвращаемой выборки.
+            page_size: задает размер страницы для ленивой пагинации.
+            offset: задает смещение первой записи в выборке.
+            timeout: переопределяет таймауты HTTP-запроса для этого вызова.
+            retry: переопределяет retry-политику операции: default, enabled или disabled.
 
-        Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
+        Возвращает:
+            Ленивый `PaginatedList[Listing]`; первая страница загружается при создании, следующие страницы - при итерации.
+
+        Поведение:
+            Параметры пагинации ограничивают объем данных без изменения модели ответа.
+            `timeout` и `retry` действуют только на этот вызов и не меняют настройки клиента.
+
+        Исключения:
+            AvitoError: ошибка SDK с контекстом operation, status, request_id, attempt, method и endpoint.
         """
 
         user_id = self._resolve_user_id(self.user_id)
@@ -206,6 +233,8 @@ class Ad(DomainObject):
                 "per_page": resolved_page_size,
                 "page": first_page_number,
             },
+            timeout=timeout,
+            retry=retry,
         )
         list_result = result
         page_size = (
@@ -255,6 +284,8 @@ class Ad(DomainObject):
         *,
         price: int | float,
         idempotency_key: str | None = None,
+        timeout: ApiTimeouts | None = None,
+        retry: RetryOverride | None = None,
     ) -> UpdatePriceResult:
         """Обновляет цену текущего объявления.
 
@@ -269,6 +300,8 @@ class Ad(DomainObject):
             path_params={"item_id": item_id},
             request=UpdatePriceRequest(price=price),
             idempotency_key=idempotency_key,
+            timeout=timeout,
+            retry=retry,
         )
 
     def _fetch_ads_page(
@@ -349,6 +382,8 @@ class AdStats(DomainObject):
         item_ids: list[int] | None = None,
         date_from: StatsDate | None = None,
         date_to: StatsDate | None = None,
+        timeout: ApiTimeouts | None = None,
+        retry: RetryOverride | None = None,
     ) -> CallsStatsResult:
         """Получает статистику звонков.
 
@@ -365,6 +400,8 @@ class AdStats(DomainObject):
                 date_from=_serialize_stats_date(date_from),
                 date_to=_serialize_stats_date(date_to),
             ),
+            timeout=timeout,
+            retry=retry,
         )
 
     @swagger_operation(
@@ -380,6 +417,8 @@ class AdStats(DomainObject):
         date_from: StatsDate | None = None,
         date_to: StatsDate | None = None,
         fields: list[str] | None = None,
+        timeout: ApiTimeouts | None = None,
+        retry: RetryOverride | None = None,
     ) -> ItemStatsResult:
         """Получает статистику по списку объявлений.
 
@@ -397,6 +436,8 @@ class AdStats(DomainObject):
                 date_to=_serialize_stats_date(date_to),
                 fields=fields or [],
             ),
+            timeout=timeout,
+            retry=retry,
         )
 
     @swagger_operation(
@@ -412,6 +453,8 @@ class AdStats(DomainObject):
         date_from: StatsDate | None = None,
         date_to: StatsDate | None = None,
         fields: list[str] | None = None,
+        timeout: ApiTimeouts | None = None,
+        retry: RetryOverride | None = None,
     ) -> ItemAnalyticsResult:
         """Получает аналитику по профилю.
 
@@ -429,6 +472,8 @@ class AdStats(DomainObject):
                 date_to=_serialize_stats_date(date_to),
                 fields=fields or [],
             ),
+            timeout=timeout,
+            retry=retry,
         )
 
     @swagger_operation(
@@ -444,6 +489,8 @@ class AdStats(DomainObject):
         date_from: StatsDate | None = None,
         date_to: StatsDate | None = None,
         fields: list[str] | None = None,
+        timeout: ApiTimeouts | None = None,
+        retry: RetryOverride | None = None,
     ) -> AccountSpendings:
         """Получает статистику расходов профиля.
 
@@ -461,6 +508,8 @@ class AdStats(DomainObject):
                 date_to=_serialize_stats_date(date_to),
                 fields=fields or [],
             ),
+            timeout=timeout,
+            retry=retry,
         )
 
     def _require_user_id(self) -> int:
@@ -486,7 +535,12 @@ class AdPromotion(DomainObject):
         method_args={"item_ids": "body.item_ids"},
     )
     def get_vas_prices(
-        self, *, item_ids: list[int], location_id: int | None = None
+        self,
+        *,
+        item_ids: list[int],
+        location_id: int | None = None,
+        timeout: ApiTimeouts | None = None,
+        retry: RetryOverride | None = None,
     ) -> VasPricesResult:
         """Получает цены продвижения и доступные услуги.
 
@@ -498,6 +552,8 @@ class AdPromotion(DomainObject):
             GET_VAS_PRICES,
             path_params={"user_id": user_id},
             request=VasPricesRequest(item_ids=item_ids, location_id=location_id),
+            timeout=timeout,
+            retry=retry,
         )
 
     @swagger_operation(
@@ -513,6 +569,8 @@ class AdPromotion(DomainObject):
         codes: list[str],
         dry_run: bool = False,
         idempotency_key: str | None = None,
+        timeout: ApiTimeouts | None = None,
+        retry: RetryOverride | None = None,
     ) -> PromotionActionResult:
         """Применяет дополнительные услуги к объявлению.
 
@@ -538,6 +596,8 @@ class AdPromotion(DomainObject):
             path_params={"user_id": user_id, "item_id": item_id},
             request=ApplyVasRequest(codes=codes),
             idempotency_key=idempotency_key,
+            timeout=timeout,
+            retry=retry,
         )
         return PromotionActionResult.from_action_payload(
             payload,
@@ -559,6 +619,8 @@ class AdPromotion(DomainObject):
         package_code: str,
         dry_run: bool = False,
         idempotency_key: str | None = None,
+        timeout: ApiTimeouts | None = None,
+        retry: RetryOverride | None = None,
     ) -> PromotionActionResult:
         """Применяет пакет дополнительных услуг.
 
@@ -584,6 +646,8 @@ class AdPromotion(DomainObject):
             path_params={"user_id": user_id, "item_id": item_id},
             request=ApplyVasPackageRequest(package_code=package_code),
             idempotency_key=idempotency_key,
+            timeout=timeout,
+            retry=retry,
         )
         return PromotionActionResult.from_action_payload(
             payload,
@@ -605,6 +669,8 @@ class AdPromotion(DomainObject):
         codes: list[str],
         dry_run: bool = False,
         idempotency_key: str | None = None,
+        timeout: ApiTimeouts | None = None,
+        retry: RetryOverride | None = None,
     ) -> PromotionActionResult:
         """Применяет услуги продвижения через прямой v2 endpoint.
 
@@ -628,6 +694,8 @@ class AdPromotion(DomainObject):
             path_params={"item_id": item_id},
             request=ApplyVasRequest(codes=codes),
             idempotency_key=idempotency_key,
+            timeout=timeout,
+            retry=retry,
         )
         return PromotionActionResult.from_action_payload(
             payload,
@@ -664,13 +732,15 @@ class AutoloadProfile(DomainObject):
         spec="Автозагрузка.json",
         operation_id="getProfileV2",
     )
-    def get(self) -> AutoloadProfileSettings:
+    def get(
+        self, *, timeout: ApiTimeouts | None = None, retry: RetryOverride | None = None
+    ) -> AutoloadProfileSettings:
         """Получает профиль автозагрузки.
 
         Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
         """
 
-        return self._execute(GET_AUTOLOAD_PROFILE)
+        return self._execute(GET_AUTOLOAD_PROFILE, timeout=timeout, retry=retry)
 
     @swagger_operation(
         "POST",
@@ -685,6 +755,8 @@ class AutoloadProfile(DomainObject):
         email: str | None = None,
         callback_url: str | None = None,
         idempotency_key: str | None = None,
+        timeout: ApiTimeouts | None = None,
+        retry: RetryOverride | None = None,
     ) -> AdsActionResult:
         """Сохраняет профиль автозагрузки.
 
@@ -701,6 +773,8 @@ class AutoloadProfile(DomainObject):
                 callback_url=callback_url,
             ),
             idempotency_key=idempotency_key,
+            timeout=timeout,
+            retry=retry,
         )
 
     @swagger_operation(
@@ -710,7 +784,14 @@ class AutoloadProfile(DomainObject):
         operation_id="upload",
         method_args={"url": "constant.url"},
     )
-    def upload_by_url(self, *, url: str, idempotency_key: str | None = None) -> UploadResult:
+    def upload_by_url(
+        self,
+        *,
+        url: str,
+        idempotency_key: str | None = None,
+        timeout: ApiTimeouts | None = None,
+        retry: RetryOverride | None = None,
+    ) -> UploadResult:
         """Загружает файл по ссылке.
 
         Параметр `idempotency_key` задает ключ идемпотентности для безопасного повтора write-операции.
@@ -722,6 +803,8 @@ class AutoloadProfile(DomainObject):
             UPLOAD_BY_URL,
             request=UploadByUrlRequest(url=url),
             idempotency_key=idempotency_key,
+            timeout=timeout,
+            retry=retry,
         )
 
     @swagger_operation(
@@ -730,13 +813,15 @@ class AutoloadProfile(DomainObject):
         spec="Автозагрузка.json",
         operation_id="userDocsTree",
     )
-    def get_tree(self) -> AutoloadTreeResult:
+    def get_tree(
+        self, *, timeout: ApiTimeouts | None = None, retry: RetryOverride | None = None
+    ) -> AutoloadTreeResult:
         """Получает дерево категорий.
 
         Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
         """
 
-        return self._execute(GET_AUTOLOAD_TREE)
+        return self._execute(GET_AUTOLOAD_TREE, timeout=timeout, retry=retry)
 
     @swagger_operation(
         "GET",
@@ -745,7 +830,13 @@ class AutoloadProfile(DomainObject):
         operation_id="userDocsNodeFields",
         method_args={"node_slug": "path.node_slug"},
     )
-    def get_node_fields(self, *, node_slug: str) -> AutoloadFieldsResult:
+    def get_node_fields(
+        self,
+        *,
+        node_slug: str,
+        timeout: ApiTimeouts | None = None,
+        retry: RetryOverride | None = None,
+    ) -> AutoloadFieldsResult:
         """Получает поля категории.
 
         Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
@@ -754,6 +845,8 @@ class AutoloadProfile(DomainObject):
         return self._execute(
             GET_AUTOLOAD_NODE_FIELDS,
             path_params={"node_slug": node_slug},
+            timeout=timeout,
+            retry=retry,
         )
 
 
@@ -773,7 +866,9 @@ class AutoloadReport(DomainObject):
         spec="Автозагрузка.json",
         operation_id="getReportByIdV3",
     )
-    def get(self) -> AutoloadReportDetails:
+    def get(
+        self, *, timeout: ApiTimeouts | None = None, retry: RetryOverride | None = None
+    ) -> AutoloadReportDetails:
         """Получает конкретный отчет v3.
 
         Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
@@ -783,6 +878,8 @@ class AutoloadReport(DomainObject):
         return self._execute(
             GET_AUTOLOAD_REPORT,
             path_params={"report_id": report_id},
+            timeout=timeout,
+            retry=retry,
         )
 
     @swagger_operation(
@@ -792,13 +889,30 @@ class AutoloadReport(DomainObject):
         operation_id="getReportsV2",
     )
     def list(
-        self, *, limit: int | None = None, offset: int | None = None
+        self,
+        *,
+        limit: int | None = None,
+        offset: int | None = None,
+        timeout: ApiTimeouts | None = None,
+        retry: RetryOverride | None = None,
     ) -> PaginatedList[AutoloadReportSummary]:
-        """Получает список отчетов автозагрузки.
+        """Возвращает отчеты Автозагрузки с ленивой пагинацией.
 
-        Пустой результат возвращается как пустая коллекция или `None` согласно аннотации метода.
+        Аргументы:
+            limit: ограничивает размер возвращаемой выборки.
+            offset: задает смещение первой записи в выборке.
+            timeout: переопределяет таймауты HTTP-запроса для этого вызова.
+            retry: переопределяет retry-политику операции: default, enabled или disabled.
 
-        Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
+        Возвращает:
+            Ленивый `PaginatedList[AutoloadReportSummary]`; первая страница загружается при создании, следующие страницы - при итерации.
+
+        Поведение:
+            Параметры пагинации ограничивают объем данных без изменения модели ответа.
+            `timeout` и `retry` действуют только на этот вызов и не меняют настройки клиента.
+
+        Исключения:
+            AvitoError: ошибка SDK с контекстом operation, status, request_id, attempt, method и endpoint.
         """
 
         page_size = limit or 25
@@ -810,6 +924,8 @@ class AutoloadReport(DomainObject):
             result = self._execute(
                 LIST_AUTOLOAD_REPORTS,
                 query={"limit": page_size, "offset": current_offset},
+                timeout=timeout,
+                retry=retry,
             )
             reports = result
             return JsonPage(
@@ -827,13 +943,15 @@ class AutoloadReport(DomainObject):
         spec="Автозагрузка.json",
         operation_id="getLastCompletedReportV3",
     )
-    def get_last_completed(self) -> AutoloadReportDetails:
+    def get_last_completed(
+        self, *, timeout: ApiTimeouts | None = None, retry: RetryOverride | None = None
+    ) -> AutoloadReportDetails:
         """Получает последний завершенный отчет.
 
         Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
         """
 
-        return self._execute(GET_AUTOLOAD_LAST_COMPLETED_REPORT)
+        return self._execute(GET_AUTOLOAD_LAST_COMPLETED_REPORT, timeout=timeout, retry=retry)
 
     @swagger_operation(
         "GET",
@@ -841,18 +959,31 @@ class AutoloadReport(DomainObject):
         spec="Автозагрузка.json",
         operation_id="getReportItemsById",
     )
-    def get_items(self) -> AutoloadReportItemsResult:
-        """Получает объявления из отчета.
+    def get_items(
+        self, *, timeout: ApiTimeouts | None = None, retry: RetryOverride | None = None
+    ) -> AutoloadReportItemsResult:
+        """Возвращает позиции выбранного отчета Автозагрузки.
 
-        Пустой результат возвращается как пустая коллекция или `None` согласно аннотации метода.
+        Аргументы:
+            timeout: переопределяет таймауты HTTP-запроса для этого вызова.
+            retry: переопределяет retry-политику операции: default, enabled или disabled.
 
-        Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
+        Возвращает:
+            `AutoloadReportItemsResult` с типизированными данными ответа API.
+
+        Поведение:
+            `timeout` и `retry` действуют только на этот вызов и не меняют настройки клиента.
+
+        Исключения:
+            AvitoError: ошибка SDK с контекстом operation, status, request_id, attempt, method и endpoint.
         """
 
         report_id = self._require_report_id()
         return self._execute(
             GET_AUTOLOAD_REPORT_ITEMS,
             path_params={"report_id": report_id},
+            timeout=timeout,
+            retry=retry,
         )
 
     @swagger_operation(
@@ -861,7 +992,9 @@ class AutoloadReport(DomainObject):
         spec="Автозагрузка.json",
         operation_id="getReportItemsFeesById",
     )
-    def get_fees(self) -> AutoloadFeesResult:
+    def get_fees(
+        self, *, timeout: ApiTimeouts | None = None, retry: RetryOverride | None = None
+    ) -> AutoloadFeesResult:
         """Получает списания по объявлениям отчета.
 
         Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
@@ -871,6 +1004,8 @@ class AutoloadReport(DomainObject):
         return self._execute(
             GET_AUTOLOAD_REPORT_FEES,
             path_params={"report_id": report_id},
+            timeout=timeout,
+            retry=retry,
         )
 
     @swagger_operation(
@@ -880,7 +1015,13 @@ class AutoloadReport(DomainObject):
         operation_id="getAdIdsByAvitoIds",
         method_args={"avito_ids": "query.query"},
     )
-    def get_ad_ids_by_avito_ids(self, *, avito_ids: Sequence[int]) -> IdMappingResult:
+    def get_ad_ids_by_avito_ids(
+        self,
+        *,
+        avito_ids: Sequence[int],
+        timeout: ApiTimeouts | None = None,
+        retry: RetryOverride | None = None,
+    ) -> IdMappingResult:
         """Получает ad ids по avito ids.
 
         Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
@@ -889,6 +1030,8 @@ class AutoloadReport(DomainObject):
         return self._execute(
             GET_AD_IDS_BY_AVITO_IDS,
             query={"query": ",".join(str(item) for item in avito_ids)},
+            timeout=timeout,
+            retry=retry,
         )
 
     @swagger_operation(
@@ -898,7 +1041,13 @@ class AutoloadReport(DomainObject):
         operation_id="getAvitoIdsByAdIds",
         method_args={"ad_ids": "query.query"},
     )
-    def get_avito_ids_by_ad_ids(self, *, ad_ids: Sequence[int]) -> IdMappingResult:
+    def get_avito_ids_by_ad_ids(
+        self,
+        *,
+        ad_ids: Sequence[int],
+        timeout: ApiTimeouts | None = None,
+        retry: RetryOverride | None = None,
+    ) -> IdMappingResult:
         """Получает avito ids по ad ids.
 
         Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
@@ -907,6 +1056,8 @@ class AutoloadReport(DomainObject):
         return self._execute(
             GET_AVITO_IDS_BY_AD_IDS,
             query={"query": ",".join(str(item) for item in ad_ids)},
+            timeout=timeout,
+            retry=retry,
         )
 
     @swagger_operation(
@@ -916,7 +1067,13 @@ class AutoloadReport(DomainObject):
         operation_id="getAutoloadItemsInfoV2",
         method_args={"item_ids": "query.query"},
     )
-    def get_items_info(self, *, item_ids: Sequence[int]) -> AutoloadReportItemsResult:
+    def get_items_info(
+        self,
+        *,
+        item_ids: Sequence[int],
+        timeout: ApiTimeouts | None = None,
+        retry: RetryOverride | None = None,
+    ) -> AutoloadReportItemsResult:
         """Получает информацию по объявлениям автозагрузки.
 
         Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
@@ -925,6 +1082,8 @@ class AutoloadReport(DomainObject):
         return self._execute(
             GET_AUTOLOAD_ITEMS_INFO,
             query={"query": ",".join(str(item) for item in item_ids)},
+            timeout=timeout,
+            retry=retry,
         )
 
     def _require_report_id(self) -> int:
@@ -957,7 +1116,9 @@ class AutoloadArchive(DomainObject):
         removal_version="1.3.0",
         deprecated_since="1.1.0",
     )
-    def get_profile(self) -> AutoloadProfileSettings:
+    def get_profile(
+        self, *, timeout: ApiTimeouts | None = None, retry: RetryOverride | None = None
+    ) -> AutoloadProfileSettings:
         """Получает архивный профиль автозагрузки.
 
                 Deprecated: используйте `autoload_profile().get`; удаление в версии 1.3.0.
@@ -965,7 +1126,7 @@ class AutoloadArchive(DomainObject):
         Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
         """
 
-        return self._execute(GET_ARCHIVE_PROFILE)
+        return self._execute(GET_ARCHIVE_PROFILE, timeout=timeout, retry=retry)
 
     @swagger_operation(
         "POST",
@@ -988,6 +1149,8 @@ class AutoloadArchive(DomainObject):
         email: str | None = None,
         callback_url: str | None = None,
         idempotency_key: str | None = None,
+        timeout: ApiTimeouts | None = None,
+        retry: RetryOverride | None = None,
     ) -> AdsActionResult:
         """Сохраняет архивный профиль автозагрузки.
 
@@ -1006,6 +1169,8 @@ class AutoloadArchive(DomainObject):
                 callback_url=callback_url,
             ),
             idempotency_key=idempotency_key,
+            timeout=timeout,
+            retry=retry,
         )
 
     @swagger_operation(
@@ -1022,7 +1187,9 @@ class AutoloadArchive(DomainObject):
         removal_version="1.3.0",
         deprecated_since="1.1.0",
     )
-    def get_last_completed_report(self) -> LegacyAutoloadReport:
+    def get_last_completed_report(
+        self, *, timeout: ApiTimeouts | None = None, retry: RetryOverride | None = None
+    ) -> LegacyAutoloadReport:
         """Получает архивную статистику по последней выгрузке.
 
                 Deprecated: используйте `autoload_report().get_last_completed`; удаление в версии 1.3.0.
@@ -1030,7 +1197,7 @@ class AutoloadArchive(DomainObject):
         Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
         """
 
-        return self._execute(GET_ARCHIVE_LAST_COMPLETED_REPORT)
+        return self._execute(GET_ARCHIVE_LAST_COMPLETED_REPORT, timeout=timeout, retry=retry)
 
     @swagger_operation(
         "GET",
@@ -1046,7 +1213,9 @@ class AutoloadArchive(DomainObject):
         removal_version="1.3.0",
         deprecated_since="1.1.0",
     )
-    def get_report(self) -> LegacyAutoloadReport:
+    def get_report(
+        self, *, timeout: ApiTimeouts | None = None, retry: RetryOverride | None = None
+    ) -> LegacyAutoloadReport:
         """Получает архивную статистику по конкретной выгрузке.
 
                 Deprecated: используйте `autoload_report().get`; удаление в версии 1.3.0.
@@ -1058,6 +1227,8 @@ class AutoloadArchive(DomainObject):
         return self._execute(
             GET_ARCHIVE_REPORT,
             path_params={"report_id": report_id},
+            timeout=timeout,
+            retry=retry,
         )
 
     def _require_report_id(self) -> int:

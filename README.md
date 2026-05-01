@@ -206,14 +206,12 @@ with AvitoClient.from_env() as avito:
 
 ```python
 from avito import AvitoClient
-from avito.jobs import ApplicationIdsQuery, ResumeSearchQuery
 
 with AvitoClient.from_env() as avito:
-    vacancies = avito.vacancy().list()
-    applications = avito.application().list(
-        query=ApplicationIdsQuery(updated_at_from="2026-04-18")
-    )
-    resumes = avito.resume().list(query=ResumeSearchQuery(query="оператор"))
+    vacancies = avito.vacancy().list(query="python")
+    application_ids = avito.application().get_ids(updated_at_from="2026-04-18")
+    applications = avito.application().get_by_ids(ids=[application_ids.items[0].id])
+    resumes = avito.resume().list(query="оператор")
     webhooks = avito.job_webhook().list()
 ```
 
@@ -260,7 +258,7 @@ with AvitoClient.from_env() as avito:
     tariff = avito.tariff().get_tariff_info()
 ```
 
-`review().list()` по умолчанию запрашивает первую страницу отзывов (`page=1`, `limit=50`). Для явной пагинации передайте `ReviewsQuery(page=..., limit=...)`.
+`review().list()` по умолчанию запрашивает первую страницу отзывов (`page=1`, `limit=50`). Для явной пагинации передайте `page`, `offset` или `limit` напрямую.
 
 ## Пагинация
 

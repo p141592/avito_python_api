@@ -29,7 +29,14 @@ from avito.accounts.operations import (
     LIST_EMPLOYEES,
     LIST_ITEMS_BY_EMPLOYEE,
 )
-from avito.core import JsonPage, PaginatedList, Paginator, ValidationError
+from avito.core import (
+    ApiTimeouts,
+    JsonPage,
+    PaginatedList,
+    Paginator,
+    RetryOverride,
+    ValidationError,
+)
 from avito.core.domain import DomainObject
 from avito.core.swagger import swagger_operation
 
@@ -54,13 +61,15 @@ class Account(DomainObject):
         spec="Информацияопользователе.json",
         operation_id="getUserInfoSelf",
     )
-    def get_self(self) -> AccountProfile:
+    def get_self(
+        self, *, timeout: ApiTimeouts | None = None, retry: RetryOverride | None = None
+    ) -> AccountProfile:
         """Получает профиль авторизованного пользователя.
 
         Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
         """
 
-        return self._execute(GET_SELF)
+        return self._execute(GET_SELF, timeout=timeout, retry=retry)
 
     @swagger_operation(
         "GET",
@@ -68,14 +77,22 @@ class Account(DomainObject):
         spec="Информацияопользователе.json",
         operation_id="getUserBalance",
     )
-    def get_balance(self, user_id: int | None = None) -> AccountBalance:
+    def get_balance(
+        self,
+        user_id: int | None = None,
+        *,
+        timeout: ApiTimeouts | None = None,
+        retry: RetryOverride | None = None,
+    ) -> AccountBalance:
         """Получает баланс пользователя.
 
         Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
         """
 
         resolved_user_id = self._resolve_account_user_id(user_id)
-        return self._execute(GET_BALANCE, path_params={"user_id": resolved_user_id})
+        return self._execute(
+            GET_BALANCE, path_params={"user_id": resolved_user_id}, timeout=timeout, retry=retry
+        )
 
     @swagger_operation(
         "POST",
@@ -90,12 +107,28 @@ class Account(DomainObject):
         date_to: datetime | None = None,
         limit: int | None = None,
         offset: int | None = None,
+        timeout: ApiTimeouts | None = None,
+        retry: RetryOverride | None = None,
     ) -> PaginatedList[OperationRecord]:
-        """Получает историю операций пользователя.
+        """Возвращает историю операций аккаунта за выбранный период.
 
-        Пустой результат возвращается как пустая коллекция или `None` согласно аннотации метода.
+        Аргументы:
+            date_from: задает начальную дату периода.
+            date_to: задает конечную дату периода.
+            limit: ограничивает размер возвращаемой выборки.
+            offset: задает смещение первой записи в выборке.
+            timeout: переопределяет таймауты HTTP-запроса для этого вызова.
+            retry: переопределяет retry-политику операции: default, enabled или disabled.
 
-        Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
+        Возвращает:
+            Ленивый `PaginatedList[OperationRecord]`; первая страница загружается при создании, следующие страницы - при итерации.
+
+        Поведение:
+            Параметры пагинации ограничивают объем данных без изменения модели ответа.
+            `timeout` и `retry` действуют только на этот вызов и не меняют настройки клиента.
+
+        Исключения:
+            AvitoError: ошибка SDK с контекстом operation, status, request_id, attempt, method и endpoint.
         """
 
         page_size = limit or 25
@@ -105,14 +138,16 @@ class Account(DomainObject):
             current_page = page or 1
             current_offset = base_offset + (current_page - 1) * page_size
             result = self._execute(
-                    GET_OPERATIONS_HISTORY,
-                    request=OperationsHistoryRequest(
-                        date_from=_serialize_datetime(date_from),
-                        date_to=_serialize_datetime(date_to),
-                        limit=page_size,
-                        offset=current_offset,
-                    ),
-                )
+                GET_OPERATIONS_HISTORY,
+                request=OperationsHistoryRequest(
+                    date_from=_serialize_datetime(date_from),
+                    date_to=_serialize_datetime(date_to),
+                    limit=page_size,
+                    offset=current_offset,
+                ),
+                timeout=timeout,
+                retry=retry,
+            )
             return JsonPage(
                 items=result.operations,
                 total=result.total,
@@ -150,13 +185,15 @@ class AccountHierarchy(DomainObject):
         spec="ИерархияАккаунтов.json",
         operation_id="checkAhUserV1",
     )
-    def get_status(self) -> AhUserStatus:
+    def get_status(
+        self, *, timeout: ApiTimeouts | None = None, retry: RetryOverride | None = None
+    ) -> AhUserStatus:
         """Получает статус пользователя в ИА.
 
         Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
         """
 
-        return self._execute(GET_AH_USER_STATUS)
+        return self._execute(GET_AH_USER_STATUS, timeout=timeout, retry=retry)
 
     @swagger_operation(
         "GET",
@@ -164,15 +201,26 @@ class AccountHierarchy(DomainObject):
         spec="ИерархияАккаунтов.json",
         operation_id="getEmployeesV1",
     )
-    def list_employees(self) -> EmployeesResult:
-        """Получает список сотрудников иерархии.
+    def list_employees(
+        self, *, timeout: ApiTimeouts | None = None, retry: RetryOverride | None = None
+    ) -> EmployeesResult:
+        """Возвращает сотрудников компании в иерархии аккаунта.
 
-        Пустой результат возвращается как пустая коллекция или `None` согласно аннотации метода.
+        Аргументы:
+            timeout: переопределяет таймауты HTTP-запроса для этого вызова.
+            retry: переопределяет retry-политику операции: default, enabled или disabled.
 
-        Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
+        Возвращает:
+            `EmployeesResult` с типизированными данными ответа API.
+
+        Поведение:
+            `timeout` и `retry` действуют только на этот вызов и не меняют настройки клиента.
+
+        Исключения:
+            AvitoError: ошибка SDK с контекстом operation, status, request_id, attempt, method и endpoint.
         """
 
-        return self._execute(LIST_EMPLOYEES)
+        return self._execute(LIST_EMPLOYEES, timeout=timeout, retry=retry)
 
     @swagger_operation(
         "GET",
@@ -180,15 +228,26 @@ class AccountHierarchy(DomainObject):
         spec="ИерархияАккаунтов.json",
         operation_id="listCompanyPhonesV1",
     )
-    def list_company_phones(self) -> CompanyPhonesResult:
-        """Получает список телефонов компании.
+    def list_company_phones(
+        self, *, timeout: ApiTimeouts | None = None, retry: RetryOverride | None = None
+    ) -> CompanyPhonesResult:
+        """Возвращает телефоны компании из иерархии аккаунта.
 
-        Пустой результат возвращается как пустая коллекция или `None` согласно аннотации метода.
+        Аргументы:
+            timeout: переопределяет таймауты HTTP-запроса для этого вызова.
+            retry: переопределяет retry-политику операции: default, enabled или disabled.
 
-        Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
+        Возвращает:
+            `CompanyPhonesResult` с типизированными данными ответа API.
+
+        Поведение:
+            `timeout` и `retry` действуют только на этот вызов и не меняют настройки клиента.
+
+        Исключения:
+            AvitoError: ошибка SDK с контекстом operation, status, request_id, attempt, method и endpoint.
         """
 
-        return self._execute(LIST_COMPANY_PHONES)
+        return self._execute(LIST_COMPANY_PHONES, timeout=timeout, retry=retry)
 
     @swagger_operation(
         "POST",
@@ -204,6 +263,8 @@ class AccountHierarchy(DomainObject):
         item_ids: Sequence[int],
         source_employee_id: int | None = None,
         idempotency_key: str | None = None,
+        timeout: ApiTimeouts | None = None,
+        retry: RetryOverride | None = None,
     ) -> AccountActionResult:
         """Прикрепляет объявления к сотруднику.
 
@@ -213,14 +274,16 @@ class AccountHierarchy(DomainObject):
         """
 
         return self._execute(
-                LINK_ITEMS,
-                request=EmployeeItemLinkRequest(
-                    employee_id=employee_id,
-                    item_ids=list(item_ids),
-                    source_employee_id=source_employee_id,
-                ),
-                idempotency_key=idempotency_key,
-            )
+            LINK_ITEMS,
+            request=EmployeeItemLinkRequest(
+                employee_id=employee_id,
+                item_ids=list(item_ids),
+                source_employee_id=source_employee_id,
+            ),
+            idempotency_key=idempotency_key,
+            timeout=timeout,
+            retry=retry,
+        )
 
     @swagger_operation(
         "POST",
@@ -235,12 +298,27 @@ class AccountHierarchy(DomainObject):
         employee_id: int,
         limit: int | None = None,
         offset: int | None = None,
+        timeout: ApiTimeouts | None = None,
+        retry: RetryOverride | None = None,
     ) -> PaginatedList[EmployeeItem]:
-        """Получает список объявлений сотрудника.
+        """Возвращает объявления, закрепленные за сотрудником компании.
 
-        Пустой результат возвращается как пустая коллекция или `None` согласно аннотации метода.
+        Аргументы:
+            employee_id: идентифицирует сотрудника аккаунта.
+            limit: ограничивает размер возвращаемой выборки.
+            offset: задает смещение первой записи в выборке.
+            timeout: переопределяет таймауты HTTP-запроса для этого вызова.
+            retry: переопределяет retry-политику операции: default, enabled или disabled.
 
-        Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
+        Возвращает:
+            Ленивый `PaginatedList[EmployeeItem]`; первая страница загружается при создании, следующие страницы - при итерации.
+
+        Поведение:
+            Параметры пагинации ограничивают объем данных без изменения модели ответа.
+            `timeout` и `retry` действуют только на этот вызов и не меняют настройки клиента.
+
+        Исключения:
+            AvitoError: ошибка SDK с контекстом operation, status, request_id, attempt, method и endpoint.
         """
 
         page_size = limit or 25
@@ -250,13 +328,15 @@ class AccountHierarchy(DomainObject):
             current_page = page or 1
             current_offset = base_offset + (current_page - 1) * page_size
             result = self._execute(
-                    LIST_ITEMS_BY_EMPLOYEE,
-                    request=EmployeeItemsRequest(
-                        employee_id=employee_id,
-                        limit=page_size,
-                        offset=current_offset,
-                    ),
-                )
+                LIST_ITEMS_BY_EMPLOYEE,
+                request=EmployeeItemsRequest(
+                    employee_id=employee_id,
+                    limit=page_size,
+                    offset=current_offset,
+                ),
+                timeout=timeout,
+                retry=retry,
+            )
             return JsonPage(
                 items=result.items,
                 total=result.total,

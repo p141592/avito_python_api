@@ -19,9 +19,11 @@ from avito.promotion import (
 )
 from avito.promotion.models import (
     BbipItem,
+    CpaAuctionBidInput,
     PromotionOrderServiceStatus,
     TargetActionBudgetType,
     TargetActionSelectedType,
+    TrxItem,
 )
 from tests.helpers.transport import make_transport
 
@@ -85,12 +87,12 @@ def test_bbip_trx_and_target_action_flows() -> None:
     auction = CpaAuction(transport)
     pricing = TargetActionPricing(transport, item_id=101)
 
-    bbip_item = BbipItem(item_id=101, duration=7, price=1000, old_price=1200).to_dict()
-    trx_item = {
-        "item_id": 101,
-        "commission": 1500,
-        "date_from": datetime.fromisoformat("2026-04-18T00:00:00+00:00"),
-    }
+    bbip_item = BbipItem(item_id=101, duration=7, price=1000, old_price=1200)
+    trx_item = TrxItem(
+        item_id=101,
+        commission=1500,
+        date_from=datetime.fromisoformat("2026-04-18T00:00:00+00:00"),
+    )
 
     assert bbip.get_forecasts(items=[bbip_item]).items[0].max_views == 25
     assert bbip.create_order(items=[bbip_item]).status == "created"
@@ -99,7 +101,7 @@ def test_bbip_trx_and_target_action_flows() -> None:
     assert trx.delete().applied is True
     assert trx.get_commissions().items[0].valid_commission_range is not None
     assert auction.get_user_bids(from_item_id=100, batch_size=50).items[0].available_prices[0].price_penny == 1200
-    assert auction.create_item_bids(items=[{"item_id": 101, "price_penny": 1500}]).applied is True
+    assert auction.create_item_bids(items=[CpaAuctionBidInput(item_id=101, price_penny=1500)]).applied is True
     assert pricing.get_bids().manual is not None
     assert pricing.get_promotions_by_item_ids(item_ids=[101, 102]).items[0].auto is not None
     assert pricing.delete().status == "removed"
@@ -182,12 +184,12 @@ def test_promotion_write_methods_keep_same_payload_in_dry_run_mode() -> None:
     ad_promotion = AdPromotion(transport, item_id=101, user_id=7)
     bbip = BbipPromotion(transport, item_id=101)
     trx = TrxPromotion(transport, item_id=101)
-    bbip_item = BbipItem(item_id=101, duration=7, price=1000, old_price=1200).to_dict()
-    trx_item = {
-        "item_id": 101,
-        "commission": 1500,
-        "date_from": datetime.fromisoformat("2026-04-18T00:00:00+00:00"),
-    }
+    bbip_item = BbipItem(item_id=101, duration=7, price=1000, old_price=1200)
+    trx_item = TrxItem(
+        item_id=101,
+        commission=1500,
+        date_from=datetime.fromisoformat("2026-04-18T00:00:00+00:00"),
+    )
 
     vas_preview = ad_promotion.apply_vas(codes=["xl"], dry_run=True)
     bbip_preview = bbip.create_order(items=[bbip_item], dry_run=True)
@@ -220,12 +222,12 @@ def test_promotion_dry_run_does_not_call_transport() -> None:
     bbip = BbipPromotion(transport, item_id=101)
     trx = TrxPromotion(transport, item_id=101)
     pricing = TargetActionPricing(transport, item_id=101)
-    bbip_item = BbipItem(item_id=101, duration=7, price=1000, old_price=1200).to_dict()
-    trx_item = {
-        "item_id": 101,
-        "commission": 1500,
-        "date_from": datetime.fromisoformat("2026-04-18T00:00:00+00:00"),
-    }
+    bbip_item = BbipItem(item_id=101, duration=7, price=1000, old_price=1200)
+    trx_item = TrxItem(
+        item_id=101,
+        commission=1500,
+        date_from=datetime.fromisoformat("2026-04-18T00:00:00+00:00"),
+    )
 
     bbip.create_order(items=[bbip_item], dry_run=True)
     trx.apply(items=[trx_item], dry_run=True)

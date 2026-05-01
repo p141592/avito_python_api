@@ -19,12 +19,21 @@ and this project adheres to Semantic Versioning.
 - Убраны прямые обращения доменных клиентов к `request_json` и приватному `Transport._auth_provider`.
 - Секционные клиенты переведены на `@dataclass(slots=True, frozen=True)`.
 - Иерархия исключений упрощена до frozen dataclass без кастомного `__setattr__`.
+- `AvitoClient.settings`, `AvitoClient.auth_provider` и `AvitoClient.transport` стали read-only свойствами; для тестов используйте `AvitoClient._from_transport(...)`.
+- OAuth token flow переведен на общий `Transport` без прямого `httpx.Client().post(...)`; ошибки OAuth продолжают приходить как `AuthenticationError`.
 - Публичные сигнатуры `accounts`, `ads`, `autoteka`, `cpa`, `jobs`, `messenger`, `orders`, `promotion`, `ratings` и `realty` переведены с `request`-DTO на keyword-only примитивы и коллекции.
+- Swagger-bound public methods теперь принимают per-operation overrides `timeout` и `retry`; `retry="enabled"` форсирует retry, `retry="disabled"` запрещает retry для конкретного вызова.
+- `Review.list`, `AutotekaMonitoring.get_monitoring_reg_actions`, `Vacancy.list`, `Vacancy.get`, `Application.get_ids` и `Resume.list` больше не принимают internal query DTO в публичных сигнатурах; передавайте `page`, `offset`, `limit`, `query`, `vacancy_id` и `updated_at_from` напрямую.
+- Promotion input модели `BbipItem`, `TrxItem` и `CpaAuctionBidInput`, а также jobs-модель `ApplicationViewedItem` оформлены как публичные frozen dataclass-модели без наследования от internal `RequestModel`.
 - Transport получил поддержку `Idempotency-Key`; публичные write-методы во всех доменах принимают `idempotency_key`, а dry-run/write-контракт promotion покрыт тестами.
 - Во всех доменных пакетах добавлены `enums.py`; `accounts`, `ads`, `autoteka`, `jobs`, `messenger`, `orders`, `promotion`, `ratings`, `realty` и `tariffs` переведены на typed enums с fallback на `UNKNOWN` и warning-логом ровно один раз на неизвестное upstream-значение.
+- `CpaCallStatusId` получил `UNKNOWN`; неизвестный upstream `statusId` больше не превращается в `None` и логирует warning один раз на процесс.
 
 ### Removed
 - **BREAKING:** удалены классы исключений `NotFoundError`, `ClientError`, `ServerError` из `avito.core.exceptions`. HTTP 404 и 5xx теперь маппятся на `UpstreamApiError`. Пользователям, ловившим эти типы, перейти на `UpstreamApiError` или `AvitoError` и проверять `status_code`.
+- **BREAKING:** удален публичный wrapper `Application.list(...)`; используйте `application().get_ids(updated_at_from=...)` для синхронизации id и `application().get_by_ids(ids=...)` для получения данных откликов.
+- **BREAKING:** internal query DTO `ApplicationIdsQuery`, `ResumeSearchQuery`, `VacanciesQuery` и `MonitoringEventsQuery` больше не re-export-ятся из доменных пакетов; публичные методы принимают primitive keyword-only параметры.
+- **BREAKING:** удалены старые public input aliases `BbipItemInput`, `TrxItemInput` и `BidItemInput`; используйте `BbipItem`, `TrxItem` и `CpaAuctionBidInput`.
 - Удалены legacy-модули `avito/auth/mappers.py` и `avito/auth/enums.py` (внутренние, без публичных импортов).
 - Удалены инфраструктурные мета-тесты (`tests/docs/`, `tests/test_inventory_architecture.py`, `tests/test_download_avito_api_specs.py`, `tests/core/test_architecture_lint.py`, `tests/core/test_swagger_{linter,discovery,factory_map,report}.py`); архитектурные инварианты остаются под `make swagger-lint` и `make architecture-lint`.
 - Удалены архитектурные тесты `tests/contracts/test_public_surface.py` и `tests/core/test_swagger.py` — публичная поверхность и метаданные `@swagger_operation` верифицируются `mypy strict` + `make swagger-lint` + `tests/contracts/test_swagger_contracts.py`.

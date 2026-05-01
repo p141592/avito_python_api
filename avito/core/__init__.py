@@ -28,6 +28,7 @@ from avito.core.types import (
     BinaryResponse,
     JsonPage,
     RequestContext,
+    RetryOverride,
     TransportDebugInfo,
 )
 
@@ -53,6 +54,7 @@ __all__ = (
     "RequestModel",
     "ResponseMappingError",
     "RetryDecision",
+    "RetryOverride",
     "RetryPolicy",
     "SerializableModel",
     "SwaggerOperationBinding",

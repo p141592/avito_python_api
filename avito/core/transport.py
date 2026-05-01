@@ -461,6 +461,8 @@ class Transport:
         context: RequestContext,
         idempotency_key: str | None,
     ) -> bool:
+        if context.retry_disabled:
+            return False
         normalized_method = method.upper()
         if normalized_method in {"POST", "PATCH"} and idempotency_key is None:
             return False
@@ -476,7 +478,9 @@ class Transport:
         message = self._extract_message(payload) or f"HTTP {response.status_code}"
         error_code = self._extract_error_code(payload)
         details = self._extract_error_details(payload)
-        retry_after = self._get_retry_after_seconds(response.headers) if response.status_code == 429 else None
+        retry_after = (
+            self._get_retry_after_seconds(response.headers) if response.status_code == 429 else None
+        )
         request_id = self._extract_request_id(response.headers)
         headers = dict(response.headers)
         metadata = {
@@ -660,5 +664,6 @@ class Transport:
             _, _, decoded_value = filename
             return decoded_value
         return filename
+
 
 __all__ = ("Transport", "build_httpx_timeout")

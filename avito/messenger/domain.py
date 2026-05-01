@@ -5,7 +5,7 @@ from __future__ import annotations
 from collections.abc import Sequence
 from dataclasses import dataclass
 
-from avito.core import ValidationError
+from avito.core import ApiTimeouts, RetryOverride, ValidationError
 from avito.core.domain import DomainObject
 from avito.core.swagger import swagger_operation
 from avito.messenger.models import (
@@ -72,19 +72,23 @@ class Chat(DomainObject):
         spec="Мессенджер.json",
         operation_id="getChatByIdV2",
     )
-    def get(self) -> ChatInfo:
+    def get(
+        self, *, timeout: ApiTimeouts | None = None, retry: RetryOverride | None = None
+    ) -> ChatInfo:
         """Получает чат по `chat_id`.
 
         Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
         """
 
         return self._execute(
-                GET_CHAT,
-                path_params={
-                    "user_id": self._require_user_id(),
-                    "chat_id": self._require_chat_id(),
-                },
-            )
+            GET_CHAT,
+            path_params={
+                "user_id": self._require_user_id(),
+                "chat_id": self._require_chat_id(),
+            },
+            timeout=timeout,
+            retry=retry,
+        )
 
     @swagger_operation(
         "GET",
@@ -92,18 +96,31 @@ class Chat(DomainObject):
         spec="Мессенджер.json",
         operation_id="getChatsV2",
     )
-    def list(self) -> ChatsResult:
-        """Получает список чатов пользователя.
+    def list(
+        self, *, timeout: ApiTimeouts | None = None, retry: RetryOverride | None = None
+    ) -> ChatsResult:
+        """Возвращает список чатов.
 
-        Пустой результат возвращается как пустая коллекция или `None` согласно аннотации метода.
+        Аргументы:
+            timeout: переопределяет таймауты HTTP-запроса для этого вызова.
+            retry: переопределяет retry-политику операции: default, enabled или disabled.
 
-        Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
+        Возвращает:
+            `ChatsResult` с типизированными данными ответа API.
+
+        Поведение:
+            `timeout` и `retry` действуют только на этот вызов и не меняют настройки клиента.
+
+        Исключения:
+            AvitoError: ошибка SDK с контекстом operation, status, request_id, attempt, method и endpoint.
         """
 
         return self._execute(
-                LIST_CHATS,
-                path_params={"user_id": self._require_user_id()},
-            )
+            LIST_CHATS,
+            path_params={"user_id": self._require_user_id()},
+            timeout=timeout,
+            retry=retry,
+        )
 
     @swagger_operation(
         "POST",
@@ -111,7 +128,13 @@ class Chat(DomainObject):
         spec="Мессенджер.json",
         operation_id="chatRead",
     )
-    def mark_read(self, *, idempotency_key: str | None = None) -> MessageActionResult:
+    def mark_read(
+        self,
+        *,
+        idempotency_key: str | None = None,
+        timeout: ApiTimeouts | None = None,
+        retry: RetryOverride | None = None,
+    ) -> MessageActionResult:
         """Помечает чат как прочитанный.
 
         Параметр `idempotency_key` задает ключ идемпотентности для безопасного повтора write-операции.
@@ -120,13 +143,15 @@ class Chat(DomainObject):
         """
 
         return self._execute(
-                READ_CHAT,
-                path_params={
-                    "user_id": self._require_user_id(),
-                    "chat_id": self._require_chat_id(),
-                },
-                idempotency_key=idempotency_key,
-            )
+            READ_CHAT,
+            path_params={
+                "user_id": self._require_user_id(),
+                "chat_id": self._require_chat_id(),
+            },
+            idempotency_key=idempotency_key,
+            timeout=timeout,
+            retry=retry,
+        )
 
     @swagger_operation(
         "POST",
@@ -140,6 +165,8 @@ class Chat(DomainObject):
         *,
         blacklisted_user_id: int,
         idempotency_key: str | None = None,
+        timeout: ApiTimeouts | None = None,
+        retry: RetryOverride | None = None,
     ) -> MessageActionResult:
         """Добавляет пользователя в blacklist.
 
@@ -149,11 +176,13 @@ class Chat(DomainObject):
         """
 
         return self._execute(
-                ADD_TO_BLACKLIST,
-                path_params={"user_id": self._require_user_id()},
-                request=BlacklistRequest(blacklisted_user_id=blacklisted_user_id),
-                idempotency_key=idempotency_key,
-            )
+            ADD_TO_BLACKLIST,
+            path_params={"user_id": self._require_user_id()},
+            request=BlacklistRequest(blacklisted_user_id=blacklisted_user_id),
+            idempotency_key=idempotency_key,
+            timeout=timeout,
+            retry=retry,
+        )
 
     def _require_user_id(self) -> int:
         if self.user_id is None:
@@ -188,21 +217,39 @@ class ChatMessage(DomainObject):
         spec="Мессенджер.json",
         operation_id="getMessagesV3",
     )
-    def list(self, *, chat_id: str | None = None) -> MessagesResult:
-        """Получает список сообщений V3.
+    def list(
+        self,
+        *,
+        chat_id: str | None = None,
+        timeout: ApiTimeouts | None = None,
+        retry: RetryOverride | None = None,
+    ) -> MessagesResult:
+        """Возвращает список сообщений чата.
 
-        Пустой результат возвращается как пустая коллекция или `None` согласно аннотации метода.
+        Аргументы:
+            chat_id: идентифицирует чат.
+            timeout: переопределяет таймауты HTTP-запроса для этого вызова.
+            retry: переопределяет retry-политику операции: default, enabled или disabled.
 
-        Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
+        Возвращает:
+            `MessagesResult` с типизированными данными ответа API.
+
+        Поведение:
+            `timeout` и `retry` действуют только на этот вызов и не меняют настройки клиента.
+
+        Исключения:
+            AvitoError: ошибка SDK с контекстом operation, status, request_id, attempt, method и endpoint.
         """
 
         return self._execute(
-                LIST_MESSAGES,
-                path_params={
-                    "user_id": self._require_user_id(),
-                    "chat_id": chat_id or self._require_chat_id(),
-                },
-            )
+            LIST_MESSAGES,
+            path_params={
+                "user_id": self._require_user_id(),
+                "chat_id": chat_id or self._require_chat_id(),
+            },
+            timeout=timeout,
+            retry=retry,
+        )
 
     @swagger_operation(
         "POST",
@@ -217,6 +264,8 @@ class ChatMessage(DomainObject):
         chat_id: str | None = None,
         message: str,
         idempotency_key: str | None = None,
+        timeout: ApiTimeouts | None = None,
+        retry: RetryOverride | None = None,
     ) -> MessageActionResult:
         """Отправляет текстовое сообщение.
 
@@ -226,14 +275,16 @@ class ChatMessage(DomainObject):
         """
 
         return self._execute(
-                SEND_MESSAGE,
-                path_params={
-                    "user_id": self._require_user_id(),
-                    "chat_id": chat_id or self._require_chat_id(),
-                },
-                request=SendMessageRequest(message=message),
-                idempotency_key=idempotency_key,
-            )
+            SEND_MESSAGE,
+            path_params={
+                "user_id": self._require_user_id(),
+                "chat_id": chat_id or self._require_chat_id(),
+            },
+            request=SendMessageRequest(message=message),
+            idempotency_key=idempotency_key,
+            timeout=timeout,
+            retry=retry,
+        )
 
     @swagger_operation(
         "POST",
@@ -249,6 +300,8 @@ class ChatMessage(DomainObject):
         image_id: str,
         caption: str | None = None,
         idempotency_key: str | None = None,
+        timeout: ApiTimeouts | None = None,
+        retry: RetryOverride | None = None,
     ) -> MessageActionResult:
         """Отправляет сообщение с изображением.
 
@@ -258,14 +311,16 @@ class ChatMessage(DomainObject):
         """
 
         return self._execute(
-                SEND_IMAGE_MESSAGE,
-                path_params={
-                    "user_id": self._require_user_id(),
-                    "chat_id": chat_id or self._require_chat_id(),
-                },
-                request=SendImageMessageRequest(image_id=image_id, caption=caption),
-                idempotency_key=idempotency_key,
-            )
+            SEND_IMAGE_MESSAGE,
+            path_params={
+                "user_id": self._require_user_id(),
+                "chat_id": chat_id or self._require_chat_id(),
+            },
+            request=SendImageMessageRequest(image_id=image_id, caption=caption),
+            idempotency_key=idempotency_key,
+            timeout=timeout,
+            retry=retry,
+        )
 
     @swagger_operation(
         "POST",
@@ -279,6 +334,8 @@ class ChatMessage(DomainObject):
         chat_id: str | None = None,
         message_id: str | None = None,
         idempotency_key: str | None = None,
+        timeout: ApiTimeouts | None = None,
+        retry: RetryOverride | None = None,
     ) -> MessageActionResult:
         """Удаляет сообщение.
 
@@ -289,14 +346,16 @@ class ChatMessage(DomainObject):
 
         resolved_message_id = message_id or self._require_message_id()
         return self._execute(
-                DELETE_MESSAGE,
-                path_params={
-                    "user_id": self._require_user_id(),
-                    "chat_id": chat_id or self._require_chat_id(),
-                    "message_id": resolved_message_id,
-                },
-                idempotency_key=idempotency_key,
-            )
+            DELETE_MESSAGE,
+            path_params={
+                "user_id": self._require_user_id(),
+                "chat_id": chat_id or self._require_chat_id(),
+                "message_id": resolved_message_id,
+            },
+            idempotency_key=idempotency_key,
+            timeout=timeout,
+            retry=retry,
+        )
 
     def _require_user_id(self) -> int:
         if self.user_id is None:
@@ -329,15 +388,26 @@ class ChatWebhook(DomainObject):
         spec="Мессенджер.json",
         operation_id="getSubscriptions",
     )
-    def list(self) -> SubscriptionsResult:
-        """Получает список webhook-подписок.
+    def list(
+        self, *, timeout: ApiTimeouts | None = None, retry: RetryOverride | None = None
+    ) -> SubscriptionsResult:
+        """Возвращает список webhook-подписок чатов.
 
-        Пустой результат возвращается как пустая коллекция или `None` согласно аннотации метода.
+        Аргументы:
+            timeout: переопределяет таймауты HTTP-запроса для этого вызова.
+            retry: переопределяет retry-политику операции: default, enabled или disabled.
 
-        Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
+        Возвращает:
+            `SubscriptionsResult` с типизированными данными ответа API.
+
+        Поведение:
+            `timeout` и `retry` действуют только на этот вызов и не меняют настройки клиента.
+
+        Исключения:
+            AvitoError: ошибка SDK с контекстом operation, status, request_id, attempt, method и endpoint.
         """
 
-        return self._execute(GET_SUBSCRIPTIONS)
+        return self._execute(GET_SUBSCRIPTIONS, timeout=timeout, retry=retry)
 
     @swagger_operation(
         "POST",
@@ -346,7 +416,14 @@ class ChatWebhook(DomainObject):
         operation_id="postWebhookUnsubscribe",
         method_args={"url": "body.url"},
     )
-    def unsubscribe(self, *, url: str, idempotency_key: str | None = None) -> WebhookActionResult:
+    def unsubscribe(
+        self,
+        *,
+        url: str,
+        idempotency_key: str | None = None,
+        timeout: ApiTimeouts | None = None,
+        retry: RetryOverride | None = None,
+    ) -> WebhookActionResult:
         """Отключает webhook.
 
         Параметр `idempotency_key` задает ключ идемпотентности для безопасного повтора write-операции.
@@ -355,10 +432,12 @@ class ChatWebhook(DomainObject):
         """
 
         return self._execute(
-                UNSUBSCRIBE_WEBHOOK,
-                request=UnsubscribeWebhookRequest(url=url),
-                idempotency_key=idempotency_key,
-            )
+            UNSUBSCRIBE_WEBHOOK,
+            request=UnsubscribeWebhookRequest(url=url),
+            idempotency_key=idempotency_key,
+            timeout=timeout,
+            retry=retry,
+        )
 
     @swagger_operation(
         "POST",
@@ -373,6 +452,8 @@ class ChatWebhook(DomainObject):
         url: str,
         secret: str | None = None,
         idempotency_key: str | None = None,
+        timeout: ApiTimeouts | None = None,
+        retry: RetryOverride | None = None,
     ) -> WebhookActionResult:
         """Включает webhook v3.
 
@@ -382,10 +463,12 @@ class ChatWebhook(DomainObject):
         """
 
         return self._execute(
-                UPDATE_WEBHOOK_V3,
-                request=UpdateWebhookRequest(url=url, secret=secret),
-                idempotency_key=idempotency_key,
-            )
+            UPDATE_WEBHOOK_V3,
+            request=UpdateWebhookRequest(url=url, secret=secret),
+            idempotency_key=idempotency_key,
+            timeout=timeout,
+            retry=retry,
+        )
 
 
 @dataclass(slots=True, frozen=True)
@@ -408,6 +491,8 @@ class ChatMedia(DomainObject):
         self,
         *,
         voice_ids: Sequence[str] | None = None,
+        timeout: ApiTimeouts | None = None,
+        retry: RetryOverride | None = None,
     ) -> VoiceFilesResult:
         """Получает голосовые сообщения.
 
@@ -416,10 +501,12 @@ class ChatMedia(DomainObject):
 
         resolved_voice_ids = list(voice_ids or ["voice-1"])
         return self._execute(
-                GET_VOICE_FILES,
-                path_params={"user_id": self._require_user_id()},
-                query={"voice_ids": ",".join(resolved_voice_ids)},
-            )
+            GET_VOICE_FILES,
+            path_params={"user_id": self._require_user_id()},
+            query={"voice_ids": ",".join(resolved_voice_ids)},
+            timeout=timeout,
+            retry=retry,
+        )
 
     @swagger_operation(
         "POST",
@@ -433,6 +520,8 @@ class ChatMedia(DomainObject):
         *,
         files: list[UploadImageFile],
         idempotency_key: str | None = None,
+        timeout: ApiTimeouts | None = None,
+        retry: RetryOverride | None = None,
     ) -> UploadImagesResult:
         """Загружает изображения для сообщений.
 
@@ -442,11 +531,13 @@ class ChatMedia(DomainObject):
         """
 
         return self._execute(
-                UPLOAD_IMAGES,
-                path_params={"user_id": self._require_user_id()},
-                files=UploadImagesRequest(files=files).to_files(),
-                idempotency_key=idempotency_key,
-            )
+            UPLOAD_IMAGES,
+            path_params={"user_id": self._require_user_id()},
+            files=UploadImagesRequest(files=files).to_files(),
+            idempotency_key=idempotency_key,
+            timeout=timeout,
+            retry=retry,
+        )
 
     def _require_user_id(self) -> int:
         if self.user_id is None:
@@ -472,16 +563,24 @@ class SpecialOfferCampaign(DomainObject):
         operation_id="openApiAvailable",
         method_args={"item_ids": "body.item_ids"},
     )
-    def get_available(self, *, item_ids: list[int]) -> SpecialOfferAvailableResult:
+    def get_available(
+        self,
+        *,
+        item_ids: list[int],
+        timeout: ApiTimeouts | None = None,
+        retry: RetryOverride | None = None,
+    ) -> SpecialOfferAvailableResult:
         """Получает объявления, доступные для рассылки.
 
         Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
         """
 
         return self._execute(
-                GET_AVAILABLE_SPECIAL_OFFERS,
-                request=SpecialOfferAvailableRequest(item_ids=item_ids),
-            )
+            GET_AVAILABLE_SPECIAL_OFFERS,
+            request=SpecialOfferAvailableRequest(item_ids=item_ids),
+            timeout=timeout,
+            retry=retry,
+        )
 
     @swagger_operation(
         "POST",
@@ -497,6 +596,8 @@ class SpecialOfferCampaign(DomainObject):
         message: str,
         discount_percent: int | None = None,
         idempotency_key: str | None = None,
+        timeout: ApiTimeouts | None = None,
+        retry: RetryOverride | None = None,
     ) -> MultiCreateSpecialOfferResult:
         """Создает рассылку спецпредложений.
 
@@ -506,14 +607,16 @@ class SpecialOfferCampaign(DomainObject):
         """
 
         return self._execute(
-                CREATE_MULTI_SPECIAL_OFFER,
-                request=MultiCreateSpecialOfferRequest(
-                    item_ids=item_ids,
-                    message=message,
-                    discount_percent=discount_percent,
-                ),
-                idempotency_key=idempotency_key,
-            )
+            CREATE_MULTI_SPECIAL_OFFER,
+            request=MultiCreateSpecialOfferRequest(
+                item_ids=item_ids,
+                message=message,
+                discount_percent=discount_percent,
+            ),
+            idempotency_key=idempotency_key,
+            timeout=timeout,
+            retry=retry,
+        )
 
     @swagger_operation(
         "POST",
@@ -526,6 +629,8 @@ class SpecialOfferCampaign(DomainObject):
         *,
         campaign_id: str | None = None,
         idempotency_key: str | None = None,
+        timeout: ApiTimeouts | None = None,
+        retry: RetryOverride | None = None,
     ) -> WebhookActionResult:
         """Подтверждает и оплачивает рассылку.
 
@@ -535,12 +640,14 @@ class SpecialOfferCampaign(DomainObject):
         """
 
         return self._execute(
-                CONFIRM_MULTI_SPECIAL_OFFER,
-                request=MultiConfirmSpecialOfferRequest(
-                    campaign_id=campaign_id or self._require_campaign_id(),
-                ),
-                idempotency_key=idempotency_key,
-            )
+            CONFIRM_MULTI_SPECIAL_OFFER,
+            request=MultiConfirmSpecialOfferRequest(
+                campaign_id=campaign_id or self._require_campaign_id(),
+            ),
+            idempotency_key=idempotency_key,
+            timeout=timeout,
+            retry=retry,
+        )
 
     @swagger_operation(
         "POST",
@@ -548,18 +655,26 @@ class SpecialOfferCampaign(DomainObject):
         spec="Рассылкаскидокиспецпредложенийвмессенджере.json",
         operation_id="openApiStats",
     )
-    def get_stats(self, *, campaign_id: str | None = None) -> SpecialOfferStatsResult:
+    def get_stats(
+        self,
+        *,
+        campaign_id: str | None = None,
+        timeout: ApiTimeouts | None = None,
+        retry: RetryOverride | None = None,
+    ) -> SpecialOfferStatsResult:
         """Получает статистику рассылки.
 
         Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
         """
 
         return self._execute(
-                GET_SPECIAL_OFFER_STATS,
-                request=SpecialOfferStatsRequest(
-                    campaign_id=campaign_id or self._require_campaign_id(),
-                ),
-            )
+            GET_SPECIAL_OFFER_STATS,
+            request=SpecialOfferStatsRequest(
+                campaign_id=campaign_id or self._require_campaign_id(),
+            ),
+            timeout=timeout,
+            retry=retry,
+        )
 
     @swagger_operation(
         "POST",
@@ -567,13 +682,15 @@ class SpecialOfferCampaign(DomainObject):
         spec="Рассылкаскидокиспецпредложенийвмессенджере.json",
         operation_id="openApiTariffInfo",
     )
-    def get_tariff_info(self) -> TariffInfo:
+    def get_tariff_info(
+        self, *, timeout: ApiTimeouts | None = None, retry: RetryOverride | None = None
+    ) -> TariffInfo:
         """Получает информацию о тарифе спецпредложений.
 
         Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
         """
 
-        return self._execute(GET_SPECIAL_OFFER_TARIFF_INFO)
+        return self._execute(GET_SPECIAL_OFFER_TARIFF_INFO, timeout=timeout, retry=retry)
 
     def _require_campaign_id(self) -> str:
         if self.campaign_id is None:

@@ -264,7 +264,7 @@ def test_model_read_flows_return_stable_sdk_models() -> None:
     services = PromotionOrder(transport, order_id="ord-1").list_services(item_ids=[101])
     orders = PromotionOrder(transport, order_id="ord-1").list_orders(item_ids=[101])
     forecasts = BbipPromotion(transport, item_id=101).get_forecasts(
-        items=[BbipItem(item_id=101, duration=7, price=1000, old_price=1200).to_dict()]
+        items=[BbipItem(item_id=101, duration=7, price=1000, old_price=1200)]
     )
 
     assert isinstance(profile, AccountProfile)

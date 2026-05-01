@@ -8,6 +8,7 @@ from dataclasses import dataclass
 from enum import IntEnum
 
 from avito.core import ApiModel, BinaryResponse, RequestModel
+from avito.core.enums import map_int_enum_or_unknown
 from avito.core.exceptions import ResponseMappingError
 
 Payload = Mapping[str, object]
@@ -16,6 +17,7 @@ Payload = Mapping[str, object]
 class CpaCallStatusId(IntEnum):
     """Числовой статус CPA-звонка."""
 
+    UNKNOWN = -1
     NEW = 0
     ACCEPTED = 1
     REJECTED = 2
@@ -348,8 +350,7 @@ class CallTrackingCallsResult(ApiModel):
         data = _expect_mapping(payload)
         return cls(
             items=[
-                _map_call_tracking_call(item)
-                for item in _list(data, "calls", "items", "results")
+                _map_call_tracking_call(item) for item in _list(data, "calls", "items", "results")
             ],
             error=_map_cpa_error(data.get("error")),
         )
@@ -475,13 +476,11 @@ def _bool(payload: Payload, *keys: str) -> bool | None:
 
 
 def _cpa_call_status_id(payload: Payload) -> CpaCallStatusId | None:
-    value = _int(payload, "statusId")
-    if value is None:
-        return None
-    try:
-        return CpaCallStatusId(value)
-    except ValueError:
-        return None
+    return map_int_enum_or_unknown(
+        _int(payload, "statusId"),
+        CpaCallStatusId,
+        enum_name="cpa.call_status_id",
+    )
 
 
 def _map_cpa_error(payload: object | None) -> CpaErrorInfo | None:

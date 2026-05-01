@@ -11,7 +11,7 @@ from urllib.parse import quote
 import httpx
 
 from avito.core.models import RequestModel
-from avito.core.types import BinaryResponse, HttpMethod, RequestContext
+from avito.core.types import ApiTimeouts, BinaryResponse, HttpMethod, RequestContext, RetryOverride
 
 ResponseKind = Literal["json", "empty", "binary"]
 RetryMode = Literal["default", "enabled", "disabled"]
@@ -117,6 +117,8 @@ class OperationExecutor:
         idempotency_key: str | None = None,
         data: Mapping[str, object] | None = None,
         files: Mapping[str, object] | None = None,
+        timeout: ApiTimeouts | None = None,
+        retry: RetryOverride | None = None,
     ) -> ResponseT:
         """Execute operation spec and return typed response object."""
 
@@ -124,10 +126,13 @@ class OperationExecutor:
         params = _serialize_query(spec, query)
         json_body = _serialize_request(spec, request)
         request_headers = _merge_content_type(headers, spec.content_type)
+        effective_retry = spec.retry_mode if retry is None or retry == "default" else retry
         context = RequestContext(
             operation_name=spec.name,
-            allow_retry=spec.retry_mode == "enabled",
+            allow_retry=effective_retry == "enabled",
+            retry_disabled=effective_retry == "disabled",
             requires_auth=spec.requires_auth,
+            timeout=timeout,
         )
 
         if spec.response_kind == "binary":

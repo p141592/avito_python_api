@@ -797,9 +797,7 @@ class AutoloadReportsResult(SerializableModel):
 
         data = _expect_mapping(payload)
         return cls(
-            items=[
-                _map_report_summary(item) for item in _list(data, "reports", "items", "result")
-            ],
+            items=[_map_report_summary(item) for item in _list(data, "reports", "items", "result")],
             total=_int(data, "total", "count"),
         )
 

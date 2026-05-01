@@ -55,6 +55,36 @@ def test_token_client_requests_access_token_via_client_credentials() -> None:
     assert "grant_type=client_credentials" in seen_payloads[0]
 
 
+def test_token_client_uses_shared_transport_headers_and_timeout() -> None:
+    captured_user_agents: list[str] = []
+    captured_timeouts: list[dict[str, float]] = []
+    settings = AvitoSettings(
+        base_url="https://sandbox.avito.ru",
+        user_agent_suffix="tests/oauth",
+        auth=AuthSettings(client_id="client-id", client_secret="client-secret"),
+        timeouts=ApiTimeouts(connect=1.0, read=2.0, write=3.0, pool=4.0),
+    )
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        captured_user_agents.append(request.headers["User-Agent"])
+        captured_timeouts.append(request.extensions["timeout"])
+        return httpx.Response(200, json={"access_token": "access-1", "expires_in": 3600})
+
+    token_client = TokenClient(
+        settings.auth,
+        client=make_token_http_client(httpx.MockTransport(handler)),
+        sdk_settings=settings,
+    )
+
+    token_client.request_client_credentials_token(
+        ClientCredentialsRequest(client_id="client-id", client_secret="client-secret")
+    )
+
+    assert captured_user_agents[0].startswith("avito-py/")
+    assert captured_user_agents[0].endswith("tests/oauth")
+    assert captured_timeouts == [{"connect": 1.0, "read": 2.0, "write": 3.0, "pool": 4.0}]
+
+
 def test_auth_provider_uses_refresh_token_flow_after_initial_token() -> None:
     issued_access_tokens: Iterator[str] = iter(("access-1", "access-2"))
 

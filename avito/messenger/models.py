@@ -112,10 +112,7 @@ class ChatsResult(ApiModel):
 
         data = _expect_mapping(payload)
         return cls(
-            items=[
-                ChatInfo.from_payload(item)
-                for item in _list(data, "chats", "items", "result")
-            ],
+            items=[ChatInfo.from_payload(item) for item in _list(data, "chats", "items", "result")],
             total=_int(data, "total", "count"),
         )
 

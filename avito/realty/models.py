@@ -289,8 +289,7 @@ class RealtyAnalyticsInfo(ApiModel):
         errors = JsonReader(success_mapping).mapping("errors") or {}
         result = reader.mapping("result") or {}
         return cls(
-            success=bool(success_data)
-            or JsonReader(result).optional_str("result") == "success",
+            success=bool(success_data) or JsonReader(result).optional_str("result") == "success",
             report_link=JsonReader(success_data).optional_str("reportLink"),
             error_message=JsonReader(errors).optional_str("message"),
         )

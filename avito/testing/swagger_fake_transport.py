@@ -194,7 +194,7 @@ class SwaggerFakeTransport(FakeTransport):
         """Build and invoke SDK call from discovered Swagger binding metadata."""
 
         if binding.operation_key is None:
-            raise AssertionError(f"Binding ambiguous: {binding.sdk_method}")
+            raise AssertionError(f"Привязка Swagger неоднозначна: {binding.sdk_method}")
         if binding.domain == "auth":
             target = self._build_auth_target(binding)
             method = getattr(target, binding.method_name)
@@ -317,7 +317,9 @@ class SwaggerFakeTransport(FakeTransport):
             ]
         if expression == "body":
             return self._body_value(argument_name, annotation)
-        return self._value_for_expression(expression, argument_name=argument_name, annotation=annotation)
+        return self._value_for_expression(
+            expression, argument_name=argument_name, annotation=annotation
+        )
 
     def _value_for_expression(
         self,
@@ -388,18 +390,24 @@ class SwaggerFakeTransport(FakeTransport):
             from avito.jobs.models import ApplicationViewedItem
 
             return [ApplicationViewedItem(id="apply-1", is_viewed=True)]
-        if "BbipItemInput" in annotation:
-            return [{"item_id": 105, "duration": 7, "price": 1500, "old_price": 2000}]
-        if "TrxItemInput" in annotation:
+        if "BbipItem" in annotation:
+            from avito.promotion.models import BbipItem
+
+            return [BbipItem(item_id=105, duration=7, price=1500, old_price=2000)]
+        if "TrxItem" in annotation:
+            from avito.promotion.models import TrxItem
+
             return [
-                {
-                    "item_id": 105,
-                    "commission": 10,
-                    "date_from": datetime(2026, 5, 1, tzinfo=UTC),
-                }
+                TrxItem(
+                    item_id=105,
+                    commission=10,
+                    date_from=datetime(2026, 5, 1, tzinfo=UTC),
+                )
             ]
-        if "BidItemInput" in annotation:
-            return [{"item_id": 105, "price_penny": 1000}]
+        if "CpaAuctionBidInput" in annotation:
+            from avito.promotion.models import CpaAuctionBidInput
+
+            return [CpaAuctionBidInput(item_id=105, price_penny=1000)]
         if "StockUpdateEntry" in annotation:
             from avito.orders.models import StockUpdateEntry
 
@@ -634,7 +642,9 @@ class SwaggerFakeTransport(FakeTransport):
             raise AssertionError(f"{operation.key}: requestBody обязателен.")
         content_type = request.headers.get("content-type", "")
         if request.content and operation.request_body.content_types:
-            if not any(expected in content_type for expected in operation.request_body.content_types):
+            if not any(
+                expected in content_type for expected in operation.request_body.content_types
+            ):
                 raise AssertionError(
                     f"{operation.key}: content-type `{content_type}` не описан в Swagger."
                 )
@@ -663,7 +673,9 @@ class SwaggerFakeTransport(FakeTransport):
             )
 
     def _path_matches(self, template: str, path: str) -> bool:
-        return self._path_pattern(template).fullmatch(self._normalize_swagger_path(path)) is not None
+        return (
+            self._path_pattern(template).fullmatch(self._normalize_swagger_path(path)) is not None
+        )
 
     def _extract_path_values(self, template: str, path: str) -> Mapping[str, str]:
         match = self._path_pattern(template).fullmatch(self._normalize_swagger_path(path))
@@ -699,7 +711,9 @@ def error_payload(status_code: int) -> JsonValue:
 def success_payload(operation: SwaggerOperation) -> JsonValue:
     """Build deterministic success payload for one operation."""
 
-    if operation.spec in {"Авторизация.json", "Автотека.json"} and operation.path.startswith("/token"):
+    if operation.spec in {"Авторизация.json", "Автотека.json"} and operation.path.startswith(
+        "/token"
+    ):
         return {
             "access_token": "access-token",
             "token_type": "Bearer",
@@ -713,7 +727,10 @@ def success_payload(operation: SwaggerOperation) -> JsonValue:
         return {"orderId": "order-1", "status": "active", "items": [], "errors": []}
     if operation.key == "Настройкаценыцелевогодействия.json GET /cpxpromo/1/getBids/{itemId}":
         return {"actionTypeID": 1, "selectedType": "manual", "manual": {}, "auto": {}}
-    if operation.key == "Настройкаценыцелевогодействия.json POST /cpxpromo/1/getPromotionsByItemIds":
+    if (
+        operation.key
+        == "Настройкаценыцелевогодействия.json POST /cpxpromo/1/getPromotionsByItemIds"
+    ):
         return {"items": []}
     return {}
 

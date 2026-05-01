@@ -1,11 +1,13 @@
 from __future__ import annotations
 
 import json
+import logging
 
 import httpx
 import pytest
 
 from avito.cpa import CallTrackingCall, CpaArchive, CpaCall, CpaChat, CpaLead
+from avito.cpa.models import CpaCallStatusId
 from tests.helpers.transport import make_transport
 
 
@@ -68,6 +70,47 @@ def test_cpa_calls_archive_and_balance_flows() -> None:
     assert archived_balance.advance == 1000
     assert archived_call.call_id == "2001"
     assert archived_audio.binary.content == audio_bytes
+
+
+def test_cpa_call_unknown_status_id_maps_to_unknown_and_warns_once(
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    def handler(request: httpx.Request) -> httpx.Response:
+        assert request.url.path == "/cpa/v2/callsByTime"
+        return httpx.Response(
+            200,
+            json={
+                "calls": [
+                    {
+                        "id": 2001,
+                        "itemId": 3001,
+                        "statusId": 999,
+                    }
+                ]
+            },
+        )
+
+    caplog.set_level(logging.WARNING, logger="avito.core.enums")
+    cpa_call = CpaCall(make_transport(httpx.MockTransport(handler)))
+
+    first = cpa_call.list(
+        date_time_from="2026-04-18T00:00:00+03:00",
+        date_time_to="2026-04-18T23:59:59+03:00",
+    ).items[0]
+    second = cpa_call.list(
+        date_time_from="2026-04-18T00:00:00+03:00",
+        date_time_to="2026-04-18T23:59:59+03:00",
+    ).items[0]
+
+    assert first.status_id is CpaCallStatusId.UNKNOWN
+    assert second.status_id is CpaCallStatusId.UNKNOWN
+    records = [
+        record
+        for record in caplog.records
+        if getattr(record, "enum", None) == "cpa.call_status_id"
+        and getattr(record, "value", None) == 999
+    ]
+    assert len(records) == 1
 
 
 def test_calltracking_flows() -> None:

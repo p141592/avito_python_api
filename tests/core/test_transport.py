@@ -227,6 +227,33 @@ def test_transport_does_not_retry_non_idempotent_request_without_explicit_permis
     assert calls["count"] == 1
 
 
+def test_transport_retry_disabled_context_prevents_retryable_method_retry() -> None:
+    calls = {"count": 0}
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        calls["count"] += 1
+        if calls["count"] == 1:
+            return httpx.Response(500, json={"message": "server error"})
+        return httpx.Response(200, json={"ok": True})
+
+    transport = Transport(
+        make_settings(),
+        client=httpx.Client(
+            transport=httpx.MockTransport(handler), base_url="https://api.avito.ru"
+        ),
+        sleep=lambda _: None,
+    )
+
+    with pytest.raises(UpstreamApiError):
+        transport.request_json(
+            "GET",
+            "/items",
+            context=RequestContext("list_items", retry_disabled=True),
+        )
+
+    assert calls["count"] == 1
+
+
 def test_transport_retries_post_with_same_idempotency_key_for_whole_retry_chain() -> None:
     calls = {"count": 0}
     seen_keys: list[str | None] = []

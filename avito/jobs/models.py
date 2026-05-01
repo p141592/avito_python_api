@@ -116,8 +116,28 @@ class ApplicationActionRequest(RequestModel):
 
 
 @dataclass(slots=True, frozen=True)
-class ApplicationViewedItem(RequestModel):
+class ApplicationViewedItem(ApiModel):
     """Флаг просмотра для отклика."""
+
+    id: str
+    is_viewed: bool
+
+    def to_payload(self) -> dict[str, object]:
+        """Сериализует флаг просмотра отклика."""
+
+        return {"id": self.id, "is_viewed": self.is_viewed}
+
+    @classmethod
+    def from_payload(cls, payload: object) -> ApplicationViewedItem:
+        """Преобразует флаг просмотра отклика."""
+
+        data = _expect_mapping(payload)
+        return cls(id=str(data.get("id", "")), is_viewed=bool(data.get("is_viewed")))
+
+
+@dataclass(slots=True, frozen=True)
+class ApplicationViewedRequestItem(RequestModel):
+    """Внутренний элемент запроса обновления флага просмотра."""
 
     id: str
     is_viewed: bool
@@ -132,7 +152,7 @@ class ApplicationViewedItem(RequestModel):
 class ApplicationViewedRequest(RequestModel):
     """Запрос обновления флага просмотра откликов."""
 
-    applies: list[ApplicationViewedItem]
+    applies: list[ApplicationViewedRequestItem]
 
     def to_payload(self) -> dict[str, object]:
         """Сериализует запрос обновления просмотра откликов."""
@@ -338,7 +358,9 @@ class ApplicationIdsResult(ApiModel):
         data = _expect_mapping(payload)
         return cls(
             items=[
-                ApplicationIdItem(id=_str(item, "id"), updated_at=_str(item, "updatedAt", "updated_at"))
+                ApplicationIdItem(
+                    id=_str(item, "id"), updated_at=_str(item, "updatedAt", "updated_at")
+                )
                 for item in _list(data, "items", "applies", "result")
             ],
             cursor=_str(_mapping(data, "meta"), "cursor") or _str(data, "cursor"),
@@ -410,8 +432,7 @@ class ResumesResult(ApiModel):
         meta = _mapping(data, "meta")
         return cls(
             items=[
-                ResumeInfo.from_payload(item)
-                for item in _list(data, "resumes", "items", "result")
+                ResumeInfo.from_payload(item) for item in _list(data, "resumes", "items", "result")
             ],
             cursor=_str(meta, "cursor"),
             total=_int(meta, "total"),

@@ -6,7 +6,7 @@ from collections.abc import Mapping
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
-from typing import TypedDict, cast
+from typing import cast
 
 from avito.core.enums import map_enum_or_unknown
 from avito.core.exceptions import ResponseMappingError
@@ -383,36 +383,6 @@ class PromotionOrderStatusResult(SerializableModel):
                 if isinstance(item, Mapping)
             ],
         )
-
-
-class BbipItemInput(TypedDict):
-    """Входные параметры одного объявления для BBIP-методов."""
-
-    item_id: int
-    duration: int
-    price: int
-    old_price: int
-
-
-class _TrxItemInputRequired(TypedDict):
-    """Обязательные поля входных параметров TrxPromo."""
-
-    item_id: int
-    commission: int
-    date_from: datetime
-
-
-class TrxItemInput(_TrxItemInputRequired, total=False):
-    """Входные параметры одного объявления для TrxPromo-методов."""
-
-    date_to: datetime | None
-
-
-class BidItemInput(TypedDict):
-    """Входные параметры одной ставки CPA-аукциона."""
-
-    item_id: int
-    price_penny: int
 
 
 @dataclass(slots=True, frozen=True)
@@ -854,6 +824,14 @@ class CpaAuctionBidsResult(SerializableModel):
 
 
 @dataclass(slots=True, frozen=True)
+class CpaAuctionBidInput(SerializableModel):
+    """Входные параметры одной ставки CPA-аукциона."""
+
+    item_id: int
+    price_penny: int
+
+
+@dataclass(slots=True, frozen=True)
 class CreateItemBid:
     """Новая ставка CPA-аукциона."""
 
@@ -997,9 +975,7 @@ def _map_target_action_manual(payload: _Payload) -> TargetActionManualBids:
         min_limit_penny=_int(payload, "minLimitPenny"),
         max_limit_penny=_int(payload, "maxLimitPenny"),
         bids=[
-            _map_target_action_bid(item)
-            for item in bids_payload or []
-            if isinstance(item, Mapping)
+            _map_target_action_bid(item) for item in bids_payload or [] if isinstance(item, Mapping)
         ],
     )
 

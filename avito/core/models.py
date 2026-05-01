@@ -46,9 +46,7 @@ def serialize_api_value(value: object) -> object:
         return _serialize_dataclass(value)
     if isinstance(value, Mapping):
         return {
-            str(key): serialize_api_value(item)
-            for key, item in value.items()
-            if item is not None
+            str(key): serialize_api_value(item) for key, item in value.items() if item is not None
         }
     if isinstance(value, Sequence) and not isinstance(value, str | bytes | bytearray):
         return [serialize_api_value(item) for item in value if item is not None]

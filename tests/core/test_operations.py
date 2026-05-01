@@ -2,8 +2,12 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
+import httpx
+import pytest
+
 from avito.core import (
     ApiModel,
+    ApiTimeouts,
     BinaryResponse,
     EmptyResponse,
     OperationExecutor,
@@ -12,6 +16,7 @@ from avito.core import (
     api_field,
 )
 from avito.core.operations import render_path
+from avito.core.types import RequestContext
 from avito.testing import FakeTransport
 
 
@@ -41,6 +46,33 @@ class ItemResponse(ApiModel):
         if not isinstance(payload, dict):
             raise AssertionError("expected payload mapping")
         return cls(item_id=str(payload["id"]), title=str(payload["title"]))
+
+
+class RecordingOperationTransport:
+    def __init__(self) -> None:
+        self.contexts: list[RequestContext] = []
+
+    def request(
+        self,
+        method: str,
+        path: str,
+        *,
+        context: RequestContext,
+        **_kwargs: object,
+    ) -> httpx.Response:
+        self.contexts.append(context)
+        return httpx.Response(204)
+
+    def request_json(
+        self,
+        method: str,
+        path: str,
+        *,
+        context: RequestContext,
+        **_kwargs: object,
+    ) -> object:
+        self.contexts.append(context)
+        return {"id": "item-1", "title": "new"}
 
 
 def test_operation_executor_serializes_path_query_request_and_response_model() -> None:
@@ -110,6 +142,54 @@ def test_operation_executor_binary_response_uses_transport_request() -> None:
     assert isinstance(result, BinaryResponse)
     assert result.content == b"file"
     assert result.content_type == "application/pdf"
+
+
+def test_operation_executor_passes_timeout_to_request_context() -> None:
+    transport = RecordingOperationTransport()
+    timeouts = ApiTimeouts(connect=1.0, read=2.0, write=3.0, pool=4.0)
+    spec = OperationSpec(
+        name="items.get",
+        method="GET",
+        path="/items/1",
+        response_model=ItemResponse,
+    )
+
+    OperationExecutor(transport).execute(spec, timeout=timeouts)
+
+    assert transport.contexts[-1].timeout == timeouts
+
+
+@pytest.mark.parametrize(
+    ("spec_retry", "override", "allow_retry", "retry_disabled"),
+    (
+        ("default", None, False, False),
+        ("enabled", None, True, False),
+        ("disabled", None, False, True),
+        ("disabled", "default", False, True),
+        ("disabled", "enabled", True, False),
+        ("enabled", "disabled", False, True),
+    ),
+)
+def test_operation_executor_resolves_retry_override_precedence(
+    spec_retry: str,
+    override: str | None,
+    allow_retry: bool,
+    retry_disabled: bool,
+) -> None:
+    transport = RecordingOperationTransport()
+    spec = OperationSpec(
+        name="items.get",
+        method="GET",
+        path="/items/1",
+        response_model=ItemResponse,
+        retry_mode=spec_retry,
+    )
+
+    OperationExecutor(transport).execute(spec, retry=override)
+
+    context = transport.contexts[-1]
+    assert context.allow_retry is allow_retry
+    assert context.retry_disabled is retry_disabled
 
 
 class FakeTransportResponse:

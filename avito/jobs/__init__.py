@@ -3,7 +3,6 @@
 from avito.jobs.domain import Application, JobDictionary, JobWebhook, Resume, Vacancy
 from avito.jobs.models import (
     ApplicationActionRequest,
-    ApplicationIdsQuery,
     ApplicationIdsRequest,
     ApplicationIdsResult,
     ApplicationsResult,
@@ -22,9 +21,7 @@ from avito.jobs.models import (
     JobWebhookUpdateRequest,
     ResumeContactInfo,
     ResumeInfo,
-    ResumeSearchQuery,
     ResumesResult,
-    VacanciesQuery,
     VacanciesResult,
     VacancyArchiveRequest,
     VacancyAutoRenewalRequest,
@@ -42,7 +39,6 @@ __all__ = (
     "Application",
     "ApplicationActionRequest",
     "ApplicationIdsResult",
-    "ApplicationIdsQuery",
     "ApplicationIdsRequest",
     "ApplicationsResult",
     "ApplicationStatus",
@@ -63,7 +59,6 @@ __all__ = (
     "Resume",
     "ResumeContactInfo",
     "ResumeInfo",
-    "ResumeSearchQuery",
     "ResumesResult",
     "VacanciesResult",
     "Vacancy",
@@ -75,7 +70,6 @@ __all__ = (
     "VacancyModerationStatus",
     "VacancyProlongateRequest",
     "VacancyStatusesResult",
-    "VacanciesQuery",
     "VacancyUpdateRequest",
     "VacancyStatus",
 )

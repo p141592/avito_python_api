@@ -5,7 +5,7 @@ from __future__ import annotations
 from collections.abc import Sequence
 from dataclasses import dataclass
 
-from avito.core import ValidationError
+from avito.core import ApiTimeouts, RetryOverride, ValidationError
 from avito.core.domain import DomainObject
 from avito.core.swagger import swagger_operation
 from avito.jobs.models import (
@@ -17,6 +17,7 @@ from avito.jobs.models import (
     ApplicationStatesResult,
     ApplicationViewedItem,
     ApplicationViewedRequest,
+    ApplicationViewedRequestItem,
     JobActionResult,
     JobDictionariesResult,
     JobDictionaryValuesResult,
@@ -91,23 +92,38 @@ class Vacancy(DomainObject):
         title: str,
         version: int = 2,
         idempotency_key: str | None = None,
+        timeout: ApiTimeouts | None = None,
+        retry: RetryOverride | None = None,
     ) -> JobActionResult:
-        """Выполняет публичную операцию `Vacancy.create` и возвращает типизированную SDK-модель.
+        """Создает вакансию.
 
-        Параметр `idempotency_key` задает ключ идемпотентности для безопасного повтора write-операции.
+        Аргументы:
+            title: передает название вакансии.
+            version: задает версию upstream-контракта, если операция ее поддерживает.
+            idempotency_key: задает ключ идемпотентности для безопасного повтора write-операции.
+            timeout: переопределяет таймауты HTTP-запроса для этого вызова.
+            retry: переопределяет retry-политику операции: default, enabled или disabled.
 
-        Пустой результат возвращается как пустая коллекция или `None` согласно аннотации метода.
+        Возвращает:
+            `JobActionResult` со статусом выполнения операции.
 
-        Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
+        Поведение:
+            `idempotency_key` следует передавать для write-операций, которые могут безопасно повторяться.
+            `timeout` и `retry` действуют только на этот вызов и не меняют настройки клиента.
+
+        Исключения:
+            AvitoError: ошибка SDK с контекстом operation, status, request_id, attempt, method и endpoint.
         """
 
         if version == 1:
             return self.create_classic(title=title, idempotency_key=idempotency_key)
         return self._execute(
-                CREATE_VACANCY,
-                request=VacancyCreateRequest(title=title),
-                idempotency_key=idempotency_key,
-            )
+            CREATE_VACANCY,
+            request=VacancyCreateRequest(title=title),
+            idempotency_key=idempotency_key,
+            timeout=timeout,
+            retry=retry,
+        )
 
     @swagger_operation(
         "POST",
@@ -121,6 +137,8 @@ class Vacancy(DomainObject):
         *,
         title: str,
         idempotency_key: str | None = None,
+        timeout: ApiTimeouts | None = None,
+        retry: RetryOverride | None = None,
     ) -> JobActionResult:
         """Создаёт вакансию через legacy v1 operation и возвращает типизированную SDK-модель.
 
@@ -130,10 +148,12 @@ class Vacancy(DomainObject):
         """
 
         return self._execute(
-                CREATE_VACANCY_CLASSIC,
-                request=VacancyCreateRequest(title=title),
-                idempotency_key=idempotency_key,
-            )
+            CREATE_VACANCY_CLASSIC,
+            request=VacancyCreateRequest(title=title),
+            idempotency_key=idempotency_key,
+            timeout=timeout,
+            retry=retry,
+        )
 
     @swagger_operation(
         "POST",
@@ -150,14 +170,29 @@ class Vacancy(DomainObject):
         vacancy_uuid: str | None = None,
         version: int = 2,
         idempotency_key: str | None = None,
+        timeout: ApiTimeouts | None = None,
+        retry: RetryOverride | None = None,
     ) -> JobActionResult:
-        """Выполняет публичную операцию `Vacancy.update` и возвращает типизированную SDK-модель.
+        """Обновляет вакансию.
 
-        Параметр `idempotency_key` задает ключ идемпотентности для безопасного повтора write-операции.
+        Аргументы:
+            title: передает название вакансии.
+            vacancy_id: идентифицирует вакансию.
+            vacancy_uuid: идентифицирует вакансию по UUID.
+            version: задает версию upstream-контракта, если операция ее поддерживает.
+            idempotency_key: задает ключ идемпотентности для безопасного повтора write-операции.
+            timeout: переопределяет таймауты HTTP-запроса для этого вызова.
+            retry: переопределяет retry-политику операции: default, enabled или disabled.
 
-        Пустой результат возвращается как пустая коллекция или `None` согласно аннотации метода.
+        Возвращает:
+            `JobActionResult` со статусом выполнения операции.
 
-        Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
+        Поведение:
+            `idempotency_key` следует передавать для write-операций, которые могут безопасно повторяться.
+            `timeout` и `retry` действуют только на этот вызов и не меняют настройки клиента.
+
+        Исключения:
+            AvitoError: ошибка SDK с контекстом operation, status, request_id, attempt, method и endpoint.
         """
 
         if version == 1:
@@ -167,11 +202,13 @@ class Vacancy(DomainObject):
                 idempotency_key=idempotency_key,
             )
         return self._execute(
-                UPDATE_VACANCY,
-                path_params={"vacancy_uuid": vacancy_uuid or self._require_vacancy_id()},
-                request=VacancyUpdateRequest(title=title),
-                idempotency_key=idempotency_key,
-            )
+            UPDATE_VACANCY,
+            path_params={"vacancy_uuid": vacancy_uuid or self._require_vacancy_id()},
+            request=VacancyUpdateRequest(title=title),
+            idempotency_key=idempotency_key,
+            timeout=timeout,
+            retry=retry,
+        )
 
     @swagger_operation(
         "PUT",
@@ -186,6 +223,8 @@ class Vacancy(DomainObject):
         title: str,
         vacancy_id: int | str | None = None,
         idempotency_key: str | None = None,
+        timeout: ApiTimeouts | None = None,
+        retry: RetryOverride | None = None,
     ) -> JobActionResult:
         """Обновляет вакансию через legacy v1 operation и возвращает типизированную SDK-модель.
 
@@ -195,11 +234,13 @@ class Vacancy(DomainObject):
         """
 
         return self._execute(
-                UPDATE_VACANCY_CLASSIC,
-                path_params={"vacancy_id": vacancy_id or self._require_vacancy_id()},
-                request=VacancyUpdateRequest(title=title),
-                idempotency_key=idempotency_key,
-            )
+            UPDATE_VACANCY_CLASSIC,
+            path_params={"vacancy_id": vacancy_id or self._require_vacancy_id()},
+            request=VacancyUpdateRequest(title=title),
+            idempotency_key=idempotency_key,
+            timeout=timeout,
+            retry=retry,
+        )
 
     @swagger_operation(
         "PUT",
@@ -214,22 +255,37 @@ class Vacancy(DomainObject):
         employee_id: int,
         vacancy_id: int | str | None = None,
         idempotency_key: str | None = None,
+        timeout: ApiTimeouts | None = None,
+        retry: RetryOverride | None = None,
     ) -> JobActionResult:
-        """Выполняет публичную операцию `Vacancy.delete` и возвращает типизированную SDK-модель.
+        """Удаляет вакансию.
 
-        Параметр `idempotency_key` задает ключ идемпотентности для безопасного повтора write-операции.
+        Аргументы:
+            employee_id: идентифицирует сотрудника аккаунта.
+            vacancy_id: идентифицирует вакансию.
+            idempotency_key: задает ключ идемпотентности для безопасного повтора write-операции.
+            timeout: переопределяет таймауты HTTP-запроса для этого вызова.
+            retry: переопределяет retry-политику операции: default, enabled или disabled.
 
-        Пустой результат возвращается как пустая коллекция или `None` согласно аннотации метода.
+        Возвращает:
+            `JobActionResult` со статусом выполнения операции.
 
-        Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
+        Поведение:
+            `idempotency_key` следует передавать для write-операций, которые могут безопасно повторяться.
+            `timeout` и `retry` действуют только на этот вызов и не меняют настройки клиента.
+
+        Исключения:
+            AvitoError: ошибка SDK с контекстом operation, status, request_id, attempt, method и endpoint.
         """
 
         return self._execute(
-                ARCHIVE_VACANCY,
-                path_params={"vacancy_id": vacancy_id or self._require_vacancy_id()},
-                request=VacancyArchiveRequest(employee_id=employee_id),
-                idempotency_key=idempotency_key,
-            )
+            ARCHIVE_VACANCY,
+            path_params={"vacancy_id": vacancy_id or self._require_vacancy_id()},
+            request=VacancyArchiveRequest(employee_id=employee_id),
+            idempotency_key=idempotency_key,
+            timeout=timeout,
+            retry=retry,
+        )
 
     @swagger_operation(
         "POST",
@@ -244,22 +300,37 @@ class Vacancy(DomainObject):
         billing_type: str,
         vacancy_id: int | str | None = None,
         idempotency_key: str | None = None,
+        timeout: ApiTimeouts | None = None,
+        retry: RetryOverride | None = None,
     ) -> JobActionResult:
-        """Выполняет публичную операцию `Vacancy.prolongate` и возвращает типизированную SDK-модель.
+        """Продлевает вакансий.
 
-        Параметр `idempotency_key` задает ключ идемпотентности для безопасного повтора write-операции.
+        Аргументы:
+            billing_type: задает тип биллинга для продления вакансии.
+            vacancy_id: идентифицирует вакансию.
+            idempotency_key: задает ключ идемпотентности для безопасного повтора write-операции.
+            timeout: переопределяет таймауты HTTP-запроса для этого вызова.
+            retry: переопределяет retry-политику операции: default, enabled или disabled.
 
-        Пустой результат возвращается как пустая коллекция или `None` согласно аннотации метода.
+        Возвращает:
+            `JobActionResult` со статусом выполнения операции.
 
-        Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
+        Поведение:
+            `idempotency_key` следует передавать для write-операций, которые могут безопасно повторяться.
+            `timeout` и `retry` действуют только на этот вызов и не меняют настройки клиента.
+
+        Исключения:
+            AvitoError: ошибка SDK с контекстом operation, status, request_id, attempt, method и endpoint.
         """
 
         return self._execute(
-                PROLONGATE_VACANCY,
-                path_params={"vacancy_id": vacancy_id or self._require_vacancy_id()},
-                request=VacancyProlongateRequest(billing_type=billing_type),
-                idempotency_key=idempotency_key,
-            )
+            PROLONGATE_VACANCY,
+            path_params={"vacancy_id": vacancy_id or self._require_vacancy_id()},
+            request=VacancyProlongateRequest(billing_type=billing_type),
+            idempotency_key=idempotency_key,
+            timeout=timeout,
+            retry=retry,
+        )
 
     @swagger_operation(
         "GET",
@@ -267,15 +338,36 @@ class Vacancy(DomainObject):
         spec="АвитоРабота.json",
         operation_id="searchVacancy",
     )
-    def list(self, *, query: VacanciesQuery | None = None) -> VacanciesResult:
-        """Выполняет публичную операцию `Vacancy.list` и возвращает типизированную SDK-модель.
+    def list(
+        self,
+        *,
+        query: str | None = None,
+        timeout: ApiTimeouts | None = None,
+        retry: RetryOverride | None = None,
+    ) -> VacanciesResult:
+        """Возвращает список вакансий.
 
-        Пустой результат возвращается как пустая коллекция или `None` согласно аннотации метода.
+        Аргументы:
+            query: передает поисковую строку или фильтр upstream API.
+            timeout: переопределяет таймауты HTTP-запроса для этого вызова.
+            retry: переопределяет retry-политику операции: default, enabled или disabled.
 
-        Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
+        Возвращает:
+            `VacanciesResult` с типизированными данными ответа API.
+
+        Поведение:
+            `timeout` и `retry` действуют только на этот вызов и не меняют настройки клиента.
+
+        Исключения:
+            AvitoError: ошибка SDK с контекстом operation, status, request_id, attempt, method и endpoint.
         """
 
-        return self._execute(LIST_VACANCIES, query=query)
+        return self._execute(
+            LIST_VACANCIES,
+            query=VacanciesQuery(query=query),
+            timeout=timeout,
+            retry=retry,
+        )
 
     @swagger_operation(
         "GET",
@@ -284,20 +376,38 @@ class Vacancy(DomainObject):
         operation_id="vacancyGetItem",
     )
     def get(
-        self, *, vacancy_id: int | str | None = None, query: VacanciesQuery | None = None
+        self,
+        *,
+        vacancy_id: int | str | None = None,
+        query: str | None = None,
+        timeout: ApiTimeouts | None = None,
+        retry: RetryOverride | None = None,
     ) -> VacancyInfo:
-        """Выполняет публичную операцию `Vacancy.get` и возвращает типизированную SDK-модель.
+        """Возвращает вакансий.
 
-        Пустой результат возвращается как пустая коллекция или `None` согласно аннотации метода.
+        Аргументы:
+            vacancy_id: идентифицирует вакансию.
+            query: передает поисковую строку или фильтр upstream API.
+            timeout: переопределяет таймауты HTTP-запроса для этого вызова.
+            retry: переопределяет retry-политику операции: default, enabled или disabled.
 
-        Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
+        Возвращает:
+            `VacancyInfo` с типизированными данными ответа API.
+
+        Поведение:
+            `timeout` и `retry` действуют только на этот вызов и не меняют настройки клиента.
+
+        Исключения:
+            AvitoError: ошибка SDK с контекстом operation, status, request_id, attempt, method и endpoint.
         """
 
         return self._execute(
-                GET_VACANCY,
-                path_params={"vacancy_id": vacancy_id or self._require_vacancy_id()},
-                query=query,
-            )
+            GET_VACANCY,
+            path_params={"vacancy_id": vacancy_id or self._require_vacancy_id()},
+            query=VacanciesQuery(query=query),
+            timeout=timeout,
+            retry=retry,
+        )
 
     @swagger_operation(
         "POST",
@@ -306,15 +416,36 @@ class Vacancy(DomainObject):
         operation_id="vacanciesGetByIds",
         method_args={"ids": "body.ids"},
     )
-    def get_by_ids(self, *, ids: Sequence[int]) -> VacanciesResult:
-        """Выполняет публичную операцию `Vacancy.get_by_ids` и возвращает типизированную SDK-модель.
+    def get_by_ids(
+        self,
+        *,
+        ids: Sequence[int],
+        timeout: ApiTimeouts | None = None,
+        retry: RetryOverride | None = None,
+    ) -> VacanciesResult:
+        """Возвращает вакансий.
 
-        Пустой результат возвращается как пустая коллекция или `None` согласно аннотации метода.
+        Аргументы:
+            ids: передает идентификаторы объектов для пакетной операции.
+            timeout: переопределяет таймауты HTTP-запроса для этого вызова.
+            retry: переопределяет retry-политику операции: default, enabled или disabled.
 
-        Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
+        Возвращает:
+            `VacanciesResult` с типизированными данными ответа API.
+
+        Поведение:
+            `timeout` и `retry` действуют только на этот вызов и не меняют настройки клиента.
+
+        Исключения:
+            AvitoError: ошибка SDK с контекстом operation, status, request_id, attempt, method и endpoint.
         """
 
-        return self._execute(GET_VACANCIES_BY_IDS, request=VacancyIdsRequest(ids=list(ids)))
+        return self._execute(
+            GET_VACANCIES_BY_IDS,
+            request=VacancyIdsRequest(ids=list(ids)),
+            timeout=timeout,
+            retry=retry,
+        )
 
     @swagger_operation(
         "POST",
@@ -323,15 +454,36 @@ class Vacancy(DomainObject):
         operation_id="vacancyGetStatuses",
         method_args={"ids": "body.ids"},
     )
-    def get_statuses(self, *, ids: Sequence[int]) -> VacancyStatusesResult:
-        """Выполняет публичную операцию `Vacancy.get_statuses` и возвращает типизированную SDK-модель.
+    def get_statuses(
+        self,
+        *,
+        ids: Sequence[int],
+        timeout: ApiTimeouts | None = None,
+        retry: RetryOverride | None = None,
+    ) -> VacancyStatusesResult:
+        """Возвращает statuses для вакансий.
 
-        Пустой результат возвращается как пустая коллекция или `None` согласно аннотации метода.
+        Аргументы:
+            ids: передает идентификаторы объектов для пакетной операции.
+            timeout: переопределяет таймауты HTTP-запроса для этого вызова.
+            retry: переопределяет retry-политику операции: default, enabled или disabled.
 
-        Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
+        Возвращает:
+            `VacancyStatusesResult` с типизированными данными ответа API.
+
+        Поведение:
+            `timeout` и `retry` действуют только на этот вызов и не меняют настройки клиента.
+
+        Исключения:
+            AvitoError: ошибка SDK с контекстом operation, status, request_id, attempt, method и endpoint.
         """
 
-        return self._execute(GET_VACANCY_STATUSES, request=VacancyIdsRequest(ids=list(ids)))
+        return self._execute(
+            GET_VACANCY_STATUSES,
+            request=VacancyIdsRequest(ids=list(ids)),
+            timeout=timeout,
+            retry=retry,
+        )
 
     @swagger_operation(
         "PUT",
@@ -346,22 +498,37 @@ class Vacancy(DomainObject):
         auto_renewal: bool,
         vacancy_uuid: str | None = None,
         idempotency_key: str | None = None,
+        timeout: ApiTimeouts | None = None,
+        retry: RetryOverride | None = None,
     ) -> JobActionResult:
-        """Выполняет публичную операцию `Vacancy.update_auto_renewal` и возвращает типизированную SDK-модель.
+        """Обновляет настройку автопродления вакансии.
 
-        Параметр `idempotency_key` задает ключ идемпотентности для безопасного повтора write-операции.
+        Аргументы:
+            auto_renewal: включает или отключает автопродление вакансии.
+            vacancy_uuid: идентифицирует вакансию по UUID.
+            idempotency_key: задает ключ идемпотентности для безопасного повтора write-операции.
+            timeout: переопределяет таймауты HTTP-запроса для этого вызова.
+            retry: переопределяет retry-политику операции: default, enabled или disabled.
 
-        Пустой результат возвращается как пустая коллекция или `None` согласно аннотации метода.
+        Возвращает:
+            `JobActionResult` со статусом выполнения операции.
 
-        Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
+        Поведение:
+            `idempotency_key` следует передавать для write-операций, которые могут безопасно повторяться.
+            `timeout` и `retry` действуют только на этот вызов и не меняют настройки клиента.
+
+        Исключения:
+            AvitoError: ошибка SDK с контекстом operation, status, request_id, attempt, method и endpoint.
         """
 
         return self._execute(
-                UPDATE_VACANCY_AUTO_RENEWAL,
-                path_params={"vacancy_uuid": vacancy_uuid or self._require_vacancy_id()},
-                request=VacancyAutoRenewalRequest(auto_renewal=auto_renewal),
-                idempotency_key=idempotency_key,
-            )
+            UPDATE_VACANCY_AUTO_RENEWAL,
+            path_params={"vacancy_uuid": vacancy_uuid or self._require_vacancy_id()},
+            request=VacancyAutoRenewalRequest(auto_renewal=auto_renewal),
+            idempotency_key=idempotency_key,
+            timeout=timeout,
+            retry=retry,
+        )
 
     def _require_vacancy_id(self) -> str:
         if self.vacancy_id is None:
@@ -391,40 +558,36 @@ class Application(DomainObject):
         ids: Sequence[str],
         action: str,
         idempotency_key: str | None = None,
+        timeout: ApiTimeouts | None = None,
+        retry: RetryOverride | None = None,
     ) -> JobActionResult:
-        """Выполняет публичную операцию `Application.apply` и возвращает типизированную SDK-модель.
+        """Применяет действие к откликов на вакансии.
 
-        Параметр `idempotency_key` задает ключ идемпотентности для безопасного повтора write-операции.
+        Аргументы:
+            ids: передает идентификаторы объектов для пакетной операции.
+            action: задает действие над откликами.
+            idempotency_key: задает ключ идемпотентности для безопасного повтора write-операции.
+            timeout: переопределяет таймауты HTTP-запроса для этого вызова.
+            retry: переопределяет retry-политику операции: default, enabled или disabled.
 
-        Пустой результат возвращается как пустая коллекция или `None` согласно аннотации метода.
+        Возвращает:
+            `JobActionResult` со статусом выполнения операции.
 
-        Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
+        Поведение:
+            `idempotency_key` следует передавать для write-операций, которые могут безопасно повторяться.
+            `timeout` и `retry` действуют только на этот вызов и не меняют настройки клиента.
+
+        Исключения:
+            AvitoError: ошибка SDK с контекстом operation, status, request_id, attempt, method и endpoint.
         """
 
         return self._execute(
-                APPLY_APPLICATION_ACTIONS,
-                request=ApplicationActionRequest(ids=list(ids), action=action),
-                idempotency_key=idempotency_key,
-            )
-
-    def list(
-        self,
-        *,
-        ids: Sequence[str] | None = None,
-        query: ApplicationIdsQuery | None = None,
-    ) -> ApplicationsResult | ApplicationIdsResult:
-        """Выполняет публичную операцию `Application.list` и возвращает типизированную SDK-модель.
-
-        Пустой результат возвращается как пустая коллекция или `None` согласно аннотации метода.
-
-        Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
-        """
-
-        if ids is not None:
-            return self.get_by_ids(ids=ids)
-        if query is None:
-            raise ValidationError("Для операции требуется `query` или `ids`.")
-        return self.get_ids(query=query)
+            APPLY_APPLICATION_ACTIONS,
+            request=ApplicationActionRequest(ids=list(ids), action=action),
+            idempotency_key=idempotency_key,
+            timeout=timeout,
+            retry=retry,
+        )
 
     @swagger_operation(
         "POST",
@@ -433,29 +596,50 @@ class Application(DomainObject):
         operation_id="applicationsGetByIds",
         method_args={"ids": "body.ids"},
     )
-    def get_by_ids(self, *, ids: Sequence[str]) -> ApplicationsResult:
+    def get_by_ids(
+        self,
+        *,
+        ids: Sequence[str],
+        timeout: ApiTimeouts | None = None,
+        retry: RetryOverride | None = None,
+    ) -> ApplicationsResult:
         """Возвращает отклики по идентификаторам и возвращает типизированную SDK-модель.
 
         Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
         """
 
-        return self._execute(GET_APPLICATIONS_BY_IDS, request=ApplicationIdsRequest(ids=list(ids)))
+        return self._execute(
+            GET_APPLICATIONS_BY_IDS,
+            request=ApplicationIdsRequest(ids=list(ids)),
+            timeout=timeout,
+            retry=retry,
+        )
 
     @swagger_operation(
         "GET",
         "/job/v1/applications/get_ids",
         spec="АвитоРабота.json",
         operation_id="applicationsGetIds",
+        method_args={"updated_at_from": "query.updatedAtFrom"},
     )
-    def get_ids(self, *, query: ApplicationIdsQuery | None = None) -> ApplicationIdsResult:
+    def get_ids(
+        self,
+        *,
+        updated_at_from: str,
+        timeout: ApiTimeouts | None = None,
+        retry: RetryOverride | None = None,
+    ) -> ApplicationIdsResult:
         """Возвращает идентификаторы откликов по фильтру и возвращает типизированную SDK-модель.
 
         Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
         """
 
-        if query is None:
-            raise ValidationError("Для операции требуется `query`.")
-        return self._execute(GET_APPLICATION_IDS, query=query)
+        return self._execute(
+            GET_APPLICATION_IDS,
+            query=ApplicationIdsQuery(updated_at_from=updated_at_from),
+            timeout=timeout,
+            retry=retry,
+        )
 
     @swagger_operation(
         "GET",
@@ -463,15 +647,26 @@ class Application(DomainObject):
         spec="АвитоРабота.json",
         operation_id="applicationsGetStates",
     )
-    def get_states(self) -> ApplicationStatesResult:
-        """Выполняет публичную операцию `Application.get_states` и возвращает типизированную SDK-модель.
+    def get_states(
+        self, *, timeout: ApiTimeouts | None = None, retry: RetryOverride | None = None
+    ) -> ApplicationStatesResult:
+        """Возвращает states для откликов на вакансии.
 
-        Пустой результат возвращается как пустая коллекция или `None` согласно аннотации метода.
+        Аргументы:
+            timeout: переопределяет таймауты HTTP-запроса для этого вызова.
+            retry: переопределяет retry-политику операции: default, enabled или disabled.
 
-        Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
+        Возвращает:
+            `ApplicationStatesResult` с типизированными данными ответа API.
+
+        Поведение:
+            `timeout` и `retry` действуют только на этот вызов и не меняют настройки клиента.
+
+        Исключения:
+            AvitoError: ошибка SDK с контекстом operation, status, request_id, attempt, method и endpoint.
         """
 
-        return self._execute(GET_APPLICATION_STATES)
+        return self._execute(GET_APPLICATION_STATES, timeout=timeout, retry=retry)
 
     @swagger_operation(
         "POST",
@@ -485,21 +680,40 @@ class Application(DomainObject):
         *,
         applies: Sequence[ApplicationViewedItem],
         idempotency_key: str | None = None,
+        timeout: ApiTimeouts | None = None,
+        retry: RetryOverride | None = None,
     ) -> JobActionResult:
-        """Выполняет публичную операцию `Application.update` и возвращает типизированную SDK-модель.
+        """Обновляет отметки просмотра откликов на вакансии.
 
-        Параметр `idempotency_key` задает ключ идемпотентности для безопасного повтора write-операции.
+        Аргументы:
+            applies: передает список отметок просмотра откликов.
+            idempotency_key: задает ключ идемпотентности для безопасного повтора write-операции.
+            timeout: переопределяет таймауты HTTP-запроса для этого вызова.
+            retry: переопределяет retry-политику операции: default, enabled или disabled.
 
-        Пустой результат возвращается как пустая коллекция или `None` согласно аннотации метода.
+        Возвращает:
+            `JobActionResult` со статусом выполнения операции.
 
-        Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
+        Поведение:
+            `idempotency_key` следует передавать для write-операций, которые могут безопасно повторяться.
+            `timeout` и `retry` действуют только на этот вызов и не меняют настройки клиента.
+
+        Исключения:
+            AvitoError: ошибка SDK с контекстом operation, status, request_id, attempt, method и endpoint.
         """
 
         return self._execute(
-                SET_APPLICATIONS_IS_VIEWED,
-                request=ApplicationViewedRequest(applies=list(applies)),
-                idempotency_key=idempotency_key,
-            )
+            SET_APPLICATIONS_IS_VIEWED,
+            request=ApplicationViewedRequest(
+                applies=[
+                    ApplicationViewedRequestItem(id=item.id, is_viewed=item.is_viewed)
+                    for item in applies
+                ]
+            ),
+            idempotency_key=idempotency_key,
+            timeout=timeout,
+            retry=retry,
+        )
 
 
 @dataclass(slots=True, frozen=True)
@@ -519,15 +733,36 @@ class Resume(DomainObject):
         spec="АвитоРабота.json",
         operation_id="resumesGet",
     )
-    def list(self, *, query: ResumeSearchQuery | None = None) -> ResumesResult:
-        """Выполняет публичную операцию `Resume.list` и возвращает типизированную SDK-модель.
+    def list(
+        self,
+        *,
+        query: str | None = None,
+        timeout: ApiTimeouts | None = None,
+        retry: RetryOverride | None = None,
+    ) -> ResumesResult:
+        """Возвращает список резюме.
 
-        Пустой результат возвращается как пустая коллекция или `None` согласно аннотации метода.
+        Аргументы:
+            query: передает поисковую строку или фильтр upstream API.
+            timeout: переопределяет таймауты HTTP-запроса для этого вызова.
+            retry: переопределяет retry-политику операции: default, enabled или disabled.
 
-        Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
+        Возвращает:
+            `ResumesResult` с типизированными данными ответа API.
+
+        Поведение:
+            `timeout` и `retry` действуют только на этот вызов и не меняют настройки клиента.
+
+        Исключения:
+            AvitoError: ошибка SDK с контекстом operation, status, request_id, attempt, method и endpoint.
         """
 
-        return self._execute(SEARCH_RESUMES, query=query)
+        return self._execute(
+            SEARCH_RESUMES,
+            query=ResumeSearchQuery(query=query) if query is not None else None,
+            timeout=timeout,
+            retry=retry,
+        )
 
     @swagger_operation(
         "GET",
@@ -535,18 +770,36 @@ class Resume(DomainObject):
         spec="АвитоРабота.json",
         operation_id="resumeGetItem",
     )
-    def get(self, *, resume_id: int | str | None = None) -> ResumeInfo:
-        """Выполняет публичную операцию `Resume.get` и возвращает типизированную SDK-модель.
+    def get(
+        self,
+        *,
+        resume_id: int | str | None = None,
+        timeout: ApiTimeouts | None = None,
+        retry: RetryOverride | None = None,
+    ) -> ResumeInfo:
+        """Возвращает резюме.
 
-        Пустой результат возвращается как пустая коллекция или `None` согласно аннотации метода.
+        Аргументы:
+            resume_id: идентифицирует резюме.
+            timeout: переопределяет таймауты HTTP-запроса для этого вызова.
+            retry: переопределяет retry-политику операции: default, enabled или disabled.
 
-        Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
+        Возвращает:
+            `ResumeInfo` с типизированными данными ответа API.
+
+        Поведение:
+            `timeout` и `retry` действуют только на этот вызов и не меняют настройки клиента.
+
+        Исключения:
+            AvitoError: ошибка SDK с контекстом operation, status, request_id, attempt, method и endpoint.
         """
 
         return self._execute(
-                GET_RESUME,
-                path_params={"resume_id": str(resume_id or self._require_resume_id())},
-            )
+            GET_RESUME,
+            path_params={"resume_id": str(resume_id or self._require_resume_id())},
+            timeout=timeout,
+            retry=retry,
+        )
 
     @swagger_operation(
         "GET",
@@ -554,18 +807,36 @@ class Resume(DomainObject):
         spec="АвитоРабота.json",
         operation_id="resumeGetContacts",
     )
-    def get_contacts(self, *, resume_id: int | str | None = None) -> ResumeContactInfo:
-        """Выполняет публичную операцию `Resume.get_contacts` и возвращает типизированную SDK-модель.
+    def get_contacts(
+        self,
+        *,
+        resume_id: int | str | None = None,
+        timeout: ApiTimeouts | None = None,
+        retry: RetryOverride | None = None,
+    ) -> ResumeContactInfo:
+        """Возвращает contacts для резюме.
 
-        Пустой результат возвращается как пустая коллекция или `None` согласно аннотации метода.
+        Аргументы:
+            resume_id: идентифицирует резюме.
+            timeout: переопределяет таймауты HTTP-запроса для этого вызова.
+            retry: переопределяет retry-политику операции: default, enabled или disabled.
 
-        Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
+        Возвращает:
+            `ResumeContactInfo` с типизированными данными ответа API.
+
+        Поведение:
+            `timeout` и `retry` действуют только на этот вызов и не меняют настройки клиента.
+
+        Исключения:
+            AvitoError: ошибка SDK с контекстом operation, status, request_id, attempt, method и endpoint.
         """
 
         return self._execute(
-                GET_RESUME_CONTACTS,
-                path_params={"resume_id": str(resume_id or self._require_resume_id())},
-            )
+            GET_RESUME_CONTACTS,
+            path_params={"resume_id": str(resume_id or self._require_resume_id())},
+            timeout=timeout,
+            retry=retry,
+        )
 
     def _require_resume_id(self) -> str:
         if self.resume_id is None:
@@ -588,15 +859,26 @@ class JobWebhook(DomainObject):
         spec="АвитоРабота.json",
         operation_id="applicationsWebhookGet",
     )
-    def get(self) -> JobWebhookInfo:
-        """Выполняет публичную операцию `JobWebhook.get` и возвращает типизированную SDK-модель.
+    def get(
+        self, *, timeout: ApiTimeouts | None = None, retry: RetryOverride | None = None
+    ) -> JobWebhookInfo:
+        """Возвращает webhook-уведомлений Авито Работы.
 
-        Пустой результат возвращается как пустая коллекция или `None` согласно аннотации метода.
+        Аргументы:
+            timeout: переопределяет таймауты HTTP-запроса для этого вызова.
+            retry: переопределяет retry-политику операции: default, enabled или disabled.
 
-        Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
+        Возвращает:
+            `JobWebhookInfo` с типизированными данными ответа API.
+
+        Поведение:
+            `timeout` и `retry` действуют только на этот вызов и не меняют настройки клиента.
+
+        Исключения:
+            AvitoError: ошибка SDK с контекстом operation, status, request_id, attempt, method и endpoint.
         """
 
-        return self._execute(GET_JOB_WEBHOOK)
+        return self._execute(GET_JOB_WEBHOOK, timeout=timeout, retry=retry)
 
     @swagger_operation(
         "GET",
@@ -604,15 +886,26 @@ class JobWebhook(DomainObject):
         spec="АвитоРабота.json",
         operation_id="applicationsWebhooksGet",
     )
-    def list(self) -> JobWebhooksResult:
-        """Выполняет публичную операцию `JobWebhook.list` и возвращает типизированную SDK-модель.
+    def list(
+        self, *, timeout: ApiTimeouts | None = None, retry: RetryOverride | None = None
+    ) -> JobWebhooksResult:
+        """Возвращает список webhook-уведомлений Авито Работы.
 
-        Пустой результат возвращается как пустая коллекция или `None` согласно аннотации метода.
+        Аргументы:
+            timeout: переопределяет таймауты HTTP-запроса для этого вызова.
+            retry: переопределяет retry-политику операции: default, enabled или disabled.
 
-        Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
+        Возвращает:
+            `JobWebhooksResult` с типизированными данными ответа API.
+
+        Поведение:
+            `timeout` и `retry` действуют только на этот вызов и не меняют настройки клиента.
+
+        Исключения:
+            AvitoError: ошибка SDK с контекстом operation, status, request_id, attempt, method и endpoint.
         """
 
-        return self._execute(LIST_JOB_WEBHOOKS)
+        return self._execute(LIST_JOB_WEBHOOKS, timeout=timeout, retry=retry)
 
     @swagger_operation(
         "PUT",
@@ -621,21 +914,40 @@ class JobWebhook(DomainObject):
         operation_id="applicationsWebhookPut",
         method_args={"url": "body.url"},
     )
-    def update(self, *, url: str, idempotency_key: str | None = None) -> JobWebhookInfo:
-        """Выполняет публичную операцию `JobWebhook.update` и возвращает типизированную SDK-модель.
+    def update(
+        self,
+        *,
+        url: str,
+        idempotency_key: str | None = None,
+        timeout: ApiTimeouts | None = None,
+        retry: RetryOverride | None = None,
+    ) -> JobWebhookInfo:
+        """Обновляет webhook-уведомление Авито Работы.
 
-        Параметр `idempotency_key` задает ключ идемпотентности для безопасного повтора write-операции.
+        Аргументы:
+            url: задает URL webhook-подписки.
+            idempotency_key: задает ключ идемпотентности для безопасного повтора write-операции.
+            timeout: переопределяет таймауты HTTP-запроса для этого вызова.
+            retry: переопределяет retry-политику операции: default, enabled или disabled.
 
-        Пустой результат возвращается как пустая коллекция или `None` согласно аннотации метода.
+        Возвращает:
+            `JobWebhookInfo` с типизированными данными ответа API.
 
-        Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
+        Поведение:
+            `idempotency_key` следует передавать для write-операций, которые могут безопасно повторяться.
+            `timeout` и `retry` действуют только на этот вызов и не меняют настройки клиента.
+
+        Исключения:
+            AvitoError: ошибка SDK с контекстом operation, status, request_id, attempt, method и endpoint.
         """
 
         return self._execute(
-                UPDATE_JOB_WEBHOOK,
-                request=JobWebhookUpdateRequest(url=url),
-                idempotency_key=idempotency_key,
-            )
+            UPDATE_JOB_WEBHOOK,
+            request=JobWebhookUpdateRequest(url=url),
+            idempotency_key=idempotency_key,
+            timeout=timeout,
+            retry=retry,
+        )
 
     @swagger_operation(
         "DELETE",
@@ -644,22 +956,39 @@ class JobWebhook(DomainObject):
         operation_id="applicationsWebhookDelete",
     )
     def delete(
-        self, *, url: str | None = None, idempotency_key: str | None = None
+        self,
+        *,
+        url: str | None = None,
+        idempotency_key: str | None = None,
+        timeout: ApiTimeouts | None = None,
+        retry: RetryOverride | None = None,
     ) -> JobActionResult:
-        """Выполняет публичную операцию `JobWebhook.delete` и возвращает типизированную SDK-модель.
+        """Удаляет webhook-уведомление Авито Работы.
 
-        Параметр `idempotency_key` задает ключ идемпотентности для безопасного повтора write-операции.
+        Аргументы:
+            url: задает URL webhook-подписки.
+            idempotency_key: задает ключ идемпотентности для безопасного повтора write-операции.
+            timeout: переопределяет таймауты HTTP-запроса для этого вызова.
+            retry: переопределяет retry-политику операции: default, enabled или disabled.
 
-        Пустой результат возвращается как пустая коллекция или `None` согласно аннотации метода.
+        Возвращает:
+            `JobActionResult` со статусом выполнения операции.
 
-        Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
+        Поведение:
+            `idempotency_key` следует передавать для write-операций, которые могут безопасно повторяться.
+            `timeout` и `retry` действуют только на этот вызов и не меняют настройки клиента.
+
+        Исключения:
+            AvitoError: ошибка SDK с контекстом operation, status, request_id, attempt, method и endpoint.
         """
 
         return self._execute(
-                DELETE_JOB_WEBHOOK,
-                query={"url": url} if url is not None else None,
-                idempotency_key=idempotency_key,
-            )
+            DELETE_JOB_WEBHOOK,
+            query={"url": url} if url is not None else None,
+            idempotency_key=idempotency_key,
+            timeout=timeout,
+            retry=retry,
+        )
 
 
 @dataclass(slots=True, frozen=True)
@@ -679,15 +1008,26 @@ class JobDictionary(DomainObject):
         spec="АвитоРабота.json",
         operation_id="getDicts",
     )
-    def list(self) -> JobDictionariesResult:
-        """Выполняет публичную операцию `JobDictionary.list` и возвращает типизированную SDK-модель.
+    def list(
+        self, *, timeout: ApiTimeouts | None = None, retry: RetryOverride | None = None
+    ) -> JobDictionariesResult:
+        """Возвращает список справочников Авито Работы.
 
-        Пустой результат возвращается как пустая коллекция или `None` согласно аннотации метода.
+        Аргументы:
+            timeout: переопределяет таймауты HTTP-запроса для этого вызова.
+            retry: переопределяет retry-политику операции: default, enabled или disabled.
 
-        Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
+        Возвращает:
+            `JobDictionariesResult` с типизированными данными ответа API.
+
+        Поведение:
+            `timeout` и `retry` действуют только на этот вызов и не меняют настройки клиента.
+
+        Исключения:
+            AvitoError: ошибка SDK с контекстом operation, status, request_id, attempt, method и endpoint.
         """
 
-        return self._execute(LIST_JOB_DICTIONARIES)
+        return self._execute(LIST_JOB_DICTIONARIES, timeout=timeout, retry=retry)
 
     @swagger_operation(
         "GET",
@@ -695,18 +1035,36 @@ class JobDictionary(DomainObject):
         spec="АвитоРабота.json",
         operation_id="getDictByID",
     )
-    def get(self, *, dictionary_id: str | None = None) -> JobDictionaryValuesResult:
-        """Выполняет публичную операцию `JobDictionary.get` и возвращает типизированную SDK-модель.
+    def get(
+        self,
+        *,
+        dictionary_id: str | None = None,
+        timeout: ApiTimeouts | None = None,
+        retry: RetryOverride | None = None,
+    ) -> JobDictionaryValuesResult:
+        """Возвращает справочников Авито Работы.
 
-        Пустой результат возвращается как пустая коллекция или `None` согласно аннотации метода.
+        Аргументы:
+            dictionary_id: идентифицирует справочник.
+            timeout: переопределяет таймауты HTTP-запроса для этого вызова.
+            retry: переопределяет retry-политику операции: default, enabled или disabled.
 
-        Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
+        Возвращает:
+            `JobDictionaryValuesResult` с типизированными данными ответа API.
+
+        Поведение:
+            `timeout` и `retry` действуют только на этот вызов и не меняют настройки клиента.
+
+        Исключения:
+            AvitoError: ошибка SDK с контекстом operation, status, request_id, attempt, method и endpoint.
         """
 
         return self._execute(
-                GET_JOB_DICTIONARY,
-                path_params={"dictionary_id": dictionary_id or self._require_dictionary_id()},
-            )
+            GET_JOB_DICTIONARY,
+            path_params={"dictionary_id": dictionary_id or self._require_dictionary_id()},
+            timeout=timeout,
+            retry=retry,
+        )
 
     def _require_dictionary_id(self) -> str:
         if self.dictionary_id is None:

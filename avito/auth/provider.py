@@ -15,8 +15,16 @@ from avito.auth.models import (
     TokenResponse,
 )
 from avito.auth.settings import AuthSettings
-from avito.core.exceptions import AuthenticationError, ConfigurationError, ResponseMappingError
+from avito.config import AvitoSettings
+from avito.core.exceptions import (
+    AuthenticationError,
+    AvitoError,
+    ConfigurationError,
+    ResponseMappingError,
+)
 from avito.core.swagger import swagger_operation
+from avito.core.transport import Transport
+from avito.core.types import RequestContext
 
 CLIENT_CREDENTIALS_GRANT = "client_credentials"
 REFRESH_TOKEN_GRANT = "refresh_token"
@@ -112,13 +120,15 @@ class AuthProvider:
         token = self._autoteka_access_token
         now = datetime.now(UTC)
         if token is None or token.is_expired(now):
-            token_response = self._get_autoteka_token_client().request_autoteka_client_credentials_token(
-                ClientCredentialsRequest(
-                    client_id=self.settings.autoteka_client_id or self.settings.client_id or "",
-                    client_secret=self.settings.autoteka_client_secret
-                    or self.settings.client_secret
-                    or "",
-                    scope=self.settings.autoteka_scope,
+            token_response = (
+                self._get_autoteka_token_client().request_autoteka_client_credentials_token(
+                    ClientCredentialsRequest(
+                        client_id=self.settings.autoteka_client_id or self.settings.client_id or "",
+                        client_secret=self.settings.autoteka_client_secret
+                        or self.settings.client_secret
+                        or "",
+                        scope=self.settings.autoteka_scope,
+                    )
                 )
             )
             self._update_tokens(autoteka_access_token=token_response.access_token)
@@ -231,6 +241,7 @@ class TokenClient:
     settings: AuthSettings
     token_url: str | None = None
     client: httpx.Client | None = None
+    sdk_settings: AvitoSettings | None = None
 
     def close(self) -> None:
         """Закрывает выделенный HTTP-клиент, если он был передан снаружи."""
@@ -289,62 +300,51 @@ class TokenClient:
         return self._request_token(payload)
 
     def _request_token(self, payload: dict[str, str]) -> TokenResponse:
-        client = self.client or httpx.Client()
-        owns_client = self.client is None
+        transport = self._build_transport()
         try:
-            response = client.post(
+            response = transport.request(
+                "POST",
                 self.token_url or self.settings.token_url,
+                context=RequestContext("auth.oauth_token", requires_auth=False),
                 data=payload,
                 headers={"Accept": "application/json"},
             )
-        except httpx.HTTPError as exc:
-            raise AuthenticationError(f"Ошибка OAuth transport: {exc}") from exc
-        finally:
-            if owns_client:
-                client.close()
-
-        if response.is_error:
+        except AuthenticationError:
+            raise
+        except AvitoError as exc:
             raise AuthenticationError(
-                self._extract_error_message(response),
-                status_code=response.status_code,
-                error_code=self._extract_error_code(response),
-                payload=self._safe_payload(response),
-                headers=dict(response.headers),
-            )
+                exc.message,
+                status_code=exc.status_code,
+                error_code=exc.error_code,
+                operation=exc.operation,
+                details=exc.details,
+                retry_after=exc.retry_after,
+                request_id=exc.request_id,
+                metadata=exc.metadata,
+                payload=exc.payload,
+                headers=exc.headers,
+            ) from exc
+        finally:
+            if self.client is None:
+                transport.close()
 
         try:
             payload_object = response.json()
         except ValueError as exc:
             raise AuthenticationError(
-                "OAuth endpoint вернул невалидный JSON.",
+                "OAuth-сервер вернул некорректный JSON.",
                 status_code=response.status_code,
                 payload=response.text,
                 headers=dict(response.headers),
             ) from exc
         return _map_token_response(payload_object)
 
-    def _safe_payload(self, response: httpx.Response) -> object:
-        try:
-            return response.json()
-        except ValueError:
-            return response.text
-
-    def _extract_error_message(self, response: httpx.Response) -> str:
-        payload = self._safe_payload(response)
-        if isinstance(payload, dict):
-            for key in ("message", "error_description", "error", "detail"):
-                value = payload.get(key)
-                if isinstance(value, str) and value:
-                    return value
-        return f"Ошибка OAuth endpoint: HTTP {response.status_code}"
-
-    def _extract_error_code(self, response: httpx.Response) -> str | None:
-        payload = self._safe_payload(response)
-        if isinstance(payload, dict):
-            value = payload.get("error") or payload.get("code")
-            if isinstance(value, str):
-                return value
-        return None
+    def _build_transport(self) -> Transport:
+        return Transport(
+            self.sdk_settings or AvitoSettings(auth=self.settings),
+            auth_provider=None,
+            client=self.client,
+        )
 
 
 @dataclass(slots=True, frozen=True)
@@ -355,6 +355,7 @@ class AlternateTokenClient:
 
     settings: AuthSettings
     client: httpx.Client | None = None
+    sdk_settings: AvitoSettings | None = None
 
     def close(self) -> None:
         """Закрывает выделенный HTTP-клиент альтернативного token flow."""
@@ -379,6 +380,7 @@ class AlternateTokenClient:
             self.settings,
             token_url=self.settings.alternate_token_url,
             client=self.client,
+            sdk_settings=self.sdk_settings,
         ).request_client_credentials_token(request)
 
     @swagger_operation(
@@ -395,6 +397,7 @@ class AlternateTokenClient:
             self.settings,
             token_url=self.settings.alternate_token_url,
             client=self.client,
+            sdk_settings=self.sdk_settings,
         ).request_refresh_token(request)
 
 

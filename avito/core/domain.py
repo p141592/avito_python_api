@@ -8,7 +8,7 @@ from typing import TYPE_CHECKING, TypeVar
 
 from avito.core.exceptions import ValidationError
 from avito.core.operations import OperationExecutor, OperationSpec
-from avito.core.types import RequestContext
+from avito.core.types import ApiTimeouts, RequestContext, RetryOverride
 
 if TYPE_CHECKING:
     from avito.core.transport import Transport
@@ -33,6 +33,8 @@ class DomainObject:
         idempotency_key: str | None = None,
         data: Mapping[str, object] | None = None,
         files: Mapping[str, object] | None = None,
+        timeout: ApiTimeouts | None = None,
+        retry: RetryOverride | None = None,
     ) -> ResponseT:
         """Выполняет v2 operation spec через общий executor."""
 
@@ -45,6 +47,8 @@ class DomainObject:
             idempotency_key=idempotency_key,
             data=data,
             files=files,
+            timeout=timeout,
+            retry=retry,
         )
 
     def _resolve_user_id(self, user_id: int | str | None = None) -> int:
@@ -69,6 +73,8 @@ class DomainObject:
                 "в метод операции или задайте `AVITO_USER_ID`."
             )
         return resolved_user_id
+
+
 def _extract_user_id(payload: object) -> int | None:
     if not isinstance(payload, dict):
         return None

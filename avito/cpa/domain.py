@@ -5,7 +5,7 @@ from __future__ import annotations
 from collections.abc import Sequence
 from dataclasses import dataclass
 
-from avito.core import ValidationError
+from avito.core import ApiTimeouts, RetryOverride, ValidationError
 from avito.core.deprecation import deprecated_method, warn_deprecated_once
 from avito.core.domain import DomainObject
 from avito.core.swagger import swagger_operation
@@ -70,19 +70,34 @@ class CpaLead(DomainObject):
         *,
         action_id: str,
         reason: str,
+        timeout: ApiTimeouts | None = None,
+        retry: RetryOverride | None = None,
     ) -> CpaActionResult:
-        """Выполняет публичную операцию `CpaLead.create_complaint_by_action_id` и возвращает типизированную SDK-модель.
+        """Создает жалобу по идентификатору CPA-действия.
 
-        Пустой результат возвращается как пустая коллекция или `None` согласно аннотации метода.
+        Аргументы:
+            action_id: идентифицирует CPA-действие.
+            reason: передает причину жалобы или обращения.
+            timeout: переопределяет таймауты HTTP-запроса для этого вызова.
+            retry: переопределяет retry-политику операции: default, enabled или disabled.
 
-        Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
+        Возвращает:
+            `CpaActionResult` со статусом выполнения операции.
+
+        Поведение:
+            `timeout` и `retry` действуют только на этот вызов и не меняют настройки клиента.
+
+        Исключения:
+            AvitoError: ошибка SDK с контекстом operation, status, request_id, attempt, method и endpoint.
         """
 
         return self._execute(
-                CREATE_CPA_LEAD_COMPLAINT,
-                request=CpaLeadComplaintRequest(action_id=action_id, reason=reason),
-                headers=CPA_HEADERS,
-            )
+            CREATE_CPA_LEAD_COMPLAINT,
+            request=CpaLeadComplaintRequest(action_id=action_id, reason=reason),
+            headers=CPA_HEADERS,
+            timeout=timeout,
+            retry=retry,
+        )
 
     @swagger_operation(
         "POST",
@@ -90,15 +105,28 @@ class CpaLead(DomainObject):
         spec="CPAАвито.json",
         operation_id="balanceInfoV3",
     )
-    def get_balance_info(self) -> CpaBalanceInfo:
-        """Выполняет публичную операцию `CpaLead.get_balance_info` и возвращает типизированную SDK-модель.
+    def get_balance_info(
+        self, *, timeout: ApiTimeouts | None = None, retry: RetryOverride | None = None
+    ) -> CpaBalanceInfo:
+        """Возвращает balance info для CPA-лидов.
 
-        Пустой результат возвращается как пустая коллекция или `None` согласно аннотации метода.
+        Аргументы:
+            timeout: переопределяет таймауты HTTP-запроса для этого вызова.
+            retry: переопределяет retry-политику операции: default, enabled или disabled.
 
-        Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
+        Возвращает:
+            `CpaBalanceInfo` с типизированными данными ответа API.
+
+        Поведение:
+            `timeout` и `retry` действуют только на этот вызов и не меняют настройки клиента.
+
+        Исключения:
+            AvitoError: ошибка SDK с контекстом operation, status, request_id, attempt, method и endpoint.
         """
 
-        return self._execute(GET_CPA_BALANCE, request={}, headers=CPA_HEADERS)
+        return self._execute(
+            GET_CPA_BALANCE, request={}, headers=CPA_HEADERS, timeout=timeout, retry=retry
+        )
 
 
 @dataclass(slots=True, frozen=True)
@@ -118,19 +146,37 @@ class CpaChat(DomainObject):
         spec="CPAАвито.json",
         operation_id="chatByActionId",
     )
-    def get(self, *, action_id: int | str | None = None) -> CpaChatInfo:
-        """Выполняет публичную операцию `CpaChat.get` и возвращает типизированную SDK-модель.
+    def get(
+        self,
+        *,
+        action_id: int | str | None = None,
+        timeout: ApiTimeouts | None = None,
+        retry: RetryOverride | None = None,
+    ) -> CpaChatInfo:
+        """Возвращает CPA-чатов.
 
-        Пустой результат возвращается как пустая коллекция или `None` согласно аннотации метода.
+        Аргументы:
+            action_id: идентифицирует CPA-действие.
+            timeout: переопределяет таймауты HTTP-запроса для этого вызова.
+            retry: переопределяет retry-политику операции: default, enabled или disabled.
 
-        Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
+        Возвращает:
+            `CpaChatInfo` с типизированными данными ответа API.
+
+        Поведение:
+            `timeout` и `retry` действуют только на этот вызов и не меняют настройки клиента.
+
+        Исключения:
+            AvitoError: ошибка SDK с контекстом operation, status, request_id, attempt, method и endpoint.
         """
 
         return self._execute(
-                GET_CPA_CHAT_BY_ACTION_ID,
-                path_params={"actionId": action_id or self._require_action_id()},
-                headers=CPA_HEADERS,
-            )
+            GET_CPA_CHAT_BY_ACTION_ID,
+            path_params={"actionId": action_id or self._require_action_id()},
+            headers=CPA_HEADERS,
+            timeout=timeout,
+            retry=retry,
+        )
 
     @swagger_operation(
         "POST",
@@ -145,24 +191,41 @@ class CpaChat(DomainObject):
         created_at_from: str,
         limit: int | None = None,
         version: int = 2,
+        timeout: ApiTimeouts | None = None,
+        retry: RetryOverride | None = None,
     ) -> CpaChatsResult:
-        """Выполняет публичную операцию `CpaChat.list` и возвращает типизированную SDK-модель.
+        """Возвращает список CPA-чатов.
 
-        Пустой результат возвращается как пустая коллекция или `None` согласно аннотации метода.
+        Аргументы:
+            created_at_from: задает нижнюю границу времени создания.
+            limit: ограничивает размер возвращаемой выборки.
+            version: задает версию upstream-контракта, если операция ее поддерживает.
+            timeout: переопределяет таймауты HTTP-запроса для этого вызова.
+            retry: переопределяет retry-политику операции: default, enabled или disabled.
 
-        Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
+        Возвращает:
+            `CpaChatsResult` с типизированными данными ответа API.
+
+        Поведение:
+            Параметры пагинации ограничивают объем данных без изменения модели ответа.
+            `timeout` и `retry` действуют только на этот вызов и не меняют настройки клиента.
+
+        Исключения:
+            AvitoError: ошибка SDK с контекстом operation, status, request_id, attempt, method и endpoint.
         """
 
         if version == 1:
             return self.list_classic(created_at_from=created_at_from, limit=limit)
         return self._execute(
-                LIST_CPA_CHATS,
-                request=CpaChatsByTimeRequest(
-                    created_at_from=created_at_from,
-                    limit=limit,
-                ),
-                headers=CPA_HEADERS,
-            )
+            LIST_CPA_CHATS,
+            request=CpaChatsByTimeRequest(
+                created_at_from=created_at_from,
+                limit=limit,
+            ),
+            headers=CPA_HEADERS,
+            timeout=timeout,
+            retry=retry,
+        )
 
     @swagger_operation(
         "POST",
@@ -176,6 +239,8 @@ class CpaChat(DomainObject):
         *,
         created_at_from: str,
         limit: int | None = None,
+        timeout: ApiTimeouts | None = None,
+        retry: RetryOverride | None = None,
     ) -> CpaChatsResult:
         """Выполняет legacy-операцию списка CPA-чатов v1 и возвращает типизированную SDK-модель.
 
@@ -191,13 +256,15 @@ class CpaChat(DomainObject):
             deprecated_since="1.1.0",
         )
         return self._execute(
-                LIST_CPA_CHATS_CLASSIC,
-                request=CpaChatsByTimeRequest(
-                    created_at_from=created_at_from,
-                    limit=limit,
-                ),
-                headers=CPA_HEADERS,
-            )
+            LIST_CPA_CHATS_CLASSIC,
+            request=CpaChatsByTimeRequest(
+                created_at_from=created_at_from,
+                limit=limit,
+            ),
+            headers=CPA_HEADERS,
+            timeout=timeout,
+            retry=retry,
+        )
 
     @swagger_operation(
         "POST",
@@ -210,19 +277,33 @@ class CpaChat(DomainObject):
         self,
         *,
         action_ids: Sequence[str],
+        timeout: ApiTimeouts | None = None,
+        retry: RetryOverride | None = None,
     ) -> CpaPhonesResult:
-        """Выполняет публичную операцию `CpaChat.get_phones_info_from_chats` и возвращает типизированную SDK-модель.
+        """Возвращает phones info from chats для CPA-чатов.
 
-        Пустой результат возвращается как пустая коллекция или `None` согласно аннотации метода.
+        Аргументы:
+            action_ids: передает значение `action_ids` в upstream API.
+            timeout: переопределяет таймауты HTTP-запроса для этого вызова.
+            retry: переопределяет retry-политику операции: default, enabled или disabled.
 
-        Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
+        Возвращает:
+            `CpaPhonesResult` с типизированными данными ответа API.
+
+        Поведение:
+            `timeout` и `retry` действуют только на этот вызов и не меняют настройки клиента.
+
+        Исключения:
+            AvitoError: ошибка SDK с контекстом operation, status, request_id, attempt, method и endpoint.
         """
 
         return self._execute(
-                GET_CPA_PHONES_INFO,
-                request=CpaPhonesFromChatsRequest(action_ids=list(action_ids)),
-                headers=CPA_HEADERS,
-            )
+            GET_CPA_PHONES_INFO,
+            request=CpaPhonesFromChatsRequest(action_ids=list(action_ids)),
+            headers=CPA_HEADERS,
+            timeout=timeout,
+            retry=retry,
+        )
 
     def _require_action_id(self) -> str:
         if self.action_id is None:
@@ -244,24 +325,47 @@ class CpaCall(DomainObject):
         "/cpa/v2/callsByTime",
         spec="CPAАвито.json",
         operation_id="getCallsByTimeV2",
-        method_args={"date_time_from": "body.date_time_from", "date_time_to": "body.date_time_from"},
+        method_args={
+            "date_time_from": "body.date_time_from",
+            "date_time_to": "body.date_time_from",
+        },
     )
-    def list(self, *, date_time_from: str, date_time_to: str) -> CpaCallsResult:
-        """Выполняет публичную операцию `CpaCall.list` и возвращает типизированную SDK-модель.
+    def list(
+        self,
+        *,
+        date_time_from: str,
+        date_time_to: str,
+        timeout: ApiTimeouts | None = None,
+        retry: RetryOverride | None = None,
+    ) -> CpaCallsResult:
+        """Возвращает список CPA-звонков.
 
-        Пустой результат возвращается как пустая коллекция или `None` согласно аннотации метода.
+        Аргументы:
+            date_time_from: задает начало временного интервала.
+            date_time_to: задает конец временного интервала.
+            timeout: переопределяет таймауты HTTP-запроса для этого вызова.
+            retry: переопределяет retry-политику операции: default, enabled или disabled.
 
-        Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
+        Возвращает:
+            `CpaCallsResult` с типизированными данными ответа API.
+
+        Поведение:
+            `timeout` и `retry` действуют только на этот вызов и не меняют настройки клиента.
+
+        Исключения:
+            AvitoError: ошибка SDK с контекстом operation, status, request_id, attempt, method и endpoint.
         """
 
         return self._execute(
-                LIST_CPA_CALLS,
-                request=CpaCallsByTimeRequest(
-                    date_time_from=date_time_from,
-                    date_time_to=date_time_to,
-                ),
-                headers=CPA_HEADERS,
-            )
+            LIST_CPA_CALLS,
+            request=CpaCallsByTimeRequest(
+                date_time_from=date_time_from,
+                date_time_to=date_time_to,
+            ),
+            headers=CPA_HEADERS,
+            timeout=timeout,
+            retry=retry,
+        )
 
     @swagger_operation(
         "POST",
@@ -270,19 +374,39 @@ class CpaCall(DomainObject):
         operation_id="postCreateComplaint",
         method_args={"call_id": "body.call_id", "reason": "body.message"},
     )
-    def create_complaint(self, *, call_id: int, reason: str) -> CpaActionResult:
-        """Выполняет публичную операцию `CpaCall.create_complaint` и возвращает типизированную SDK-модель.
+    def create_complaint(
+        self,
+        *,
+        call_id: int,
+        reason: str,
+        timeout: ApiTimeouts | None = None,
+        retry: RetryOverride | None = None,
+    ) -> CpaActionResult:
+        """Создает жалобу по CPA-звонку.
 
-        Пустой результат возвращается как пустая коллекция или `None` согласно аннотации метода.
+        Аргументы:
+            call_id: идентифицирует звонок.
+            reason: передает причину жалобы или обращения.
+            timeout: переопределяет таймауты HTTP-запроса для этого вызова.
+            retry: переопределяет retry-политику операции: default, enabled или disabled.
 
-        Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
+        Возвращает:
+            `CpaActionResult` со статусом выполнения операции.
+
+        Поведение:
+            `timeout` и `retry` действуют только на этот вызов и не меняют настройки клиента.
+
+        Исключения:
+            AvitoError: ошибка SDK с контекстом operation, status, request_id, attempt, method и endpoint.
         """
 
         return self._execute(
-                CREATE_CPA_CALL_COMPLAINT,
-                request=CpaCallComplaintRequest(call_id=call_id, reason=reason),
-                headers=CPA_HEADERS,
-            )
+            CREATE_CPA_CALL_COMPLAINT,
+            request=CpaCallComplaintRequest(call_id=call_id, reason=reason),
+            headers=CPA_HEADERS,
+            timeout=timeout,
+            retry=retry,
+        )
 
 
 @dataclass(slots=True, frozen=True)
@@ -310,7 +434,13 @@ class CpaArchive(DomainObject):
         removal_version="1.3.0",
         deprecated_since="1.1.0",
     )
-    def get_call(self, *, call_id: int | str | None = None) -> CpaAudioRecord:
+    def get_call(
+        self,
+        *,
+        call_id: int | str | None = None,
+        timeout: ApiTimeouts | None = None,
+        retry: RetryOverride | None = None,
+    ) -> CpaAudioRecord:
         """Получает архивную запись звонка.
 
                 Deprecated: используйте `call_tracking_call().download`; удаление в версии 1.3.0.
@@ -320,10 +450,12 @@ class CpaArchive(DomainObject):
 
         return CpaAudioRecord(
             self._execute(
-                    GET_CPA_ARCHIVE_RECORD,
-                    path_params={"call_id": call_id or self._require_call_id()},
-                    headers=CPA_HEADERS,
-                )
+                GET_CPA_ARCHIVE_RECORD,
+                path_params={"call_id": call_id or self._require_call_id()},
+                headers=CPA_HEADERS,
+                timeout=timeout,
+                retry=retry,
+            )
         )
 
     @swagger_operation(
@@ -340,7 +472,9 @@ class CpaArchive(DomainObject):
         removal_version="1.3.0",
         deprecated_since="1.1.0",
     )
-    def get_balance_info(self) -> CpaBalanceInfo:
+    def get_balance_info(
+        self, *, timeout: ApiTimeouts | None = None, retry: RetryOverride | None = None
+    ) -> CpaBalanceInfo:
         """Получает архивный баланс CPA.
 
                 Deprecated: используйте `cpa_lead().get_balance_info`; удаление в версии 1.3.0.
@@ -348,7 +482,9 @@ class CpaArchive(DomainObject):
         Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
         """
 
-        return self._execute(GET_CPA_ARCHIVE_BALANCE, request={}, headers=CPA_HEADERS)
+        return self._execute(
+            GET_CPA_ARCHIVE_BALANCE, request={}, headers=CPA_HEADERS, timeout=timeout, retry=retry
+        )
 
     @swagger_operation(
         "POST",
@@ -365,7 +501,13 @@ class CpaArchive(DomainObject):
         removal_version="1.3.0",
         deprecated_since="1.1.0",
     )
-    def get_call_by_id(self, *, call_id: int) -> CpaCallInfo:
+    def get_call_by_id(
+        self,
+        *,
+        call_id: int,
+        timeout: ApiTimeouts | None = None,
+        retry: RetryOverride | None = None,
+    ) -> CpaCallInfo:
         """Получает архивные данные звонка.
 
                 Deprecated: используйте `call_tracking_call().get`; удаление в версии 1.3.0.
@@ -374,10 +516,12 @@ class CpaArchive(DomainObject):
         """
 
         return self._execute(
-                GET_CPA_ARCHIVE_CALL_BY_ID,
-                request=CpaCallByIdRequest(call_id=call_id),
-                headers=CPA_HEADERS,
-            )
+            GET_CPA_ARCHIVE_CALL_BY_ID,
+            request=CpaCallByIdRequest(call_id=call_id),
+            headers=CPA_HEADERS,
+            timeout=timeout,
+            retry=retry,
+        )
 
     def _require_call_id(self) -> str:
         if self.call_id is None:
@@ -402,21 +546,39 @@ class CallTrackingCall(DomainObject):
         spec="CallTracking[КТ].json",
         operation_id="get_call_by_id",
     )
-    def get(self, *, call_id: int | None = None) -> CallTrackingCallResponse:
-        """Выполняет публичную операцию `CallTrackingCall.get` и возвращает типизированную SDK-модель.
+    def get(
+        self,
+        *,
+        call_id: int | None = None,
+        timeout: ApiTimeouts | None = None,
+        retry: RetryOverride | None = None,
+    ) -> CallTrackingCallResponse:
+        """Возвращает call tracking звонков.
 
-        Пустой результат возвращается как пустая коллекция или `None` согласно аннотации метода.
+        Аргументы:
+            call_id: идентифицирует звонок.
+            timeout: переопределяет таймауты HTTP-запроса для этого вызова.
+            retry: переопределяет retry-политику операции: default, enabled или disabled.
 
-        Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
+        Возвращает:
+            `CallTrackingCallResponse` с типизированными данными ответа API.
+
+        Поведение:
+            `timeout` и `retry` действуют только на этот вызов и не меняют настройки клиента.
+
+        Исключения:
+            AvitoError: ошибка SDK с контекстом operation, status, request_id, attempt, method и endpoint.
         """
 
         resolved_call_id = call_id or (int(self.call_id) if self.call_id is not None else None)
         if resolved_call_id is None:
             raise ValidationError("Для операции требуется `call_id`.")
         return self._execute(
-                GET_CALLTRACKING_CALL_BY_ID,
-                request=CallTrackingGetCallByIdRequest(call_id=resolved_call_id),
-            )
+            GET_CALLTRACKING_CALL_BY_ID,
+            request=CallTrackingGetCallByIdRequest(call_id=resolved_call_id),
+            timeout=timeout,
+            retry=retry,
+        )
 
     @swagger_operation(
         "POST",
@@ -432,23 +594,41 @@ class CallTrackingCall(DomainObject):
         date_time_to: str,
         limit: int | None = None,
         offset: int | None = None,
+        timeout: ApiTimeouts | None = None,
+        retry: RetryOverride | None = None,
     ) -> CallTrackingCallsResult:
-        """Выполняет публичную операцию `CallTrackingCall.list` и возвращает типизированную SDK-модель.
+        """Возвращает список call tracking звонков.
 
-        Пустой результат возвращается как пустая коллекция или `None` согласно аннотации метода.
+        Аргументы:
+            date_time_from: задает начало временного интервала.
+            date_time_to: задает конец временного интервала.
+            limit: ограничивает размер возвращаемой выборки.
+            offset: задает смещение первой записи в выборке.
+            timeout: переопределяет таймауты HTTP-запроса для этого вызова.
+            retry: переопределяет retry-политику операции: default, enabled или disabled.
 
-        Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
+        Возвращает:
+            `CallTrackingCallsResult` с типизированными данными ответа API.
+
+        Поведение:
+            Параметры пагинации ограничивают объем данных без изменения модели ответа.
+            `timeout` и `retry` действуют только на этот вызов и не меняют настройки клиента.
+
+        Исключения:
+            AvitoError: ошибка SDK с контекстом operation, status, request_id, attempt, method и endpoint.
         """
 
         return self._execute(
-                GET_CALLTRACKING_CALLS,
-                request=CallTrackingCallsRequest(
-                    date_time_from=date_time_from,
-                    date_time_to=date_time_to,
-                    limit=limit,
-                    offset=offset,
-                ),
-            )
+            GET_CALLTRACKING_CALLS,
+            request=CallTrackingCallsRequest(
+                date_time_from=date_time_from,
+                date_time_to=date_time_to,
+                limit=limit,
+                offset=offset,
+            ),
+            timeout=timeout,
+            retry=retry,
+        )
 
     @swagger_operation(
         "GET",
@@ -457,19 +637,37 @@ class CallTrackingCall(DomainObject):
         operation_id="get_record_by_call_id",
         method_args={"call_id": "query.callId"},
     )
-    def download(self, *, call_id: int | str | None = None) -> CallTrackingRecord:
-        """Выполняет публичную операцию `CallTrackingCall.download` и возвращает типизированную SDK-модель.
+    def download(
+        self,
+        *,
+        call_id: int | str | None = None,
+        timeout: ApiTimeouts | None = None,
+        retry: RetryOverride | None = None,
+    ) -> CallTrackingRecord:
+        """Скачивает запись call tracking звонка.
 
-        Пустой результат возвращается как пустая коллекция или `None` согласно аннотации метода.
+        Аргументы:
+            call_id: идентифицирует звонок.
+            timeout: переопределяет таймауты HTTP-запроса для этого вызова.
+            retry: переопределяет retry-политику операции: default, enabled или disabled.
 
-        Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
+        Возвращает:
+            `CallTrackingRecord` с типизированными данными ответа API.
+
+        Поведение:
+            `timeout` и `retry` действуют только на этот вызов и не меняют настройки клиента.
+
+        Исключения:
+            AvitoError: ошибка SDK с контекстом operation, status, request_id, attempt, method и endpoint.
         """
 
         return CallTrackingRecord(
             self._execute(
-                    GET_CALLTRACKING_RECORD,
-                    query={"callId": call_id or self._require_call_id()},
-                )
+                GET_CALLTRACKING_RECORD,
+                query={"callId": call_id or self._require_call_id()},
+                timeout=timeout,
+                retry=retry,
+            )
         )
 
     def _require_call_id(self) -> str:

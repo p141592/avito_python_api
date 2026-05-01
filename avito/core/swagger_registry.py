@@ -141,7 +141,7 @@ def load_swagger_registry(
 
     spec_paths = tuple(sorted(api_dir.glob("*.json")))
     if not spec_paths:
-        raise SwaggerRegistryError(f"В каталоге {api_dir} не найдены Swagger JSON files.")
+        raise SwaggerRegistryError(f"В каталоге {api_dir} не найдены JSON-файлы Swagger.")
 
     errors: list[SwaggerValidationError] = []
     specs = tuple(_load_spec(path, errors) for path in spec_paths)
@@ -194,7 +194,9 @@ def _load_spec(path: Path, errors: list[SwaggerValidationError]) -> SwaggerSpec:
         path_item = _require_mapping(raw_path_item, f"{path}: path item {raw_path}")
         path_parameters = _extract_parameters(
             spec=spec,
-            parameters=_optional_sequence(path_item.get("parameters"), f"{path}: {raw_path}.parameters"),
+            parameters=_optional_sequence(
+                path_item.get("parameters"), f"{path}: {raw_path}.parameters"
+            ),
             source=f"{path}: {raw_path}.parameters",
         )
         for raw_method, raw_operation in sorted(path_item.items()):
@@ -414,7 +416,9 @@ def _validate_unique_operation_keys(
             )
 
 
-def _resolve_ref(spec: Mapping[str, object], raw_value: object, source: str) -> Mapping[str, object]:
+def _resolve_ref(
+    spec: Mapping[str, object], raw_value: object, source: str
+) -> Mapping[str, object]:
     return _resolve_component_ref(
         spec=spec,
         raw_value=raw_value,

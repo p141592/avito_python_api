@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
+from avito.core import ApiTimeouts, RetryOverride
 from avito.core.domain import DomainObject
 from avito.core.swagger import swagger_operation
 from avito.tariffs.models import TariffInfo
@@ -26,13 +27,15 @@ class Tariff(DomainObject):
         spec="Тарифы.json",
         operation_id="getTariffInfo",
     )
-    def get_tariff_info(self) -> TariffInfo:
+    def get_tariff_info(
+        self, *, timeout: ApiTimeouts | None = None, retry: RetryOverride | None = None
+    ) -> TariffInfo:
         """Получает информацию о тарифе аккаунта.
 
         Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
         """
 
-        return self._execute(GET_TARIFF_INFO)
+        return self._execute(GET_TARIFF_INFO, timeout=timeout, retry=retry)
 
 
 __all__ = ("Tariff",)

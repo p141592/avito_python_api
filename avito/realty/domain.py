@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from avito.core import ValidationError
+from avito.core import ApiTimeouts, RetryOverride, ValidationError
 from avito.core.domain import DomainObject
 from avito.core.swagger import swagger_operation
 from avito.realty.models import (
@@ -54,21 +54,36 @@ class RealtyListing(DomainObject):
         *,
         intervals: list[RealtyInterval],
         item_id: int | None = None,
+        timeout: ApiTimeouts | None = None,
+        retry: RetryOverride | None = None,
     ) -> RealtyActionResult:
-        """Выполняет публичную операцию `RealtyListing.get_intervals` и возвращает типизированную SDK-модель.
+        """Возвращает intervals для посутчной аренды.
 
-        Пустой результат возвращается как пустая коллекция или `None` согласно аннотации метода.
+        Аргументы:
+            intervals: передает интервалы доступности объявления.
+            item_id: идентифицирует объявление Авито.
+            timeout: переопределяет таймауты HTTP-запроса для этого вызова.
+            retry: переопределяет retry-политику операции: default, enabled или disabled.
 
-        Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
+        Возвращает:
+            `RealtyActionResult` со статусом выполнения операции.
+
+        Поведение:
+            `timeout` и `retry` действуют только на этот вызов и не меняют настройки клиента.
+
+        Исключения:
+            AvitoError: ошибка SDK с контекстом operation, status, request_id, attempt, method и endpoint.
         """
 
         return self._execute(
-                GET_INTERVALS,
-                request=RealtyIntervalsRequest(
-                    item_id=item_id or int(self._require_item_id()),
-                    intervals=intervals,
-                ),
-            )
+            GET_INTERVALS,
+            request=RealtyIntervalsRequest(
+                item_id=item_id or int(self._require_item_id()),
+                intervals=intervals,
+            ),
+            timeout=timeout,
+            retry=retry,
+        )
 
     @swagger_operation(
         "POST",
@@ -78,20 +93,38 @@ class RealtyListing(DomainObject):
         method_args={"min_stay_days": "body.minimal_duration"},
     )
     def update_base_params(
-        self, *, min_stay_days: int, item_id: int | str | None = None
+        self,
+        *,
+        min_stay_days: int,
+        item_id: int | str | None = None,
+        timeout: ApiTimeouts | None = None,
+        retry: RetryOverride | None = None,
     ) -> RealtyActionResult:
-        """Выполняет публичную операцию `RealtyListing.update_base_params` и возвращает типизированную SDK-модель.
+        """Обновляет base params для посутчной аренды.
 
-        Пустой результат возвращается как пустая коллекция или `None` согласно аннотации метода.
+        Аргументы:
+            min_stay_days: задает минимальное число дней проживания.
+            item_id: идентифицирует объявление Авито.
+            timeout: переопределяет таймауты HTTP-запроса для этого вызова.
+            retry: переопределяет retry-политику операции: default, enabled или disabled.
 
-        Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
+        Возвращает:
+            `RealtyActionResult` со статусом выполнения операции.
+
+        Поведение:
+            `timeout` и `retry` действуют только на этот вызов и не меняют настройки клиента.
+
+        Исключения:
+            AvitoError: ошибка SDK с контекстом operation, status, request_id, attempt, method и endpoint.
         """
 
         return self._execute(
-                UPDATE_BASE_PARAMS,
-                path_params={"item_id": item_id or self._require_item_id()},
-                request=RealtyBaseParamsUpdateRequest(min_stay_days=min_stay_days),
-            )
+            UPDATE_BASE_PARAMS,
+            path_params={"item_id": item_id or self._require_item_id()},
+            request=RealtyBaseParamsUpdateRequest(min_stay_days=min_stay_days),
+            timeout=timeout,
+            retry=retry,
+        )
 
     def _require_item_id(self) -> str:
         if self.item_id is None:
@@ -123,22 +156,38 @@ class RealtyBooking(DomainObject):
         blocked_dates: list[str],
         user_id: int | str | None = None,
         item_id: int | str | None = None,
+        timeout: ApiTimeouts | None = None,
+        retry: RetryOverride | None = None,
     ) -> RealtyActionResult:
-        """Выполняет публичную операцию `RealtyBooking.update_bookings_info` и возвращает типизированную SDK-модель.
+        """Обновляет информацию о бронированиях недвижимости.
 
-        Пустой результат возвращается как пустая коллекция или `None` согласно аннотации метода.
+        Аргументы:
+            blocked_dates: передает заблокированные даты бронирования.
+            user_id: идентифицирует пользователя или аккаунт Авито.
+            item_id: идентифицирует объявление Авито.
+            timeout: переопределяет таймауты HTTP-запроса для этого вызова.
+            retry: переопределяет retry-политику операции: default, enabled или disabled.
 
-        Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
+        Возвращает:
+            `RealtyActionResult` со статусом выполнения операции.
+
+        Поведение:
+            `timeout` и `retry` действуют только на этот вызов и не меняют настройки клиента.
+
+        Исключения:
+            AvitoError: ошибка SDK с контекстом operation, status, request_id, attempt, method и endpoint.
         """
 
         return self._execute(
-                UPDATE_BOOKINGS_INFO,
-                path_params={
-                    "user_id": user_id or self._require_user_id(),
-                    "item_id": item_id or self._require_item_id(),
-                },
-                request=RealtyBookingsUpdateRequest(blocked_dates=blocked_dates),
-            )
+            UPDATE_BOOKINGS_INFO,
+            path_params={
+                "user_id": user_id or self._require_user_id(),
+                "item_id": item_id or self._require_item_id(),
+            },
+            request=RealtyBookingsUpdateRequest(blocked_dates=blocked_dates),
+            timeout=timeout,
+            retry=retry,
+        )
 
     @swagger_operation(
         "GET",
@@ -155,26 +204,44 @@ class RealtyBooking(DomainObject):
         with_unpaid: bool | None = None,
         user_id: int | str | None = None,
         item_id: int | str | None = None,
+        timeout: ApiTimeouts | None = None,
+        retry: RetryOverride | None = None,
     ) -> RealtyBookingsResult:
-        """Выполняет публичную операцию `RealtyBooking.list_realty_bookings` и возвращает типизированную SDK-модель.
+        """Возвращает список realty bookings для бронирований недвижимости.
 
-        Пустой результат возвращается как пустая коллекция или `None` согласно аннотации метода.
+        Аргументы:
+            date_start: задает начальную дату периода бронирований.
+            date_end: задает конечную дату периода бронирований.
+            with_unpaid: включает неоплаченные бронирования в результат.
+            user_id: идентифицирует пользователя или аккаунт Авито.
+            item_id: идентифицирует объявление Авито.
+            timeout: переопределяет таймауты HTTP-запроса для этого вызова.
+            retry: переопределяет retry-политику операции: default, enabled или disabled.
 
-        Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
+        Возвращает:
+            `RealtyBookingsResult` с типизированными данными ответа API.
+
+        Поведение:
+            `timeout` и `retry` действуют только на этот вызов и не меняют настройки клиента.
+
+        Исключения:
+            AvitoError: ошибка SDK с контекстом operation, status, request_id, attempt, method и endpoint.
         """
 
         return self._execute(
-                LIST_REALTY_BOOKINGS,
-                path_params={
-                    "user_id": user_id or self._require_user_id(),
-                    "item_id": item_id or self._require_item_id(),
-                },
-                query=RealtyBookingsQuery(
-                    date_start=date_start,
-                    date_end=date_end,
-                    with_unpaid=with_unpaid,
-                ),
-            )
+            LIST_REALTY_BOOKINGS,
+            path_params={
+                "user_id": user_id or self._require_user_id(),
+                "item_id": item_id or self._require_item_id(),
+            },
+            query=RealtyBookingsQuery(
+                date_start=date_start,
+                date_end=date_end,
+                with_unpaid=with_unpaid,
+            ),
+            timeout=timeout,
+            retry=retry,
+        )
 
     def _require_item_id(self) -> str:
         if self.item_id is None:
@@ -211,22 +278,38 @@ class RealtyPricing(DomainObject):
         periods: list[RealtyPricePeriod],
         user_id: int | str | None = None,
         item_id: int | str | None = None,
+        timeout: ApiTimeouts | None = None,
+        retry: RetryOverride | None = None,
     ) -> RealtyActionResult:
-        """Выполняет публичную операцию `RealtyPricing.update_realty_prices` и возвращает типизированную SDK-модель.
+        """Обновляет realty prices для цен недвижимости.
 
-        Пустой результат возвращается как пустая коллекция или `None` согласно аннотации метода.
+        Аргументы:
+            periods: передает периоды цен.
+            user_id: идентифицирует пользователя или аккаунт Авито.
+            item_id: идентифицирует объявление Авито.
+            timeout: переопределяет таймауты HTTP-запроса для этого вызова.
+            retry: переопределяет retry-политику операции: default, enabled или disabled.
 
-        Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
+        Возвращает:
+            `RealtyActionResult` со статусом выполнения операции.
+
+        Поведение:
+            `timeout` и `retry` действуют только на этот вызов и не меняют настройки клиента.
+
+        Исключения:
+            AvitoError: ошибка SDK с контекстом operation, status, request_id, attempt, method и endpoint.
         """
 
         return self._execute(
-                UPDATE_REALTY_PRICES,
-                path_params={
-                    "user_id": user_id or self._require_user_id(),
-                    "item_id": item_id or self._require_item_id(),
-                },
-                request=RealtyPricesUpdateRequest(periods=periods),
-            )
+            UPDATE_REALTY_PRICES,
+            path_params={
+                "user_id": user_id or self._require_user_id(),
+                "item_id": item_id or self._require_item_id(),
+            },
+            request=RealtyPricesUpdateRequest(periods=periods),
+            timeout=timeout,
+            retry=retry,
+        )
 
     def _require_item_id(self) -> str:
         if self.item_id is None:
@@ -262,21 +345,36 @@ class RealtyAnalyticsReport(DomainObject):
         *,
         item_id: int | str | None = None,
         price: int | str,
+        timeout: ApiTimeouts | None = None,
+        retry: RetryOverride | None = None,
     ) -> RealtyMarketPriceInfo:
-        """Выполняет публичную операцию `RealtyAnalyticsReport.get_market_price_correspondence` и возвращает типизированную SDK-модель.
+        """Возвращает соответствие цены объявления рынку недвижимости.
 
-        Пустой результат возвращается как пустая коллекция или `None` согласно аннотации метода.
+        Аргументы:
+            item_id: идентифицирует объявление Авито.
+            price: передает цену для аналитического расчета.
+            timeout: переопределяет таймауты HTTP-запроса для этого вызова.
+            retry: переопределяет retry-политику операции: default, enabled или disabled.
 
-        Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
+        Возвращает:
+            `RealtyMarketPriceInfo` с типизированными данными ответа API.
+
+        Поведение:
+            `timeout` и `retry` действуют только на этот вызов и не меняют настройки клиента.
+
+        Исключения:
+            AvitoError: ошибка SDK с контекстом operation, status, request_id, attempt, method и endpoint.
         """
 
         return self._execute(
-                GET_MARKET_PRICE_CORRESPONDENCE,
-                path_params={
-                    "itemId": item_id or self._require_item_id(),
-                    "price": price,
-                },
-            )
+            GET_MARKET_PRICE_CORRESPONDENCE,
+            path_params={
+                "itemId": item_id or self._require_item_id(),
+                "price": price,
+            },
+            timeout=timeout,
+            retry=retry,
+        )
 
     @swagger_operation(
         "POST",
@@ -284,18 +382,36 @@ class RealtyAnalyticsReport(DomainObject):
         spec="Аналитикапонедвижимости.json",
         operation_id="CreateReportForClassified",
     )
-    def get_report_for_classified(self, *, item_id: int | str | None = None) -> RealtyAnalyticsInfo:
-        """Выполняет публичную операцию `RealtyAnalyticsReport.get_report_for_classified` и возвращает типизированную SDK-модель.
+    def get_report_for_classified(
+        self,
+        *,
+        item_id: int | str | None = None,
+        timeout: ApiTimeouts | None = None,
+        retry: RetryOverride | None = None,
+    ) -> RealtyAnalyticsInfo:
+        """Возвращает аналитический отчет по объявлению недвижимости.
 
-        Пустой результат возвращается как пустая коллекция или `None` согласно аннотации метода.
+        Аргументы:
+            item_id: идентифицирует объявление Авито.
+            timeout: переопределяет таймауты HTTP-запроса для этого вызова.
+            retry: переопределяет retry-политику операции: default, enabled или disabled.
 
-        Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
+        Возвращает:
+            `RealtyAnalyticsInfo` с типизированными данными ответа API.
+
+        Поведение:
+            `timeout` и `retry` действуют только на этот вызов и не меняют настройки клиента.
+
+        Исключения:
+            AvitoError: ошибка SDK с контекстом operation, status, request_id, attempt, method и endpoint.
         """
 
         return self._execute(
-                GET_REPORT_FOR_CLASSIFIED,
-                path_params={"itemId": item_id or self._require_item_id()},
-            )
+            GET_REPORT_FOR_CLASSIFIED,
+            path_params={"itemId": item_id or self._require_item_id()},
+            timeout=timeout,
+            retry=retry,
+        )
 
     def _require_item_id(self) -> str:
         if self.item_id is None:
