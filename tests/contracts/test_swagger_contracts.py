@@ -11,9 +11,7 @@ from avito.core.exceptions import (
     AuthenticationError,
     AuthorizationError,
     ConflictError,
-    NotFoundError,
     RateLimitError,
-    ServerError,
     UpstreamApiError,
     ValidationError,
 )
@@ -72,16 +70,12 @@ def _expected_exception_type(
         return AuthenticationError
     if status_code == 403:
         return AuthorizationError
-    if status_code == 404:
-        return NotFoundError
     if status_code == 409:
         return ConflictError
     if status_code == 422:
         return ValidationError
     if status_code == 429:
         return RateLimitError
-    if status_code >= 500:
-        return ServerError
     return UpstreamApiError
 
 
@@ -254,7 +248,7 @@ def test_swagger_fake_transport_maps_happy_path_response_to_typed_sdk_model() ->
         (
             "АвитоРабота.json GET /job/v1/applications/get_states",
             404,
-            NotFoundError,
+            UpstreamApiError,
         ),
         (
             "Автостратегия.json POST /autostrategy/v1/campaign/info",
@@ -279,12 +273,12 @@ def test_swagger_fake_transport_maps_happy_path_response_to_typed_sdk_model() ->
         (
             "Информацияопользователе.json GET /core/v1/accounts/self",
             500,
-            ServerError,
+            UpstreamApiError,
         ),
         (
             "Информацияопользователе.json GET /core/v1/accounts/self",
             503,
-            ServerError,
+            UpstreamApiError,
         ),
     ],
 )

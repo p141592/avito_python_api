@@ -56,7 +56,7 @@ from avito.core.exceptions import (
     AuthenticationError,
     AuthorizationError,
     RateLimitError,
-    NotFoundError,
+    UpstreamApiError,
     AvitoError,
 )
 

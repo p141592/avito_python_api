@@ -42,7 +42,7 @@ architecture-lint:
 	poetry run python scripts/lint_architecture.py
 
 swagger-coverage: swagger-lint
-	poetry run pytest tests/core/test_swagger.py tests/core/test_swagger_discovery.py tests/core/test_swagger_linter.py tests/core/test_swagger_report.py tests/core/test_swagger_registry.py tests/contracts/test_swagger_contracts.py
+	poetry run pytest tests/core/test_swagger_registry.py tests/contracts/test_swagger_contracts.py
 
 minor: check
 	poetry version minor
@@ -62,7 +62,6 @@ docs-serve:
 docs-strict:
 	$(MKDOCS_ENV) poetry run mkdocs build --strict
 	poetry run python scripts/lint_swagger_bindings.py --strict
-	poetry run pytest tests/docs/
 
 docs-build: docs-strict
 

@@ -739,6 +739,26 @@ What is not tested:
 
 Criterion: if a test cannot be broken without violating a public contract or technical decision, the test is not needed.
 
+### Allowed Test Categories Are Closed
+
+The pytest suite has exactly two reasons to exist. Anything that does not fit one of these categories must be removed or moved out of `tests/`:
+
+1. **Functional tests** — verify runtime behavior of the SDK against a fake transport: domain methods return expected models for given payloads, error mapping, retries, auth refresh, pagination, dry-run, serialization, secret sanitization.
+2. **Swagger-spec compliance tests** — verify that the SDK matches `docs/avito/api/`: every Swagger operation has exactly one binding, `SwaggerFakeTransport` invokes every binding, error responses map to the correct SDK exception.
+
+Anything else is forbidden in pytest:
+
+- **Documentation checks** — markdown placeholders, README example execution, docstring presence/format, docs-harness surface diffs. If documentation matters, lint it with `mkdocs build --strict` or a dedicated docs-only linter, not pytest.
+- **Architecture / project-layout checks** — "no `client.py` in domain", "no `setattr` at runtime", "no legacy filename suffix", "no `Any` in signatures", "all public dataclasses are frozen", "module exports list X". These belong in a static linter (`scripts/lint_architecture.py`, ruff rules, mypy strict mode), not pytest.
+- **Naming / style checks** — "field is not named `resource_id`", "method has no `_legacy` suffix", "domain class follows naming convention". Linter, not pytest.
+- **Type-annotation checks** — these are mypy's job.
+- **Inventory / report-generation tests** — "report builder includes domain table", "snapshot of 11 domains and 204 operations". Reports are CI artifacts, not behavior.
+- **Linter-of-the-linter tests** — tests that exercise the SDK's own architecture/swagger/discovery linters by feeding them synthetic input. The linter is verified by running it against the real codebase in the gate, not by pytest.
+- **Public-surface introspection** — walking `inspect.signature` over public methods to assert annotation shapes. Mypy strict mode catches the same problems with better signal.
+- **Reachability / import smoke tests** — "module X can be imported", "factory Y exists on `AvitoClient`". Mypy and the regular functional tests already prove this.
+
+If a rule is worth enforcing automatically, encode it in a linter and run the linter from `make check`. A pytest run must answer one question: does the SDK behave correctly at runtime? Any test that answers a different question is dead weight.
+
 ### Test Architecture
 
 Tests are divided by what they verify, not by which module they cover.
@@ -786,7 +806,7 @@ def test_transport_retries_on_server_error_and_raises_after_exhaustion():
     ])
 
     # Act / Assert
-    with pytest.raises(ServerError):
+    with pytest.raises(UpstreamApiError):
         transport.request_json("GET", "/some/path", context=ctx)
 
     assert transport.call_count == 3

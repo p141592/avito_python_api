@@ -24,7 +24,10 @@ and this project adheres to Semantic Versioning.
 - Во всех доменных пакетах добавлены `enums.py`; `accounts`, `ads`, `autoteka`, `jobs`, `messenger`, `orders`, `promotion`, `ratings`, `realty` и `tariffs` переведены на typed enums с fallback на `UNKNOWN` и warning-логом ровно один раз на неизвестное upstream-значение.
 
 ### Removed
-- Нет изменений.
+- **BREAKING:** удалены классы исключений `NotFoundError`, `ClientError`, `ServerError` из `avito.core.exceptions`. HTTP 404 и 5xx теперь маппятся на `UpstreamApiError`. Пользователям, ловившим эти типы, перейти на `UpstreamApiError` или `AvitoError` и проверять `status_code`.
+- Удалены legacy-модули `avito/auth/mappers.py` и `avito/auth/enums.py` (внутренние, без публичных импортов).
+- Удалены инфраструктурные мета-тесты (`tests/docs/`, `tests/test_inventory_architecture.py`, `tests/test_download_avito_api_specs.py`, `tests/core/test_architecture_lint.py`, `tests/core/test_swagger_{linter,discovery,factory_map,report}.py`); архитектурные инварианты остаются под `make swagger-lint` и `make architecture-lint`.
+- Удалены архитектурные тесты `tests/contracts/test_public_surface.py` и `tests/core/test_swagger.py` — публичная поверхность и метаданные `@swagger_operation` верифицируются `mypy strict` + `make swagger-lint` + `tests/contracts/test_swagger_contracts.py`.
 
 ### Fixed
 - Нет изменений.

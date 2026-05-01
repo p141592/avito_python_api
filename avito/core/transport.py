@@ -21,10 +21,8 @@ from avito.core.exceptions import (
     AuthenticationError,
     AuthorizationError,
     ConflictError,
-    NotFoundError,
     RateLimitError,
     ResponseMappingError,
-    ServerError,
     TransportError,
     UnsupportedOperationError,
     UpstreamApiError,
@@ -512,19 +510,6 @@ class Transport:
                 payload=payload,
                 headers=headers,
             )
-        if response.status_code == 404:
-            return NotFoundError(
-                message,
-                status_code=404,
-                error_code=error_code,
-                operation=operation,
-                details=details,
-                retry_after=retry_after,
-                request_id=request_id,
-                metadata=metadata,
-                payload=payload,
-                headers=headers,
-            )
         if response.status_code in {400, 422}:
             return ValidationError(
                 message,
@@ -566,19 +551,6 @@ class Transport:
             )
         if response.status_code in {405, 501}:
             return UnsupportedOperationError(
-                message,
-                status_code=response.status_code,
-                error_code=error_code,
-                operation=operation,
-                details=details,
-                retry_after=retry_after,
-                request_id=request_id,
-                metadata=metadata,
-                payload=payload,
-                headers=headers,
-            )
-        if response.status_code >= 500:
-            return ServerError(
                 message,
                 status_code=response.status_code,
                 error_code=error_code,

@@ -125,18 +125,6 @@ class UpstreamApiError(AvitoError):
     """Неизвестная ошибка upstream API вне специализированных типов SDK."""
 
 
-class NotFoundError(UpstreamApiError):
-    """Запрошенный ресурс не найден (HTTP 404)."""
-
-
-class ClientError(UpstreamApiError):
-    """Прочая клиентская ошибка диапазона 4xx без более конкретного типа."""
-
-
-class ServerError(UpstreamApiError):
-    """Серверная ошибка диапазона 5xx."""
-
-
 class ResponseMappingError(AvitoError):
     """Не удалось безопасно преобразовать ответ API в ожидаемый тип."""
 
@@ -145,13 +133,10 @@ __all__ = (
     "AuthenticationError",
     "AuthorizationError",
     "AvitoError",
-    "ClientError",
     "ConfigurationError",
     "ConflictError",
-    "NotFoundError",
     "RateLimitError",
     "ResponseMappingError",
-    "ServerError",
     "TransportError",
     "UnsupportedOperationError",
     "UpstreamApiError",

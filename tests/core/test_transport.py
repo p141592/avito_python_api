@@ -20,7 +20,6 @@ from avito.core import (
     RateLimitError,
     RequestContext,
     ResponseMappingError,
-    ServerError,
     Transport,
     UnsupportedOperationError,
     UpstreamApiError,
@@ -297,7 +296,7 @@ def test_transport_does_not_retry_post_without_idempotency_key_even_with_allow_r
         (418, UpstreamApiError),
         (422, ValidationError),
         (429, RateLimitError),
-        (500, ServerError),
+        (500, UpstreamApiError),
     ),
 )
 def test_transport_maps_http_statuses_to_typed_sdk_errors(

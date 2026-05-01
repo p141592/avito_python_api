@@ -3,13 +3,11 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from typing import Protocol
 
 import httpx
 
-from avito.auth.enums import CLIENT_CREDENTIALS_GRANT, REFRESH_TOKEN_GRANT
-from avito.auth.mappers import map_token_response
 from avito.auth.models import (
     AccessToken,
     ClientCredentialsRequest,
@@ -17,10 +15,45 @@ from avito.auth.models import (
     TokenResponse,
 )
 from avito.auth.settings import AuthSettings
-from avito.core.exceptions import AuthenticationError, ConfigurationError
+from avito.core.exceptions import AuthenticationError, ConfigurationError, ResponseMappingError
 from avito.core.swagger import swagger_operation
 
+CLIENT_CREDENTIALS_GRANT = "client_credentials"
+REFRESH_TOKEN_GRANT = "refresh_token"
+
 _UNSET = object()
+
+
+def _map_token_response(payload: object, *, now: datetime | None = None) -> TokenResponse:
+    if not isinstance(payload, dict):
+        raise ResponseMappingError("OAuth-ответ должен быть JSON-объектом.", payload=payload)
+
+    access_token = payload.get("access_token")
+    if not isinstance(access_token, str) or not access_token:
+        raise ResponseMappingError("В OAuth-ответе отсутствует `access_token`.", payload=payload)
+
+    raw_expires_in = payload.get("expires_in", 0)
+    if not isinstance(raw_expires_in, int):
+        raise ResponseMappingError("Поле `expires_in` должно быть целым числом.", payload=payload)
+
+    refresh_token = payload.get("refresh_token")
+    if refresh_token is not None and not isinstance(refresh_token, str):
+        raise ResponseMappingError("Поле `refresh_token` должно быть строкой.", payload=payload)
+
+    token_type = payload.get("token_type", "Bearer")
+    if not isinstance(token_type, str):
+        raise ResponseMappingError("Поле `token_type` должно быть строкой.", payload=payload)
+
+    issued_at = now or datetime.now(UTC)
+    return TokenResponse(
+        access_token=AccessToken(
+            value=access_token,
+            expires_at=issued_at + timedelta(seconds=raw_expires_in),
+            token_type=token_type,
+        ),
+        refresh_token=refresh_token,
+        scope=payload.get("scope") if isinstance(payload.get("scope"), str) else None,
+    )
 
 
 class TokenFetcher(Protocol):
@@ -288,7 +321,7 @@ class TokenClient:
                 payload=response.text,
                 headers=dict(response.headers),
             ) from exc
-        return map_token_response(payload_object)
+        return _map_token_response(payload_object)
 
     def _safe_payload(self, response: httpx.Response) -> object:
         try:

@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "avito-py"
-version = "1.0.2"
+version = "2.0.0"
 description = "SDK для разработки инструментов на базе Avito API"
 authors = ["Nikolay Baryshnikov <root@k0d.ru>"]
 packages=[
