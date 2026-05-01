@@ -51,7 +51,7 @@ from avito import AvitoClient
 with AvitoClient.from_env() as avito:
     history = avito.account(user_id=7).get_operations_history(
         date_from=datetime(2026, 4, 1, tzinfo=timezone.utc),
-        limit=2,
+        date_to=datetime(2026, 4, 30, tzinfo=timezone.utc),
     )
     operations = history.materialize()
 

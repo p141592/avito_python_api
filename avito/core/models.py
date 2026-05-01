@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Mapping, Sequence
-from dataclasses import fields, is_dataclass
+from dataclasses import dataclass, fields, is_dataclass
 from datetime import date, datetime
 from enum import Enum
 
@@ -15,6 +15,29 @@ JsonValue = Mapping[str, object] | list[object] | str | int | float | bool | Non
 
 class ApiModel(SerializableModel):
     """Base class for public typed API response models."""
+
+
+@dataclass(slots=True, frozen=True)
+class ApiErrorPayload(ApiModel):
+    """Typed wrapper for Swagger-declared error response bodies."""
+
+    payload: object
+
+    @classmethod
+    def from_payload(cls, payload: object) -> ApiErrorPayload:
+        """Preserve the upstream error payload for typed exception mapping."""
+
+        return cls(payload=payload)
+
+    def to_dict(self) -> dict[str, object]:
+        """Return a JSON-compatible diagnostic representation."""
+
+        return {"payload": serialize_api_value(self.payload)}
+
+    def model_dump(self) -> dict[str, object]:
+        """Compatible alias for pydantic-like public contract."""
+
+        return self.to_dict()
 
 
 class RequestModel:
@@ -29,6 +52,16 @@ class RequestModel:
         """Serialize dataclass fields into query params."""
 
         return _serialize_dataclass(self)
+
+
+@dataclass(slots=True, frozen=True)
+class EmptyRequest(RequestModel):
+    """Explicit empty JSON request body for Swagger operations that declare one."""
+
+    def to_payload(self) -> dict[str, object]:
+        """Serialize to an empty JSON object."""
+
+        return {}
 
 
 def serialize_api_value(value: object) -> object:
@@ -66,4 +99,11 @@ def _serialize_dataclass(instance: object) -> dict[str, object]:
     return payload
 
 
-__all__ = ("ApiModel", "JsonValue", "RequestModel", "serialize_api_value")
+__all__ = (
+    "ApiErrorPayload",
+    "ApiModel",
+    "EmptyRequest",
+    "JsonValue",
+    "RequestModel",
+    "serialize_api_value",
+)

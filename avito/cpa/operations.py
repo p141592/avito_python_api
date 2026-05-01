@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from avito.core import BinaryResponse, OperationSpec
+from avito.core import BinaryResponse, EmptyRequest, OperationSpec
 from avito.cpa.models import (
     CallTrackingCallResponse,
     CallTrackingCallsRequest,
@@ -83,6 +83,7 @@ GET_CPA_BALANCE = OperationSpec(
     name="cpa.leads.get_balance_info",
     method="POST",
     path="/cpa/v3/balanceInfo",
+    request_model=EmptyRequest,
     response_model=CpaBalanceInfo,
     retry_mode="enabled",
 )
@@ -96,6 +97,7 @@ GET_CPA_ARCHIVE_BALANCE = OperationSpec(
     name="cpa.archive.get_balance_info",
     method="POST",
     path="/cpa/v2/balanceInfo",
+    request_model=EmptyRequest,
     response_model=CpaBalanceInfo,
     retry_mode="enabled",
 )

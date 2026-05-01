@@ -41,8 +41,8 @@ from avito.core.domain import DomainObject
 from avito.core.swagger import swagger_operation
 
 
-def _serialize_datetime(value: datetime | None) -> str | None:
-    return value.isoformat() if value is not None else None
+def _serialize_datetime(value: datetime) -> str:
+    return value.isoformat()
 
 
 @dataclass(slots=True, frozen=True)
@@ -99,14 +99,13 @@ class Account(DomainObject):
         "/core/v1/accounts/operations_history",
         spec="Информацияопользователе.json",
         operation_id="postOperationsHistory",
+        method_args={"date_from": "body.dateTimeFrom", "date_to": "body.dateTimeTo"},
     )
     def get_operations_history(
         self,
         *,
-        date_from: datetime | None = None,
-        date_to: datetime | None = None,
-        limit: int | None = None,
-        offset: int | None = None,
+        date_from: datetime,
+        date_to: datetime,
         timeout: ApiTimeouts | None = None,
         retry: RetryOverride | None = None,
     ) -> PaginatedList[OperationRecord]:
@@ -115,8 +114,6 @@ class Account(DomainObject):
         Аргументы:
             date_from: задает начальную дату периода.
             date_to: задает конечную дату периода.
-            limit: ограничивает размер возвращаемой выборки.
-            offset: задает смещение первой записи в выборке.
             timeout: переопределяет таймауты HTTP-запроса для этого вызова.
             retry: переопределяет retry-политику операции: default, enabled или disabled.
 
@@ -131,19 +128,12 @@ class Account(DomainObject):
             AvitoError: ошибка SDK с контекстом operation, status, request_id, attempt, method и endpoint.
         """
 
-        page_size = limit or 25
-        base_offset = offset or 0
-
         def fetch_page(page: int | None, _cursor: str | None) -> JsonPage[OperationRecord]:
-            current_page = page or 1
-            current_offset = base_offset + (current_page - 1) * page_size
             result = self._execute(
                 GET_OPERATIONS_HISTORY,
                 request=OperationsHistoryRequest(
                     date_from=_serialize_datetime(date_from),
                     date_to=_serialize_datetime(date_to),
-                    limit=page_size,
-                    offset=current_offset,
                 ),
                 timeout=timeout,
                 retry=retry,
@@ -151,8 +141,6 @@ class Account(DomainObject):
             return JsonPage(
                 items=result.operations,
                 total=result.total,
-                page=current_page,
-                per_page=page_size,
             )
 
         return Paginator(fetch_page).as_list(first_page=fetch_page(1, None))

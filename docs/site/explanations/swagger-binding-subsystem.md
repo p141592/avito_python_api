@@ -97,6 +97,8 @@ Expressions не являются Python-кодом. Произвольные ca
 
 Текущая реализация валидирует `path.*`, `query.*`, `header.*`, наличие `requestBody` для `body`, field-level `body.<field>` против top-level request body schema properties и наличие `constant.*` в test constants registry. Для Swagger properties с camelCase/Pascal acronym naming registry также хранит SDK-style snake_case aliases, чтобы binding мог ссылаться на публичные Python-имена без потери schema-aware проверки.
 
+Registry дополнительно строит normalized JSON schema tree для `requestBody` и всех Swagger responses: object properties, required fields, arrays, scalar JSON types, nullable, enum, `$ref`, `allOf`, `oneOf` и `anyOf`. Неразобранная JSON schema является contract failure, а не пропуском покрытия.
+
 ## Discovery
 
 Discovery импортирует пакет `avito`, но не создаёт `AvitoClient`, не читает обязательные env vars и не делает сетевых вызовов. Сканируются публичные domain classes из `avito/<domain>/domain.py` и заранее описанные non-domain exceptions, например low-level auth token bindings.
@@ -181,8 +183,10 @@ One SDK method must not have multiple Swagger bindings. When a user-facing scena
 3. Call the public SDK method with `method_args`.
 4. Match the actual HTTP request against Swagger method/path.
 5. Validate required path/query/header parameters and request body/content type.
-6. Return declared Swagger response statuses only.
-7. Let normal SDK mapping and exception mapping run.
+6. Validate actual JSON request bodies against Swagger keys and JSON types.
+7. Generate Swagger-shaped success and error response bodies.
+8. Return declared Swagger response statuses only.
+9. Let normal SDK mapping and exception mapping run.
 
 Contract tests must stay network-free. They are not a replacement for domain tests, but they catch binding drift: a method can be present in docs yet still fail contract invocation if factory args, method args, path, body or status handling are wrong.
 
@@ -190,14 +194,17 @@ The contract suite is exhaustive over the Swagger binding map:
 
 - one request-contract case per discovered binding;
 - one error-contract case per numeric Swagger error response;
+- one schema-contract case per JSON request body;
+- one schema-contract case per JSON success response model;
+- one schema-contract case per JSON error response payload;
 - deprecated operation bindings are included in the request set and additionally checked for runtime `DeprecationWarning`.
 
-`SwaggerFakeTransport` provides deterministic generated SDK arguments and success
-payloads. The default success payload is the minimal JSON object accepted by most
-SDK response models; operations whose models require a domain-specific response
-shape are listed in the controlled payload registry in
-`avito/testing/swagger_fake_transport.py`. Missing generated arguments or
-unsupported payload shapes are contract failures, not allowlisted gaps.
+`SwaggerFakeTransport` provides deterministic generated SDK arguments. Schema
+contract helpers in `avito/testing/swagger_schema.py` generate payloads from
+Swagger schemas and compare actual SDK request payloads by field key and JSON
+type. Missing generated arguments, missing `OperationSpec` models, unsupported
+schema shapes and request/response/error payload mismatches are contract
+failures, not allowlisted gaps.
 
 ## API method change checklist
 

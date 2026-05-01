@@ -487,6 +487,19 @@ class PromotionActionItem(SerializableModel):
 
 
 @dataclass(slots=True, frozen=True)
+class PromotionActionPayload(SerializableModel):
+    """Raw upstream payload for promotion write operations enriched by domain methods."""
+
+    raw_payload: Mapping[str, object]
+
+    @classmethod
+    def from_payload(cls, payload: object) -> PromotionActionPayload:
+        """Preserve upstream action payload for domain-level normalization."""
+
+        return cls(raw_payload=_expect_mapping(payload))
+
+
+@dataclass(slots=True, frozen=True)
 class PromotionActionResult(SerializableModel):
     """Стабильный результат write-операции продвижения."""
 
@@ -510,6 +523,8 @@ class PromotionActionResult(SerializableModel):
     ) -> PromotionActionResult:
         """Преобразует результат действия по продвижению."""
 
+        if isinstance(payload, PromotionActionPayload):
+            payload = payload.raw_payload
         data = _expect_mapping(payload)
         items_payload = _items_payload(data)
         if not items_payload:
@@ -716,6 +731,18 @@ class CancelTrxPromotionRequest:
         """Сериализует запрос остановки TrxPromo."""
 
         return {"items": [{"itemID": item_id} for item_id in self.item_ids]}
+
+
+@dataclass(slots=True, frozen=True)
+class GetTrxCommissionsRequest:
+    """Запрос доступных комиссий TrxPromo."""
+
+    item_ids: list[int]
+
+    def to_payload(self) -> dict[str, object]:
+        """Сериализует запрос доступных комиссий."""
+
+        return {"itemIDs": self.item_ids}
 
 
 @dataclass(slots=True, frozen=True)

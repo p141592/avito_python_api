@@ -10,13 +10,27 @@ from urllib.parse import quote
 
 import httpx
 
-from avito.core.models import RequestModel
+from avito.core.models import ApiErrorPayload, RequestModel
 from avito.core.types import ApiTimeouts, BinaryResponse, HttpMethod, RequestContext, RetryOverride
 
 ResponseKind = Literal["json", "empty", "binary"]
 RetryMode = Literal["default", "enabled", "disabled"]
 ModelT = TypeVar("ModelT", covariant=True)
 ResponseT = TypeVar("ResponseT", covariant=True)
+DEFAULT_ERROR_MODELS: Mapping[str, type[ResponseModel[object]]] = {
+    "400": ApiErrorPayload,
+    "401": ApiErrorPayload,
+    "402": ApiErrorPayload,
+    "403": ApiErrorPayload,
+    "404": ApiErrorPayload,
+    "409": ApiErrorPayload,
+    "422": ApiErrorPayload,
+    "425": ApiErrorPayload,
+    "429": ApiErrorPayload,
+    "500": ApiErrorPayload,
+    "503": ApiErrorPayload,
+    "default": ApiErrorPayload,
+}
 
 
 class ResponseModel(Protocol[ModelT]):
@@ -94,6 +108,9 @@ class OperationSpec[ResponseT]:
     query_model: type[object] | None = None
     request_model: type[object] | None = None
     response_model: type[ResponseModel[ResponseT]] | None = None
+    error_models: Mapping[str, type[ResponseModel[object]]] = field(
+        default_factory=lambda: DEFAULT_ERROR_MODELS
+    )
     response_kind: ResponseKind = "json"
     content_type: str | None = None
     requires_auth: bool = True
@@ -278,6 +295,7 @@ __all__ = (
     "OperationExecutor",
     "OperationSpec",
     "OperationTransport",
+    "DEFAULT_ERROR_MODELS",
     "ResponseKind",
     "ResponseModel",
     "RetryMode",

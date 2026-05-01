@@ -22,9 +22,8 @@ def test_account_domain_maps_profile_balance_and_operations() -> None:
             )
         assert request.url.path == "/core/v1/accounts/operations_history/"
         assert json.loads(request.content.decode()) == {
-            "dateFrom": "2025-01-01T00:00:00+00:00",
-            "limit": 2,
-            "offset": 0,
+            "dateTimeFrom": "2025-01-01T00:00:00+00:00",
+            "dateTimeTo": "2025-01-31T00:00:00+00:00",
         }
         return httpx.Response(
             200,
@@ -49,7 +48,7 @@ def test_account_domain_maps_profile_balance_and_operations() -> None:
     balance = account.get_balance()
     history = account.get_operations_history(
         date_from=datetime.fromisoformat("2025-01-01T00:00:00+00:00"),
-        limit=2,
+        date_to=datetime.fromisoformat("2025-01-31T00:00:00+00:00"),
     )
 
     assert profile.user_id == 7

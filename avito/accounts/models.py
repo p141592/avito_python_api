@@ -127,20 +127,16 @@ class OperationRecord(ApiModel):
 class OperationsHistoryRequest(RequestModel):
     """Фильтр истории операций аккаунта."""
 
-    date_from: str | None = None
-    date_to: str | None = None
-    limit: int | None = None
-    offset: int | None = None
+    date_from: str
+    date_to: str
 
     def to_payload(self) -> dict[str, object]:
         """Сериализует фильтр в JSON body."""
 
         return _without_none(
             {
-                "dateFrom": self.date_from,
-                "dateTo": self.date_to,
-                "limit": self.limit,
-                "offset": self.offset,
+                "dateTimeFrom": self.date_from,
+                "dateTimeTo": self.date_to,
             }
         )
 

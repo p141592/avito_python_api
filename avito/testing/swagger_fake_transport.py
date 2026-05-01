@@ -492,6 +492,8 @@ class SwaggerFakeTransport(FakeTransport):
                     ],
                 )
             ]
+        if "datetime" in annotation:
+            return datetime(2026, 5, 1, tzinfo=UTC)
         return self._value_for_name(field_name)
 
     def _should_supply_optional_argument(
@@ -514,6 +516,10 @@ class SwaggerFakeTransport(FakeTransport):
             return "2026-05-01"
         if name == "date_end":
             return "2026-05-02"
+        if name in {"date_from", "dateTimeFrom"}:
+            return "2026-05-01T00:00:00+00:00"
+        if name in {"date_to", "dateTimeTo"}:
+            return "2026-05-02T00:00:00+00:00"
         if name in _BODY_VALUES:
             return _BODY_VALUES[name]
         if name in _SDK_CONSTANTS:

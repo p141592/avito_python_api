@@ -15,7 +15,7 @@ from avito.core.exceptions import (
     ValidationError,
 )
 from avito.core.fields import api_field
-from avito.core.models import ApiModel, RequestModel
+from avito.core.models import ApiErrorPayload, ApiModel, EmptyRequest, RequestModel
 from avito.core.operations import EmptyResponse, OperationExecutor, OperationSpec
 from avito.core.pagination import PaginatedList, Paginator
 from avito.core.payload import JsonReader
@@ -35,6 +35,7 @@ from avito.core.types import (
 __all__ = (
     "ApiTimeouts",
     "ApiModel",
+    "ApiErrorPayload",
     "AuthenticationError",
     "AuthorizationError",
     "AvitoError",
@@ -43,6 +44,7 @@ __all__ = (
     "ConflictError",
     "DomainObject",
     "EmptyResponse",
+    "EmptyRequest",
     "JsonReader",
     "JsonPage",
     "OperationExecutor",

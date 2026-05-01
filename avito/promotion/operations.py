@@ -25,9 +25,11 @@ from avito.promotion.models import (
     GetAutostrategyStatRequest,
     GetPromotionOrderStatusRequest,
     GetPromotionsByItemIdsRequest,
+    GetTrxCommissionsRequest,
     ListAutostrategyCampaignsRequest,
     ListPromotionOrdersRequest,
     ListPromotionServicesRequest,
+    PromotionActionPayload,
     PromotionOrdersResult,
     PromotionOrderStatusResult,
     PromotionServiceDictionary,
@@ -85,6 +87,7 @@ CREATE_BBIP_ORDER: OperationSpec[object] = OperationSpec(
     method="PUT",
     path="/promotion/v1/items/services/bbip/orders/create",
     request_model=CreateBbipOrderRequest,
+    response_model=PromotionActionPayload,
     retry_mode="enabled",
 )
 GET_BBIP_SUGGESTS = OperationSpec(
@@ -100,6 +103,7 @@ APPLY_TRX: OperationSpec[object] = OperationSpec(
     method="POST",
     path="/trx-promo/1/apply",
     request_model=CreateTrxPromotionApplyRequest,
+    response_model=PromotionActionPayload,
     retry_mode="enabled",
 )
 CANCEL_TRX: OperationSpec[object] = OperationSpec(
@@ -107,12 +111,14 @@ CANCEL_TRX: OperationSpec[object] = OperationSpec(
     method="POST",
     path="/trx-promo/1/cancel",
     request_model=CancelTrxPromotionRequest,
+    response_model=PromotionActionPayload,
     retry_mode="enabled",
 )
 GET_TRX_COMMISSIONS = OperationSpec(
     name="promotion.trx.get_commissions",
     method="GET",
     path="/trx-promo/1/commissions",
+    request_model=GetTrxCommissionsRequest,
     response_model=TrxCommissionsResult,
 )
 GET_CPA_AUCTION_BIDS = OperationSpec(
@@ -147,6 +153,7 @@ DELETE_TARGET_ACTION_PROMOTION: OperationSpec[object] = OperationSpec(
     method="POST",
     path="/cpxpromo/1/remove",
     request_model=DeletePromotionRequest,
+    response_model=PromotionActionPayload,
     retry_mode="enabled",
 )
 UPDATE_TARGET_ACTION_AUTO: OperationSpec[object] = OperationSpec(

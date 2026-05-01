@@ -32,6 +32,7 @@ from avito.ads.models import (
     VasPricesResult,
 )
 from avito.core import OperationSpec
+from avito.promotion.models import PromotionActionPayload
 
 GET_ITEM = OperationSpec(
     name="ads.get_item",
@@ -98,6 +99,7 @@ APPLY_ITEM_VAS: OperationSpec[object] = OperationSpec(
     method="PUT",
     path="/core/v1/accounts/{user_id}/items/{item_id}/vas",
     request_model=ApplyVasRequest,
+    response_model=PromotionActionPayload,
     retry_mode="enabled",
 )
 APPLY_ITEM_VAS_PACKAGE: OperationSpec[object] = OperationSpec(
@@ -105,6 +107,7 @@ APPLY_ITEM_VAS_PACKAGE: OperationSpec[object] = OperationSpec(
     method="PUT",
     path="/core/v2/accounts/{user_id}/items/{item_id}/vas_packages",
     request_model=ApplyVasPackageRequest,
+    response_model=PromotionActionPayload,
     retry_mode="enabled",
 )
 APPLY_VAS_DIRECT: OperationSpec[object] = OperationSpec(
@@ -112,6 +115,7 @@ APPLY_VAS_DIRECT: OperationSpec[object] = OperationSpec(
     method="PUT",
     path="/core/v2/items/{item_id}/vas/",
     request_model=ApplyVasRequest,
+    response_model=PromotionActionPayload,
     retry_mode="enabled",
 )
 GET_AUTOLOAD_PROFILE = OperationSpec(

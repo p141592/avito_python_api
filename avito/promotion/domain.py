@@ -44,6 +44,7 @@ from avito.promotion.models import (
     GetAutostrategyStatRequest,
     GetPromotionOrderStatusRequest,
     GetPromotionsByItemIdsRequest,
+    GetTrxCommissionsRequest,
     ListAutostrategyCampaignsRequest,
     ListPromotionOrdersRequest,
     ListPromotionServicesRequest,
@@ -482,6 +483,7 @@ class TrxPromotion(DomainObject):
         "/trx-promo/1/commissions",
         spec="TrxPromo.json",
         operation_id="api_trx_promo_open_api_commissions",
+        method_args={"item_ids": "body.item_ids"},
     )
     def get_commissions(
         self,
@@ -498,7 +500,7 @@ class TrxPromotion(DomainObject):
         resolved_item_ids = item_ids or self._resource_item_ids()
         return self._execute(
             GET_TRX_COMMISSIONS,
-            query={"itemIDs": ",".join(str(item_id) for item_id in resolved_item_ids)},
+            request=GetTrxCommissionsRequest(item_ids=resolved_item_ids),
             headers=TRX_HEADERS,
             timeout=timeout,
             retry=retry,
