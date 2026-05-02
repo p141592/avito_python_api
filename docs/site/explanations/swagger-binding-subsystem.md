@@ -91,11 +91,13 @@ spec + method + normalized_path
 | `header.<name>` | header parameter Swagger operation |
 | `body` | весь request body |
 | `body.<field>` | поле request body |
+| `body.<array>[].<field>` | поле элемента массива в request body |
+| `body.<object>.<field>` | вложенное поле объекта в request body |
 | `constant.<name>` | контролируемая тестовая константа |
 
 Expressions не являются Python-кодом. Произвольные callables, dotted paths вне whitelist и transport/request DTO запрещены.
 
-Текущая реализация валидирует `path.*`, `query.*`, `header.*`, наличие `requestBody` для `body`, field-level `body.<field>` против top-level request body schema properties и наличие `constant.*` в test constants registry. Для Swagger properties с camelCase/Pascal acronym naming registry также хранит SDK-style snake_case aliases, чтобы binding мог ссылаться на публичные Python-имена без потери schema-aware проверки.
+Текущая реализация валидирует `path.*`, `query.*`, `header.*`, наличие `requestBody` для `body`, body paths против request body `SwaggerSchema` и наличие `constant.*` в test constants registry. Body path grammar намеренно ограничена: `body.field`, `body.array[]`, `body.array[].field`, `body.object.field`. Для Swagger properties с camelCase/Pascal acronym naming registry также хранит SDK-style snake_case aliases, чтобы binding мог ссылаться на публичные Python-имена без потери schema-aware проверки.
 
 Registry дополнительно строит normalized JSON schema tree для `requestBody` и всех Swagger responses: object properties, required fields, arrays, scalar JSON types, nullable, enum, `$ref`, `allOf`, `oneOf` и `anyOf`. Неразобранная JSON schema является contract failure, а не пропуском покрытия.
 

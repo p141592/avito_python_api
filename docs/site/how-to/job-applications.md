@@ -98,6 +98,7 @@ with AvitoClient.from_env() as avito:
     current = avito.job_webhook().get()
     updated = avito.job_webhook().update(
         url="https://example.com/job",
+        secret="cb1e150b-c5bf-4c3e-acd1-20ec88bdb3a1",
         idempotency_key="job-webhook-example-1",
     )
 
