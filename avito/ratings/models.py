@@ -62,7 +62,7 @@ class CreateReviewAnswerRequest(RequestModel):
     def to_payload(self) -> dict[str, object]:
         """Сериализует запрос создания ответа."""
 
-        return {"reviewId": self.review_id, "text": self.text}
+        return {"reviewId": self.review_id, "message": self.text}
 
 
 @dataclass(slots=True, frozen=True)

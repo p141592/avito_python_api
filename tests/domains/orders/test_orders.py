@@ -18,7 +18,7 @@ def test_order_management_flows() -> None:
         if path == "/order-management/1/orders":
             return httpx.Response(200, json={"orders": [{"id": "ord-1", "status": "new", "buyerInfo": {"fullName": "Иван"}}], "total": 1})
         if path == "/order-management/1/markings":
-            assert payload == {"orderId": "ord-1", "codes": ["abc"]}
+            assert payload == {"markings": [{"orderId": "ord-1", "markings": ["abc"]}]}
             return httpx.Response(200, json={"result": {"success": True, "orderId": "ord-1", "status": "marked"}})
         if path == "/order-management/1/order/applyTransition":
             return httpx.Response(200, json={"result": {"success": True, "orderId": "ord-1", "status": "confirmed"}})
@@ -54,7 +54,9 @@ def test_labels_delivery_and_stock_flows() -> None:
         if path == "/order-management/1/orders/labels/42/download":
             return httpx.Response(200, content=pdf_bytes, headers={"content-type": "application/pdf", "content-disposition": 'attachment; filename="label-42.pdf"'})
         if path == "/createAnnouncement":
-            assert payload == {"orderId": "ord-1"}
+            assert payload is not None
+            assert payload["announcementID"] == "ord-1"
+            assert "packages" in payload
             return httpx.Response(200, json={"data": {"taskId": 11, "status": "announcement-created"}})
         if path == "/createParcel":
             return httpx.Response(200, json={"data": {"parcelId": "par-1", "status": "parcel-created"}})

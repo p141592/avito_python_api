@@ -9,12 +9,12 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import cast
 
+from avito.core.swagger_names import swagger_field_aliases
+
 HTTP_METHODS = frozenset({"delete", "get", "head", "options", "patch", "post", "put", "trace"})
 DEFAULT_SWAGGER_API_DIR = Path("docs/avito/api")
 
 _PATH_PARAMETER_RE = re.compile(r"{([A-Za-z_][A-Za-z0-9_]*)}")
-_FIRST_CAP_RE = re.compile("(.)([A-Z][a-z]+)")
-_ALL_CAP_RE = re.compile("([a-z0-9])([A-Z])")
 
 JsonObject = dict[str, object]
 
@@ -656,7 +656,7 @@ def _extract_schema(
         return SwaggerSchema(
             kind="object",
             properties=properties,
-            required=_required_field_names(schema.get("required"), source),
+            required=_known_required_field_names(schema.get("required"), properties, source),
             nullable=nullable,
             enum=enum_values,
         )
@@ -740,7 +740,7 @@ def _extract_composed_schema(
         return SwaggerSchema(
             kind="object",
             properties=merged_properties,
-            required=tuple(sorted(required)),
+            required=tuple(name for name in sorted(required) if name in merged_properties),
             nullable=nullable,
         )
 
@@ -775,6 +775,14 @@ def _required_field_names(value: object, source: str) -> tuple[str, ...]:
     if not isinstance(value, list):
         raise SwaggerRegistryError(f"{source}.required должно быть списком.")
     return tuple(sorted(str(item) for item in value))
+
+
+def _known_required_field_names(
+    value: object,
+    properties: Mapping[str, SwaggerSchema],
+    source: str,
+) -> tuple[str, ...]:
+    return tuple(name for name in _required_field_names(value, source) if name in properties)
 
 
 def _is_description_only_schema(value: object) -> bool:
@@ -819,14 +827,7 @@ def _extract_composed_schema_field_names(
 
 
 def _field_name_aliases(field_name: str) -> set[str]:
-    aliases = {field_name}
-    normalized_field_name = field_name.replace("IDs", "Ids")
-    snake_case = _ALL_CAP_RE.sub(
-        r"\1_\2",
-        _FIRST_CAP_RE.sub(r"\1_\2", normalized_field_name),
-    ).lower()
-    aliases.add(snake_case)
-    return aliases
+    return set(swagger_field_aliases(field_name))
 
 
 def _optional_sequence(value: object, source: str) -> tuple[object, ...]:

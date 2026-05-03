@@ -34,6 +34,9 @@ and this project adheres to Semantic Versioning.
 - **BREAKING:** CPA methods now match Swagger request bodies: complaints send `message`, balanceInfo sends JSON string `"{}"`, chats/phones/calls list methods require `limit`/`offset` or `limit` fields declared by Swagger.
 - **BREAKING:** Autoteka request bodies now match Swagger: `get_leads(...)` requires `subscription_id`, catalog resolve sends `fieldsValueIds`, monitoring bucket methods send `data`, and vehicle/request identifiers use Swagger JSON types.
 - **BREAKING:** Autoload profile saves now require Swagger fields (`report_email`, schedule and feed/upload URL), stock info sends `item_ids`, TrxPromo cancel sends `itemIDs`, and Autostrategy update/stop generated calls include `campaignId` and `version`.
+- **BREAKING:** Jobs vacancy write methods now require Swagger billing fields, classic v1 vacancy create requires the documented required fields, `JobWebhook.update(...)` requires `secret`, and vacancy statuses send UUID string ids.
+- **BREAKING:** Messenger request bodies now match Swagger for blacklist, text messages and image messages; malformed Swagger required fields absent from schema properties are ignored by the normalized schema tree.
+- **BREAKING:** Special-offers request bodies now match Swagger: `create_multi(...)` sends only `itemIds`, `confirm_multi(...)` sends `dispatches`/`expiresAt`, and `get_stats(...)` requires `date_time_from`/`date_time_to`.
 
 ### Removed
 - **BREAKING:** удалены классы исключений `NotFoundError`, `ClientError`, `ServerError` из `avito.core.exceptions`. HTTP 404 и 5xx теперь маппятся на `UpstreamApiError`. Пользователям, ловившим эти типы, перейти на `UpstreamApiError` или `AvitoError` и проверять `status_code`.

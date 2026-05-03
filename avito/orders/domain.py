@@ -22,11 +22,14 @@ from avito.orders.models import (
     CustomAreaScheduleEntry,
     CustomAreaScheduleRequest,
     DeliveryAnnouncementRequest,
+    DeliveryAnnouncementTrackRequest,
+    DeliveryCancelAnnouncementRequest,
     DeliveryDirection,
     DeliveryEntityResult,
     DeliveryParcelIdsRequest,
     DeliveryParcelRequest,
     DeliveryParcelResultRequest,
+    DeliverySandboxAnnouncementRequest,
     DeliverySortingCentersResult,
     DeliveryTariffZone,
     DeliveryTaskInfo,
@@ -61,6 +64,7 @@ from avito.orders.models import (
     SandboxCreateAnnouncementOptions,
     SandboxCreateAnnouncementRequest,
     SandboxGetAnnouncementEventRequest,
+    SandboxParcelRequest,
     SetOrderPropertiesRequest,
     SetOrderRealAddressRequest,
     SortingCenterUpload,
@@ -727,7 +731,7 @@ class DeliveryOrder(DomainObject):
 
         return self._execute(
             DELIVERY_CANCEL_ANNOUNCEMENT,
-            request=DeliveryAnnouncementRequest(order_id=order_id),
+            request=DeliveryCancelAnnouncementRequest(order_id=order_id),
             idempotency_key=idempotency_key,
             timeout=timeout,
             retry=retry,
@@ -909,7 +913,7 @@ class SandboxDelivery(DomainObject):
 
         return self._execute(
             SANDBOX_CREATE_ANNOUNCEMENT,
-            request=DeliveryAnnouncementRequest(order_id=order_id),
+            request=DeliverySandboxAnnouncementRequest(order_id=order_id),
             idempotency_key=idempotency_key,
             timeout=timeout,
             retry=retry,
@@ -951,7 +955,7 @@ class SandboxDelivery(DomainObject):
 
         return self._execute(
             SANDBOX_TRACK_ANNOUNCEMENT,
-            request=DeliveryAnnouncementRequest(order_id=order_id),
+            request=DeliveryAnnouncementTrackRequest(order_id=order_id),
             idempotency_key=idempotency_key,
             timeout=timeout,
             retry=retry,
@@ -1649,7 +1653,7 @@ class SandboxDelivery(DomainObject):
 
         return self._execute(
             SANDBOX_CREATE_PARCEL,
-            request=DeliveryParcelRequest(order_id=order_id, parcel_id=parcel_id),
+            request=SandboxParcelRequest(order_id=order_id, parcel_id=parcel_id),
             idempotency_key=idempotency_key,
             timeout=timeout,
             retry=retry,

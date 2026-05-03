@@ -25,6 +25,8 @@ from avito.jobs.models import (
     VacanciesResult,
     VacancyArchiveRequest,
     VacancyAutoRenewalRequest,
+    VacancyClassicCreateRequest,
+    VacancyClassicUpdateRequest,
     VacancyCreateRequest,
     VacancyIdsRequest,
     VacancyInfo,
@@ -37,7 +39,7 @@ CREATE_VACANCY_CLASSIC = OperationSpec(
     name="jobs.vacancies.create_classic",
     method="POST",
     path="/job/v1/vacancies",
-    request_model=VacancyCreateRequest,
+    request_model=VacancyClassicCreateRequest,
     response_model=JobActionResult,
     retry_mode="enabled",
 )
@@ -53,7 +55,7 @@ UPDATE_VACANCY_CLASSIC = OperationSpec(
     name="jobs.vacancies.update_classic",
     method="PUT",
     path="/job/v1/vacancies/{vacancy_id}",
-    request_model=VacancyUpdateRequest,
+    request_model=VacancyClassicUpdateRequest,
     response_model=JobActionResult,
     retry_mode="enabled",
 )

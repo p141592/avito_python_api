@@ -70,7 +70,12 @@ class RealtyBookingsUpdateRequest(RequestModel):
     def to_payload(self) -> dict[str, object]:
         """Сериализует JSON payload запроса бронирований."""
 
-        return {"blockedDates": list(self.blocked_dates)}
+        return {
+            "bookings": [
+                {"date_start": blocked_date, "date_end": blocked_date}
+                for blocked_date in self.blocked_dates
+            ]
+        }
 
 
 @dataclass(slots=True, frozen=True)
@@ -196,7 +201,7 @@ class RealtyPricePeriod(RequestModel):
     def to_payload(self) -> dict[str, object]:
         """Сериализует период с ценой."""
 
-        return {"dateFrom": self.date_from, "price": self.price}
+        return {"date_from": self.date_from, "night_price": self.price}
 
 
 @dataclass(slots=True, frozen=True)
@@ -208,7 +213,7 @@ class RealtyPricesUpdateRequest(RequestModel):
     def to_payload(self) -> dict[str, object]:
         """Сериализует JSON payload запроса цен."""
 
-        return {"periods": [period.to_payload() for period in self.periods]}
+        return {"prices": [period.to_payload() for period in self.periods]}
 
 
 @dataclass(slots=True, frozen=True)
@@ -221,7 +226,11 @@ class RealtyInterval(RequestModel):
     def to_payload(self) -> dict[str, object]:
         """Сериализует интервал доступности."""
 
-        return {"date": self.date, "available": self.available}
+        return {
+            "date_start": self.date,
+            "date_end": self.date,
+            "open": 1 if self.available else 0,
+        }
 
 
 @dataclass(slots=True, frozen=True)
@@ -235,7 +244,7 @@ class RealtyIntervalsRequest(RequestModel):
         """Сериализует JSON payload запроса интервалов."""
 
         return {
-            "itemId": self.item_id,
+            "item_id": self.item_id,
             "intervals": [interval.to_payload() for interval in self.intervals],
         }
 
@@ -249,7 +258,7 @@ class RealtyBaseParamsUpdateRequest(RequestModel):
     def to_payload(self) -> dict[str, object]:
         """Сериализует JSON payload запроса базовых параметров."""
 
-        return {"minStayDays": self.min_stay_days}
+        return {"minimal_duration": self.min_stay_days}
 
 
 @dataclass(slots=True, frozen=True)

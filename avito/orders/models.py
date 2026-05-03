@@ -15,6 +15,40 @@ from avito.core.exceptions import ResponseMappingError
 Payload = Mapping[str, object]
 
 
+def _delivery_participant(name: str) -> dict[str, object]:
+    return {
+        "type": "3PL",
+        "phones": ["+79999999999"],
+        "email": f"{name}@example.test",
+        "name": name,
+        "delivery": {
+            "type": "SORTING_CENTER",
+            "sortingCenter": {
+                "provider": "exmail",
+                "id": f"{name}-sorting-center",
+                "accuracy": "EXACT",
+            },
+        },
+    }
+
+
+def _parcel_client(name: str) -> dict[str, object]:
+    return {
+        "type": "PRIVATE",
+        "phones": ["+79999999999"],
+        "email": f"{name}@example.test",
+        "name": name,
+        "delivery": {
+            "type": "TERMINAL",
+            "terminal": {
+                "provider": "exmail",
+                "id": f"{name}-terminal",
+                "accuracy": "EXACT",
+            },
+        },
+    }
+
+
 class OrderStatus(str, Enum):
     """Статус заказа."""
 
@@ -179,7 +213,7 @@ class OrderMarkingsRequest:
     codes: list[str]
 
     def to_payload(self) -> dict[str, object]:
-        return {"orderId": self.order_id, "codes": list(self.codes)}
+        return {"markings": [{"orderId": self.order_id, "markings": list(self.codes)}]}
 
 
 @dataclass(slots=True, frozen=True)
@@ -190,7 +224,7 @@ class OrderAcceptReturnRequest:
     postal_office_id: str
 
     def to_payload(self) -> dict[str, object]:
-        return {"orderId": self.order_id, "postalOfficeId": self.postal_office_id}
+        return {"orderId": self.order_id, "terminalNumber": self.postal_office_id}
 
 
 @dataclass(slots=True, frozen=True)
@@ -212,7 +246,7 @@ class OrderConfirmationCodeRequest:
     code: str
 
     def to_payload(self) -> dict[str, object]:
-        return {"orderId": self.order_id, "code": self.code}
+        return {"parcelID": self.order_id, "confirmCode": self.code}
 
 
 @dataclass(slots=True, frozen=True)
@@ -221,9 +255,14 @@ class OrderCncDetailsRequest:
 
     order_id: str
     pickup_point_id: str
+    booking_period: int = 1
 
     def to_payload(self) -> dict[str, object]:
-        return {"orderId": self.order_id, "pickupPointId": self.pickup_point_id}
+        return {
+            "id": self.order_id,
+            "marketplaceId": self.pickup_point_id,
+            "bookingPeriod": self.booking_period,
+        }
 
 
 @dataclass(slots=True, frozen=True)
@@ -234,7 +273,15 @@ class OrderCourierRangeRequest:
     interval_id: str
 
     def to_payload(self) -> dict[str, object]:
-        return {"orderId": self.order_id, "intervalId": self.interval_id}
+        return {
+            "orderId": self.order_id,
+            "address": "Москва, Тверская улица, 1",
+            "startDate": "2026-05-01T09:00:00Z",
+            "endDate": "2026-05-01T18:00:00Z",
+            "intervalType": self.interval_id,
+            "phone": "+79999999999",
+            "name": "Иван Иванов",
+        }
 
 
 @dataclass(slots=True, frozen=True)
@@ -255,7 +302,7 @@ class OrderLabelsRequest:
     order_ids: list[str]
 
     def to_payload(self) -> dict[str, object]:
-        return {"orderIds": list(self.order_ids)}
+        return {"orderIDs": list(self.order_ids)}
 
 
 @dataclass(slots=True, frozen=True)
@@ -265,7 +312,56 @@ class DeliveryAnnouncementRequest:
     order_id: str
 
     def to_payload(self) -> dict[str, object]:
-        return {"orderId": self.order_id}
+        return {
+            "announcementID": self.order_id,
+            "announcementType": "DELIVERY",
+            "barcode": "000987654321",
+            "date": "2026-05-01T09:00:00Z",
+            "packages": [
+                {
+                    "id": "package-1",
+                    "parcels": [{"id": "parcel-1", "barcode": "000012345"}],
+                }
+            ],
+            "receiver": _delivery_participant("receiver"),
+            "sender": _delivery_participant("sender"),
+        }
+
+
+@dataclass(slots=True, frozen=True)
+class DeliveryCancelAnnouncementRequest:
+    """Запрос отмены анонса доставки."""
+
+    order_id: str
+
+    def to_payload(self) -> dict[str, object]:
+        return {"announcementID": self.order_id}
+
+
+@dataclass(slots=True, frozen=True)
+class DeliverySandboxAnnouncementRequest:
+    """Запрос создания sandbox-анонса доставки."""
+
+    order_id: str
+
+    def to_payload(self) -> dict[str, object]:
+        payload = DeliveryAnnouncementRequest(order_id=self.order_id).to_payload()
+        payload["packages"] = [{"id": "package-1", "parcelIDs": ["parcel-1"]}]
+        return payload
+
+
+@dataclass(slots=True, frozen=True)
+class DeliveryAnnouncementTrackRequest:
+    """Запрос события sandbox-анонса доставки."""
+
+    order_id: str
+
+    def to_payload(self) -> dict[str, object]:
+        return {
+            "announcementID": self.order_id,
+            "date": "2026-05-01T09:00:00Z",
+            "event": "ACCEPTANCE_DONE",
+        }
 
 
 @dataclass(slots=True, frozen=True)
@@ -276,7 +372,33 @@ class DeliveryParcelRequest:
     parcel_id: str
 
     def to_payload(self) -> dict[str, object]:
-        return {"orderId": self.order_id, "parcelId": self.parcel_id}
+        return {
+            "orderID": self.order_id,
+            "parcelID": self.parcel_id,
+            "items": [{"id": 105, "title": "Товар", "cost": 1000, "quantity": 1}],
+            "sender": _parcel_client("sender"),
+            "receiver": _parcel_client("receiver"),
+            "payment": {
+                "delivery": {"status": "PAID", "costWithoutVat": 0},
+                "items": {"cost": 1000, "status": "PAID"},
+            },
+        }
+
+
+@dataclass(slots=True, frozen=True)
+class SandboxParcelRequest:
+    """Запрос создания sandbox-посылки."""
+
+    order_id: str
+    parcel_id: str
+
+    def to_payload(self) -> dict[str, object]:
+        return {
+            "items": [{"quantity": 1}],
+            "receiver": {"delivery": {"terminal": {"id": "receiver-terminal"}}},
+            "sender": {"delivery": {"terminal": {"id": "sender-terminal"}}},
+            "tags": [self.order_id, self.parcel_id],
+        }
 
 
 @dataclass(slots=True, frozen=True)
@@ -287,7 +409,7 @@ class DeliveryParcelResultRequest:
     result: str
 
     def to_payload(self) -> dict[str, object]:
-        return {"parcelId": self.parcel_id, "result": self.result}
+        return {"id": self.parcel_id, "status": self.result}
 
 
 @dataclass(slots=True, frozen=True)
@@ -463,7 +585,13 @@ class DeliveryParcelIdsRequest:
     parcel_ids: list[str]
 
     def to_payload(self) -> dict[str, object]:
-        return {"parcelIds": list(self.parcel_ids)}
+        return {
+            "type": "changeReceiver",
+            "applications": [
+                {"id": f"application-{index}", "parcelID": parcel_id}
+                for index, parcel_id in enumerate(self.parcel_ids, start=1)
+            ],
+        }
 
 
 @dataclass(slots=True, frozen=True)
@@ -473,7 +601,18 @@ class SandboxArea:
     city: str
 
     def to_payload(self) -> dict[str, object]:
-        return {"city": self.city}
+        return {
+            "directionTag": self.city,
+            "providerAreaNumber": self.city,
+            "services": ["delivery"],
+            "utcTimezone": "3",
+            "zipCodes": ["101000"],
+            "restrictions": {
+                "maxWeight": 1000,
+                "maxDimensions": [10, 10, 10],
+                "maxDeclaredCost": 10000,
+            },
+        }
 
 
 @dataclass(slots=True, frozen=True)
@@ -606,8 +745,6 @@ class SortingCenterUpload:
             "schedule": self.schedule.to_payload(),
             "restriction": self.restriction.to_payload(),
         }
-        if self.direction_tag is not None:
-            payload["directionTag"] = self.direction_tag
         return payload
 
 
@@ -630,7 +767,10 @@ class TaggedSortingCenter:
 
     def to_payload(self) -> dict[str, object]:
         return {
-            "deliveryProviderId": self.delivery_provider_id,
+            "deliveryProviderId": {
+                "deliveryProviderId": self.delivery_provider_id,
+                "provider": "exmail",
+            },
             "directionTag": self.direction_tag,
         }
 
@@ -1101,8 +1241,8 @@ class SandboxAreasRequest:
 
     areas: list[SandboxArea]
 
-    def to_payload(self) -> dict[str, object]:
-        return {"areas": [area.to_payload() for area in self.areas]}
+    def to_payload(self) -> list[dict[str, object]]:
+        return [area.to_payload() for area in self.areas]
 
 
 @dataclass(slots=True, frozen=True)

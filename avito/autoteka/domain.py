@@ -88,7 +88,7 @@ class AutotekaVehicle(DomainObject):
         "/autoteka/v1/catalogs/resolve",
         spec="Автотека.json",
         operation_id="catalogsResolve",
-        method_args={"brand_id": "body.fieldsValueIds"},
+        method_args={"brand_id": "body.fieldsValueIds[].valueId"},
     )
     def resolve_catalog(
         self,
@@ -1133,7 +1133,10 @@ class AutotekaValuation(DomainObject):
         "/autoteka/v1/valuation/by-specification",
         spec="Автотека.json",
         operation_id="valuationBySpecification",
-        method_args={"specification_id": "body.specification", "mileage": "body.mileage"},
+        method_args={
+            "specification_id": "body.specification.brand.valueId",
+            "mileage": "body.mileage",
+        },
     )
     def get_valuation_by_specification(
         self,

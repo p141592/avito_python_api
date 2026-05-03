@@ -331,7 +331,7 @@ def test_swagger_fake_transport_invokes_generated_write_call_and_validates_json_
     assert request.method == "POST"
     assert request.path == "/listItemsByEmployeeIdV1"
     assert request.headers["content-type"] == "application/json"
-    assert request.json_body == {"employeeId": 10, "limit": 2, "offset": 0}
+    assert request.json_body == {"employeeId": 10, "categoryId": 1}
     assert isinstance(result, PaginatedList)
     assert isinstance(result[0], EmployeeItem)
 

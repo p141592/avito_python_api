@@ -32,6 +32,8 @@ from avito.jobs.models import (
     VacanciesResult,
     VacancyArchiveRequest,
     VacancyAutoRenewalRequest,
+    VacancyClassicCreateRequest,
+    VacancyClassicUpdateRequest,
     VacancyCreateRequest,
     VacancyIdsRequest,
     VacancyInfo,
@@ -84,12 +86,18 @@ class Vacancy(DomainObject):
         "/job/v2/vacancies",
         spec="АвитоРабота.json",
         operation_id="vacancyCreateV2",
-        method_args={"title": "body.title"},
+        method_args={"title": "body.title", "billing_type": "body.billing_type"},
     )
     def create(
         self,
         *,
         title: str,
+        billing_type: str,
+        description: str | None = None,
+        business_area: int | None = None,
+        employment: str | None = None,
+        schedule: str | None = None,
+        experience: str | None = None,
         version: int = 2,
         idempotency_key: str | None = None,
         timeout: ApiTimeouts | None = None,
@@ -99,6 +107,12 @@ class Vacancy(DomainObject):
 
         Аргументы:
             title: передает название вакансии.
+            billing_type: задает тип биллинга.
+            description: передает описание вакансии для legacy v1 operation.
+            business_area: задает сферу деятельности для legacy v1 operation.
+            employment: задает тип занятости для legacy v1 operation.
+            schedule: задает режим работы для legacy v1 operation.
+            experience: задает требуемый опыт для legacy v1 operation.
             version: задает версию upstream-контракта, если операция ее поддерживает.
             idempotency_key: задает ключ идемпотентности для безопасного повтора write-операции.
             timeout: переопределяет таймауты HTTP-запроса для этого вызова.
@@ -116,10 +130,29 @@ class Vacancy(DomainObject):
         """
 
         if version == 1:
-            return self.create_classic(title=title, idempotency_key=idempotency_key)
+            if (
+                description is None
+                or business_area is None
+                or employment is None
+                or schedule is None
+                or experience is None
+            ):
+                raise ValidationError("Для создания вакансии v1 требуются поля Swagger.")
+            return self.create_classic(
+                title=title,
+                description=description,
+                billing_type=billing_type,
+                business_area=business_area,
+                employment=employment,
+                schedule=schedule,
+                experience=experience,
+                idempotency_key=idempotency_key,
+                timeout=timeout,
+                retry=retry,
+            )
         return self._execute(
             CREATE_VACANCY,
-            request=VacancyCreateRequest(title=title),
+            request=VacancyCreateRequest(title=title, billing_type=billing_type),
             idempotency_key=idempotency_key,
             timeout=timeout,
             retry=retry,
@@ -130,26 +163,62 @@ class Vacancy(DomainObject):
         "/job/v1/vacancies",
         spec="АвитоРабота.json",
         operation_id="vacancyCreate",
-        method_args={"title": "body.name"},
+        method_args={
+            "title": "body.name",
+            "description": "body.description",
+            "billing_type": "body.billing_type",
+            "business_area": "body.business_area",
+            "employment": "body.employment",
+            "schedule": "body.schedule.id",
+            "experience": "body.experience",
+        },
     )
     def create_classic(
         self,
         *,
         title: str,
+        description: str,
+        billing_type: str,
+        business_area: int,
+        employment: str,
+        schedule: str,
+        experience: str,
         idempotency_key: str | None = None,
         timeout: ApiTimeouts | None = None,
         retry: RetryOverride | None = None,
     ) -> JobActionResult:
-        """Создаёт вакансию через legacy v1 operation и возвращает типизированную SDK-модель.
+        """Создает вакансию через legacy v1 operation.
 
-        Параметр `idempotency_key` задает ключ идемпотентности для безопасного повтора write-операции.
+        Аргументы:
+            title: передает название вакансии в Swagger поле `name`.
+            description: передает описание вакансии.
+            billing_type: задает тип биллинга.
+            business_area: задает сферу деятельности.
+            employment: задает тип занятости.
+            schedule: задает режим работы.
+            experience: задает требуемый опыт.
+            idempotency_key: задает ключ идемпотентности для безопасного повтора write-операции.
+            timeout: переопределяет таймауты HTTP-запроса для этого вызова.
+            retry: переопределяет retry-политику операции: default, enabled или disabled.
 
-        Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
+        Возвращает:
+            `JobActionResult` со статусом выполнения операции.
+
+        Исключения:
+            AvitoError: ошибка SDK с контекстом operation, status, request_id, attempt, method и endpoint.
         """
 
         return self._execute(
             CREATE_VACANCY_CLASSIC,
-            request=VacancyCreateRequest(title=title),
+            request=VacancyClassicCreateRequest(
+                title=title,
+                description=description,
+                billing_type=billing_type,
+                business_area=business_area,
+                employment=employment,
+                schedule=schedule,
+                experience=experience,
+            ),
             idempotency_key=idempotency_key,
             timeout=timeout,
             retry=retry,
@@ -160,12 +229,13 @@ class Vacancy(DomainObject):
         "/job/v2/vacancies/update/{vacancy_uuid}",
         spec="АвитоРабота.json",
         operation_id="vacancyUpdateV2",
-        method_args={"title": "body.title"},
+        method_args={"title": "body.title", "billing_type": "body.billing_type"},
     )
     def update(
         self,
         *,
         title: str,
+        billing_type: str,
         vacancy_id: int | str | None = None,
         vacancy_uuid: str | None = None,
         version: int = 2,
@@ -177,6 +247,7 @@ class Vacancy(DomainObject):
 
         Аргументы:
             title: передает название вакансии.
+            billing_type: задает тип биллинга.
             vacancy_id: идентифицирует вакансию.
             vacancy_uuid: идентифицирует вакансию по UUID.
             version: задает версию upstream-контракта, если операция ее поддерживает.
@@ -199,12 +270,15 @@ class Vacancy(DomainObject):
             return self.update_classic(
                 vacancy_id=vacancy_id or self._require_vacancy_id(),
                 title=title,
+                billing_type=billing_type,
                 idempotency_key=idempotency_key,
+                timeout=timeout,
+                retry=retry,
             )
         return self._execute(
             UPDATE_VACANCY,
             path_params={"vacancy_uuid": vacancy_uuid or self._require_vacancy_id()},
-            request=VacancyUpdateRequest(title=title),
+            request=VacancyUpdateRequest(title=title, billing_type=billing_type),
             idempotency_key=idempotency_key,
             timeout=timeout,
             retry=retry,
@@ -215,28 +289,39 @@ class Vacancy(DomainObject):
         "/job/v1/vacancies/{vacancy_id}",
         spec="АвитоРабота.json",
         operation_id="vacancyUpdate",
-        method_args={"title": "body.name"},
+        method_args={"title": "body.name", "billing_type": "body.billing_type"},
     )
     def update_classic(
         self,
         *,
         title: str,
+        billing_type: str,
         vacancy_id: int | str | None = None,
         idempotency_key: str | None = None,
         timeout: ApiTimeouts | None = None,
         retry: RetryOverride | None = None,
     ) -> JobActionResult:
-        """Обновляет вакансию через legacy v1 operation и возвращает типизированную SDK-модель.
+        """Обновляет вакансию через legacy v1 operation.
 
-        Параметр `idempotency_key` задает ключ идемпотентности для безопасного повтора write-операции.
+        Аргументы:
+            title: передает название вакансии в Swagger поле `name`.
+            billing_type: задает тип биллинга.
+            vacancy_id: идентифицирует вакансию.
+            idempotency_key: задает ключ идемпотентности для безопасного повтора write-операции.
+            timeout: переопределяет таймауты HTTP-запроса для этого вызова.
+            retry: переопределяет retry-политику операции: default, enabled или disabled.
 
-        Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
+        Возвращает:
+            `JobActionResult` со статусом выполнения операции.
+
+        Исключения:
+            AvitoError: ошибка SDK с контекстом operation, status, request_id, attempt, method и endpoint.
         """
 
         return self._execute(
             UPDATE_VACANCY_CLASSIC,
             path_params={"vacancy_id": vacancy_id or self._require_vacancy_id()},
-            request=VacancyUpdateRequest(title=title),
+            request=VacancyClassicUpdateRequest(title=title, billing_type=billing_type),
             idempotency_key=idempotency_key,
             timeout=timeout,
             retry=retry,
@@ -457,7 +542,7 @@ class Vacancy(DomainObject):
     def get_statuses(
         self,
         *,
-        ids: Sequence[int],
+        ids: Sequence[str],
         timeout: ApiTimeouts | None = None,
         retry: RetryOverride | None = None,
     ) -> VacancyStatusesResult:
@@ -912,12 +997,13 @@ class JobWebhook(DomainObject):
         "/job/v1/applications/webhook",
         spec="АвитоРабота.json",
         operation_id="applicationsWebhookPut",
-        method_args={"url": "body.url"},
+        method_args={"url": "body.url", "secret": "body.secret"},
     )
     def update(
         self,
         *,
         url: str,
+        secret: str,
         idempotency_key: str | None = None,
         timeout: ApiTimeouts | None = None,
         retry: RetryOverride | None = None,
@@ -926,6 +1012,7 @@ class JobWebhook(DomainObject):
 
         Аргументы:
             url: задает URL webhook-подписки.
+            secret: задает секрет webhook-подписки.
             idempotency_key: задает ключ идемпотентности для безопасного повтора write-операции.
             timeout: переопределяет таймауты HTTP-запроса для этого вызова.
             retry: переопределяет retry-политику операции: default, enabled или disabled.
@@ -943,7 +1030,7 @@ class JobWebhook(DomainObject):
 
         return self._execute(
             UPDATE_JOB_WEBHOOK,
-            request=JobWebhookUpdateRequest(url=url),
+            request=JobWebhookUpdateRequest(url=url, secret=secret),
             idempotency_key=idempotency_key,
             timeout=timeout,
             retry=retry,

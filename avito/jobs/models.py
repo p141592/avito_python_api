@@ -165,11 +165,12 @@ class JobWebhookUpdateRequest(RequestModel):
     """Запрос обновления webhook откликов."""
 
     url: str
+    secret: str
 
     def to_payload(self) -> dict[str, object]:
         """Сериализует webhook откликов."""
 
-        return {"url": self.url}
+        return {"url": self.url, "secret": self.secret}
 
 
 @dataclass(slots=True, frozen=True)
@@ -201,14 +202,41 @@ class VacanciesQuery(RequestModel):
 
 @dataclass(slots=True, frozen=True)
 class VacancyCreateRequest(RequestModel):
-    """Запрос создания вакансии."""
+    """Запрос создания вакансии v2."""
 
     title: str
+    billing_type: str
 
     def to_payload(self) -> dict[str, object]:
         """Сериализует создание вакансии."""
 
-        return {"title": self.title}
+        return {"title": self.title, "billing_type": self.billing_type}
+
+
+@dataclass(slots=True, frozen=True)
+class VacancyClassicCreateRequest(RequestModel):
+    """Запрос создания вакансии v1."""
+
+    title: str
+    description: str
+    billing_type: str
+    business_area: int
+    employment: str
+    schedule: str
+    experience: str
+
+    def to_payload(self) -> dict[str, object]:
+        """Сериализует создание вакансии v1."""
+
+        return {
+            "name": self.title,
+            "description": self.description,
+            "billing_type": self.billing_type,
+            "business_area": self.business_area,
+            "employment": self.employment,
+            "schedule": {"id": self.schedule},
+            "experience": {"id": self.experience},
+        }
 
 
 @dataclass(slots=True, frozen=True)
@@ -216,11 +244,25 @@ class VacancyUpdateRequest(RequestModel):
     """Запрос обновления вакансии."""
 
     title: str
+    billing_type: str
 
     def to_payload(self) -> dict[str, object]:
         """Сериализует обновление вакансии."""
 
-        return {"title": self.title}
+        return {"title": self.title, "billing_type": self.billing_type}
+
+
+@dataclass(slots=True, frozen=True)
+class VacancyClassicUpdateRequest(RequestModel):
+    """Запрос обновления вакансии v1."""
+
+    title: str
+    billing_type: str
+
+    def to_payload(self) -> dict[str, object]:
+        """Сериализует обновление вакансии v1."""
+
+        return {"name": self.title, "billing_type": self.billing_type}
 
 
 @dataclass(slots=True, frozen=True)
@@ -251,7 +293,7 @@ class VacancyProlongateRequest(RequestModel):
 class VacancyIdsRequest(RequestModel):
     """Запрос списка вакансий по идентификаторам."""
 
-    ids: list[int]
+    ids: list[int | str]
 
     def to_payload(self) -> dict[str, object]:
         """Сериализует идентификаторы вакансий."""
@@ -519,9 +561,13 @@ class VacancyStatusesResult(ApiModel):
 
     @classmethod
     def from_payload(cls, payload: object) -> VacancyStatusesResult:
-        data = _expect_mapping(payload)
+        if isinstance(payload, list):
+            raw_items = _expect_list(payload)
+        else:
+            data = _expect_mapping(payload)
+            raw_items = _list(data, "items", "statuses", "vacancies", "result")
         items: list[VacancyStatusInfo] = []
-        for item in _list(data, "items", "statuses", "vacancies", "result"):
+        for item in raw_items:
             vacancy = _mapping(item, "vacancy") or item
             numeric_id = _int(vacancy, "id", "vacancy_id")
             items.append(

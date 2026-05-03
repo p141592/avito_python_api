@@ -172,14 +172,18 @@ class PromotionServiceDictionary(SerializableModel):
     def from_payload(cls, payload: object) -> PromotionServiceDictionary:
         """Преобразует словарь услуг продвижения."""
 
-        data = _expect_mapping(payload)
+        if isinstance(payload, list):
+            items_payload = [item for item in payload if isinstance(item, Mapping)]
+        else:
+            data = _expect_mapping(payload)
+            items_payload = _items_payload(data)
         return cls(
             items=[
                 PromotionServiceType(
-                    code=_str(item, "code", "serviceCode", "id"),
+                    code=_str(item, "code", "serviceCode", "id", "slug"),
                     title=_str(item, "title", "name", "description"),
                 )
-                for item in _items_payload(data)
+                for item in items_payload
             ],
         )
 
@@ -246,12 +250,7 @@ class ListPromotionOrdersRequest:
     def to_payload(self) -> dict[str, object]:
         """Сериализует запрос списка заявок."""
 
-        payload: dict[str, object] = {}
-        if self.item_ids is not None:
-            payload["itemIds"] = self.item_ids
-        if self.order_ids is not None:
-            payload["orderIds"] = self.order_ids
-        return payload
+        return {}
 
 
 @dataclass(slots=True, frozen=True)
@@ -303,7 +302,7 @@ class GetPromotionOrderStatusRequest:
     def to_payload(self) -> dict[str, object]:
         """Сериализует запрос статуса заявок."""
 
-        return {"orderIds": self.order_ids}
+        return {"orderId": self.order_ids[0]}
 
 
 @dataclass(slots=True, frozen=True)

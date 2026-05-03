@@ -17,7 +17,11 @@ def test_realty_bookings_require_expected_params_and_map_fields() -> None:
         path = request.url.path
         payload = json.loads(request.content.decode()) if request.content else None
         if path == "/core/v1/accounts/10/items/20/bookings":
-            assert payload == {"blockedDates": ["2026-04-18"]}
+            assert payload == {
+                "bookings": [
+                    {"date_start": "2026-04-18", "date_end": "2026-04-18"}
+                ]
+            }
             return httpx.Response(200, json={"result": "success"})
         if path == "/realty/v1/accounts/10/items/20/bookings":
             assert request.url.params["date_start"] == "2026-05-01"
@@ -25,10 +29,18 @@ def test_realty_bookings_require_expected_params_and_map_fields() -> None:
             assert request.url.params["with_unpaid"] == "true"
             return httpx.Response(200, json={"bookings": [{"avito_booking_id": 777, "status": "active", "check_in": "2026-05-01", "check_out": "2026-05-05", "guest_count": 2, "nights": 4, "base_price": 12000, "contact": {"name": "Иван", "email": "ivan@example.com", "phone": "9997770000"}, "safe_deposit": {"owner_amount": 4500, "tax": 500, "total_amount": 5000}}]})
         if path == "/realty/v1/accounts/10/items/20/prices":
+            assert payload == {"prices": [{"date_from": "2026-05-01", "night_price": 5000}]}
             return httpx.Response(200, json={"result": "success"})
         if path == "/realty/v1/items/intervals":
+            assert payload == {
+                "item_id": 20,
+                "intervals": [
+                    {"date_start": "2026-05-01", "date_end": "2026-05-01", "open": 1}
+                ],
+            }
             return httpx.Response(200, json={"result": "success"})
         if path == "/realty/v1/items/20/base":
+            assert payload == {"minimal_duration": 2}
             return httpx.Response(200, json={"result": "success"})
         if path == "/realty/v1/marketPriceCorrespondence/20/5000000":
             return httpx.Response(200, json={"correspondence": "normal"})

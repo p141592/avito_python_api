@@ -153,13 +153,15 @@ class OperationsHistoryResult(ApiModel):
         """Преобразует ответ API с историей операций в SDK-модель."""
 
         reader = JsonReader(payload)
+        result = reader.mapping("result")
+        data_reader = JsonReader(result) if result is not None else reader
         return cls(
             operations=[
                 OperationRecord.from_payload(item)
-                for item in reader.list("operations", "items", "result")
+                for item in data_reader.list("operations", "items", "result")
                 if isinstance(item, Mapping)
             ],
-            total=reader.optional_int("total", "count"),
+            total=data_reader.optional_int("total", "count"),
         )
 
 
@@ -223,6 +225,15 @@ class EmployeesResult(ApiModel):
     def from_payload(cls, payload: object) -> EmployeesResult:
         """Преобразует ответ API со списком сотрудников."""
 
+        if isinstance(payload, list):
+            return cls(
+                items=[
+                    Employee.from_payload(item)
+                    for item in payload
+                    if isinstance(item, Mapping)
+                ]
+            )
+
         reader = JsonReader(payload)
         return cls(
             items=[
@@ -246,6 +257,9 @@ class CompanyPhone(ApiModel):
     def from_payload(cls, payload: object) -> CompanyPhone:
         """Преобразует JSON-объект телефона компании."""
 
+        if isinstance(payload, str):
+            return cls(phone_id=None, phone=payload, comment=None)
+
         reader = JsonReader(payload)
         return cls(
             phone_id=reader.optional_int("id", "phone_id", "phoneId"),
@@ -265,11 +279,12 @@ class CompanyPhonesResult(ApiModel):
         """Преобразует ответ API со списком телефонов компании."""
 
         reader = JsonReader(payload)
+        result = reader.mapping("result")
+        data_reader = JsonReader(result) if result is not None else reader
         return cls(
             items=[
                 CompanyPhone.from_payload(item)
-                for item in reader.list("phones", "items", "result")
-                if isinstance(item, Mapping)
+                for item in data_reader.list("phones", "items", "result")
             ]
         )
 

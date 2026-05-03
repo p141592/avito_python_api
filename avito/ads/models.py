@@ -590,7 +590,11 @@ class VasPricesResult(SerializableModel):
     def from_payload(cls, payload: object) -> VasPricesResult:
         """Преобразует список доступных услуг продвижения."""
 
-        data = _expect_mapping(payload)
+        if isinstance(payload, list):
+            items_payload = [item for item in payload if isinstance(item, Mapping)]
+        else:
+            data = _expect_mapping(payload)
+            items_payload = _list(data, "items", "services", "result")
         items = [
             VasPrice(
                 code=_str(item, "code", "slug", "type"),
@@ -598,7 +602,7 @@ class VasPricesResult(SerializableModel):
                 price=_float(item, "price", "amount"),
                 is_available=_bool(item, "is_available", "isAvailable", "available"),
             )
-            for item in _list(data, "items", "services", "result")
+            for item in items_payload
         ]
         return cls(items=items)
 

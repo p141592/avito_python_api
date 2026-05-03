@@ -129,7 +129,10 @@ class SendMessageRequest(RequestModel):
 
         return {
             key: value
-            for key, value in {"message": self.message, "type": self.type}.items()
+            for key, value in {
+                "message": {"text": self.message},
+                "type": (self.type or MessageType.TEXT).value,
+            }.items()
             if value is not None
         }
 
@@ -146,7 +149,7 @@ class SendImageMessageRequest(RequestModel):
 
         return {
             key: value
-            for key, value in {"imageId": self.image_id, "caption": self.caption}.items()
+            for key, value in {"image_id": self.image_id, "caption": self.caption}.items()
             if value is not None
         }
 
@@ -189,6 +192,15 @@ class MessagesResult(ApiModel):
     @classmethod
     def from_payload(cls, payload: object) -> MessagesResult:
         """Преобразует список сообщений в SDK-модель."""
+
+        if isinstance(payload, list):
+            return cls(
+                items=[
+                    MessageInfo.from_payload(item)
+                    for item in payload
+                    if isinstance(item, Mapping)
+                ]
+            )
 
         data = _expect_mapping(payload)
         return cls(
@@ -396,7 +408,7 @@ class BlacklistRequest(RequestModel):
     def to_payload(self) -> dict[str, object]:
         """Сериализует запрос blacklist."""
 
-        return {"blacklistedUserId": self.blacklisted_user_id}
+        return {"users": [{"user_id": self.blacklisted_user_id}]}
 
 
 @dataclass(slots=True, frozen=True)
@@ -448,21 +460,11 @@ class MultiCreateSpecialOfferRequest(RequestModel):
     """Запрос создания рассылки."""
 
     item_ids: list[int]
-    message: str
-    discount_percent: int | None = None
 
     def to_payload(self) -> dict[str, object]:
         """Сериализует запрос создания рассылки."""
 
-        return {
-            key: value
-            for key, value in {
-                "itemIds": self.item_ids,
-                "message": self.message,
-                "discountPercent": self.discount_percent,
-            }.items()
-            if value is not None
-        }
+        return {"itemIds": self.item_ids}
 
 
 @dataclass(slots=True, frozen=True)
@@ -487,24 +489,42 @@ class MultiCreateSpecialOfferResult(ApiModel):
 class MultiConfirmSpecialOfferRequest(RequestModel):
     """Запрос подтверждения и оплаты рассылки."""
 
-    campaign_id: str
+    dispatch_id: int
+    recipients_count: int
+    offer_slug: str
+    discount_value: int | None = None
+    expires_at: int | None = None
 
     def to_payload(self) -> dict[str, object]:
         """Сериализует запрос подтверждения рассылки."""
 
-        return {"campaignId": self.campaign_id}
+        dispatch = {
+            key: value
+            for key, value in {
+                "dispatchId": self.dispatch_id,
+                "recipientsCount": self.recipients_count,
+                "offerSlug": self.offer_slug,
+                "discountValue": self.discount_value,
+            }.items()
+            if value is not None
+        }
+        payload: dict[str, object] = {"dispatches": [dispatch]}
+        if self.expires_at is not None:
+            payload["expiresAt"] = self.expires_at
+        return payload
 
 
 @dataclass(slots=True, frozen=True)
 class SpecialOfferStatsRequest(RequestModel):
     """Запрос статистики рассылки."""
 
-    campaign_id: str
+    date_time_from: str
+    date_time_to: str
 
     def to_payload(self) -> dict[str, object]:
         """Сериализует запрос статистики рассылки."""
 
-        return {"campaignId": self.campaign_id}
+        return {"dateTimeFrom": self.date_time_from, "dateTimeTo": self.date_time_to}
 
 
 @dataclass(slots=True, frozen=True)

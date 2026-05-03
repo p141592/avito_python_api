@@ -14,7 +14,7 @@ def test_ratings_flows() -> None:
         if path == "/ratings/v1/answers":
             assert json.loads(request.content.decode()) == {
                 "reviewId": 123,
-                "text": "Спасибо за отзыв",
+                "message": "Спасибо за отзыв",
             }
             return httpx.Response(200, json={"id": 456, "createdAt": 1713427200})
         if path == "/ratings/v1/answers/456":

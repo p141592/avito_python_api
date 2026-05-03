@@ -780,7 +780,7 @@ class AutoloadProfile(DomainObject):
             "is_enabled": "body.autoload_enabled",
             "feed_url": "body.feeds_data",
             "report_email": "body.report_email",
-            "schedule_rate": "body.schedule",
+            "schedule_rate": "body.schedule[].rate",
         },
     )
     def save(
@@ -1182,7 +1182,7 @@ class AutoloadArchive(DomainObject):
             "is_enabled": "body.autoload_enabled",
             "upload_url": "body.upload_url",
             "report_email": "body.report_email",
-            "schedule_rate": "body.schedule",
+            "schedule_rate": "body.schedule[].rate",
         },
     )
     @deprecated_method(

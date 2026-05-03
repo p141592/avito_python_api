@@ -22,6 +22,7 @@ from avito.core.swagger_registry import (
     normalize_swagger_path,
 )
 from avito.core.swagger_report import SwaggerReportError
+from avito.core.swagger_schema_paths import SwaggerSchemaPathError, resolve_body_path
 
 _API_DOMAINS = frozenset(
     {
@@ -83,6 +84,7 @@ def lint_swagger_bindings(
     if strict:
         errors.extend(_validate_complete_bindings(registry.operations, discovery.bindings))
         errors.extend(_validate_operation_spec_coverage(registry, discovery.bindings))
+        errors.extend(_validate_json_body_model_coverage(registry, discovery.bindings))
     for binding in discovery.bindings:
         operation = _resolve_bound_operation(
             binding=binding,
@@ -168,6 +170,126 @@ def _validate_operation_spec_matches_binding(
             )
         )
     return tuple(errors)
+
+
+def _validate_json_body_model_coverage(
+    registry: SwaggerRegistry,
+    bindings: Sequence[DiscoveredSwaggerBinding],
+) -> tuple[SwaggerReportError, ...]:
+    operations_by_key = {operation.key: operation for operation in registry.operations}
+    errors: list[SwaggerReportError] = []
+
+    for binding in bindings:
+        if binding.domain not in _API_DOMAINS:
+            continue
+        operation = operations_by_key.get(binding.operation_key or "")
+        if operation is None:
+            continue
+        specs = _operation_specs_for_sdk_method(_load_sdk_method(binding))
+        if len(specs) != 1:
+            continue
+        errors.extend(
+            _validate_operation_json_body_models(
+                binding=binding,
+                operation=operation,
+                spec=specs[0],
+            )
+        )
+
+    return tuple(errors)
+
+
+def _validate_operation_json_body_models(
+    *,
+    binding: DiscoveredSwaggerBinding,
+    operation: SwaggerOperation,
+    spec: OperationSpec[object],
+) -> tuple[SwaggerReportError, ...]:
+    errors: list[SwaggerReportError] = []
+    request_body = operation.request_body
+    if request_body is not None and _has_json_content(request_body.content_types):
+        if request_body.schema is None:
+            errors.append(
+                _contract_error(
+                    binding=binding,
+                    code="SWAGGER_CONTRACT_REQUEST_SCHEMA_UNPARSED",
+                    message=f"{operation.key}: requestBody schema не разобрана.",
+                )
+            )
+        if spec.request_model is None:
+            errors.append(
+                _contract_error(
+                    binding=binding,
+                    code="SWAGGER_CONTRACT_REQUEST_MODEL_MISSING",
+                    message=f"{operation.key}: {spec.name} без request_model.",
+                )
+            )
+
+    for response in operation.success_responses:
+        if not _has_json_content(response.content_types):
+            continue
+        if response.schema is None:
+            errors.append(
+                _contract_error(
+                    binding=binding,
+                    code="SWAGGER_CONTRACT_RESPONSE_SCHEMA_UNPARSED",
+                    message=(
+                        f"{operation.key} {response.status_code}: "
+                        "response schema не разобрана."
+                    ),
+                )
+            )
+        if spec.response_kind == "json" and spec.response_model is None:
+            errors.append(
+                _contract_error(
+                    binding=binding,
+                    code="SWAGGER_CONTRACT_RESPONSE_MODEL_MISSING",
+                    message=f"{operation.key} {response.status_code}: {spec.name} без response_model.",
+                )
+            )
+
+    for response in operation.error_responses:
+        if not _has_json_content(response.content_types):
+            continue
+        if response.schema is None:
+            errors.append(
+                _contract_error(
+                    binding=binding,
+                    code="SWAGGER_CONTRACT_ERROR_SCHEMA_UNPARSED",
+                    message=(
+                        f"{operation.key} {response.status_code}: "
+                        "error schema не разобрана."
+                    ),
+                )
+            )
+        if response.status_code not in spec.error_models:
+            errors.append(
+                _contract_error(
+                    binding=binding,
+                    code="SWAGGER_CONTRACT_ERROR_MODEL_MISSING",
+                    message=f"{operation.key} {response.status_code}: {spec.name} без error_model.",
+                )
+            )
+
+    return tuple(errors)
+
+
+def _has_json_content(content_types: Sequence[str]) -> bool:
+    return any("application/json" in content_type for content_type in content_types)
+
+
+def _contract_error(
+    *,
+    binding: DiscoveredSwaggerBinding,
+    code: str,
+    message: str,
+) -> SwaggerReportError:
+    return SwaggerReportError(
+        code=code,
+        message=message,
+        operation_key=binding.operation_key,
+        sdk_method=binding.sdk_method,
+    )
 
 
 def _validate_no_unbound_operation_specs(used_specs: set[int]) -> tuple[SwaggerReportError, ...]:
@@ -666,15 +788,27 @@ def _validate_expression(
                     ),
                 ),
             )
-        if field_name not in request_body.field_names:
+        if request_body.schema is None:
+            return (
+                _expression_error(
+                    binding=binding,
+                    code="SWAGGER_BINDING_BODY_SCHEMA_UNSUPPORTED",
+                    message=(
+                        f"{binding.sdk_method}: {subject}.{argument_name} указывает на "
+                        f"`{expression}`, но requestBody schema не разобрана."
+                    ),
+                ),
+            )
+        try:
+            resolve_body_path(request_body.schema, field_name)
+        except SwaggerSchemaPathError as exc:
             return (
                 _expression_error(
                     binding=binding,
                     code="SWAGGER_BINDING_BODY_FIELD_NOT_FOUND",
                     message=(
                         f"{binding.sdk_method}: {subject}.{argument_name} указывает на "
-                        f"`{expression}`, но Swagger requestBody не содержит поле "
-                        f"`{field_name}`."
+                        f"`{expression}`, но {exc}"
                     ),
                 ),
             )

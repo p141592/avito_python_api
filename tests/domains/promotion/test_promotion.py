@@ -38,7 +38,7 @@ def test_promotion_service_dictionary_and_orders_flow() -> None:
             assert payload == {"itemIds": [101]}
             return httpx.Response(200, json={"items": [{"itemId": 101, "serviceCode": "x2", "serviceName": "X2", "price": 9900, "status": "available"}]})
         if path == "/promotion/v1/items/services/orders/get":
-            assert payload == {"itemIds": [101]}
+            assert payload == {}
             return httpx.Response(200, json={"items": [{"orderId": "ord-1", "itemId": 101, "serviceCode": "x2", "status": "created"}]})
         assert path == "/promotion/v1/items/services/orders/status"
         return httpx.Response(200, json={"orderId": "ord-1", "status": "processed", "items": [], "errors": []})

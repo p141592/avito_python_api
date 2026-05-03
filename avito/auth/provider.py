@@ -41,8 +41,8 @@ def _map_token_response(payload: object, *, now: datetime | None = None) -> Toke
         raise ResponseMappingError("В OAuth-ответе отсутствует `access_token`.", payload=payload)
 
     raw_expires_in = payload.get("expires_in", 0)
-    if not isinstance(raw_expires_in, int):
-        raise ResponseMappingError("Поле `expires_in` должно быть целым числом.", payload=payload)
+    if not isinstance(raw_expires_in, int | float) or isinstance(raw_expires_in, bool):
+        raise ResponseMappingError("Поле `expires_in` должно быть числом.", payload=payload)
 
     refresh_token = payload.get("refresh_token")
     if refresh_token is not None and not isinstance(refresh_token, str):

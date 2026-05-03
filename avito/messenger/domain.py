@@ -158,7 +158,7 @@ class Chat(DomainObject):
         "/messenger/v2/accounts/{user_id}/blacklist",
         spec="Мессенджер.json",
         operation_id="postBlacklistV2",
-        method_args={"blacklisted_user_id": "body.users"},
+        method_args={"blacklisted_user_id": "body.users[].user_id"},
     )
     def blacklist(
         self,
@@ -587,32 +587,34 @@ class SpecialOfferCampaign(DomainObject):
         "/special-offers/v1/multiCreate",
         spec="Рассылкаскидокиспецпредложенийвмессенджере.json",
         operation_id="openApiMultiCreate",
-        method_args={"item_ids": "body.item_ids", "message": "body.item_ids"},
+        method_args={"item_ids": "body.itemIds"},
     )
     def create_multi(
         self,
         *,
         item_ids: list[int],
-        message: str,
-        discount_percent: int | None = None,
         idempotency_key: str | None = None,
         timeout: ApiTimeouts | None = None,
         retry: RetryOverride | None = None,
     ) -> MultiCreateSpecialOfferResult:
         """Создает рассылку спецпредложений.
 
-        Параметр `idempotency_key` задает ключ идемпотентности для безопасного повтора write-операции.
+        Аргументы:
+            item_ids: передает список объявлений для рассылки.
+            idempotency_key: задает ключ идемпотентности для безопасного повтора write-операции.
+            timeout: переопределяет таймауты HTTP-запроса для этого вызова.
+            retry: переопределяет retry-политику операции: default, enabled или disabled.
 
-        Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
+        Возвращает:
+            `MultiCreateSpecialOfferResult` с идентификатором и статусом рассылки.
+
+        Исключения:
+            AvitoError: ошибка SDK с контекстом operation, status, request_id, attempt, method и endpoint.
         """
 
         return self._execute(
             CREATE_MULTI_SPECIAL_OFFER,
-            request=MultiCreateSpecialOfferRequest(
-                item_ids=item_ids,
-                message=message,
-                discount_percent=discount_percent,
-            ),
+            request=MultiCreateSpecialOfferRequest(item_ids=item_ids),
             idempotency_key=idempotency_key,
             timeout=timeout,
             retry=retry,
@@ -623,26 +625,51 @@ class SpecialOfferCampaign(DomainObject):
         "/special-offers/v1/multiConfirm",
         spec="Рассылкаскидокиспецпредложенийвмессенджере.json",
         operation_id="openApiMultiConfirm",
+        method_args={
+            "dispatch_id": "body.dispatches[].dispatchId",
+            "recipients_count": "body.dispatches[].recipientsCount",
+            "offer_slug": "body.dispatches[].offerSlug",
+        },
     )
     def confirm_multi(
         self,
         *,
-        campaign_id: str | None = None,
+        dispatch_id: int,
+        recipients_count: int,
+        offer_slug: str,
+        discount_value: int | None = None,
+        expires_at: int | None = None,
         idempotency_key: str | None = None,
         timeout: ApiTimeouts | None = None,
         retry: RetryOverride | None = None,
     ) -> WebhookActionResult:
         """Подтверждает и оплачивает рассылку.
 
-        Параметр `idempotency_key` задает ключ идемпотентности для безопасного повтора write-операции.
+        Аргументы:
+            dispatch_id: идентифицирует рассылку.
+            recipients_count: задает число получателей рассылки.
+            offer_slug: задает выбранный вариант предложения.
+            discount_value: задает финальный размер скидки, если он применим.
+            expires_at: задает timestamp окончания предложения.
+            idempotency_key: задает ключ идемпотентности для безопасного повтора write-операции.
+            timeout: переопределяет таймауты HTTP-запроса для этого вызова.
+            retry: переопределяет retry-политику операции: default, enabled или disabled.
 
-        Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
+        Возвращает:
+            `WebhookActionResult` со статусом подтверждения.
+
+        Исключения:
+            AvitoError: ошибка SDK с контекстом operation, status, request_id, attempt, method и endpoint.
         """
 
         return self._execute(
             CONFIRM_MULTI_SPECIAL_OFFER,
             request=MultiConfirmSpecialOfferRequest(
-                campaign_id=campaign_id or self._require_campaign_id(),
+                dispatch_id=dispatch_id,
+                recipients_count=recipients_count,
+                offer_slug=offer_slug,
+                discount_value=discount_value,
+                expires_at=expires_at,
             ),
             idempotency_key=idempotency_key,
             timeout=timeout,
@@ -654,23 +681,39 @@ class SpecialOfferCampaign(DomainObject):
         "/special-offers/v1/stats",
         spec="Рассылкаскидокиспецпредложенийвмессенджере.json",
         operation_id="openApiStats",
+        method_args={
+            "date_time_from": "body.dateTimeFrom",
+            "date_time_to": "body.dateTimeTo",
+        },
     )
     def get_stats(
         self,
         *,
-        campaign_id: str | None = None,
+        date_time_from: str,
+        date_time_to: str,
         timeout: ApiTimeouts | None = None,
         retry: RetryOverride | None = None,
     ) -> SpecialOfferStatsResult:
         """Получает статистику рассылки.
 
-        Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
+        Аргументы:
+            date_time_from: задает начало периода в формате RFC3339.
+            date_time_to: задает конец периода в формате RFC3339.
+            timeout: переопределяет таймауты HTTP-запроса для этого вызова.
+            retry: переопределяет retry-политику операции: default, enabled или disabled.
+
+        Возвращает:
+            `SpecialOfferStatsResult` со статистикой рассылки.
+
+        Исключения:
+            AvitoError: ошибка SDK с контекстом operation, status, request_id, attempt, method и endpoint.
         """
 
         return self._execute(
             GET_SPECIAL_OFFER_STATS,
             request=SpecialOfferStatsRequest(
-                campaign_id=campaign_id or self._require_campaign_id(),
+                date_time_from=date_time_from,
+                date_time_to=date_time_to,
             ),
             timeout=timeout,
             retry=retry,

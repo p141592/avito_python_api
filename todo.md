@@ -277,3 +277,226 @@ make check
   - `poetry run mypy avito/ads avito/orders avito/promotion avito/testing/swagger_fake_transport.py` - pass.
 - Request-body backlog уменьшен с `59` до `53`.
 - Следующий практичный шаг: перейти к `jobs` request batch.
+
+### 2026-05-02 / Этап 5
+
+- Закрыт `jobs` request batch:
+  - `applications/apply_actions` и `applications/get_by_ids` отправляют строковые ids;
+  - `applications/webhook` требует и отправляет `secret`;
+  - v2 vacancy create/update отправляют обязательный `billing_type`;
+  - v1 vacancy create отправляет обязательные `name`, `description`, `billing_type`, `business_area`, `employment`, `schedule`, `experience`;
+  - v1 vacancy update отправляет обязательный `billing_type`;
+  - vacancy statuses отправляют UUID string ids.
+- Разделены request-модели v1/v2 вакансий, обновлены domain tests, how-to snippet и `CHANGELOG.md` для измененных публичных сигнатур.
+- Проверено:
+  - `poetry run pytest tests/domains/jobs/test_jobs.py` - pass;
+  - `poetry run pytest tests/domains/jobs/test_jobs.py tests/contracts/test_model_contracts.py tests/contracts/test_client_contracts.py` - pass;
+  - `poetry run pytest tests/contracts/test_swagger_contracts.py -k request_body_matches --tb=short` - `45 failed, 159 passed`;
+  - `poetry run mypy avito/jobs avito/testing/swagger_fake_transport.py` - pass;
+  - `poetry run ruff check avito/jobs avito/testing/swagger_fake_transport.py tests/domains/jobs/test_jobs.py` - pass;
+  - `poetry run python scripts/lint_swagger_bindings.py --strict` - pass.
+- Request-body backlog уменьшен с `53` до `45`.
+- Следующий практичный шаг: перейти к `messenger` request batch.
+
+### 2026-05-02 / Этап 6
+
+- Закрыт `messenger` request batch:
+  - blacklist отправляет Swagger wrapper `users[].user_id`;
+  - text messages отправляют `message.text` и `type`;
+  - image messages отправляют `image_id`.
+- `SwaggerRegistry` теперь не включает в normalized `required` поля, отсутствующие в `properties`; это убирает неконсистентный Swagger `required: ["url"]` в `sendMessageRequestBody`, где `url` не описан как свойство и не имеет JSON type.
+- Обновлены domain tests и `CHANGELOG.md`.
+- Проверено:
+  - `poetry run pytest tests/domains/messenger/test_messenger.py tests/core/test_swagger_registry.py tests/contracts/test_model_contracts.py tests/contracts/test_client_contracts.py` - pass;
+  - `poetry run pytest tests/contracts/test_swagger_contracts.py -k request_body_matches --tb=short` - `40 failed, 164 passed`;
+  - `poetry run mypy avito/core/swagger_registry.py avito/messenger avito/testing/swagger_fake_transport.py` - pass;
+  - `poetry run ruff check avito/core/swagger_registry.py avito/messenger avito/testing/swagger_fake_transport.py tests/domains/messenger/test_messenger.py` - pass;
+  - `poetry run python scripts/lint_swagger_bindings.py --strict` - pass.
+- Request-body backlog уменьшен с `45` до `40`.
+- Следующий практичный шаг: перейти к `special-offers` request batch.
+
+### 2026-05-02 / Этап 7
+
+- Закрыт `special-offers` request batch:
+  - `multiCreate` отправляет только Swagger поле `itemIds`;
+  - `multiConfirm` отправляет `dispatches[]` и опциональный `expiresAt`;
+  - `stats` требует и отправляет `dateTimeFrom/dateTimeTo`.
+- Обновлены публичные сигнатуры, request models, domain tests и `CHANGELOG.md`.
+- В `SwaggerFakeTransport` убраны точечные scalar fallbacks: `itemIds`/`itemIDs`, `dateTime*`, `campaignId`, `fieldsValueIds`, `specification` и jobs `schedule` теперь подбираются через общий alias lookup и scoped body-field aliases.
+- Проверено:
+  - `poetry run pytest tests/domains/messenger/test_messenger.py` - pass;
+  - `poetry run pytest tests/contracts/test_swagger_contracts.py -k request_body_matches --tb=short` - `37 failed, 167 passed`;
+  - `poetry run mypy avito/testing/swagger_fake_transport.py` - pass;
+  - `poetry run ruff check avito/testing/swagger_fake_transport.py` - pass;
+  - `poetry run python scripts/lint_swagger_bindings.py --strict` - pass.
+- Request-body backlog уменьшен с `40` до `37`.
+- Следующий практичный шаг: перейти к `promotion`, `ratings` или `realty` request batch.
+
+### План / Этап 8: убрать корневую причину hardcode в Swagger contract harness
+
+- Контекст после этапов 5-7:
+  - `jobs`, `messenger` и `special-offers` request batches закрыты;
+  - request-body backlog сейчас `37 failed, 167 passed`;
+  - в `SwaggerFakeTransport` уже убраны несколько точечных scalar fallbacks, но это временное улучшение, а не полное архитектурное решение.
+- Проблема:
+  - `method_args` сейчас описывает только связь SDK-аргумента с top-level Swagger body field;
+  - этого недостаточно для nested/object/array mappings: `users[].user_id`, `dispatches[].dispatchId`, `schedule.id`, `fieldsValueIds[]`;
+  - из-за этого `SwaggerFakeTransport` вынужден угадывать тестовые аргументы и накапливает hardcode.
+- Исправление:
+  - вынести нормализацию Swagger field names в общий модуль и использовать ее в registry/linter/fake transport из одного источника;
+  - расширить binding expressions до JSON-path уровня: `body.itemIds`, `body.dispatches[].dispatchId`, `body.users[].user_id`, `body.fieldsValueIds[]`;
+  - научить `swagger_linter` валидировать весь path по `SwaggerSchema`, включая array/object leaf nodes;
+  - перевести существующие грубые bindings (`users`, `dispatches`, `schedule`, `fieldsValueIds`, `specification`) на точные paths;
+  - упростить `SwaggerFakeTransport`, чтобы он генерировал значения по parsed path + schema/annotation, а не через локальные `if field_name == ...`.
+- Минимальная проверка этапа:
+  - `poetry run python scripts/lint_swagger_bindings.py --strict`;
+  - `poetry run pytest tests/core/test_swagger*.py tests/contracts/test_swagger_contracts.py -k request_body_matches --tb=short`;
+  - `poetry run mypy avito/core avito/testing`;
+  - `poetry run ruff check avito/core avito/testing tests/core tests/contracts`.
+- После этого вернуться к оставшемуся request-body backlog: `promotion`, `ratings`, `realty`, затем крупные `orders/delivery` группы.
+
+### 2026-05-02 / Этап 8
+
+- Убрана корневая причина части hardcode в Swagger contract harness:
+  - добавлен общий `avito.core.swagger_names.swagger_field_aliases()`;
+  - добавлен parser/validator restricted body paths в `avito.core.swagger_schema_paths`;
+  - `swagger_linter` теперь валидирует `body.field`, `body.array[]`, `body.array[].field`, `body.object.field` по normalized `SwaggerSchema`;
+  - `SwaggerFakeTransport` использует parsed body path и schema leaf для генерации аргументов, вместо scoped aliases для `users`, `dispatches`, `fieldsValueIds`, `specification`, `schedule`;
+  - сохранена поддержка literal Swagger property с brackets, например `body.uploadfile[]`.
+- Переведены грубые bindings на точные body paths:
+  - `users[].user_id`;
+  - `dispatches[].dispatchId`, `dispatches[].recipientsCount`, `dispatches[].offerSlug`;
+  - `fieldsValueIds[].valueId`;
+  - `specification.brand.valueId`;
+  - `schedule.id` и `schedule[].rate`.
+- Проверено:
+  - `poetry run python scripts/lint_swagger_bindings.py --strict` - pass;
+  - `poetry run pytest tests/core/test_swagger_schema_paths.py tests/core/test_swagger_registry.py tests/contracts/test_model_contracts.py tests/contracts/test_client_contracts.py` - pass;
+  - `poetry run pytest tests/core/test_swagger_schema_paths.py tests/core/test_swagger_registry.py tests/contracts/test_swagger_contracts.py -k request_body_matches --tb=short` - `25 failed, 179 passed`;
+  - `poetry run mypy avito/core avito/testing` - pass;
+  - `poetry run ruff check avito/core avito/testing tests/core tests/contracts` - pass.
+- Request-body backlog уменьшен с `37` до `25`.
+- Следующий практичный шаг: закрыть `promotion`, `ratings`, `realty`, затем крупные `orders/delivery` groups.
+
+### 2026-05-02 / Этап 8 завершен полностью
+
+- Доведен до конца отказ от domain-specific body fixture hardcode в `SwaggerFakeTransport`:
+  - удалены ручные ветки создания delivery/realty/promotion request DTO по именам классов и полей;
+  - добавлен общий schema-aware dataclass/list/scalar generator по type hints публичного SDK метода;
+  - генератор заполняет dataclass fields через Swagger property aliases и required/properties текущей schema, чтобы не добавлять лишние JSON поля;
+  - enum/string/list/datetime/scalar значения теперь выводятся общим путем, а не через локальные branches для конкретного домена;
+  - сохранены только отдельные генераторы для auth request objects, upload files и query objects, потому что они не являются JSON body DTO hardcode.
+- Проверено:
+  - `poetry run pytest tests/contracts/test_swagger_contracts.py -k request_body_matches --tb=short` - `204 passed, 1707 deselected`;
+  - `poetry run pytest tests/core/test_swagger_schema_paths.py tests/core/test_swagger_registry.py tests/contracts/test_model_contracts.py tests/contracts/test_client_contracts.py` - `32 passed`;
+  - `poetry run mypy avito/testing/swagger_fake_transport.py` - pass;
+  - `poetry run ruff check avito/testing/swagger_fake_transport.py` - pass.
+
+### 2026-05-02 / Этап 2 завершен
+
+- Полностью закрыт request-body backlog strict Swagger schema contracts.
+- Закрыты оставшиеся request groups:
+  - `promotion`: `orders/get` и `orders/status` приведены к Swagger payload shape;
+  - `ratings`: ответы на отзывы отправляют `message`;
+  - `realty`: bookings/prices/intervals/base payloads приведены к Swagger keys;
+  - `orders`: markings, confirmation code, CNC details, courier range и labels приведены к Swagger request schemas;
+  - `delivery`: production announcement/parcel/changeParcel payloads и sandbox tariffs/announcements/createParcel payloads приведены к Swagger request schemas.
+- Разделены request-модели для похожих delivery endpoints, где Swagger требует разные JSON contracts:
+  - production create/cancel announcement;
+  - sandbox create/track announcement;
+  - production create parcel и sandbox v2 create parcel.
+- Обновлены доменные тесты под Swagger-shaped request payloads.
+- Проверено:
+  - `poetry run pytest tests/contracts/test_swagger_contracts.py -k request_body_matches --tb=short` - `204 passed, 1707 deselected`;
+  - `poetry run python scripts/lint_swagger_bindings.py --strict` - pass, `bound: 204, unbound: 0, duplicate: 0, ambiguous: 0, validation errors: 0`;
+  - `poetry run pytest tests/domains/promotion/test_promotion.py tests/domains/ratings/test_ratings.py tests/domains/realty/test_realty.py tests/domains/orders/test_orders.py tests/contracts/test_model_contracts.py tests/contracts/test_client_contracts.py --tb=short` - `32 passed`;
+  - `poetry run mypy avito/promotion avito/ratings avito/realty avito/orders avito/testing/swagger_fake_transport.py` - pass;
+  - `poetry run ruff check avito/promotion avito/ratings avito/realty avito/orders avito/testing/swagger_fake_transport.py tests/domains/promotion/test_promotion.py tests/domains/ratings/test_ratings.py tests/domains/realty/test_realty.py tests/domains/orders/test_orders.py` - pass.
+- Следующий практичный шаг: перейти к этапу 9, success response mismatches.
+
+### 2026-05-03 / Этап 9 завершен
+
+- Полностью закрыт success-response backlog strict Swagger schema contracts.
+- Исправлены `from_payload()`/response mappers для Swagger-shaped success payloads:
+  - `accounts`: `operations_history`, `listCompanyPhonesV1`, `getEmployeesV1`;
+  - `ads`: `vas/prices` array response;
+  - `jobs`: `vacancies/statuses` array response;
+  - `messenger`: `chats/{chat_id}/messages` array response;
+  - `promotion`: `items/services/dict` array response;
+  - `auth/autoteka`: OAuth token `expires_in` принимает Swagger number.
+- Обновлен устаревший contract harness smoke-test для `listItemsByEmployeeIdV1` под текущий Swagger-shaped request body.
+- Проверено:
+  - `poetry run pytest tests/contracts/test_swagger_contracts.py -k success_response_models_accept --tb=short` - `204 passed, 1707 deselected`;
+  - `poetry run pytest tests/contracts/test_swagger_contracts.py -k request_body_matches --tb=short` - `204 passed, 1707 deselected`;
+  - `poetry run pytest tests/contracts/test_swagger_contracts.py -k error_responses_preserve --tb=short` - `639 passed, 1272 deselected`;
+  - `poetry run pytest tests/contracts/test_swagger_contracts.py --tb=short` - `1911 passed`;
+  - `poetry run mypy avito/accounts avito/ads avito/jobs avito/messenger avito/promotion avito/auth` - pass;
+  - `poetry run ruff check avito/accounts/models.py avito/ads/models.py avito/jobs/models.py avito/messenger/models.py avito/promotion/models.py avito/auth/provider.py tests/contracts/test_swagger_contracts.py` - pass.
+- Следующий практичный шаг: этап 10 уже зеленый по текущему contract slice; перейти к этапу 11/12 и зафиксировать strict schema tests в lint/gate.
+
+### 2026-05-03 / Этап 10 завершен
+
+- Error-response contracts подтверждены текущими строгими Swagger schema tests.
+- Подтверждено:
+  - generated error payload валиден по Swagger schema;
+  - `SwaggerFakeTransport` мапит каждый заявленный error status в SDK exception;
+  - `exception.payload == swagger_payload`;
+  - общий `ApiErrorPayload` сохраняет upstream payload без потерь.
+- Кодовых изменений не потребовалось: общий error parser и typed error wrapper уже соответствуют целевому контракту.
+- Проверено:
+  - `poetry run pytest tests/contracts/test_swagger_contracts.py -k "error_responses_preserve or maps_every_declared_error_status or error_contract_coverage" --tb=short` - `1279 passed, 632 deselected`;
+  - `poetry run pytest tests/contracts/test_swagger_contracts.py --tb=short` - `1911 passed`;
+  - `poetry run pytest tests/core/test_transport.py tests/core/test_operations.py --tb=short` - `41 passed`.
+- Следующий практичный шаг: этап 11 - перенести runtime contract правила в `swagger_linter`, затем этап 12 - закрепить strict schema tests в gate.
+
+### 2026-05-03 / Этап 11 завершен
+
+- Runtime contract правила из `tests/contracts/test_swagger_contracts.py::test_swagger_operation_specs_cover_all_declared_json_bodies` перенесены в strict `swagger_linter`.
+- В strict режиме `scripts/lint_swagger_bindings.py --strict` теперь дополнительно проверяет:
+  - JSON `requestBody` со Swagger schema требует `OperationSpec.request_model`;
+  - JSON success response требует `OperationSpec.response_model`, если `response_kind == "json"`;
+  - JSON error response требует `OperationSpec.error_models[status]`;
+  - JSON request/success/error schema должна быть разобрана registry.
+- Добавлен unit-test `tests/core/test_swagger_linter.py` на новые linter-коды missing request/response/error model.
+- Проверено:
+  - `poetry run python scripts/lint_swagger_bindings.py --strict` - pass, `bound: 204, unbound: 0, duplicate: 0, ambiguous: 0, validation errors: 0`;
+  - `poetry run pytest tests/contracts/test_swagger_contracts.py --tb=short` - `1911 passed`;
+  - `poetry run pytest tests/core/test_swagger_linter.py tests/core/test_swagger_registry.py tests/core/test_swagger_schema_paths.py tests/contracts/test_swagger_contracts.py::test_swagger_operation_specs_cover_all_declared_json_bodies --tb=short` - `16 passed`;
+  - `poetry run mypy avito/core` - pass;
+  - `poetry run ruff check avito/core tests/core/test_swagger_linter.py` - pass.
+- Следующий практичный шаг: этап 12 - убедиться, что strict schema tests закреплены в `make swagger-coverage`/gate, затем прогнать `make check`.
+
+### 2026-05-03 / Этап 12 завершен
+
+- Strict schema tests закреплены в gate:
+  - `make swagger-coverage` запускает `swagger-lint`, `tests/core/test_swagger_registry.py` и полный `tests/contracts/test_swagger_contracts.py`;
+  - `make check` запускает полный `pytest`, поэтому strict Swagger schema contracts входят в общий gate.
+- Проверено:
+  - `make swagger-coverage` - pass, `1921 passed`;
+  - `make check` - pass:
+    - `poetry run pytest` - `2051 passed`;
+    - `poetry run mypy avito` - pass;
+    - `poetry run ruff check .` - pass;
+    - `poetry run python scripts/lint_swagger_bindings.py --strict` - pass, `bound: 204, unbound: 0, duplicate: 0, ambiguous: 0, validation errors: 0`;
+    - `poetry run python scripts/lint_architecture.py` - pass, `errors=0`;
+    - `poetry build` - pass, built sdist and wheel.
+- Следующий практичный шаг: этап 13 - финальная проверка/резюме состояния проекта.
+
+### 2026-05-03 / Этап 13 завершен
+
+- Финальная проверка strict Swagger schema contract coverage завершена.
+- Минимальные проверки из плана выполнены:
+  - `poetry run pytest tests/contracts/test_swagger_contracts.py --tb=short` - `1911 passed`;
+  - `poetry run pytest tests/domains/ --tb=short` - `37 passed`;
+  - `poetry run python scripts/lint_swagger_bindings.py --strict` - pass, `bound: 204, unbound: 0, duplicate: 0, ambiguous: 0, validation errors: 0`;
+  - `poetry run mypy avito` - pass, `84 source files`;
+  - `poetry run ruff check .` - pass.
+- Финальный gate выполнен:
+  - `make check` - pass:
+    - `poetry run pytest` - `2051 passed`;
+    - `poetry run mypy avito` - pass;
+    - `poetry run ruff check .` - pass;
+    - `poetry run python scripts/lint_swagger_bindings.py --strict` - pass;
+    - `poetry run python scripts/lint_architecture.py` - pass, `errors=0`;
+    - `poetry build` - pass, built sdist and wheel.
+- Целевой инвариант strict Swagger schema contracts достигнут для текущих 23 Swagger specs / 204 operations.
