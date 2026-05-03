@@ -150,6 +150,10 @@ def test_token_client_maps_authentication_error() -> None:
 
     assert error.value.status_code == 401
     assert error.value.error_code == "invalid_client"
+    assert error.value.operation == "auth.oauth_token"
+    assert error.value.attempt == 1
+    assert error.value.method == "POST"
+    assert error.value.endpoint == "/token"
 
 
 def test_client_auth_surface_exposes_current_token_flows_only() -> None:

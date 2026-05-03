@@ -191,6 +191,9 @@ class Transport:
                 raise TransportError(
                     str(exc),
                     operation=context.operation_name,
+                    attempt=attempt,
+                    method=method,
+                    endpoint=normalized_path,
                     metadata={"timeout": isinstance(exc, httpx.TimeoutException)},
                 ) from exc
 
@@ -200,7 +203,11 @@ class Transport:
                 and self._auth_provider is not None
             ):
                 if unauthorized_refresh_used:
-                    raise self._map_http_error(response, operation=context.operation_name)
+                    raise self._map_http_error(
+                        response,
+                        operation=context.operation_name,
+                        attempt=attempt,
+                    )
                 unauthorized_refresh_used = True
                 self._auth_provider.invalidate_token()
                 refreshed_headers = dict(request_headers)
@@ -227,7 +234,11 @@ class Transport:
                     )
                     self._sleep(decision.delay_seconds)
                     continue
-                raise self._map_http_error(response, operation=context.operation_name)
+                raise self._map_http_error(
+                    response,
+                    operation=context.operation_name,
+                    attempt=attempt,
+                )
 
             if 500 <= response.status_code < 600:
                 decision = self._decide_http_retry(
@@ -246,10 +257,18 @@ class Transport:
                     )
                     self._sleep(decision.delay_seconds)
                     continue
-                raise self._map_http_error(response, operation=context.operation_name)
+                raise self._map_http_error(
+                    response,
+                    operation=context.operation_name,
+                    attempt=attempt,
+                )
 
             if response.is_error:
-                raise self._map_http_error(response, operation=context.operation_name)
+                raise self._map_http_error(
+                    response,
+                    operation=context.operation_name,
+                    attempt=attempt,
+                )
 
             return response
 
@@ -472,7 +491,11 @@ class Transport:
         )
 
     def _map_http_error(
-        self, response: httpx.Response, *, operation: str | None = None
+        self,
+        response: httpx.Response,
+        *,
+        operation: str | None = None,
+        attempt: int | None = None,
     ) -> Exception:
         payload = self._safe_payload(response)
         message = self._extract_message(payload) or f"HTTP {response.status_code}"
@@ -483,9 +506,11 @@ class Transport:
         )
         request_id = self._extract_request_id(response.headers)
         headers = dict(response.headers)
+        method = response.request.method
+        endpoint = response.request.url.path
         metadata = {
-            "method": response.request.method,
-            "path": response.request.url.path,
+            "method": method,
+            "path": endpoint,
         }
 
         if response.status_code == 401:
@@ -494,6 +519,9 @@ class Transport:
                 status_code=401,
                 error_code=error_code,
                 operation=operation,
+                attempt=attempt,
+                method=method,
+                endpoint=endpoint,
                 details=details,
                 retry_after=retry_after,
                 request_id=request_id,
@@ -507,6 +535,9 @@ class Transport:
                 status_code=403,
                 error_code=error_code,
                 operation=operation,
+                attempt=attempt,
+                method=method,
+                endpoint=endpoint,
                 details=details,
                 retry_after=retry_after,
                 request_id=request_id,
@@ -520,6 +551,9 @@ class Transport:
                 status_code=response.status_code,
                 error_code=error_code,
                 operation=operation,
+                attempt=attempt,
+                method=method,
+                endpoint=endpoint,
                 details=details,
                 retry_after=retry_after,
                 request_id=request_id,
@@ -533,6 +567,9 @@ class Transport:
                 status_code=409,
                 error_code=error_code,
                 operation=operation,
+                attempt=attempt,
+                method=method,
+                endpoint=endpoint,
                 details=details,
                 retry_after=retry_after,
                 request_id=request_id,
@@ -546,6 +583,9 @@ class Transport:
                 status_code=429,
                 error_code=error_code,
                 operation=operation,
+                attempt=attempt,
+                method=method,
+                endpoint=endpoint,
                 details=details,
                 retry_after=retry_after,
                 request_id=request_id,
@@ -559,6 +599,9 @@ class Transport:
                 status_code=response.status_code,
                 error_code=error_code,
                 operation=operation,
+                attempt=attempt,
+                method=method,
+                endpoint=endpoint,
                 details=details,
                 retry_after=retry_after,
                 request_id=request_id,
@@ -571,6 +614,9 @@ class Transport:
             status_code=response.status_code,
             error_code=error_code,
             operation=operation,
+            attempt=attempt,
+            method=method,
+            endpoint=endpoint,
             details=details,
             retry_after=retry_after,
             request_id=request_id,

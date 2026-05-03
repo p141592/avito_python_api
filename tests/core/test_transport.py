@@ -21,6 +21,7 @@ from avito.core import (
     RequestContext,
     ResponseMappingError,
     Transport,
+    TransportError,
     UnsupportedOperationError,
     UpstreamApiError,
     ValidationError,
@@ -312,6 +313,33 @@ def test_transport_does_not_retry_post_without_idempotency_key_even_with_allow_r
     assert calls["count"] == 1
 
 
+def test_transport_exposes_request_context_on_transport_error() -> None:
+    def handler(request: httpx.Request) -> httpx.Response:
+        raise httpx.ConnectError("offline", request=request)
+
+    transport = Transport(
+        make_settings(retry_policy=RetryPolicy(max_attempts=1)),
+        client=httpx.Client(
+            transport=httpx.MockTransport(handler), base_url="https://api.avito.ru"
+        ),
+        sleep=lambda _: None,
+    )
+
+    with pytest.raises(TransportError, match="offline") as error:
+        transport.request_json(
+            "POST",
+            "/items",
+            context=RequestContext("create_item", allow_retry=True),
+            json_body={"name": "item"},
+            idempotency_key="idem-123",
+        )
+
+    assert error.value.operation == "create_item"
+    assert error.value.attempt == 1
+    assert error.value.method == "POST"
+    assert error.value.endpoint == "/items"
+
+
 @pytest.mark.parametrize(
     ("status_code", "error_cls"),
     (
@@ -368,6 +396,9 @@ def test_transport_exposes_structured_error_fields() -> None:
         transport.request_json("GET", "/limited", context=RequestContext("limited"))
 
     assert error.value.operation == "limited"
+    assert error.value.attempt == 1
+    assert error.value.method == "GET"
+    assert error.value.endpoint == "/limited"
     assert error.value.status == 429
     assert error.value.error_code == "rate_limit"
     assert error.value.details == {"limit": "minute"}
