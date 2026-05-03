@@ -7,6 +7,7 @@ from dataclasses import dataclass
 from avito.core import ApiTimeouts, RetryOverride, ValidationError
 from avito.core.domain import DomainObject
 from avito.core.swagger import swagger_operation
+from avito.core.validation import DateInput, serialize_iso_date
 from avito.realty.models import (
     RealtyActionResult,
     RealtyAnalyticsInfo,
@@ -153,7 +154,7 @@ class RealtyBooking(DomainObject):
     def update_bookings_info(
         self,
         *,
-        blocked_dates: list[str],
+        blocked_dates: list[DateInput],
         user_id: int | str | None = None,
         item_id: int | str | None = None,
         timeout: ApiTimeouts | None = None,
@@ -184,7 +185,12 @@ class RealtyBooking(DomainObject):
                 "user_id": user_id or self._require_user_id(),
                 "item_id": item_id or self._require_item_id(),
             },
-            request=RealtyBookingsUpdateRequest(blocked_dates=blocked_dates),
+            request=RealtyBookingsUpdateRequest(
+                blocked_dates=[
+                    serialize_iso_date(f"blocked_dates[{index}]", blocked_date)
+                    for index, blocked_date in enumerate(blocked_dates)
+                ]
+            ),
             timeout=timeout,
             retry=retry,
         )
@@ -199,8 +205,8 @@ class RealtyBooking(DomainObject):
     def list_realty_bookings(
         self,
         *,
-        date_start: str,
-        date_end: str,
+        date_start: DateInput,
+        date_end: DateInput,
         with_unpaid: bool | None = None,
         user_id: int | str | None = None,
         item_id: int | str | None = None,
@@ -235,8 +241,8 @@ class RealtyBooking(DomainObject):
                 "item_id": item_id or self._require_item_id(),
             },
             query=RealtyBookingsQuery(
-                date_start=date_start,
-                date_end=date_end,
+                date_start=serialize_iso_date("date_start", date_start),
+                date_end=serialize_iso_date("date_end", date_end),
                 with_unpaid=with_unpaid,
             ),
             timeout=timeout,

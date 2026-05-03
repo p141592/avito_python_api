@@ -8,6 +8,7 @@ from dataclasses import dataclass
 from avito.core import ApiTimeouts, RetryOverride, ValidationError
 from avito.core.domain import DomainObject
 from avito.core.swagger import swagger_operation
+from avito.core.validation import DateInput, serialize_iso_datetime
 from avito.jobs.models import (
     ApplicationActionRequest,
     ApplicationIdsQuery,
@@ -32,12 +33,16 @@ from avito.jobs.models import (
     VacanciesResult,
     VacancyArchiveRequest,
     VacancyAutoRenewalRequest,
+    VacancyBillingTypeInput,
     VacancyClassicCreateRequest,
     VacancyClassicUpdateRequest,
     VacancyCreateRequest,
+    VacancyEmploymentInput,
+    VacancyExperienceInput,
     VacancyIdsRequest,
     VacancyInfo,
     VacancyProlongateRequest,
+    VacancyScheduleInput,
     VacancyStatusesResult,
     VacancyUpdateRequest,
 )
@@ -92,12 +97,12 @@ class Vacancy(DomainObject):
         self,
         *,
         title: str,
-        billing_type: str,
+        billing_type: VacancyBillingTypeInput,
         description: str | None = None,
         business_area: int | None = None,
-        employment: str | None = None,
-        schedule: str | None = None,
-        experience: str | None = None,
+        employment: VacancyEmploymentInput | None = None,
+        schedule: VacancyScheduleInput | None = None,
+        experience: VacancyExperienceInput | None = None,
         version: int = 2,
         idempotency_key: str | None = None,
         timeout: ApiTimeouts | None = None,
@@ -178,11 +183,11 @@ class Vacancy(DomainObject):
         *,
         title: str,
         description: str,
-        billing_type: str,
+        billing_type: VacancyBillingTypeInput,
         business_area: int,
-        employment: str,
-        schedule: str,
-        experience: str,
+        employment: VacancyEmploymentInput,
+        schedule: VacancyScheduleInput,
+        experience: VacancyExperienceInput,
         idempotency_key: str | None = None,
         timeout: ApiTimeouts | None = None,
         retry: RetryOverride | None = None,
@@ -235,7 +240,7 @@ class Vacancy(DomainObject):
         self,
         *,
         title: str,
-        billing_type: str,
+        billing_type: VacancyBillingTypeInput,
         vacancy_id: int | str | None = None,
         vacancy_uuid: str | None = None,
         version: int = 2,
@@ -295,7 +300,7 @@ class Vacancy(DomainObject):
         self,
         *,
         title: str,
-        billing_type: str,
+        billing_type: VacancyBillingTypeInput,
         vacancy_id: int | str | None = None,
         idempotency_key: str | None = None,
         timeout: ApiTimeouts | None = None,
@@ -382,7 +387,7 @@ class Vacancy(DomainObject):
     def prolongate(
         self,
         *,
-        billing_type: str,
+        billing_type: VacancyBillingTypeInput,
         vacancy_id: int | str | None = None,
         idempotency_key: str | None = None,
         timeout: ApiTimeouts | None = None,
@@ -710,7 +715,7 @@ class Application(DomainObject):
     def get_ids(
         self,
         *,
-        updated_at_from: str,
+        updated_at_from: DateInput,
         timeout: ApiTimeouts | None = None,
         retry: RetryOverride | None = None,
     ) -> ApplicationIdsResult:
@@ -721,7 +726,9 @@ class Application(DomainObject):
 
         return self._execute(
             GET_APPLICATION_IDS,
-            query=ApplicationIdsQuery(updated_at_from=updated_at_from),
+            query=ApplicationIdsQuery(
+                updated_at_from=serialize_iso_datetime("updated_at_from", updated_at_from)
+            ),
             timeout=timeout,
             retry=retry,
         )

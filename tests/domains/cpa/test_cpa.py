@@ -6,6 +6,7 @@ import logging
 import httpx
 import pytest
 
+from avito.core import ValidationError
 from avito.cpa import CallTrackingCall, CpaArchive, CpaCall, CpaChat, CpaLead
 from avito.cpa.models import CpaCallStatusId
 from tests.helpers.transport import make_transport
@@ -142,3 +143,19 @@ def test_calltracking_flows() -> None:
     assert call.get().call.call_id == "7001"
     assert call.list(date_time_from="2026-04-01T00:00:00Z", date_time_to="2026-04-18T23:59:59Z", limit=100, offset=0).items[0].buyer_phone == "+79990000100"
     assert call.download().binary.content == audio_bytes
+
+
+def test_cpa_rejects_invalid_datetime_before_transport() -> None:
+    def handler(request: httpx.Request) -> httpx.Response:
+        raise AssertionError("transport must not be called")
+
+    chat = CpaChat(make_transport(httpx.MockTransport(handler)))
+    call = CpaCall(make_transport(httpx.MockTransport(handler)))
+    tracking = CallTrackingCall(make_transport(httpx.MockTransport(handler)))
+
+    with pytest.raises(ValidationError, match="created_at_from"):
+        chat.list(created_at_from="18.04.2026", limit=10, offset=0)
+    with pytest.raises(ValidationError, match="date_time_from"):
+        call.list(date_time_from="", limit=100)
+    with pytest.raises(ValidationError, match="date_time_to"):
+        tracking.list(date_time_from="2026-04-01T00:00:00Z", date_time_to="not-a-date")

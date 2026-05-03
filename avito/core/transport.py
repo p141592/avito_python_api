@@ -13,7 +13,7 @@ from email.message import Message
 from email.utils import parsedate_to_datetime
 from io import BytesIO
 from typing import TYPE_CHECKING, cast
-from urllib.parse import quote
+from urllib.parse import quote, urlsplit
 
 import httpx
 
@@ -151,12 +151,15 @@ class Transport:
                     "transport rate limit delay",
                     extra={
                         "operation": context.operation_name,
+                        "endpoint": self._safe_endpoint(normalized_path),
+                        "method": method,
                         "attempt": attempt,
                         "delay_ms": int(limiter_delay * 1000),
                         "reason": "client_rate_limit",
                     },
                 )
             try:
+                started_at = time.perf_counter()
                 response = self._client.request(
                     method=method,
                     url=normalized_path,
@@ -168,10 +171,28 @@ class Transport:
                     content=content,
                     timeout=timeout,
                 )
+                self._log_http_exchange(
+                    operation=context.operation_name,
+                    endpoint=normalized_path,
+                    method=method,
+                    attempt=attempt,
+                    status=response.status_code,
+                    latency_ms=self._elapsed_ms(started_at),
+                    request_id=self._extract_request_id(response.headers),
+                )
                 self._rate_limiter.observe_response(
                     headers=response.headers,
                 )
             except (httpx.TimeoutException, httpx.NetworkError) as exc:
+                self._log_http_exchange(
+                    operation=context.operation_name,
+                    endpoint=normalized_path,
+                    method=method,
+                    attempt=attempt,
+                    status=None,
+                    latency_ms=self._elapsed_ms(started_at),
+                    request_id=None,
+                )
                 decision = self._decide_transport_retry(
                     method=method,
                     attempt=attempt,
@@ -182,6 +203,8 @@ class Transport:
                 if decision.should_retry:
                     self._log_retry(
                         operation=context.operation_name,
+                        endpoint=normalized_path,
+                        method=method,
                         attempt=attempt,
                         status=None,
                         decision=decision,
@@ -193,7 +216,7 @@ class Transport:
                     operation=context.operation_name,
                     attempt=attempt,
                     method=method,
-                    endpoint=normalized_path,
+                    endpoint=self._safe_endpoint(normalized_path),
                     metadata={"timeout": isinstance(exc, httpx.TimeoutException)},
                 ) from exc
 
@@ -228,6 +251,8 @@ class Transport:
                 if decision.should_retry:
                     self._log_retry(
                         operation=context.operation_name,
+                        endpoint=normalized_path,
+                        method=method,
                         attempt=attempt,
                         status=response.status_code,
                         decision=decision,
@@ -251,6 +276,8 @@ class Transport:
                 if decision.should_retry:
                     self._log_retry(
                         operation=context.operation_name,
+                        endpoint=normalized_path,
+                        method=method,
                         attempt=attempt,
                         status=response.status_code,
                         decision=decision,
@@ -685,6 +712,8 @@ class Transport:
         self,
         *,
         operation: str,
+        endpoint: str,
+        method: str,
         attempt: int,
         status: int | None,
         decision: RetryDecision,
@@ -693,12 +722,47 @@ class Transport:
             "transport retry",
             extra={
                 "operation": operation,
+                "endpoint": self._safe_endpoint(endpoint),
+                "method": method,
                 "attempt": attempt,
                 "status": status,
                 "delay_ms": int(decision.delay_seconds * 1000),
                 "reason": decision.reason,
             },
         )
+
+    def _log_http_exchange(
+        self,
+        *,
+        operation: str,
+        endpoint: str,
+        method: str,
+        attempt: int,
+        status: int | None,
+        latency_ms: int,
+        request_id: str | None,
+    ) -> None:
+        _LOGGER.debug(
+            "transport http exchange",
+            extra={
+                "operation": operation,
+                "endpoint": self._safe_endpoint(endpoint),
+                "method": method,
+                "attempt": attempt,
+                "status": status,
+                "latency_ms": latency_ms,
+                "request_id": request_id,
+            },
+        )
+
+    def _elapsed_ms(self, started_at: float) -> int:
+        return max(int((time.perf_counter() - started_at) * 1000), 0)
+
+    def _safe_endpoint(self, endpoint: str) -> str:
+        parsed = urlsplit(endpoint)
+        if parsed.scheme or parsed.netloc:
+            return parsed.path or "/"
+        return endpoint
 
     def _extract_filename(self, content_disposition: str | None) -> str | None:
         if content_disposition is None:

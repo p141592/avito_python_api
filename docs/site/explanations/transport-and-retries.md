@@ -34,6 +34,19 @@ Read/list/probe операции обычно допускают retry. Write-о
 
 Чтобы снижать вероятность `429` до ответа upstream, можно включить локальный token bucket через `AVITO_RATE_LIMIT_ENABLED=true`. Лимитер применяется в transport-слое перед отправкой запроса и дополнительно учитывает `X-RateLimit-Remaining: 0`, когда API возвращает этот заголовок.
 
+## Логирование transport
+
+Каждая HTTP-попытка пишет debug-событие в logger `avito.transport` с полями
+`operation`, `endpoint`, `method`, `attempt`, `status`, `latency_ms` и
+`request_id`. Для сетевых ошибок до ответа upstream `status` и `request_id`
+остаются `None`, но попытка всё равно логируется. Retry-события используют те
+же `operation`, `endpoint`, `method`, `attempt` и `status`, а также добавляют
+`delay_ms` и `reason`.
+
+Transport не логирует body, query payload, OAuth headers, idempotency keys и
+другие секретные значения. Для подробностей об ошибке используйте поля
+типизированного исключения.
+
 ## Почему retry не в доменах
 
 Доменный объект должен описывать публичный сценарий: `order_label().create()` или `ad_stats().get_item_stats()`. Если retry появится на этом уровне, одинаковые HTTP-коды начнут вести себя по-разному в разных пакетах. Поэтому retry централизован и проверяется через transport/fake transport.

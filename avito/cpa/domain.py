@@ -8,6 +8,7 @@ from avito.core import ApiTimeouts, RetryOverride, ValidationError
 from avito.core.deprecation import deprecated_method, warn_deprecated_once
 from avito.core.domain import DomainObject
 from avito.core.swagger import swagger_operation
+from avito.core.validation import DateInput, serialize_iso_datetime
 from avito.cpa.models import (
     CallTrackingCallResponse,
     CallTrackingCallsRequest,
@@ -196,7 +197,7 @@ class CpaChat(DomainObject):
     def list(
         self,
         *,
-        created_at_from: str,
+        created_at_from: DateInput,
         limit: int,
         offset: int,
         version: int = 2,
@@ -235,7 +236,7 @@ class CpaChat(DomainObject):
         return self._execute(
             LIST_CPA_CHATS,
             request=CpaChatsByTimeRequest(
-                created_at_from=created_at_from,
+                created_at_from=serialize_iso_datetime("created_at_from", created_at_from),
                 limit=limit,
                 offset=offset,
             ),
@@ -258,7 +259,7 @@ class CpaChat(DomainObject):
     def list_classic(
         self,
         *,
-        created_at_from: str,
+        created_at_from: DateInput,
         limit: int,
         offset: int,
         timeout: ApiTimeouts | None = None,
@@ -280,7 +281,7 @@ class CpaChat(DomainObject):
         return self._execute(
             LIST_CPA_CHATS_CLASSIC,
             request=CpaChatsByTimeRequest(
-                created_at_from=created_at_from,
+                created_at_from=serialize_iso_datetime("created_at_from", created_at_from),
                 limit=limit,
                 offset=offset,
             ),
@@ -303,7 +304,7 @@ class CpaChat(DomainObject):
     def get_phones_info_from_chats(
         self,
         *,
-        date_time_from: str,
+        date_time_from: DateInput,
         limit: int,
         offset: int,
         timeout: ApiTimeouts | None = None,
@@ -331,7 +332,7 @@ class CpaChat(DomainObject):
         return self._execute(
             GET_CPA_PHONES_INFO,
             request=CpaPhonesFromChatsRequest(
-                date_time_from=date_time_from,
+                date_time_from=serialize_iso_datetime("date_time_from", date_time_from),
                 limit=limit,
                 offset=offset,
             ),
@@ -368,7 +369,7 @@ class CpaCall(DomainObject):
     def list(
         self,
         *,
-        date_time_from: str,
+        date_time_from: DateInput,
         limit: int,
         offset: int | None = None,
         timeout: ApiTimeouts | None = None,
@@ -396,7 +397,7 @@ class CpaCall(DomainObject):
         return self._execute(
             LIST_CPA_CALLS,
             request=CpaCallsByTimeRequest(
-                date_time_from=date_time_from,
+                date_time_from=serialize_iso_datetime("date_time_from", date_time_from),
                 limit=limit,
                 offset=offset,
             ),
@@ -632,8 +633,8 @@ class CallTrackingCall(DomainObject):
     def list(
         self,
         *,
-        date_time_from: str,
-        date_time_to: str,
+        date_time_from: DateInput,
+        date_time_to: DateInput,
         limit: int | None = None,
         offset: int | None = None,
         timeout: ApiTimeouts | None = None,
@@ -663,8 +664,8 @@ class CallTrackingCall(DomainObject):
         return self._execute(
             GET_CALLTRACKING_CALLS,
             request=CallTrackingCallsRequest(
-                date_time_from=date_time_from,
-                date_time_to=date_time_to,
+                date_time_from=serialize_iso_datetime("date_time_from", date_time_from),
+                date_time_to=serialize_iso_datetime("date_time_to", date_time_to),
                 limit=limit,
                 offset=offset,
             ),

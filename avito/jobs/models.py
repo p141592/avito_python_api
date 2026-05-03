@@ -7,7 +7,7 @@ from dataclasses import dataclass
 from enum import Enum
 
 from avito.core import ApiModel, RequestModel
-from avito.core.exceptions import ResponseMappingError
+from avito.core.exceptions import ResponseMappingError, ValidationError
 
 Payload = Mapping[str, object]
 
@@ -76,6 +76,48 @@ class JobMatchingStatus(str, Enum):
     NO_CRITERIA = "no_criteria"
     MATCHED = "matched"
     MISMATCHED = "mismatched"
+
+
+class VacancyBillingType(str, Enum):
+    """Вариант платного размещения вакансии."""
+
+    PACKAGE = "package"
+    SINGLE = "single"
+    PACKAGE_OR_SINGLE = "packageOrSingle"
+
+
+class VacancyEmployment(str, Enum):
+    """Тип занятости вакансии."""
+
+    TEMPORARY = "temporary"
+    FULL = "full"
+    INTERNSHIP = "internship"
+    PARTIAL = "partial"
+
+
+class VacancySchedule(str, Enum):
+    """Режим работы вакансии."""
+
+    FLY_IN_FLY_OUT = "flyInFlyOut"
+    FIXED = "fixed"
+    FLEXIBLE = "flexible"
+    SHIFT = "shift"
+
+
+class VacancyExperience(str, Enum):
+    """Требуемый опыт работы для вакансии."""
+
+    NO_MATTER = "noMatter"
+    MORE_THAN_1 = "moreThan1"
+    MORE_THAN_3 = "moreThan3"
+    MORE_THAN_5 = "moreThan5"
+    MORE_THAN_10 = "moreThan10"
+
+
+VacancyBillingTypeInput = VacancyBillingType | str
+VacancyEmploymentInput = VacancyEmployment | str
+VacancyScheduleInput = VacancySchedule | str
+VacancyExperienceInput = VacancyExperience | str
 
 
 @dataclass(slots=True, frozen=True)
@@ -205,12 +247,15 @@ class VacancyCreateRequest(RequestModel):
     """Запрос создания вакансии v2."""
 
     title: str
-    billing_type: str
+    billing_type: VacancyBillingTypeInput
 
     def to_payload(self) -> dict[str, object]:
         """Сериализует создание вакансии."""
 
-        return {"title": self.title, "billing_type": self.billing_type}
+        return {
+            "title": self.title,
+            "billing_type": _enum_value(VacancyBillingType, "billing_type", self.billing_type),
+        }
 
 
 @dataclass(slots=True, frozen=True)
@@ -219,11 +264,11 @@ class VacancyClassicCreateRequest(RequestModel):
 
     title: str
     description: str
-    billing_type: str
+    billing_type: VacancyBillingTypeInput
     business_area: int
-    employment: str
-    schedule: str
-    experience: str
+    employment: VacancyEmploymentInput
+    schedule: VacancyScheduleInput
+    experience: VacancyExperienceInput
 
     def to_payload(self) -> dict[str, object]:
         """Сериализует создание вакансии v1."""
@@ -231,11 +276,11 @@ class VacancyClassicCreateRequest(RequestModel):
         return {
             "name": self.title,
             "description": self.description,
-            "billing_type": self.billing_type,
+            "billing_type": _enum_value(VacancyBillingType, "billing_type", self.billing_type),
             "business_area": self.business_area,
-            "employment": self.employment,
-            "schedule": {"id": self.schedule},
-            "experience": {"id": self.experience},
+            "employment": _enum_value(VacancyEmployment, "employment", self.employment),
+            "schedule": {"id": _enum_value(VacancySchedule, "schedule", self.schedule)},
+            "experience": {"id": _enum_value(VacancyExperience, "experience", self.experience)},
         }
 
 
@@ -244,12 +289,15 @@ class VacancyUpdateRequest(RequestModel):
     """Запрос обновления вакансии."""
 
     title: str
-    billing_type: str
+    billing_type: VacancyBillingTypeInput
 
     def to_payload(self) -> dict[str, object]:
         """Сериализует обновление вакансии."""
 
-        return {"title": self.title, "billing_type": self.billing_type}
+        return {
+            "title": self.title,
+            "billing_type": _enum_value(VacancyBillingType, "billing_type", self.billing_type),
+        }
 
 
 @dataclass(slots=True, frozen=True)
@@ -257,12 +305,15 @@ class VacancyClassicUpdateRequest(RequestModel):
     """Запрос обновления вакансии v1."""
 
     title: str
-    billing_type: str
+    billing_type: VacancyBillingTypeInput
 
     def to_payload(self) -> dict[str, object]:
         """Сериализует обновление вакансии v1."""
 
-        return {"name": self.title, "billing_type": self.billing_type}
+        return {
+            "name": self.title,
+            "billing_type": _enum_value(VacancyBillingType, "billing_type", self.billing_type),
+        }
 
 
 @dataclass(slots=True, frozen=True)
@@ -281,12 +332,12 @@ class VacancyArchiveRequest(RequestModel):
 class VacancyProlongateRequest(RequestModel):
     """Запрос продления вакансии v1."""
 
-    billing_type: str
+    billing_type: VacancyBillingTypeInput
 
     def to_payload(self) -> dict[str, object]:
         """Сериализует продление вакансии."""
 
-        return {"billing_type": self.billing_type}
+        return {"billing_type": _enum_value(VacancyBillingType, "billing_type", self.billing_type)}
 
 
 @dataclass(slots=True, frozen=True)
@@ -746,3 +797,17 @@ def _enum[EnumT: Enum](enum_type: type[EnumT], value: str | None) -> EnumT | Non
         return enum_type(value)
     except ValueError:
         return enum_type("__unknown__")
+
+
+def _enum_value[EnumT: Enum](
+    enum_type: type[EnumT],
+    name: str,
+    value: EnumT | str,
+) -> str:
+    if isinstance(value, enum_type):
+        return str(value.value)
+    try:
+        return str(enum_type(value).value)
+    except ValueError as exc:
+        allowed = ", ".join(str(item.value) for item in enum_type)
+        raise ValidationError(f"`{name}` должен быть одним из: {allowed}.") from exc

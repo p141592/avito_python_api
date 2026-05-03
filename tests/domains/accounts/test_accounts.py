@@ -74,6 +74,17 @@ def test_account_balance_resolves_user_id_from_self_when_not_configured() -> Non
     assert seen_paths == ["/core/v1/accounts/self", "/core/v1/accounts/7/balance/"]
 
 
+def test_account_balance_requires_keyword_user_id() -> None:
+    account = Account(make_transport(httpx.MockTransport(lambda request: httpx.Response(200))))
+
+    try:
+        account.get_balance(7)  # type: ignore[misc]
+    except TypeError as error:
+        assert "positional" in str(error)
+    else:  # pragma: no cover
+        raise AssertionError("get_balance accepted positional user_id")
+
+
 def test_account_hierarchy_domain_maps_employees_phones_and_items() -> None:
     def handler(request: httpx.Request) -> httpx.Response:
         if request.url.path == "/checkAhUserV1":

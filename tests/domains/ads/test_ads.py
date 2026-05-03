@@ -8,7 +8,8 @@ import httpx
 import pytest
 
 from avito.ads import Ad, AdPromotion, AdStats
-from avito.ads.models import ListingStatus
+from avito.ads.models import AdAnalyticsGrouping, AdSpendingsGrouping, ListingStatus
+from avito.core import ValidationError
 from tests.helpers.transport import make_transport
 
 
@@ -129,7 +130,7 @@ def test_ads_domain_covers_item_stats_spendings_and_promotion() -> None:
         date_from="2026-04-01",
         date_to="2026-04-02",
         spending_types=["promotion"],
-        grouping="day",
+        grouping=AdSpendingsGrouping.DAY,
     )
     applied = promotion.apply_vas(vas_id="xl")
 
@@ -157,13 +158,14 @@ def test_ad_stats_accept_datetime_filters_and_serialize_isoformat() -> None:
         date_from=started_at,
         date_to=finished_at,
         metrics=["views"],
-        grouping="day",
+        grouping=AdAnalyticsGrouping.DAY,
         limit=100,
         offset=0,
     )
 
     assert seen_payloads[0]["dateFrom"] == "2026-04-18"
     assert seen_payloads[0]["dateTo"] == "2026-04-18"
+    assert seen_payloads[0]["grouping"] == "day"
 
 
 def test_ad_stats_accept_date_and_iso_string_filters() -> None:
@@ -181,6 +183,30 @@ def test_ad_stats_accept_date_and_iso_string_filters() -> None:
 
     assert seen_payloads[0]["dateFrom"] == "2026-04-18"
     assert seen_payloads[0]["dateTo"] == "2026-04-19"
+
+
+def test_ad_stats_reject_unknown_grouping_before_transport() -> None:
+    def handler(request: httpx.Request) -> httpx.Response:
+        raise AssertionError("transport must not be called")
+
+    stats = AdStats(make_transport(httpx.MockTransport(handler)), item_id=101, user_id=7)
+
+    with pytest.raises(ValidationError, match="grouping"):
+        stats.get_item_analytics(
+            date_from="2026-04-18",
+            date_to="2026-04-19",
+            metrics=["views"],
+            grouping="unknown",
+            limit=100,
+            offset=0,
+        )
+    with pytest.raises(ValidationError, match="grouping"):
+        stats.get_account_spendings(
+            date_from="2026-04-18",
+            date_to="2026-04-19",
+            spending_types=["promotion"],
+            grouping="totals",
+        )
 
 
 def test_ad_mapper_reads_nested_listing_fields() -> None:

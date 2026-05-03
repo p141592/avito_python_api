@@ -8,6 +8,7 @@ from dataclasses import dataclass
 from avito.core import ApiTimeouts, RetryOverride, ValidationError
 from avito.core.domain import DomainObject
 from avito.core.swagger import swagger_operation
+from avito.core.validation import DateInput, serialize_iso_datetime
 from avito.orders.models import (
     AddSortingCentersRequest,
     AddTariffV2Request,
@@ -52,6 +53,7 @@ from avito.orders.models import (
     OrderMarkingsRequest,
     OrdersResult,
     OrderTrackingNumberRequest,
+    OrderTransition,
     ProhibitOrderAcceptanceRequest,
     RealAddress,
     SandboxAnnouncementPackage,
@@ -267,7 +269,7 @@ class Order(DomainObject):
         self,
         *,
         order_id: str,
-        transition: str,
+        transition: OrderTransition | str,
         idempotency_key: str | None = None,
         timeout: ApiTimeouts | None = None,
         retry: RetryOverride | None = None,
@@ -1203,7 +1205,7 @@ class SandboxDelivery(DomainObject):
         avito_status: TrackingAvitoStatus | str,
         avito_event_type: TrackingAvitoEventType | str,
         provider_event_code: str,
-        date: str,
+        date: DateInput,
         location: str,
         comment: str | None = None,
         options: DeliveryTrackingOptions | None = None,
@@ -1244,7 +1246,7 @@ class SandboxDelivery(DomainObject):
                 avito_status=avito_status,
                 avito_event_type=avito_event_type,
                 provider_event_code=provider_event_code,
-                date=date,
+                date=serialize_iso_datetime("date", date),
                 location=location,
                 comment=comment,
                 options=options,
@@ -1674,7 +1676,7 @@ class SandboxDelivery(DomainObject):
         self,
         *,
         announcement_id: str,
-        date: str,
+        date: DateInput,
         options: SandboxCancelAnnouncementOptions,
         idempotency_key: str | None = None,
         timeout: ApiTimeouts | None = None,
@@ -1705,7 +1707,7 @@ class SandboxDelivery(DomainObject):
             SANDBOX_CANCEL_SANDBOX_ANNOUNCEMENT,
             request=SandboxCancelAnnouncementRequest(
                 announcement_id=announcement_id,
-                date=date,
+                date=serialize_iso_datetime("date", date),
                 options=options,
             ),
             idempotency_key=idempotency_key,
@@ -1834,7 +1836,7 @@ class SandboxDelivery(DomainObject):
         sender: SandboxAnnouncementParticipant,
         receiver: SandboxAnnouncementParticipant,
         announcement_type: str,
-        date: str,
+        date: DateInput,
         packages: Sequence[SandboxAnnouncementPackage],
         options: SandboxCreateAnnouncementOptions,
         idempotency_key: str | None = None,
@@ -1875,7 +1877,7 @@ class SandboxDelivery(DomainObject):
                 sender=sender,
                 receiver=receiver,
                 announcement_type=announcement_type,
-                date=date,
+                date=serialize_iso_datetime("date", date),
                 packages=list(packages),
                 options=options,
             ),

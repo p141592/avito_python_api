@@ -124,7 +124,7 @@ with AvitoClient.from_env() as avito:
     )
 ```
 
-`user_id` можно передать явно, задать через `AVITO_USER_ID` или оставить пустым для read-only вызовов, где SDK может определить пользователя через `account().get_self()`. Если идентификатор не удалось определить, SDK поднимает `ValidationError` с подсказкой, как вызвать метод правильно. Для OAuth secret поддерживаются `AVITO_CLIENT_SECRET` и alias `AVITO_SECRET`.
+`user_id` можно передать явно, задать через `AVITO_USER_ID` или оставить пустым для read-only вызовов, где SDK может определить пользователя через `account().get_self()`. Если идентификатор не удалось определить, SDK поднимает `ValidationError` с подсказкой, как вызвать метод правильно. Для OAuth secret используйте `AVITO_CLIENT_SECRET`.
 
 Статистические методы принимают `date`, `datetime` и ISO-строки, а в Avito API отправляют дату в формате `YYYY-MM-DD`. Модель `Listing` нормализует основные поля объявления: `title`, `price`, `status`, `description`, `url`, `category`, `city`, `published_at`, `updated_at`, `is_moderated`, `is_visible`.
 

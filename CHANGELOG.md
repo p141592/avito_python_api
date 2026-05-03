@@ -11,6 +11,7 @@ and this project adheres to Semantic Versioning.
 - Нет изменений.
 
 ### Deprecated
+- Env alias `AVITO_SECRET` для `AVITO_CLIENT_SECRET` устарел и теперь эмитирует `DeprecationWarning`; используйте `AVITO_CLIENT_SECRET`.
 - Архивные CPA-методы `CpaArchive.get_call`, `CpaArchive.get_balance_info`, `CpaArchive.get_call_by_id` и режим `CpaChat.list(version=1)` теперь эмитируют `DeprecationWarning` при первом вызове; используйте `call_tracking_call().download`, `cpa_lead().get_balance_info`, `call_tracking_call().get` и `cpa_chat().list(version=2)`.
 - Архивные методы автозагрузки `AutoloadArchive.get_profile`, `AutoloadArchive.save_profile`, `AutoloadArchive.get_last_completed_report`, `AutoloadArchive.get_report` теперь эмитируют `DeprecationWarning` при первом вызове; используйте `autoload_profile().get`, `autoload_profile().save`, `autoload_report().get_last_completed` и `autoload_report().get`.
 

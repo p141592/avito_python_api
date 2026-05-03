@@ -10,9 +10,11 @@ from avito.ads.domain import (
 )
 from avito.ads.models import (
     AccountSpendings,
+    AdAnalyticsGrouping,
     AdsActionResult,
     AdsActionStatus,
     AdsListResult,
+    AdSpendingsGrouping,
     AutoloadAvitoStatus,
     AutoloadFee,
     AutoloadFeesResult,
@@ -47,7 +49,9 @@ from avito.ads.models import (
 
 __all__ = (
     "AccountSpendings",
+    "AdAnalyticsGrouping",
     "Ad",
+    "AdSpendingsGrouping",
     "AdsActionResult",
     "AdsListResult",
     "AdsActionStatus",

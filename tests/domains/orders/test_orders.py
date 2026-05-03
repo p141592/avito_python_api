@@ -3,8 +3,18 @@ from __future__ import annotations
 import json
 
 import httpx
+import pytest
 
-from avito.orders import DeliveryOrder, DeliveryTask, Order, OrderLabel, Stock
+from avito.core import ValidationError
+from avito.orders import (
+    DeliveryOrder,
+    DeliveryTask,
+    Order,
+    OrderLabel,
+    OrderTransition,
+    SandboxDelivery,
+    Stock,
+)
 from avito.orders.models import (
     StockUpdateEntry,
 )
@@ -35,7 +45,7 @@ def test_order_management_flows() -> None:
     order = Order(make_transport(httpx.MockTransport(handler)))
     assert order.list().items[0].buyer_name == "Иван"
     assert order.update_markings(order_id="ord-1", codes=["abc"]).status == "marked"
-    assert order.apply(order_id="ord-1", transition="confirm").status == "confirmed"
+    assert order.apply(order_id="ord-1", transition=OrderTransition.CONFIRM).status == "confirmed"
     assert order.check_confirmation_code(order_id="ord-1", code="1234").status == "code-valid"
     assert order.get_courier_delivery_range().items[0].interval_id == "int-1"
     assert order.set_courier_delivery_range(order_id="ord-1", interval_id="int-1").status == "range-set"
@@ -90,3 +100,30 @@ def test_labels_delivery_and_stock_flows() -> None:
     assert task.get().status == "done"
     assert stock.get(item_ids=[123321]).items[0].quantity == 5
     assert stock.update(stocks=[StockUpdateEntry(item_id=123321, quantity=7)]).items[0].success is True
+
+
+def test_sandbox_delivery_rejects_invalid_event_dates_before_transport() -> None:
+    def handler(request: httpx.Request) -> httpx.Response:
+        raise AssertionError("transport must not be called")
+
+    delivery = SandboxDelivery(make_transport(httpx.MockTransport(handler)))
+
+    with pytest.raises(ValidationError, match="date"):
+        delivery.tracking(
+            order_id="ord-1",
+            avito_status="CONFIRMED",
+            avito_event_type="",
+            provider_event_code="accepted",
+            date="not-a-date",
+            location="Москва",
+        )
+
+
+def test_order_apply_rejects_unknown_transition_before_transport() -> None:
+    def handler(request: httpx.Request) -> httpx.Response:
+        raise AssertionError("transport must not be called")
+
+    order = Order(make_transport(httpx.MockTransport(handler)))
+
+    with pytest.raises(ValidationError, match="transition"):
+        order.apply(order_id="ord-1", transition="unknown")

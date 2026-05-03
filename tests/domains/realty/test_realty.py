@@ -3,7 +3,9 @@ from __future__ import annotations
 import json
 
 import httpx
+import pytest
 
+from avito.core import ValidationError
 from avito.realty import RealtyAnalyticsReport, RealtyBooking, RealtyListing, RealtyPricing
 from avito.realty.models import (
     RealtyInterval,
@@ -61,3 +63,22 @@ def test_realty_bookings_require_expected_params_and_map_fields() -> None:
     assert listing.update_base_params(min_stay_days=2).success is True
     assert analytics.get_market_price_correspondence(price=5000000).correspondence == "normal"
     assert analytics.get_report_for_classified().report_link == "https://example.com/realty-report/20"
+
+
+def test_realty_rejects_invalid_dates_before_transport() -> None:
+    def handler(request: httpx.Request) -> httpx.Response:
+        raise AssertionError("transport must not be called")
+
+    transport = make_transport(httpx.MockTransport(handler))
+    booking = RealtyBooking(transport, item_id="20", user_id="10")
+    pricing = RealtyPricing(transport, item_id="20", user_id="10")
+    listing = RealtyListing(transport, item_id="20")
+
+    with pytest.raises(ValidationError, match="date_start"):
+        booking.list_realty_bookings(date_start="01.05.2026", date_end="2026-05-05")
+    with pytest.raises(ValidationError, match="blocked_dates"):
+        booking.update_bookings_info(blocked_dates=["not-a-date"])
+    with pytest.raises(ValidationError, match="date_from"):
+        pricing.update_realty_prices(periods=[RealtyPricePeriod(date_from="not-a-date", price=5000)])
+    with pytest.raises(ValidationError, match="date"):
+        listing.get_intervals(intervals=[RealtyInterval(date="not-a-date", available=True)])

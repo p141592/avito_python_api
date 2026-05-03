@@ -7,6 +7,7 @@ from dataclasses import dataclass
 from enum import Enum
 
 from avito.core import ApiModel, JsonReader, RequestModel
+from avito.core.validation import DateInput, serialize_iso_date
 
 
 class RealtyStatus(str, Enum):
@@ -65,15 +66,18 @@ class RealtyActionResult(ApiModel):
 class RealtyBookingsUpdateRequest(RequestModel):
     """Запрос обновления занятости по объекту."""
 
-    blocked_dates: list[str]
+    blocked_dates: list[DateInput]
 
     def to_payload(self) -> dict[str, object]:
         """Сериализует JSON payload запроса бронирований."""
 
         return {
             "bookings": [
-                {"date_start": blocked_date, "date_end": blocked_date}
-                for blocked_date in self.blocked_dates
+                {"date_start": date_value, "date_end": date_value}
+                for date_value in (
+                    serialize_iso_date(f"blocked_dates[{index}]", blocked_date)
+                    for index, blocked_date in enumerate(self.blocked_dates)
+                )
             ]
         }
 
@@ -195,13 +199,13 @@ class RealtyBookingsQuery(RequestModel):
 class RealtyPricePeriod(RequestModel):
     """Период с ценой в запросе обновления цен."""
 
-    date_from: str
+    date_from: DateInput
     price: int
 
     def to_payload(self) -> dict[str, object]:
         """Сериализует период с ценой."""
 
-        return {"date_from": self.date_from, "night_price": self.price}
+        return {"date_from": serialize_iso_date("date_from", self.date_from), "night_price": self.price}
 
 
 @dataclass(slots=True, frozen=True)
@@ -220,15 +224,16 @@ class RealtyPricesUpdateRequest(RequestModel):
 class RealtyInterval(RequestModel):
     """Интервал доступности объекта."""
 
-    date: str
+    date: DateInput
     available: bool
 
     def to_payload(self) -> dict[str, object]:
         """Сериализует интервал доступности."""
 
+        date_value = serialize_iso_date("date", self.date)
         return {
-            "date_start": self.date,
-            "date_end": self.date,
+            "date_start": date_value,
+            "date_end": date_value,
             "open": 1 if self.available else 0,
         }
 

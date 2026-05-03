@@ -3,7 +3,9 @@ from __future__ import annotations
 import json
 
 import httpx
+import pytest
 
+from avito.core import ValidationError
 from avito.messenger import Chat, ChatMedia, ChatMessage, ChatWebhook, SpecialOfferCampaign
 from avito.messenger.models import UploadImageFile
 from tests.helpers.transport import make_transport
@@ -101,3 +103,16 @@ def test_messenger_webhook_and_special_offer_flows() -> None:
     assert created.status == "draft"
     assert confirmed.status == "confirmed"
     assert stats.delivered_count == 18
+
+
+def test_special_offer_stats_reject_invalid_datetime_before_transport() -> None:
+    def handler(request: httpx.Request) -> httpx.Response:
+        raise AssertionError("transport must not be called")
+
+    campaign = SpecialOfferCampaign(
+        make_transport(httpx.MockTransport(handler)),
+        campaign_id="camp-1",
+    )
+
+    with pytest.raises(ValidationError, match="date_time_from"):
+        campaign.get_stats(date_time_from="not-a-date", date_time_to="2026-05-02T00:00:00Z")

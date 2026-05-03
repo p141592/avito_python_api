@@ -8,6 +8,7 @@ from dataclasses import dataclass
 from avito.core import ApiTimeouts, RetryOverride, ValidationError
 from avito.core.domain import DomainObject
 from avito.core.swagger import swagger_operation
+from avito.core.validation import DateInput, serialize_iso_datetime
 from avito.messenger.models import (
     BlacklistRequest,
     ChatInfo,
@@ -689,8 +690,8 @@ class SpecialOfferCampaign(DomainObject):
     def get_stats(
         self,
         *,
-        date_time_from: str,
-        date_time_to: str,
+        date_time_from: DateInput,
+        date_time_to: DateInput,
         timeout: ApiTimeouts | None = None,
         retry: RetryOverride | None = None,
     ) -> SpecialOfferStatsResult:
@@ -712,8 +713,8 @@ class SpecialOfferCampaign(DomainObject):
         return self._execute(
             GET_SPECIAL_OFFER_STATS,
             request=SpecialOfferStatsRequest(
-                date_time_from=date_time_from,
-                date_time_to=date_time_to,
+                date_time_from=serialize_iso_datetime("date_time_from", date_time_from),
+                date_time_to=serialize_iso_datetime("date_time_to", date_time_to),
             ),
             timeout=timeout,
             retry=retry,

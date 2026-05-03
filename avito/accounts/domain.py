@@ -79,14 +79,27 @@ class Account(DomainObject):
     )
     def get_balance(
         self,
-        user_id: int | None = None,
         *,
+        user_id: int | None = None,
         timeout: ApiTimeouts | None = None,
         retry: RetryOverride | None = None,
     ) -> AccountBalance:
-        """Получает баланс пользователя.
+        """Получает баланс пользователя по явно заданному или настроенному `user_id`.
 
-        Raises: AvitoError с полями operation, status, request_id, attempt, method и endpoint.
+        Аргументы:
+            user_id: идентификатор пользователя; если не передан, используется `user_id` фабрики, `AVITO_USER_ID` или `get_self()`.
+            timeout: переопределяет таймауты HTTP-запроса для этого вызова.
+            retry: переопределяет retry-политику операции: default, enabled или disabled.
+
+        Возвращает:
+            `AccountBalance` с реальным, бонусным и суммарным балансом.
+
+        Поведение:
+            `user_id` является keyword-only, чтобы вызов явно показывал источник аккаунта.
+            `timeout` и `retry` действуют только на этот вызов и не меняют настройки клиента.
+
+        Исключения:
+            AvitoError: ошибка SDK с контекстом operation, status, request_id, attempt, method и endpoint.
         """
 
         resolved_user_id = self._resolve_account_user_id(user_id)

@@ -4,11 +4,12 @@ from __future__ import annotations
 
 from collections.abc import Sequence
 from dataclasses import dataclass
-from datetime import date, datetime
 
 from avito.ads.models import (
     AccountSpendings,
+    AdAnalyticsGroupingInput,
     AdsActionResult,
+    AdSpendingsGroupingInput,
     ApplyVasDirectRequest,
     ApplyVasPackageRequest,
     ApplyVasRequest,
@@ -80,6 +81,8 @@ from avito.core.deprecation import deprecated_method
 from avito.core.domain import DomainObject
 from avito.core.swagger import swagger_operation
 from avito.core.validation import (
+    DateInput,
+    serialize_iso_date,
     validate_non_empty_string,
     validate_string_items,
 )
@@ -102,24 +105,11 @@ def _preview_result(
     )
 
 
-StatsDate = date | datetime | str
+StatsDate = DateInput
 
 
 def _serialize_stats_date(value: StatsDate) -> str:
-    if isinstance(value, datetime):
-        return value.date().isoformat()
-    if isinstance(value, date):
-        return value.isoformat()
-    normalized = value.strip()
-    if not normalized:
-        raise ValidationError("Дата статистики не должна быть пустой строкой.")
-    try:
-        return datetime.fromisoformat(normalized.replace("Z", "+00:00")).date().isoformat()
-    except ValueError:
-        try:
-            return date.fromisoformat(normalized).isoformat()
-        except ValueError as exc:
-            raise ValidationError("Дата статистики должна быть в ISO-формате.") from exc
+    return serialize_iso_date("date", value)
 
 
 def _bounded_total(total: int | None, max_items: int | None) -> int | None:
@@ -469,7 +459,7 @@ class AdStats(DomainObject):
         date_from: StatsDate,
         date_to: StatsDate,
         metrics: list[str],
-        grouping: str,
+        grouping: AdAnalyticsGroupingInput,
         limit: int,
         offset: int,
         item_ids: list[int] | None = None,
@@ -515,7 +505,7 @@ class AdStats(DomainObject):
         date_from: StatsDate,
         date_to: StatsDate,
         spending_types: list[str],
-        grouping: str,
+        grouping: AdSpendingsGroupingInput,
         item_ids: list[int] | None = None,
         timeout: ApiTimeouts | None = None,
         retry: RetryOverride | None = None,

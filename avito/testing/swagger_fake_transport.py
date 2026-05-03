@@ -8,7 +8,7 @@ import re
 from collections.abc import Callable, Mapping, Sequence
 from dataclasses import MISSING as DATACLASS_MISSING
 from dataclasses import dataclass, fields, is_dataclass
-from datetime import UTC, datetime
+from datetime import UTC, date, datetime
 from enum import Enum
 from types import UnionType
 from typing import Union, cast, get_args, get_origin, get_type_hints
@@ -521,6 +521,9 @@ class SwaggerFakeTransport(FakeTransport):
             return _MISSING
         if annotation_type is datetime:
             return datetime(2026, 5, 1, tzinfo=UTC)
+        if _is_date_input_type(annotation_type):
+            value = _dateish_value(name)
+            return "2026-05-01" if value is _MISSING else value
         if inspect.isclass(annotation_type) and issubclass(annotation_type, Enum):
             enum_values = list(annotation_type)
             if enum_values:
@@ -601,6 +604,9 @@ class SwaggerFakeTransport(FakeTransport):
             return "2026-05-01"
         if name == "date_end":
             return "2026-05-02"
+        dateish_value = _dateish_value(name)
+        if dateish_value is not _MISSING:
+            return dateish_value
         value = _known_value(*_name_aliases(name))
         if value is not _MISSING:
             return value
@@ -805,6 +811,23 @@ def _allows_none(annotation_type: object | None) -> bool:
 def _first_type_arg(annotation_type: object) -> object | None:
     args = get_args(annotation_type)
     return args[0] if args else None
+
+
+def _is_date_input_type(annotation_type: object) -> bool:
+    origin = get_origin(annotation_type)
+    if origin not in {UnionType, Union}:
+        return False
+    args = set(get_args(annotation_type))
+    return date in args and datetime in args and str in args
+
+
+def _dateish_value(name: str) -> object:
+    normalized = name.lower()
+    if normalized in {"date", "created_at", "updated_at"}:
+        return "2026-05-01T00:00:00+00:00"
+    if "date" in normalized or "time" in normalized or normalized.endswith("_at"):
+        return "2026-05-01T00:00:00+00:00"
+    return _MISSING
 
 
 def _singular_name(name: str) -> str:

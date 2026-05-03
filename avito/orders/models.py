@@ -10,7 +10,8 @@ from typing import cast
 
 from avito.core import ApiModel, BinaryResponse
 from avito.core.enums import map_enum_or_unknown
-from avito.core.exceptions import ResponseMappingError
+from avito.core.exceptions import ResponseMappingError, ValidationError
+from avito.core.validation import DateInput, serialize_iso_datetime
 
 Payload = Mapping[str, object]
 
@@ -84,6 +85,15 @@ class OrderActionStatus(str, Enum):
     FAIL = "fail"
     EXPIRED = "expired"
     ATTEMPTS = "attempts"
+
+
+class OrderTransition(str, Enum):
+    """Переход статуса заказа."""
+
+    CONFIRM = "confirm"
+    REJECT = "reject"
+    PERFORM = "perform"
+    RECEIVE = "receive"
 
 
 class LabelTaskStatus(str, Enum):
@@ -168,11 +178,11 @@ class TrackingAvitoEventType(str, Enum):
 class DeliveryDateInterval:
     """Интервалы доставки/забора для конкретной даты."""
 
-    date: str
+    date: DateInput
     intervals: list[str]
 
     def to_payload(self) -> dict[str, object]:
-        return {"date": self.date, "intervals": list(self.intervals)}
+        return {"date": serialize_iso_datetime("date", self.date), "intervals": list(self.intervals)}
 
 
 @dataclass(slots=True, frozen=True)
@@ -232,10 +242,13 @@ class OrderApplyTransitionRequest:
     """Запрос перехода заказа в другой статус."""
 
     order_id: str
-    transition: str
+    transition: OrderTransition | str
 
     def to_payload(self) -> dict[str, object]:
-        return {"orderId": self.order_id, "transition": self.transition}
+        return {
+            "orderId": self.order_id,
+            "transition": _enum_value(OrderTransition, "transition", self.transition),
+        }
 
 
 @dataclass(slots=True, frozen=True)
@@ -439,9 +452,9 @@ class DeliveryTerms:
     """Параметры условий доставки заказа."""
 
     cost: int | None = None
-    direct_control_date: str | None = None
+    direct_control_date: DateInput | None = None
     receiver_terminal_code: str | None = None
-    return_control_date: str | None = None
+    return_control_date: DateInput | None = None
     sender_receive_terminal_code: str | None = None
     tough_wrap: bool | None = None
 
@@ -450,11 +463,15 @@ class DeliveryTerms:
         if self.cost is not None:
             payload["cost"] = self.cost
         if self.direct_control_date is not None:
-            payload["directControlDate"] = self.direct_control_date
+            payload["directControlDate"] = serialize_iso_datetime(
+                "direct_control_date", self.direct_control_date
+            )
         if self.receiver_terminal_code is not None:
             payload["receiverTerminalCode"] = self.receiver_terminal_code
         if self.return_control_date is not None:
-            payload["returnControlDate"] = self.return_control_date
+            payload["returnControlDate"] = serialize_iso_datetime(
+                "return_control_date", self.return_control_date
+            )
         if self.sender_receive_terminal_code is not None:
             payload["senderReceiveTerminalCode"] = self.sender_receive_terminal_code
         if self.tough_wrap is not None:
@@ -547,7 +564,7 @@ class DeliveryTrackingRequest:
     avito_status: TrackingAvitoStatus | str
     avito_event_type: TrackingAvitoEventType | str
     provider_event_code: str
-    date: str
+    date: DateInput
     location: str
     comment: str | None = None
     options: DeliveryTrackingOptions | None = None
@@ -558,7 +575,7 @@ class DeliveryTrackingRequest:
             "avitoStatus": self.avito_status,
             "avitoEventType": self.avito_event_type,
             "providerEventCode": self.provider_event_code,
-            "date": self.date,
+            "date": serialize_iso_datetime("date", self.date),
             "location": self.location,
         }
         if self.comment is not None:
@@ -1005,13 +1022,13 @@ class SandboxCancelAnnouncementRequest:
     """Запрос отмены тестового анонса."""
 
     announcement_id: str
-    date: str
+    date: DateInput
     options: SandboxCancelAnnouncementOptions
 
     def to_payload(self) -> dict[str, object]:
         return {
             "announcementID": self.announcement_id,
-            "date": self.date,
+            "date": serialize_iso_datetime("date", self.date),
             "options": self.options.to_payload(),
         }
 
@@ -1178,7 +1195,7 @@ class SandboxCreateAnnouncementRequest:
     sender: SandboxAnnouncementParticipant
     receiver: SandboxAnnouncementParticipant
     announcement_type: str
-    date: str
+    date: DateInput
     packages: list[SandboxAnnouncementPackage]
     options: SandboxCreateAnnouncementOptions
 
@@ -1189,7 +1206,7 @@ class SandboxCreateAnnouncementRequest:
             "sender": self.sender.to_payload(),
             "receiver": self.receiver.to_payload(),
             "announcementType": self.announcement_type,
-            "date": self.date,
+            "date": serialize_iso_datetime("date", self.date),
             "packages": [package.to_payload() for package in self.packages],
             "options": self.options.to_payload(),
         }
@@ -1333,6 +1350,20 @@ def _extract_errors(payload: Payload) -> list[str]:
     if not isinstance(errors, list):
         return []
     return [str(error) for error in errors if isinstance(error, str)]
+
+
+def _enum_value[EnumT: Enum](
+    enum_type: type[EnumT],
+    name: str,
+    value: EnumT | str,
+) -> str:
+    if isinstance(value, enum_type):
+        return str(value.value)
+    try:
+        return str(enum_type(value).value)
+    except ValueError as exc:
+        allowed = ", ".join(str(item.value) for item in enum_type)
+        raise ValidationError(f"`{name}` должен быть одним из: {allowed}.") from exc
 
 
 @dataclass(slots=True, frozen=True)

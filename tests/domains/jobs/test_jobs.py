@@ -1,10 +1,16 @@
 from __future__ import annotations
 
 import httpx
+import pytest
 
+from avito.core import ValidationError
 from avito.jobs import Application, JobDictionary, JobWebhook, Resume, Vacancy
 from avito.jobs.models import (
     ApplicationViewedItem,
+    VacancyBillingType,
+    VacancyEmployment,
+    VacancyExperience,
+    VacancySchedule,
 )
 from tests.helpers.transport import make_transport
 
@@ -180,12 +186,12 @@ def test_vacancy_and_dictionary_flows() -> None:
     assert (
         vacancy.create(
             title="Продавец",
-            billing_type="package",
+            billing_type=VacancyBillingType.PACKAGE,
             description="Описание вакансии",
             business_area=7,
-            employment="full",
-            schedule="fixed",
-            experience="noMatter",
+            employment=VacancyEmployment.FULL,
+            schedule=VacancySchedule.FIXED,
+            experience=VacancyExperience.NO_MATTER,
             version=1,
         ).id
         == "101"
@@ -197,7 +203,10 @@ def test_vacancy_and_dictionary_flows() -> None:
     assert vacancy.delete(employee_id=7).status == "archived"
     assert vacancy.prolongate(billing_type="package").status == "prolongated"
     assert vacancy.list().items[0].uuid == "vac-uuid-1"
-    assert vacancy.create(title="Вакансия v2", billing_type="package").id == "vac-uuid-1"
+    assert (
+        vacancy.create(title="Вакансия v2", billing_type=VacancyBillingType.PACKAGE).id
+        == "vac-uuid-1"
+    )
     assert vacancy.get_by_ids(ids=[101]).items[0].title == "Продавец"
     assert vacancy.get_statuses(ids=["vac-uuid-1"]).items[0].status == "active"
     assert (
@@ -216,3 +225,34 @@ def test_vacancy_and_dictionary_flows() -> None:
     )
     assert dictionary.list().items[0].id == "profession"
     assert dictionary.get().items[0].deprecated is True
+
+
+def test_application_rejects_invalid_updated_at_before_transport() -> None:
+    def handler(request: httpx.Request) -> httpx.Response:
+        raise AssertionError("transport must not be called")
+
+    application = Application(make_transport(httpx.MockTransport(handler)))
+
+    with pytest.raises(ValidationError, match="updated_at_from"):
+        application.get_ids(updated_at_from="18-04-2026")
+
+
+def test_vacancy_rejects_unknown_closed_values_before_transport() -> None:
+    def handler(request: httpx.Request) -> httpx.Response:
+        raise AssertionError("transport must not be called")
+
+    vacancy = Vacancy(make_transport(httpx.MockTransport(handler)))
+
+    with pytest.raises(ValidationError, match="billing_type"):
+        vacancy.create(title="Вакансия", billing_type="unknown")
+    with pytest.raises(ValidationError, match="employment"):
+        vacancy.create(
+            title="Вакансия",
+            billing_type=VacancyBillingType.PACKAGE,
+            description="Описание",
+            business_area=7,
+            employment="unknown",
+            schedule=VacancySchedule.FIXED,
+            experience=VacancyExperience.NO_MATTER,
+            version=1,
+        )

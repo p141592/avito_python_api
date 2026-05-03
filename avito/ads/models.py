@@ -9,7 +9,7 @@ from enum import Enum
 from typing import cast
 
 from avito.core.enums import map_enum_or_unknown
-from avito.core.exceptions import ResponseMappingError
+from avito.core.exceptions import ResponseMappingError, ValidationError
 from avito.core.serialization import SerializableModel
 
 
@@ -32,6 +32,28 @@ class AdsActionStatus(str, Enum):
     UNKNOWN = "__unknown__"
     APPLIED = "applied"
     UPDATED = "updated"
+
+
+class AdAnalyticsGrouping(str, Enum):
+    """Группировка расширенной аналитики объявлений."""
+
+    DAY = "day"
+    WEEK = "week"
+    MONTH = "month"
+    ITEM = "item"
+    TOTALS = "totals"
+
+
+class AdSpendingsGrouping(str, Enum):
+    """Группировка статистики расходов."""
+
+    DAY = "day"
+    WEEK = "week"
+    MONTH = "month"
+
+
+AdAnalyticsGroupingInput = AdAnalyticsGrouping | str
+AdSpendingsGroupingInput = AdSpendingsGrouping | str
 
 
 class AutoloadFieldType(str, Enum):
@@ -220,6 +242,20 @@ def _bool(payload: _Payload, *keys: str) -> bool | None:
         if isinstance(value, bool):
             return value
     return None
+
+
+def _enum_value[EnumT: Enum](
+    enum_type: type[EnumT],
+    name: str,
+    value: EnumT | str,
+) -> str:
+    if isinstance(value, enum_type):
+        return str(value.value)
+    try:
+        return str(enum_type(value).value)
+    except ValueError as exc:
+        allowed = ", ".join(str(item.value) for item in enum_type)
+        raise ValidationError(f"`{name}` должен быть одним из: {allowed}.") from exc
 
 
 def _visibility(payload: _Payload) -> bool | None:
@@ -421,7 +457,7 @@ class ItemAnalyticsRequest:
     date_from: str
     date_to: str
     metrics: list[str]
-    grouping: str
+    grouping: AdAnalyticsGroupingInput
     limit: int
     offset: int
 
@@ -432,7 +468,7 @@ class ItemAnalyticsRequest:
             "dateFrom": self.date_from,
             "dateTo": self.date_to,
             "metrics": self.metrics,
-            "grouping": self.grouping,
+            "grouping": _enum_value(AdAnalyticsGrouping, "grouping", self.grouping),
             "limit": self.limit,
             "offset": self.offset,
         }
@@ -533,7 +569,7 @@ class SpendingsRequest:
     date_from: str
     date_to: str
     spending_types: list[str]
-    grouping: str
+    grouping: AdSpendingsGroupingInput
     item_ids: list[int] = field(default_factory=list)
 
     def to_payload(self) -> dict[str, object]:
@@ -543,7 +579,7 @@ class SpendingsRequest:
             "dateFrom": self.date_from,
             "dateTo": self.date_to,
             "spendingTypes": self.spending_types,
-            "grouping": self.grouping,
+            "grouping": _enum_value(AdSpendingsGrouping, "grouping", self.grouping),
         }
         if self.item_ids:
             payload["filter"] = {"itemIDs": self.item_ids}
@@ -1039,6 +1075,8 @@ class AdsActionResult(SerializableModel):
 
 __all__ = (
     "AccountSpendings",
+    "AdAnalyticsGrouping",
+    "AdSpendingsGrouping",
     "AdsActionResult",
     "AdsActionStatus",
     "AdsListResult",
