@@ -746,6 +746,14 @@ The pytest suite has exactly two reasons to exist. Anything that does not fit on
 1. **Functional tests** — verify runtime behavior of the SDK against a fake transport: domain methods return expected models for given payloads, error mapping, retries, auth refresh, pagination, dry-run, serialization, secret sanitization.
 2. **Swagger-spec compliance tests** — verify that the SDK matches `docs/avito/api/`: every Swagger operation has exactly one binding, `SwaggerFakeTransport` invokes every binding, error responses map to the correct SDK exception.
 
+Swagger-spec compliance tests are mandatory. They may inspect discovered bindings,
+public method signatures, operation metadata, and normalized Swagger schemas when
+that inspection is needed to prove SDK-to-Swagger coverage, request/response
+shape compatibility, binding uniqueness, or error-contract coverage. This is not
+considered forbidden public-surface introspection or linter-of-the-linter testing;
+the Swagger specification is an external API contract, and tests that prove
+coverage of that contract belong in pytest.
+
 Anything else is forbidden in pytest:
 
 - **Documentation checks** — markdown placeholders, README example execution, docstring presence/format, docs-harness surface diffs. If documentation matters, lint it with `mkdocs build --strict` or a dedicated docs-only linter, not pytest.
@@ -753,8 +761,8 @@ Anything else is forbidden in pytest:
 - **Naming / style checks** — "field is not named `resource_id`", "method has no `_legacy` suffix", "domain class follows naming convention". Linter, not pytest.
 - **Type-annotation checks** — these are mypy's job.
 - **Inventory / report-generation tests** — "report builder includes domain table", "snapshot of 11 domains and 204 operations". Reports are CI artifacts, not behavior.
-- **Linter-of-the-linter tests** — tests that exercise the SDK's own architecture/swagger/discovery linters by feeding them synthetic input. The linter is verified by running it against the real codebase in the gate, not by pytest.
-- **Public-surface introspection** — walking `inspect.signature` over public methods to assert annotation shapes. Mypy strict mode catches the same problems with better signal.
+- **Linter-of-the-linter tests** — tests that exercise the SDK's own architecture/discovery linters by feeding them synthetic input. The linter is verified by running it against the real codebase in the gate, not by pytest. Swagger contract helpers are exempt only when they validate SDK-to-Swagger coverage or schema compatibility.
+- **Public-surface introspection** — walking `inspect.signature` over public methods to assert annotation shapes. Mypy strict mode catches the same problems with better signal. Swagger contract tests are exempt only when signature inspection is required to invoke a discovered binding or validate `factory_args` / `method_args` against `docs/avito/api/`.
 - **Reachability / import smoke tests** — "module X can be imported", "factory Y exists on `AvitoClient`". Mypy and the regular functional tests already prove this.
 
 If a rule is worth enforcing automatically, encode it in a linter and run the linter from `make check`. A pytest run must answer one question: does the SDK behave correctly at runtime? Any test that answers a different question is dead weight.
