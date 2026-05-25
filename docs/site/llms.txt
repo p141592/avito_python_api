@@ -1,0 +1,59 @@
+# avito-py
+
+> `avito-py` is a typed Python SDK for Avito API with synchronous and asynchronous facades, a command-line interface, OAuth handling, retries, pagination, and coverage of 204 Swagger operations.
+
+The documentation is primarily in Russian. The installable distribution is `avito-py`;
+the Python import package is `avito`. Application code should normally begin with
+`AvitoClient` or `AsyncAvitoClient`, while terminal automation can use the `avito` CLI.
+
+The SDK returns typed models rather than raw API payloads. It includes lazy sync and
+async pagination, typed exceptions, a `FakeTransport` for consumer tests, `dry_run`
+support for selected write operations, and documented retry and idempotency behavior.
+
+## Start Here
+
+- [Documentation home](https://18studio.github.io/avito_python_api/): Project overview and documentation map.
+- [Getting started](https://18studio.github.io/avito_python_api/tutorials/getting-started/): Installation, credentials, client setup, and a first API request.
+- [Authentication and configuration](https://18studio.github.io/avito_python_api/how-to/auth-and-config/): Environment variables, explicit credentials, and settings-based initialization.
+- [Asynchronous usage](https://18studio.github.io/avito_python_api/how-to/async/): `AsyncAvitoClient`, lifecycle management, ASGI integration, and async pagination.
+- [CLI usage](https://18studio.github.io/avito_python_api/how-to/cli/): Profiles, JSON output, diagnostics, and API calls from the terminal.
+
+## API Reference
+
+- [Reference overview](https://18studio.github.io/avito_python_api/reference/): Entry point for the public SDK contract and domain reference.
+- [AvitoClient and AsyncAvitoClient](https://18studio.github.io/avito_python_api/reference/client/): Public facades, construction, context managers, and domain factories.
+- [Configuration](https://18studio.github.io/avito_python_api/reference/config/): `AvitoSettings`, `AuthSettings`, environment variables, timeouts, and operation overrides.
+- [API operation map](https://18studio.github.io/avito_python_api/reference/operations/): Mapping from Swagger operations to public SDK methods.
+- [API coverage](https://18studio.github.io/avito_python_api/reference/coverage/): Swagger binding coverage for the SDK API surface.
+- [Models](https://18studio.github.io/avito_python_api/reference/models/): Typed public model and serialization contracts.
+- [Exceptions](https://18studio.github.io/avito_python_api/reference/exceptions/): Error hierarchy and diagnostic fields.
+- [Pagination](https://18studio.github.io/avito_python_api/reference/pagination/): Lazy `PaginatedList` and `AsyncPaginatedList` behavior.
+- [Testing](https://18studio.github.io/avito_python_api/reference/testing/): `FakeTransport` and consumer-side test utilities.
+
+## Integration Guides
+
+- [How-to recipes](https://18studio.github.io/avito_python_api/how-to/): Index of practical API integration workflows.
+- [Ads, statistics, and promotion](https://18studio.github.io/avito_python_api/how-to/ad-listing-and-stats/): Retrieve listings and statistics and prepare promotion actions.
+- [Chat messages and image upload](https://18studio.github.io/avito_python_api/how-to/chat-image-upload/): Messenger workflows.
+- [Orders, labels, and stock](https://18studio.github.io/avito_python_api/how-to/order-labels/): Order fulfillment and stock update workflows.
+- [Job applications](https://18studio.github.io/avito_python_api/how-to/job-applications/): Vacancies, applications, resumes, and webhooks.
+- [Realty booking](https://18studio.github.io/avito_python_api/how-to/realty-booking/): Calendar blocks and pricing for realty bookings.
+- [Testing with FakeTransport](https://18studio.github.io/avito_python_api/how-to/testing-with-fake-transport/): Test application code without live HTTP requests.
+
+## Architecture And Behavior
+
+- [SDK architecture](https://18studio.github.io/avito_python_api/explanations/architecture/): Responsibilities of clients, domain objects, operation specifications, transport, authentication, and models.
+- [Domain architecture v2](https://18studio.github.io/avito_python_api/explanations/domain-architecture-v2/): Structure and model conventions for domain implementations.
+- [Transport and retries](https://18studio.github.io/avito_python_api/explanations/transport-and-retries/): HTTP behavior and retry policy.
+- [Error model](https://18studio.github.io/avito_python_api/explanations/error-model/): Mapping API failures to typed exceptions.
+- [Dry-run and idempotency](https://18studio.github.io/avito_python_api/explanations/dry-run-and-idempotency/): Safe preparation and retrying of write operations.
+- [Swagger binding subsystem](https://18studio.github.io/avito_python_api/explanations/swagger-binding-subsystem/): How API specifications are bound to public SDK methods and verified.
+- [Security and redaction](https://18studio.github.io/avito_python_api/explanations/security-and-redaction/): Secret handling and safe diagnostics.
+
+## Optional
+
+- [First promotion tutorial](https://18studio.github.io/avito_python_api/tutorials/first-promotion/): Guided `dry_run=True` to live-promotion workflow.
+- [Diagnostics and logging](https://18studio.github.io/avito_python_api/how-to/diagnostics-and-logging/): Debug information and error logging practices.
+- [Per-operation overrides](https://18studio.github.io/avito_python_api/how-to/per-operation-overrides/): Customized timeouts, retries, and idempotency keys.
+- [Changelog](https://18studio.github.io/avito_python_api/changelog/): Published SDK documentation changes.
+- [Source repository](https://github.com/18studio/avito_python_api): Project source code and issue tracker.
